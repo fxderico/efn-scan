@@ -115,12 +115,12 @@ public final class BlockOverlayModule extends ClientModule {
    }
 
    @EventHandler
-   public void onRender3D(Render3DEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      if (var2.field_1687 != null && var2.field_1724 != null) {
-         if (var2.field_1687 != this.level) {
+   public void onRender3D(Render3DEvent render3DEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      if (var2.world != null && var2.player != null) {
+         if (var2.world != this.level) {
             this.reset();
-            this.level = var2.field_1687;
+            this.level = var2.world;
          }
 
          long var3 = System.nanoTime();
@@ -128,10 +128,7 @@ public final class BlockOverlayModule extends ClientModule {
          this.lastFrame = var3;
          BlockHitResult var6 = target(var2);
          if (var6 != null && this.adopt(var2, var6)) {
-            this.box = this.box != null
-                  && !(this.presence < 0.02F)
-                  && this.smooth.get()
-                  && !(this.box.method_1005().method_1022(this.goal.method_1005()) > 6.0)
+            this.box = this.box != null && !(this.presence < 0.02F) && this.smooth.get() && !(this.box.getCenter().distanceTo(this.goal.getCenter()) > 6.0)
                ? lerp(this.box, this.goal, 1.0F - (float)Math.exp(-this.smoothSpeed.get() * var5))
                : this.goal;
             this.presence = Math.min(1.0F, this.presence + var5 / 0.12F);
@@ -140,14 +137,14 @@ public final class BlockOverlayModule extends ClientModule {
             this.presence = Math.max(0.0F, this.presence - var5 / 0.2F);
             if (this.presence == 0.0F) {
                this.reset();
-               this.level = var2.field_1687;
+               this.level = var2.world;
                return;
             }
          }
 
          if (this.box != null) {
             this.updateProgress(var2, var5, var6 != null);
-            this.eye = var2.field_1773.method_19418().method_71156();
+            this.eye = var2.gameRenderer.getCamera().getCameraPos();
             this.time = var3 % 3600000000000L / 1.0E9;
             this.draw();
          }
@@ -156,36 +153,36 @@ public final class BlockOverlayModule extends ClientModule {
       }
    }
 
-   private static BlockHitResult target(MinecraftClient var0) {
-      HitResult var2 = var0.field_1765;
+   private static BlockHitResult target(MinecraftClient minecraftClient) {
+      HitResult var2 = minecraftClient.crosshairTarget;
       BlockHitResult var1;
-      if (!(var2 instanceof BlockHitResult) || (var1 = (BlockHitResult)var2).method_17783() != Type.field_1332 || var1.method_17781()) {
+      if (!(var2 instanceof BlockHitResult) || (var1 = (BlockHitResult)var2).getType() != Type.BLOCK || var1.isInsideBlock()) {
          return null;
-      } else if (!((AccessorGameRenderer)var0.field_1773).efn$shouldRenderBlockOutline()) {
+      } else if (!((AccessorGameRenderer)minecraftClient.gameRenderer).efn$shouldRenderBlockOutline()) {
          return null;
       } else {
-         BlockPos var3 = var1.method_17777();
-         return !var0.field_1687.method_8320(var3).method_26215() && var0.field_1687.method_8621().method_11952(var3) ? var1 : null;
+         BlockPos var3 = var1.getBlockPos();
+         return !minecraftClient.world.getBlockState(var3).isAir() && minecraftClient.world.getWorldBorder().contains(var3) ? var1 : null;
       }
    }
 
-   private boolean adopt(MinecraftClient var1, BlockHitResult var2) {
-      ClientWorld var5 = var1.field_1687;
-      BlockPos var6 = var2.method_17777();
-      BlockPos var7 = partner(var5, var6, var5.method_8320(var6));
-      BlockPos var4 = var7 != null && var7.method_10265(var6) < 0 ? var7 : var6;
+   private boolean adopt(MinecraftClient minecraftClient, BlockHitResult blockHitResult) {
+      ClientWorld var5 = minecraftClient.world;
+      BlockPos var6 = blockHitResult.getBlockPos();
+      BlockPos var7 = partner(var5, var6, var5.getBlockState(var6));
+      BlockPos var4 = var7 != null && var7.compareTo(var6) < 0 ? var7 : var6;
       BlockPos var9 = var7 == null ? null : (var4.equals(var6) ? var7 : var6);
-      BlockState var10 = var5.method_8320(var4);
-      BlockState var3 = var9 == null ? null : var5.method_8320(var9);
+      BlockState var10 = var5.getBlockState(var4);
+      BlockState var3 = var9 == null ? null : var5.getBlockState(var9);
       if (!var4.equals(this.pos) || var10 != this.state || var3 != this.partnerState) {
-         Entity var12 = var1.method_1560();
-         ShapeContext var13 = var12 == null ? ShapeContext.method_16194() : ShapeContext.method_16195(var12);
-         VoxelShape var14 = var10.method_26172(var5, var4, var13);
+         Entity var12 = minecraftClient.getCameraEntity();
+         ShapeContext var13 = var12 == null ? ShapeContext.absent() : ShapeContext.of(var12);
+         VoxelShape var14 = var10.getOutlineShape(var5, var4, var13);
          if (var9 != null) {
-            var14 = VoxelShapes.method_1084(var14, var3.method_26172(var5, var9, var13).method_66507(var9.method_10059(var4)));
+            var14 = VoxelShapes.union(var14, var3.getOutlineShape(var5, var9, var13).offset(var9.subtract(var4)));
          }
 
-         if ((var14 = var14.method_1097()).method_1110()) {
+         if ((var14 = var14.simplify()).isEmpty()) {
             return false;
          }
 
@@ -198,43 +195,42 @@ public final class BlockOverlayModule extends ClientModule {
          this.partner = var9;
          this.partnerState = var3;
          this.edges.clear();
-         var14.method_1104((var1x, var3x, var5x, var7x, var9x, var11) -> this.edges.add(new double[]{var1x, var3x, var5x, var7x, var9x, var11}));
-         this.boxes = var14.method_1090();
-         this.localBounds = var14.method_1107();
-         this.goal = this.localBounds.method_996(var4);
+         var14.forEachEdge((d, e, f, g, h, i) -> this.edges.add(new double[]{d, e, f, g, h, i}));
+         this.boxes = var14.getBoundingBoxes();
+         this.localBounds = var14.getBoundingBox();
+         this.goal = this.localBounds.offset(var4);
       }
 
-      this.face = var2.method_17780();
-      this.faceBox = this.boxOnFace(var2.method_17784().method_1023(this.pos.method_10263(), this.pos.method_10264(), this.pos.method_10260()));
+      this.face = blockHitResult.getSide();
+      this.faceBox = this.boxOnFace(blockHitResult.getPos().subtract(this.pos.getX(), this.pos.getY(), this.pos.getZ()));
       return true;
    }
 
-   private static BlockPos partner(ClientWorld var0, BlockPos var1, BlockState var2) {
+   private static BlockPos partner(ClientWorld clientWorld, BlockPos blockPos, BlockState blockState) {
       BlockPos var3 = null;
-      if (var2.method_28498(Properties.field_12533)) {
-         var3 = var2.method_11654(Properties.field_12533) == DoubleBlockHalf.field_12607 ? var1.method_10084() : var1.method_10074();
-      } else if (var2.method_26204() instanceof BedBlock) {
-         var3 = var1.method_10093(BedBlock.method_24163(var2));
-      } else if (var2.method_26204() instanceof ChestBlock && var2.method_11654(ChestBlock.field_10770) != ChestType.field_12569) {
-         var3 = ChestBlock.method_72581(var1, var2);
+      if (blockState.contains(Properties.DOUBLE_BLOCK_HALF)) {
+         var3 = blockState.get(Properties.DOUBLE_BLOCK_HALF) == DoubleBlockHalf.LOWER ? blockPos.up() : blockPos.down();
+      } else if (blockState.getBlock() instanceof BedBlock) {
+         var3 = blockPos.offset(BedBlock.getOppositePartDirection(blockState));
+      } else if (blockState.getBlock() instanceof ChestBlock && blockState.get(ChestBlock.CHEST_TYPE) != ChestType.SINGLE) {
+         var3 = ChestBlock.getPosInFrontOf(blockPos, blockState);
       }
 
-      return var3 != null && var0.method_8320(var3).method_27852(var2.method_26204()) ? var3 : null;
+      return var3 != null && clientWorld.getBlockState(var3).isOf(blockState.getBlock()) ? var3 : null;
    }
 
-   private Box boxOnFace(Vec3d var1) {
+   private Box boxOnFace(Vec3d vec3d) {
       double var2 = 0.001;
 
       for (Box var5 : this.boxes) {
          if (switch (this.face) {
-            case field_11034 -> Math.abs(var1.field_1352 - var5.field_1320) < var2;
-            case field_11039 -> Math.abs(var1.field_1352 - var5.field_1323) < var2;
-            case field_11036 -> Math.abs(var1.field_1351 - var5.field_1325) < var2;
-            case field_11033 -> Math.abs(var1.field_1351 - var5.field_1322) < var2;
-            case field_11035 -> Math.abs(var1.field_1350 - var5.field_1324) < var2;
-            case field_11043 -> Math.abs(var1.field_1350 - var5.field_1321) < var2;
-            default -> throw new MatchException(null, null);
-         } && var5.method_1014(var2).method_1006(var1)) {
+            case EAST -> Math.abs(vec3d.x - var5.maxX) < var2;
+            case WEST -> Math.abs(vec3d.x - var5.minX) < var2;
+            case UP -> Math.abs(vec3d.y - var5.maxY) < var2;
+            case DOWN -> Math.abs(vec3d.y - var5.minY) < var2;
+            case SOUTH -> Math.abs(vec3d.z - var5.maxZ) < var2;
+            case NORTH -> Math.abs(vec3d.z - var5.minZ) < var2;
+         } && var5.expand(var2).contains(vec3d)) {
             return var5;
          }
       }
@@ -242,21 +238,21 @@ public final class BlockOverlayModule extends ClientModule {
       return this.localBounds;
    }
 
-   private void updateProgress(MinecraftClient var1, float var2, boolean var3) {
+   private void updateProgress(MinecraftClient minecraftClient, float f, boolean bl) {
       float var6 = 0.0F;
-      ClientPlayerInteractionManager var7 = var1.field_1761;
+      ClientPlayerInteractionManager var7 = minecraftClient.interactionManager;
       AccessorBlockOverlayMultiPlayerGameMode var4;
       BlockPos var5;
-      if (var3
+      if (bl
          && this.miningProgress.get()
          && var7 != null
-         && var7.method_2923()
+         && var7.isBreakingBlock()
          && (var5 = (var4 = (AccessorBlockOverlayMultiPlayerGameMode)var7).efn$blockOverlayDestroyPos()) != null
          && (var5.equals(this.pos) || var5.equals(this.partner))) {
-         var6 = MathHelper.method_15363(var4.efn$blockOverlayDestroyProgress(), 0.0F, 1.0F);
+         var6 = MathHelper.clamp(var4.efn$blockOverlayDestroyProgress(), 0.0F, 1.0F);
       }
 
-      this.progress = this.progress + (var6 - this.progress) * (1.0F - (float)Math.exp(-18.0F * var2));
+      this.progress = this.progress + (var6 - this.progress) * (1.0F - (float)Math.exp(-18.0F * f));
    }
 
    private void reset() {
@@ -280,15 +276,9 @@ public final class BlockOverlayModule extends ClientModule {
    private void draw() {
       this.fade = this.presence * this.presence * (3.0F - 2.0F * this.presence);
       double var1 = 0.94 + 0.06 * this.fade;
-      double[] var3 = axis(
-         this.box.field_1323, this.box.field_1320, this.goal.field_1323, this.goal.field_1320, this.pos.method_10263() - this.goal.field_1323, var1
-      );
-      double[] var4 = axis(
-         this.box.field_1322, this.box.field_1325, this.goal.field_1322, this.goal.field_1325, this.pos.method_10264() - this.goal.field_1322, var1
-      );
-      double[] var5 = axis(
-         this.box.field_1321, this.box.field_1324, this.goal.field_1321, this.goal.field_1324, this.pos.method_10260() - this.goal.field_1321, var1
-      );
+      double[] var3 = axis(this.box.minX, this.box.maxX, this.goal.minX, this.goal.maxX, this.pos.getX() - this.goal.minX, var1);
+      double[] var4 = axis(this.box.minY, this.box.maxY, this.goal.minY, this.goal.maxY, this.pos.getY() - this.goal.minY, var1);
+      double[] var5 = axis(this.box.minZ, this.box.maxZ, this.goal.minZ, this.goal.maxZ, this.pos.getZ() - this.goal.minZ, var1);
       this.ax = var3[0];
       this.bx = var3[1];
       this.ay = var4[0];
@@ -322,26 +312,26 @@ public final class BlockOverlayModule extends ClientModule {
       }
    }
 
-   private static double[] axis(double var0, double var2, double var4, double var6, double var8, double var10) {
-      double var12 = var6 - var4;
-      double var14 = var12 > 1.0E-6 ? (var2 - var0) / var12 : 1.0;
-      double var16 = (var0 + var2) * 0.5;
-      double var18 = var16 * (1.0 - var10) + (var0 + var8 * var14) * var10;
-      return new double[]{var18, var14 * var10};
+   private static double[] axis(double d, double e, double f, double g, double h, double i) {
+      double var12 = g - f;
+      double var14 = var12 > 1.0E-6 ? (e - d) / var12 : 1.0;
+      double var16 = (d + e) * 0.5;
+      double var18 = var16 * (1.0 - i) + (d + h * var14) * i;
+      return new double[]{var18, var14 * i};
    }
 
-   private Vec3d world(double var1, double var3, double var5) {
-      return new Vec3d(this.ax + this.bx * var1, this.ay + this.by * var3, this.az + this.bz * var5);
+   private Vec3d world(double d, double e, double f) {
+      return new Vec3d(this.ax + this.bx * d, this.ay + this.by * e, this.az + this.bz * f);
    }
 
-   private void outline(List<double[]> var1) {
+   private void outline(List<double[]> list) {
       boolean var2 = !this.colorMode.is("Solid");
-      ArrayList var3 = new ArrayList(var1.size() * 4);
-      ArrayList var4 = new ArrayList(var1.size() * 4);
+      ArrayList var3 = new ArrayList(list.size() * 4);
+      ArrayList var4 = new ArrayList(list.size() * 4);
 
-      for (double[] var6 : var1) {
+      for (double[] var6 : list) {
          double var7 = Math.sqrt(sq(var6[3] - var6[0]) + sq(var6[4] - var6[1]) + sq(var6[5] - var6[2]));
-         int var9 = var2 ? MathHelper.method_15340((int)Math.ceil(var7 / 0.125), 1, 16) : 1;
+         int var9 = var2 ? MathHelper.clamp((int)Math.ceil(var7 / 0.125), 1, 16) : 1;
 
          for (int var10 = 0; var10 < var9; var10++) {
             double var11 = (double)var10 / var9;
@@ -349,21 +339,15 @@ public final class BlockOverlayModule extends ClientModule {
             double var15 = (var11 + var13) * 0.5;
             var3.add(
                new double[]{
-                  MathHelper.method_16436(var11, var6[0], var6[3]),
-                  MathHelper.method_16436(var11, var6[1], var6[4]),
-                  MathHelper.method_16436(var11, var6[2], var6[5]),
-                  MathHelper.method_16436(var13, var6[0], var6[3]),
-                  MathHelper.method_16436(var13, var6[1], var6[4]),
-                  MathHelper.method_16436(var13, var6[2], var6[5])
+                  MathHelper.lerp(var11, var6[0], var6[3]),
+                  MathHelper.lerp(var11, var6[1], var6[4]),
+                  MathHelper.lerp(var11, var6[2], var6[5]),
+                  MathHelper.lerp(var13, var6[0], var6[3]),
+                  MathHelper.lerp(var13, var6[1], var6[4]),
+                  MathHelper.lerp(var13, var6[2], var6[5])
                }
             );
-            var4.add(
-               this.colorAt(
-                  MathHelper.method_16436(var15, var6[0], var6[3]),
-                  MathHelper.method_16436(var15, var6[1], var6[4]),
-                  MathHelper.method_16436(var15, var6[2], var6[5])
-               )
-            );
+            var4.add(this.colorAt(MathHelper.lerp(var15, var6[0], var6[3]), MathHelper.lerp(var15, var6[1], var6[4]), MathHelper.lerp(var15, var6[2], var6[5])));
          }
       }
 
@@ -372,140 +356,127 @@ public final class BlockOverlayModule extends ClientModule {
          for (int var18 = 0; var18 < var3.size(); var18++) {
             double[] var20 = (double[])var3.get(var18);
             int var8 = (Integer)var4.get(var18);
-            this.line(var20, ColorHelper.method_75601(var8, 0.34F * this.fade), var17 + 3.0F, 0.002);
-            this.line(var20, ColorHelper.method_75601(var8, 0.13F * this.fade), var17 + 8.0F, 0.002);
+            this.line(var20, ColorHelper.scaleAlpha(var8, 0.34F * this.fade), var17 + 3.0F, 0.002);
+            this.line(var20, ColorHelper.scaleAlpha(var8, 0.13F * this.fade), var17 + 8.0F, 0.002);
          }
       }
 
       for (int var19 = 0; var19 < var3.size(); var19++) {
-         this.line((double[])var3.get(var19), ColorHelper.method_75601((Integer)var4.get(var19), this.fade), var17, 0.004);
+         this.line((double[])var3.get(var19), ColorHelper.scaleAlpha((Integer)var4.get(var19), this.fade), var17, 0.004);
       }
    }
 
-   private void line(double[] var1, int var2, float var3, double var4) {
-      VisibilityConfigurable var6 = GizmoDrawing.method_75546(
-         this.lift(this.world(var1[0], var1[1], var1[2]), var4), this.lift(this.world(var1[3], var1[4], var1[5]), var4), var2, var3
-      );
+   private void line(double[] ds, int i, float f, double d) {
+      VisibilityConfigurable var6 = GizmoDrawing.line(this.lift(this.world(ds[0], ds[1], ds[2]), d), this.lift(this.world(ds[3], ds[4], ds[5]), d), i, f);
       if (this.seeThrough.get()) {
-         var6.method_75533();
+         var6.ignoreOcclusion();
       }
    }
 
-   private Vec3d lift(Vec3d var1, double var2) {
-      Vec3d var4 = this.eye.method_1020(var1);
-      double var5 = var4.method_1033();
-      return var5 < 1.0E-6 ? var1 : var1.method_1019(var4.method_1021(var2 / var5));
+   private Vec3d lift(Vec3d vec3d, double d) {
+      Vec3d var4 = this.eye.subtract(vec3d);
+      double var5 = var4.length();
+      return var5 < 1.0E-6 ? vec3d : vec3d.add(var4.multiply(d / var5));
    }
 
-   private void boxFill(Box var1, float var2, double var3) {
+   private void boxFill(Box box, float f, double d) {
       for (Direction var8 : Direction.values()) {
-         this.faceFill(var1, var8, var2, var3);
+         this.faceFill(box, var8, f, d);
       }
    }
 
-   private void faceFill(Box var1, Direction var2, float var3, double var4) {
-      Vec3d var6 = this.world(var1.field_1323, var1.field_1322, var1.field_1321).method_1023(var4, var4, var4);
-      Vec3d var7 = this.world(var1.field_1320, var1.field_1325, var1.field_1324).method_1031(var4, var4, var4);
-      Vec3d var8 = faceCentre(var1, var2);
-      int var9 = this.colorAt(var8.field_1352, var8.field_1351, var8.field_1350);
-      int var10 = MathHelper.method_15340(Math.round(var3 * this.fade * 255.0F), 0, 255) << 24 | var9 & 16777215;
-      VisibilityConfigurable var11 = GizmoDrawing.method_75548(var6, var7, var2, DrawStyle.method_75539(var10));
+   private void faceFill(Box box, Direction direction, float f, double d) {
+      Vec3d var6 = this.world(box.minX, box.minY, box.minZ).subtract(d, d, d);
+      Vec3d var7 = this.world(box.maxX, box.maxY, box.maxZ).add(d, d, d);
+      Vec3d var8 = faceCentre(box, direction);
+      int var9 = this.colorAt(var8.x, var8.y, var8.z);
+      int var10 = MathHelper.clamp(Math.round(f * this.fade * 255.0F), 0, 255) << 24 | var9 & 16777215;
+      VisibilityConfigurable var11 = GizmoDrawing.face(var6, var7, direction, DrawStyle.filled(var10));
       if (this.seeThrough.get()) {
-         var11.method_75533();
+         var11.ignoreOcclusion();
       }
    }
 
-   private void progressFill(float var1) {
+   private void progressFill(float f) {
       double var2 = 0.004;
       if (this.faceOnly.get()) {
          Box var8 = this.faceBox;
-         Box var5 = this.face.method_10166() == Axis.field_11052
-            ? var8.method_35580(var8.method_17939() * (1.0F - this.progress) * 0.5, 0.0, var8.method_17941() * (1.0F - this.progress) * 0.5)
-            : new Box(
-               var8.field_1323, var8.field_1322, var8.field_1321, var8.field_1320, var8.field_1322 + var8.method_17940() * this.progress, var8.field_1324
-            );
-         this.faceFill(var5, this.face, var1, var2);
+         Box var5 = this.face.getAxis() == Axis.Y
+            ? var8.contract(var8.getLengthX() * (1.0F - this.progress) * 0.5, 0.0, var8.getLengthZ() * (1.0F - this.progress) * 0.5)
+            : new Box(var8.minX, var8.minY, var8.minZ, var8.maxX, var8.minY + var8.getLengthY() * this.progress, var8.maxZ);
+         this.faceFill(var5, this.face, f, var2);
       } else {
-         double var4 = this.localBounds.field_1322 + this.localBounds.method_17940() * this.progress;
+         double var4 = this.localBounds.minY + this.localBounds.getLengthY() * this.progress;
 
          for (Box var7 : this.boxes) {
-            if (!(var7.field_1322 >= var4)) {
-               this.boxFill(
-                  new Box(var7.field_1323, var7.field_1322, var7.field_1321, var7.field_1320, Math.min(var7.field_1325, var4), var7.field_1324), var1, var2
-               );
+            if (!(var7.minY >= var4)) {
+               this.boxFill(new Box(var7.minX, var7.minY, var7.minZ, var7.maxX, Math.min(var7.maxY, var4), var7.maxZ), f, var2);
             }
          }
       }
    }
 
-   private int colorAt(double var1, double var3, double var5) {
+   private int colorAt(double d, double e, double f) {
       boolean var10 = this.colorMode.is("Theme");
       int var9 = var10 ? CosmeticAccent.argb() : ThemeTint.world(this.color.argb());
       if (this.colorMode.is("Solid")) {
          return var9;
       } else {
          double var12 = (
-               norm(var1, this.localBounds.field_1323, this.localBounds.field_1320)
-                  + norm(var3, this.localBounds.field_1322, this.localBounds.field_1325)
-                  + norm(var5, this.localBounds.field_1321, this.localBounds.field_1324)
+               norm(d, this.localBounds.minX, this.localBounds.maxX)
+                  + norm(e, this.localBounds.minY, this.localBounds.maxY)
+                  + norm(f, this.localBounds.minZ, this.localBounds.maxZ)
             )
             / 3.0;
          double var7 = this.flow.get() ? this.time * 0.3499999940395355 : 0.0;
          if (this.colorMode.is("Rainbow")) {
             double var19 = var12 * 0.5 - var7;
-            return ThemeTint.world(var9 & 0xFF000000 | MathHelper.method_15369((float)(var19 - Math.floor(var19)), 0.65F, 1.0F) & 16777215);
+            return ThemeTint.world(var9 & 0xFF000000 | MathHelper.hsvToRgb((float)(var19 - Math.floor(var19)), 0.65F, 1.0F) & 16777215);
          } else {
             double var16 = this.flow.get() ? 0.5 - 0.5 * Math.cos(6.283185307179586 * (var12 - var7)) : var12;
-            int var18 = var10 ? ColorHelper.method_61319(0.55F, var9, -1) : ThemeTint.world(this.secondColor.argb());
-            return ColorHelper.method_61319((float)var16, var9, var18);
+            int var18 = var10 ? ColorHelper.lerp(0.55F, var9, -1) : ThemeTint.world(this.secondColor.argb());
+            return ColorHelper.lerp((float)var16, var9, var18);
          }
       }
    }
 
-   private static double norm(double var0, double var2, double var4) {
-      return var4 - var2 < 1.0E-6 ? 0.5 : (var0 - var2) / (var4 - var2);
+   private static double norm(double d, double e, double f) {
+      return f - e < 1.0E-6 ? 0.5 : (d - e) / (f - e);
    }
 
-   private static Vec3d faceCentre(Box var0, Direction var1) {
-      Vec3d var2 = var0.method_1005();
+   private static Vec3d faceCentre(Box box, Direction direction) {
+      Vec3d var2 = box.getCenter();
 
-      return switch (var1) {
-         case field_11034 -> new Vec3d(var0.field_1320, var2.field_1351, var2.field_1350);
-         case field_11039 -> new Vec3d(var0.field_1323, var2.field_1351, var2.field_1350);
-         case field_11036 -> new Vec3d(var2.field_1352, var0.field_1325, var2.field_1350);
-         case field_11033 -> new Vec3d(var2.field_1352, var0.field_1322, var2.field_1350);
-         case field_11035 -> new Vec3d(var2.field_1352, var2.field_1351, var0.field_1324);
-         case field_11043 -> new Vec3d(var2.field_1352, var2.field_1351, var0.field_1321);
-         default -> throw new MatchException(null, null);
+      return switch (direction) {
+         case EAST -> new Vec3d(box.maxX, var2.y, var2.z);
+         case WEST -> new Vec3d(box.minX, var2.y, var2.z);
+         case UP -> new Vec3d(var2.x, box.maxY, var2.z);
+         case DOWN -> new Vec3d(var2.x, box.minY, var2.z);
+         case SOUTH -> new Vec3d(var2.x, var2.y, box.maxZ);
+         case NORTH -> new Vec3d(var2.x, var2.y, box.minZ);
       };
    }
 
-   private static List<double[]> faceEdges(Box var0, Direction var1) {
+   private static List<double[]> faceEdges(Box box, Direction direction) {
       double[][] var2;
-      switch (var1.method_10166()) {
-         case field_11048:
-            double var9 = var1 == Direction.field_11034 ? var0.field_1320 : var0.field_1323;
-            double[][] var12 = new double[][]{
-               {var9, var0.field_1322, var0.field_1321}, {var9, var0.field_1325, var0.field_1321}, {var9, var0.field_1325, var0.field_1324}, null
-            };
+      switch (direction.getAxis()) {
+         case X:
+            double var9 = direction == Direction.EAST ? box.maxX : box.minX;
+            double[][] var12 = new double[][]{{var9, box.minY, box.minZ}, {var9, box.maxY, box.minZ}, {var9, box.maxY, box.maxZ}, null};
             var2 = var12;
-            var12[3] = new double[]{var9, var0.field_1322, var0.field_1324};
+            var12[3] = new double[]{var9, box.minY, box.maxZ};
             break;
-         case field_11052:
-            double var8 = var1 == Direction.field_11036 ? var0.field_1325 : var0.field_1322;
-            double[][] var11 = new double[][]{
-               {var0.field_1323, var8, var0.field_1321}, {var0.field_1320, var8, var0.field_1321}, {var0.field_1320, var8, var0.field_1324}, null
-            };
+         case Y:
+            double var8 = direction == Direction.UP ? box.maxY : box.minY;
+            double[][] var11 = new double[][]{{box.minX, var8, box.minZ}, {box.maxX, var8, box.minZ}, {box.maxX, var8, box.maxZ}, null};
             var2 = var11;
-            var11[3] = new double[]{var0.field_1323, var8, var0.field_1324};
+            var11[3] = new double[]{box.minX, var8, box.maxZ};
             break;
-         case field_11051:
-            double var3 = var1 == Direction.field_11035 ? var0.field_1324 : var0.field_1321;
-            double[][] var5 = new double[][]{
-               {var0.field_1323, var0.field_1322, var3}, {var0.field_1320, var0.field_1322, var3}, {var0.field_1320, var0.field_1325, var3}, null
-            };
+         case Z:
+            double var3 = direction == Direction.SOUTH ? box.maxZ : box.minZ;
+            double[][] var5 = new double[][]{{box.minX, box.minY, var3}, {box.maxX, box.minY, var3}, {box.maxX, box.maxY, var3}, null};
             var2 = var5;
-            var5[3] = new double[]{var0.field_1323, var0.field_1325, var3};
+            var5[3] = new double[]{box.minX, box.maxY, var3};
             break;
          default:
             throw new MatchException(null, null);
@@ -523,18 +494,18 @@ public final class BlockOverlayModule extends ClientModule {
       return var4;
    }
 
-   private static Box lerp(Box var0, Box var1, float var2) {
+   private static Box lerp(Box box, Box box2, float f) {
       return new Box(
-         MathHelper.method_16436(var2, var0.field_1323, var1.field_1323),
-         MathHelper.method_16436(var2, var0.field_1322, var1.field_1322),
-         MathHelper.method_16436(var2, var0.field_1321, var1.field_1321),
-         MathHelper.method_16436(var2, var0.field_1320, var1.field_1320),
-         MathHelper.method_16436(var2, var0.field_1325, var1.field_1325),
-         MathHelper.method_16436(var2, var0.field_1324, var1.field_1324)
+         MathHelper.lerp((double)f, box.minX, box2.minX),
+         MathHelper.lerp((double)f, box.minY, box2.minY),
+         MathHelper.lerp((double)f, box.minZ, box2.minZ),
+         MathHelper.lerp((double)f, box.maxX, box2.maxX),
+         MathHelper.lerp((double)f, box.maxY, box2.maxY),
+         MathHelper.lerp((double)f, box.maxZ, box2.maxZ)
       );
    }
 
-   private static double sq(double var0) {
-      return var0 * var0;
+   private static double sq(double d) {
+      return d * d;
    }
 }

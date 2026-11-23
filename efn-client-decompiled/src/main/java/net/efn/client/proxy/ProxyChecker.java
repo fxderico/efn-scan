@@ -4,7 +4,6 @@ import com.google.common.net.InetAddresses;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
@@ -43,8 +42,8 @@ public final class ProxyChecker {
       return INSTANCE;
    }
 
-   public synchronized void check(Collection<Proxy> var1) {
-      for (Proxy var3 : var1) {
+   public synchronized void check(Collection<Proxy> collection) {
+      for (Proxy var3 : collection) {
          if (this.checking.add(var3)) {
             this.queue.add(var3);
          }
@@ -53,8 +52,8 @@ public final class ProxyChecker {
       this.pump();
    }
 
-   public boolean isChecking(Proxy var1) {
-      return this.checking.contains(var1);
+   public boolean isChecking(Proxy proxy) {
+      return this.checking.contains(proxy);
    }
 
    public int pending() {
@@ -73,50 +72,54 @@ public final class ProxyChecker {
       }
    }
 
-   private void start(Proxy var1) {
+   private void start(Proxy proxy) {
       AtomicBoolean var3 = new AtomicBoolean();
-      if (!var1.isValid()) {
-         this.finish(var1, -1, var3);
+      if (!proxy.isValid()) {
+         this.finish(proxy, -1, var3);
       } else {
          final ProxyHandler var2;
          try {
-            var2 = ProxyRouting.handler(var1);
+            var2 = ProxyRouting.handler(proxy);
          } catch (RuntimeException var7) {
-            this.finish(var1, -1, var3);
+            this.finish(proxy, -1, var3);
             return;
          }
 
          var2.setConnectTimeoutMillis(8000L);
          long var4 = System.nanoTime();
-         ChannelFuture var6 = ((Bootstrap)((Bootstrap)((Bootstrap)((Bootstrap)new Bootstrap().group(this.group)).channel(NioSocketChannel.class))
-                  .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 8000))
-               .handler(new ChannelInitializer<Channel>() {
-                  protected void initChannel(Channel var1) {
-                     var1.pipeline().addLast(new ChannelHandler[]{var2, new ChannelInboundHandlerAdapter() {
-                        public void exceptionCaught(ChannelHandlerContext var1, Throwable var2x) {
-                           var1.close();
-                        }
-                     }});
-                  }
-               }))
+         ChannelFuture var6 = new Bootstrap()
+            .group(this.group)
+            .channel(NioSocketChannel.class)
+            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 8000)
+            .handler(new ChannelInitializer<Channel>() {
+               @Override
+               protected void initChannel(Channel channel) {
+                  channel.pipeline().addLast(var2, new ChannelInboundHandlerAdapter() {
+                     @Override
+                     public void exceptionCaught(ChannelHandlerContext channelHandlerContext, Throwable throwable) {
+                        channelHandlerContext.close();
+                     }
+                  });
+               }
+            })
             .connect(TARGET);
-         var6.addListener(var3x -> {
-            if (!var3x.isSuccess()) {
-               this.finish(var1, -1, var3);
+         var6.addListener(future -> {
+            if (!future.isSuccess()) {
+               this.finish(proxy, -1, var3);
             }
          });
-         var2.connectFuture().addListener(var6x -> {
+         var2.connectFuture().addListener(future -> {
             int var7x = (int)((System.nanoTime() - var4) / 1000000L);
-            this.finish(var1, var6x.isSuccess() ? var7x : -1, var3);
+            this.finish(proxy, future.isSuccess() ? var7x : -1, var3);
             var6.channel().close();
          });
       }
    }
 
-   private void finish(Proxy var1, int var2, AtomicBoolean var3) {
-      if (var3.compareAndSet(false, true)) {
-         var1.ping = var2;
-         this.checking.remove(var1);
+   private void finish(Proxy proxy, int i, AtomicBoolean atomicBoolean) {
+      if (atomicBoolean.compareAndSet(false, true)) {
+         proxy.ping = i;
+         this.checking.remove(proxy);
          boolean var4;
          synchronized (this) {
             this.running--;

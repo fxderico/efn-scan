@@ -18,13 +18,13 @@ public abstract class MixinVisGraph {
    }
 
    @Inject(
-      method = {"method_3682"},
+      method = {"markClosed"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$noOcclusion(BlockPos var1, CallbackInfo var2) {
+   private void efn$noOcclusion(BlockPos blockPos, CallbackInfo callbackInfo) {
       if (XrayModule.active != null || FreecamModule.active != null) {
-         var2.cancel();
+         callbackInfo.cancel();
       }
    }
 }

@@ -22,34 +22,34 @@ public final class ProtectedText {
    private ProtectedText() {
    }
 
-   public static Text rewrite(NameMatcher var0, Text var1) {
-      if (var1 != null && !var0.isEmpty()) {
-         Text var2 = rebuild(var0, var1, true);
-         return var2 != null ? var2 : var1;
+   public static Text rewrite(NameMatcher nameMatcher, Text text) {
+      if (text != null && !nameMatcher.isEmpty()) {
+         Text var2 = rebuild(nameMatcher, text, true);
+         return var2 != null ? var2 : text;
       } else {
-         return var1;
+         return text;
       }
    }
 
-   public static StringVisitable rewrite(NameMatcher var0, StringVisitable var1) {
-      if (var1 != null && !var0.isEmpty()) {
-         Text var2 = rebuild(var0, var1, true);
-         return (StringVisitable)(var2 != null ? var2 : var1);
+   public static StringVisitable rewrite(NameMatcher nameMatcher, StringVisitable stringVisitable) {
+      if (stringVisitable != null && !nameMatcher.isEmpty()) {
+         Text var2 = rebuild(nameMatcher, stringVisitable, true);
+         return (StringVisitable)(var2 != null ? var2 : stringVisitable);
       } else {
-         return var1;
+         return stringVisitable;
       }
    }
 
-   private static Text rebuild(NameMatcher var0, StringVisitable var1, boolean var2) {
+   private static Text rebuild(NameMatcher nameMatcher, StringVisitable stringVisitable, boolean bl) {
       ProtectedText.Pieces var4 = new ProtectedText.Pieces();
-      var1.method_27658(var4, Style.field_24360);
+      stringVisitable.visit(var4, Style.EMPTY);
       if (var4.count == 0) {
          return null;
       } else {
          var4.seal();
          String var5 = var4.text.toString();
-         List var6 = var0.scan(var5, var4.starts, var4.count);
-         Style[] var3 = var2 ? rewriteHovers(var0, var4) : null;
+         List var6 = nameMatcher.scan(var5, var4.starts, var4.count);
+         Style[] var3 = bl ? rewriteHovers(nameMatcher, var4) : null;
          if (var6.isEmpty() && var3 == null) {
             return null;
          } else {
@@ -69,13 +69,13 @@ public final class ProtectedText {
       }
    }
 
-   private static Style[] rewriteHovers(NameMatcher var0, ProtectedText.Pieces var1) {
+   private static Style[] rewriteHovers(NameMatcher nameMatcher, ProtectedText.Pieces pieces) {
       Style[] var2 = null;
       IdentityHashMap var3 = null;
 
-      for (int var4 = 0; var4 < var1.count; var4++) {
-         Style var6 = var1.styles[var4];
-         HoverEvent var7 = var6.method_10969();
+      for (int var4 = 0; var4 < pieces.count; var4++) {
+         Style var6 = pieces.styles[var4];
+         HoverEvent var7 = var6.getHoverEvent();
          if (var7 != null) {
             if (var3 == null) {
                var3 = new IdentityHashMap();
@@ -83,16 +83,16 @@ public final class ProtectedText {
 
             HoverEvent var5;
             if ((var5 = (HoverEvent)var3.get(var7)) == null) {
-               var5 = rewriteHover(var0, var7);
+               var5 = rewriteHover(nameMatcher, var7);
                var3.put(var7, var5);
             }
 
             if (var5 != var7) {
                if (var2 == null) {
-                  var2 = Arrays.copyOf(var1.styles, var1.count);
+                  var2 = Arrays.copyOf(pieces.styles, pieces.count);
                }
 
-               var2[var4] = var6.method_10949(var5);
+               var2[var4] = var6.withHoverEvent(var5);
             }
          }
       }
@@ -100,21 +100,21 @@ public final class ProtectedText {
       return var2;
    }
 
-   private static HoverEvent rewriteHover(NameMatcher var0, HoverEvent var1) {
-      if (var1 instanceof ShowText var5) {
-         Text var6 = var5.comp_3510();
-         Text var7 = var6 != null ? rebuild(var0, var6, false) : null;
-         return (HoverEvent)(var7 != null ? new ShowText(var7) : var1);
-      } else if (var1 instanceof ShowEntity var2) {
-         EntityContent var3 = var2.comp_3508();
-         if (var3 != null && !var3.field_24353.isEmpty()) {
-            Text var4 = rebuild(var0, (StringVisitable)var3.field_24353.get(), false);
-            return (HoverEvent)(var4 != null ? new ShowEntity(new EntityContent(var3.field_24351, var3.field_24352, var4)) : var1);
+   private static HoverEvent rewriteHover(NameMatcher nameMatcher, HoverEvent hoverEvent) {
+      if (hoverEvent instanceof ShowText var5) {
+         Text var6 = var5.value();
+         Text var7 = var6 != null ? rebuild(nameMatcher, var6, false) : null;
+         return (HoverEvent)(var7 != null ? new ShowText(var7) : hoverEvent);
+      } else if (hoverEvent instanceof ShowEntity var2) {
+         EntityContent var3 = var2.entity();
+         if (var3 != null && !var3.name.isEmpty()) {
+            Text var4 = rebuild(nameMatcher, var3.name.get(), false);
+            return (HoverEvent)(var4 != null ? new ShowEntity(new EntityContent(var3.entityType, var3.uuid, var4)) : hoverEvent);
          } else {
-            return var1;
+            return hoverEvent;
          }
       } else {
-         return var1;
+         return hoverEvent;
       }
    }
 
@@ -128,8 +128,9 @@ public final class ProtectedText {
       private Pieces() {
       }
 
-      public Optional<Object> accept(Style var1, String var2) {
-         if (var2.isEmpty()) {
+      @Override
+      public Optional<Object> accept(Style style, String string) {
+         if (string.isEmpty()) {
             return Optional.empty();
          } else {
             if (this.count == this.styles.length) {
@@ -137,10 +138,10 @@ public final class ProtectedText {
                this.starts = Arrays.copyOf(this.starts, this.count * 2 + 1);
             }
 
-            this.styles[this.count] = var1;
+            this.styles[this.count] = style;
             this.starts[this.count] = this.text.length();
             this.count++;
-            this.text.append(var2);
+            this.text.append(string);
             return Optional.empty();
          }
       }
@@ -149,8 +150,8 @@ public final class ProtectedText {
          this.starts[this.count] = this.text.length();
       }
 
-      int pieceAt(int var1) {
-         int var2 = Arrays.binarySearch(this.starts, 0, this.count, var1);
+      int pieceAt(int i) {
+         int var2 = Arrays.binarySearch(this.starts, 0, this.count, i);
          return var2 >= 0 ? var2 : -var2 - 2;
       }
    }
@@ -161,48 +162,48 @@ public final class ProtectedText {
       private final List<Integer> runPieces = new ArrayList<>();
       private final List<StringBuilder> runTexts = new ArrayList<>();
 
-      Runs(ProtectedText.Pieces var1) {
-         this.pieces = var1;
+      Runs(ProtectedText.Pieces pieces) {
+         this.pieces = pieces;
       }
 
-      void copy(String var1, int var2, int var3) {
-         for (int var4 = var2 < var3 ? this.pieces.pieceAt(var2) : 0; var2 < var3; var4++) {
-            int var6 = Math.min(this.pieces.starts[var4 + 1], var3);
-            this.run(var4).append(var1, var2, var6);
-            var2 = var6;
+      void copy(String string, int i, int j) {
+         for (int var4 = i < j ? this.pieces.pieceAt(i) : 0; i < j; var4++) {
+            int var6 = Math.min(this.pieces.starts[var4 + 1], j);
+            this.run(var4).append(string, i, var6);
+            i = var6;
          }
       }
 
-      void spread(String var1, int var2, int var3) {
-         int var4 = var3 - var2;
-         int var5 = var1.codePointCount(0, var1.length());
+      void spread(String string, int i, int j) {
+         int var4 = j - i;
+         int var5 = string.codePointCount(0, string.length());
          int var6 = 0;
 
-         for (int var7 = 0; var7 < var1.length(); var6++) {
-            int var8 = var1.codePointAt(var7);
-            int var9 = var2 + (int)((long)var6 * var4 / var5);
+         for (int var7 = 0; var7 < string.length(); var6++) {
+            int var8 = string.codePointAt(var7);
+            int var9 = i + (int)((long)var6 * var4 / var5);
             this.run(this.pieces.pieceAt(var9)).appendCodePoint(var8);
             var7 += Character.charCount(var8);
          }
       }
 
-      private StringBuilder run(int var1) {
+      private StringBuilder run(int i) {
          int var2 = this.runPieces.size() - 1;
-         if (var2 >= 0 && this.runPieces.get(var2) == var1) {
+         if (var2 >= 0 && this.runPieces.get(var2) == i) {
             return this.runTexts.get(var2);
          } else {
             StringBuilder var3 = new StringBuilder();
-            this.runPieces.add(var1);
+            this.runPieces.add(i);
             this.runTexts.add(var3);
             return var3;
          }
       }
 
-      Text build(Style[] var1) {
-         MutableText var2 = Text.method_43473();
+      Text build(Style[] styles) {
+         MutableText var2 = Text.empty();
 
          for (int var3 = 0; var3 < this.runTexts.size(); var3++) {
-            var2.method_10852(Text.method_43470(this.runTexts.get(var3).toString()).method_10862(var1[this.runPieces.get(var3)]));
+            var2.append(Text.literal(this.runTexts.get(var3).toString()).setStyle(styles[this.runPieces.get(var3)]));
          }
 
          return var2;

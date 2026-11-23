@@ -34,7 +34,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
 
 @Environment(EnvType.CLIENT)
 public final class PlacementManager {
@@ -82,7 +81,7 @@ public final class PlacementManager {
    private float lastSentPitch = 0.0F / 0.0F;
    private BuildScope scope;
    private PlacementManager.Outcome outcome;
-   private Hand placeHand = Hand.field_5808;
+   private Hand placeHand = Hand.MAIN_HAND;
    private long placedCount;
    private long lastTargetTick = -9223372036854775808L;
    private int sneakWait;
@@ -91,12 +90,12 @@ public final class PlacementManager {
    private int shiftSteady;
    private long lastPreTick;
 
-   public PlacementManager(MinecraftClient var1, PlacementListener var2) {
-      this.mc = var1;
-      this.listener = var2;
-      this.schematicManager = new SchematicManager(var1);
-      this.inventoryManager = new InventoryManager(var1);
-      this.dependencyManager = new DependencyManager(var1);
+   public PlacementManager(MinecraftClient minecraftClient, PlacementListener placementListener) {
+      this.mc = minecraftClient;
+      this.listener = placementListener;
+      this.schematicManager = new SchematicManager(minecraftClient);
+      this.inventoryManager = new InventoryManager(minecraftClient);
+      this.dependencyManager = new DependencyManager(minecraftClient);
       this.ackManager = new ServerAckManager();
    }
 
@@ -105,16 +104,16 @@ public final class PlacementManager {
       this.state = PlacementState.FIND_TARGET;
    }
 
-   public void setOutcome(PlacementManager.Outcome var1) {
-      this.outcome = var1;
+   public void setOutcome(PlacementManager.Outcome outcome) {
+      this.outcome = outcome;
    }
 
-   public void setScope(BuildScope var1) {
-      if (this.scope != null && var1 == null || this.scope == null && var1 != null) {
+   public void setScope(BuildScope buildScope) {
+      if (this.scope != null && buildScope == null || this.scope == null && buildScope != null) {
          this.schematicManager.invalidate();
       }
 
-      this.scope = var1;
+      this.scope = buildScope;
    }
 
    public long placedCount() {
@@ -125,25 +124,25 @@ public final class PlacementManager {
       return this.refusedCount;
    }
 
-   public boolean placeableFrom(BlockState var1, BlockPos var2, Vec3d var3) {
-      return this.dependencyManager.placeableFrom(var1, var2, var3, true);
+   public boolean placeableFrom(BlockState blockState, BlockPos blockPos, Vec3d vec3d) {
+      return this.dependencyManager.placeableFrom(blockState, blockPos, vec3d, true);
    }
 
-   public String debugState(BlockPos var1) {
+   public String debugState(BlockPos blockPos) {
       return "state="
          + this.state
          + " scopeAllows="
-         + (this.scope == null ? "noscope" : this.scope.allows(var1))
+         + (this.scope == null ? "noscope" : this.scope.allows(blockPos))
          + " blocked="
-         + this.blockedUntil.containsKey(var1.method_10063())
+         + this.blockedUntil.containsKey(blockPos.asLong())
          + " recent="
-         + this.recentlyPlaced.containsKey(var1.method_10063())
+         + this.recentlyPlaced.containsKey(blockPos.asLong())
          + " noCand="
          + (this.noCandidateUntil - this.tick)
          + " lastTarget="
          + this.ticksWithoutTarget()
          + " target="
-         + (this.target == null ? "-" : this.target.pos().method_23854())
+         + (this.target == null ? "-" : this.target.pos().toShortString())
          + " sincePre="
          + (this.tick - this.lastPreTick)
          + " searchNow="
@@ -155,8 +154,8 @@ public final class PlacementManager {
          );
    }
 
-   private static String describe(PlacementTarget var0) {
-      return var0 == null ? "none" : var0.targetPos().method_23854();
+   private static String describe(PlacementTarget placementTarget) {
+      return placementTarget == null ? "none" : placementTarget.targetPos().toShortString();
    }
 
    public long ticksWithoutTarget() {
@@ -174,25 +173,25 @@ public final class PlacementManager {
          || this.state == PlacementState.WAIT_ACK;
    }
 
-   public void tickPre(PlacementConfig var1) {
-      if (this.mc.field_1724 != null && this.mc.field_1687 != null && this.mc.field_1761 != null) {
+   public void tickPre(PlacementConfig placementConfig) {
+      if (this.mc.player != null && this.mc.world != null && this.mc.interactionManager != null) {
          this.lastPreTick = this.tick;
          if (this.state == PlacementState.IDLE || this.state == PlacementState.FIND_TARGET) {
-            if (this.lastPlacementTick >= 0L && this.tick - this.lastPlacementTick <= var1.tickDelay() + this.slowdown) {
+            if (this.lastPlacementTick >= 0L && this.tick - this.lastPlacementTick <= placementConfig.tickDelay() + this.slowdown) {
                this.state = PlacementState.FIND_TARGET;
                return;
             }
 
-            this.resolve(var1);
+            this.resolve(placementConfig);
          }
 
          if (this.state == PlacementState.CALCULATE_ROTATION) {
-            this.prepareRotation(var1);
+            this.prepareRotation(placementConfig);
          }
 
          if (this.state == PlacementState.EXECUTE_PLACE) {
             this.lastPlacementTick = this.tick;
-            this.executePlace(var1);
+            this.executePlace(placementConfig);
          }
       }
    }
@@ -223,19 +222,19 @@ public final class PlacementManager {
       this.refusedCount = 0;
    }
 
-   public void tick(PlacementConfig var1) {
+   public void tick(PlacementConfig placementConfig) {
       this.tick++;
-      if (this.mc.field_1724 != null) {
-         boolean var2 = this.mc.field_1724.method_5715();
+      if (this.mc.player != null) {
+         boolean var2 = this.mc.player.isSneaking();
          this.shiftSteady = var2 == this.lastShift ? this.shiftSteady + 1 : 0;
          this.lastShift = var2;
       }
 
-      this.blockedUntil.entrySet().removeIf(var1x -> var1x.getValue() <= this.tick);
-      this.recentlyPlaced.entrySet().removeIf(var1x -> var1x.getValue() <= this.tick);
-      if (this.mc.field_1724 != null && this.mc.field_1687 != null && this.mc.field_1761 != null) {
+      this.blockedUntil.entrySet().removeIf(entry -> entry.getValue() <= this.tick);
+      this.recentlyPlaced.entrySet().removeIf(entry -> entry.getValue() <= this.tick);
+      if (this.mc.player != null && this.mc.world != null && this.mc.interactionManager != null) {
          if (this.state == PlacementState.WAIT_ROTATION && this.turning) {
-            if (this.mc.field_1724 != null && this.turnTowards(this.mc.field_1724)) {
+            if (this.mc.player != null && this.turnTowards(this.mc.player)) {
                this.turning = false;
                this.rotationTicksRemaining = 1;
             }
@@ -247,9 +246,9 @@ public final class PlacementManager {
             }
          }
 
-         if (this.mc.field_1755 == null || this.state == PlacementState.WAIT_ACK) {
+         if (this.mc.currentScreen == null || this.state == PlacementState.WAIT_ACK) {
             if (this.state == PlacementState.WAIT_ACK) {
-               this.waitForAck(var1);
+               this.waitForAck(placementConfig);
             }
          }
       } else {
@@ -257,7 +256,7 @@ public final class PlacementManager {
       }
    }
 
-   private void resolve(PlacementConfig var1) {
+   private void resolve(PlacementConfig placementConfig) {
       if (!this.schematicManager.hasActiveSchematic()) {
          if (this.state != PlacementState.FIND_TARGET) {
             this.state = PlacementState.FIND_TARGET;
@@ -271,33 +270,33 @@ public final class PlacementManager {
             this.placementTarget = this.dependencyManager
                .searchForPlaceables(
                   var2,
-                  var1.hopperForceFacing(),
-                  var1.fovFilter(),
-                  (float)var1.fovDegrees(),
-                  var1.maxYawChange(),
+                  placementConfig.hopperForceFacing(),
+                  placementConfig.fovFilter(),
+                  (float)placementConfig.fovDegrees(),
+                  placementConfig.maxYawChange(),
                   this.lastYawDelta,
                   this.scope,
                   this.blockedUntil::containsKey
                );
             if (this.placementTarget == null) {
-               if (!var1.schematicOnly()
+               if (!placementConfig.schematicOnly()
                   && this.schematicManager
-                     .getTargets(this.tick, var1.auraRange(), var1.schematicAura(), var1.allBlocks())
+                     .getTargets(this.tick, placementConfig.auraRange(), placementConfig.schematicAura(), placementConfig.allBlocks())
                      .stream()
-                     .anyMatch(var0 -> var0.status() == TargetStatus.WRONG)) {
+                     .anyMatch(schematicTarget -> schematicTarget.status() == TargetStatus.WRONG)) {
                   this.listener.feedback("wrong-safe-skip", "Wrong blocks detected; automatic breaking is disabled for safety", 100);
                }
 
                this.noCandidateUntil = this.tick + 0L;
-               if (this.scope == null && var1.baritoneWalk() && BaritoneCompat.isAvailable()) {
-                  SchematicTarget var8 = this.schematicManager.nearestMissingForNavigation(this.tick, var1.allBlocks());
+               if (this.scope == null && placementConfig.baritoneWalk() && BaritoneCompat.isAvailable()) {
+                  SchematicTarget var8 = this.schematicManager.nearestMissingForNavigation(this.tick, placementConfig.allBlocks());
                   if (var8 != null) {
                      BlockPos var9 = var8.pos();
                      if (!var9.equals(this.lastNavTarget)) {
                         this.lastNavTarget = var9;
-                        int var10 = Math.max(1, (int)var1.auraRange() - 1);
+                        int var10 = Math.max(1, (int)placementConfig.auraRange() - 1);
                         BaritoneCompat.goNear(var9, var10);
-                        this.listener.feedback("baritone-nav", "Walking to " + var9.method_23854(), 40);
+                        this.listener.feedback("baritone-nav", "Walking to " + var9.toShortString(), 40);
                      }
                   } else if (this.lastNavTarget != null) {
                      BaritoneCompat.cancel();
@@ -314,39 +313,36 @@ public final class PlacementManager {
                }
 
                BlockPos var3 = this.placementTarget.targetPos();
-               BlockState var4 = var2.method_8320(var3);
-               BlockState var5 = this.mc.field_1687.method_8320(var3);
+               BlockState var4 = var2.getBlockState(var3);
+               BlockState var5 = this.mc.world.getBlockState(var3);
                TargetStatus var6 = BlockStateUtil.classify(var4, var5);
                this.target = new SchematicTarget(
-                  var3, SchematicBlockState.of(var4), var5, var6, var3.method_46558().method_1025(this.mc.field_1724.method_33571())
+                  var3, SchematicBlockState.of(var4), var5, var6, var3.toCenterPos().squaredDistanceTo(this.mc.player.getEyePos())
                );
                Item var7 = BlockStateUtil.requiredItem(this.target.expected().state());
                if (var7 == null) {
                   this.listener.feedback("unsupported-" + this.target.expected().blockId(), "No placeable item for: " + this.target.expected().blockId(), 100);
-                  this.blockedUntil.put(this.target.pos().method_10063(), this.tick + 1L);
+                  this.blockedUntil.put(this.target.pos().asLong(), this.tick + 1L);
                   this.schematicManager.invalidate();
                   this.target = null;
                   this.placementTarget = null;
                   this.state = PlacementState.FIND_TARGET;
                } else {
-                  this.inventoryPick = this.inventoryManager.prepare(var1.inventoryPickSource(), var7, this.tick, this.scope != null);
+                  this.inventoryPick = this.inventoryManager.prepare(placementConfig.inventoryPickSource(), var7, this.tick, this.scope != null);
                   if (this.inventoryPick.status() != InventoryPickResult.Status.WAITING) {
                      if (this.inventoryPick.status() == InventoryPickResult.Status.MISSING) {
-                        this.listener
-                           .feedback(
-                              "missing-item-" + Registries.field_41178.method_10221(var7), "Missing item: " + Registries.field_41178.method_10221(var7), 100
-                           );
-                        this.blockedUntil.put(this.target.pos().method_10063(), this.tick + 1L);
+                        this.listener.feedback("missing-item-" + Registries.ITEM.getId(var7), "Missing item: " + Registries.ITEM.getId(var7), 100);
+                        this.blockedUntil.put(this.target.pos().asLong(), this.tick + 1L);
                         this.schematicManager.invalidate();
                         this.target = null;
                         this.inventoryPick = null;
                         this.placementTarget = null;
                         this.state = PlacementState.FIND_TARGET;
                      } else {
-                        this.placeHand = Hand.field_5808;
+                        this.placeHand = Hand.MAIN_HAND;
                         if (this.scope != null) {
-                           if (this.inventoryPick.hand() == Hand.field_5810) {
-                              this.placeHand = Hand.field_5810;
+                           if (this.inventoryPick.hand() == Hand.OFF_HAND) {
+                              this.placeHand = Hand.OFF_HAND;
                            } else {
                               if (this.inventoryPick.slot() < 0 || this.inventoryPick.slot() >= 9) {
                                  this.state = PlacementState.FIND_TARGET;
@@ -357,7 +353,7 @@ public final class PlacementManager {
                            }
                         }
 
-                        this.debug(var1, "target-selected");
+                        this.debug(placementConfig, "target-selected");
                         this.state = PlacementState.CALCULATE_ROTATION;
                      }
                   }
@@ -367,26 +363,24 @@ public final class PlacementManager {
       }
    }
 
-   private void prepareRotation(PlacementConfig var1) {
-      if (this.mc.field_1724 != null && this.placementTarget != null && this.mc.field_1761 != null) {
-         ClientPlayerEntity var3 = this.mc.field_1724;
-         boolean var2 = Clicks.usesClick((World)this.mc.field_1687, this.placementTarget.neighborPos(), this.scope != null) || this.placementTarget.sneak();
+   private void prepareRotation(PlacementConfig placementConfig) {
+      if (this.mc.player != null && this.placementTarget != null && this.mc.interactionManager != null) {
+         ClientPlayerEntity var3 = this.mc.player;
+         boolean var2 = Clicks.usesClick(this.mc.world, this.placementTarget.neighborPos(), this.scope != null) || this.placementTarget.sneak();
          if (this.scope != null) {
-            this.mc.field_1690.field_1832.method_23481(var2);
+            this.mc.options.sneakKey.setPressed(var2);
             this.sneakPressed = var2;
-            if (var3.method_5715() != var2 || this.shiftSteady < 1) {
+            if (var3.isSneaking() != var2 || this.shiftSteady < 1) {
                if (++this.sneakWait > 20) {
                   if (Boolean.getBoolean("easyplace.builder.debug")) {
                      EasyPlace.LOG
                         .info(
                            "[builder] sneak never settled: want {} shift {} key {} steady {} target {}",
-                           new Object[]{
-                              var2,
-                              var3.method_5715(),
-                              this.mc.field_1690.field_1832.method_1434(),
-                              this.shiftSteady,
-                              this.placementTarget.targetPos().method_23854()
-                           }
+                           var2,
+                           var3.isSneaking(),
+                           this.mc.options.sneakKey.isPressed(),
+                           this.shiftSteady,
+                           this.placementTarget.targetPos().toShortString()
                         );
                   }
 
@@ -395,23 +389,23 @@ public final class PlacementManager {
 
                return;
             }
-         } else if (var2 && !var3.method_5715()) {
+         } else if (var2 && !var3.isSneaking()) {
             return;
          }
 
          this.sneakWait = 0;
-         if (this.placeHand == Hand.field_5808 && var3.method_31548().method_67532() != this.placementTarget.hotbarSlot()) {
-            var3.method_31548().method_61496(this.placementTarget.hotbarSlot());
+         if (this.placeHand == Hand.MAIN_HAND && var3.getInventory().getSelectedSlot() != this.placementTarget.hotbarSlot()) {
+            var3.getInventory().setSelectedSlot(this.placementTarget.hotbarSlot());
          }
 
-         if (var1.rotationSpoof()) {
+         if (placementConfig.rotationSpoof()) {
             this.zeroMouseDeltas();
             float var5 = this.placementTarget.yaw();
             float var6 = this.placementTarget.pitch();
-            float var7 = var3.method_36454();
-            float var8 = MathHelper.method_15393(var5 - var7);
+            float var7 = var3.getYaw();
+            float var8 = MathHelper.wrapDegrees(var5 - var7);
             float var9 = var7 + var8;
-            float var10 = Math.abs(var6 - (Float.isNaN(this.lastSentPitch) ? var3.method_36455() : this.lastSentPitch));
+            float var10 = Math.abs(var6 - (Float.isNaN(this.lastSentPitch) ? var3.getPitch() : this.lastSentPitch));
             float var11 = Math.abs(var8);
             this.rotationTicksRemaining = !(var10 > 15.0F) && !(var11 > 45.0F) ? 0 : 1;
             this.lastYawDelta = var8;
@@ -421,119 +415,115 @@ public final class PlacementManager {
             }
 
             this.lastSentPitch = var6;
-            var3.method_36456(var9);
-            var3.method_36457(var6);
+            var3.setYaw(var9);
+            var3.setPitch(var6);
             this.state = PlacementState.WAIT_ROTATION;
          } else {
             this.state = PlacementState.EXECUTE_PLACE;
          }
 
-         this.debug(var1, "rotation-prepared");
+         this.debug(placementConfig, "rotation-prepared");
       } else {
          this.failCurrent();
       }
    }
 
-   private void startTurn(float var1, float var2) {
-      this.turnYaw = var1;
-      this.turnPitch = var2;
+   private void startTurn(float f, float g) {
+      this.turnYaw = f;
+      this.turnPitch = g;
       this.turning = true;
       this.state = PlacementState.WAIT_ROTATION;
    }
 
-   private boolean turnTowards(ClientPlayerEntity var1) {
+   private boolean turnTowards(ClientPlayerEntity clientPlayerEntity) {
       this.zeroMouseDeltas();
-      float var2 = MathHelper.method_15393(this.turnYaw - var1.method_36454());
-      float var3 = this.turnPitch - var1.method_36455();
+      float var2 = MathHelper.wrapDegrees(this.turnYaw - clientPlayerEntity.getYaw());
+      float var3 = this.turnPitch - clientPlayerEntity.getPitch();
       if (Math.abs(var2) < 1.0F && Math.abs(var3) < 1.0F) {
-         var1.method_36456(var1.method_36454() + var2);
-         var1.method_36457(this.turnPitch);
+         clientPlayerEntity.setYaw(clientPlayerEntity.getYaw() + var2);
+         clientPlayerEntity.setPitch(this.turnPitch);
          this.lastSentPitch = this.turnPitch;
          return true;
       } else {
          float var4 = 0.42F * (0.85F + this.hand.nextFloat() * 0.3F);
-         float var5 = Math.abs(var2) < 1.0F ? var2 : MathHelper.method_15363(var2 * var4, -20.0F, 20.0F);
-         float var6 = Math.abs(var3) < 1.0F ? var3 : MathHelper.method_15363(var3 * var4, -20.0F, 20.0F);
-         var1.method_36456(var1.method_36454() + var5);
-         var1.method_36457(MathHelper.method_15363(var1.method_36455() + var6, -90.0F, 90.0F));
+         float var5 = Math.abs(var2) < 1.0F ? var2 : MathHelper.clamp(var2 * var4, -20.0F, 20.0F);
+         float var6 = Math.abs(var3) < 1.0F ? var3 : MathHelper.clamp(var3 * var4, -20.0F, 20.0F);
+         clientPlayerEntity.setYaw(clientPlayerEntity.getYaw() + var5);
+         clientPlayerEntity.setPitch(MathHelper.clamp(clientPlayerEntity.getPitch() + var6, -90.0F, 90.0F));
          return false;
       }
    }
 
    private void zeroMouseDeltas() {
-      if (this.mc.field_1729 != null) {
-         AccessorMouseHandler var1 = (AccessorMouseHandler)this.mc.field_1729;
+      if (this.mc.mouse != null) {
+         AccessorMouseHandler var1 = (AccessorMouseHandler)this.mc.mouse;
          var1.easyplace$setAccumulatedDX(0.0);
          var1.easyplace$setAccumulatedDY(0.0);
       }
    }
 
-   private void executePlace(PlacementConfig var1) {
-      if (this.mc.field_1724 != null && this.placementTarget != null && this.mc.field_1761 != null) {
-         ClientPlayerEntity var2 = this.mc.field_1724;
-         if (var2.method_5829().method_994(new Box(this.placementTarget.targetPos()))) {
+   private void executePlace(PlacementConfig placementConfig) {
+      if (this.mc.player != null && this.placementTarget != null && this.mc.interactionManager != null) {
+         ClientPlayerEntity var2 = this.mc.player;
+         if (var2.getBoundingBox().intersects(new Box(this.placementTarget.targetPos()))) {
             this.traceFail("body in the cell");
             this.failCurrent();
             this.noCandidateUntil = this.tick + 2L;
          } else {
-            double var3 = var2.method_55754();
-            BlockHitResult var5 = PlacementUtil.rayTraceTowards(var2, var2.method_36454(), var2.method_36455(), var3);
+            double var3 = var2.getBlockInteractionRange();
+            BlockHitResult var5 = PlacementUtil.rayTraceTowards(var2, var2.getYaw(), var2.getPitch(), var3);
             if (var5 != null
-               && var5.method_17783() == Type.field_1332
-               && var5.method_17777().equals(this.placementTarget.neighborPos())
-               && var5.method_17780() == this.placementTarget.clickedFace()) {
+               && var5.getType() == Type.BLOCK
+               && var5.getBlockPos().equals(this.placementTarget.neighborPos())
+               && var5.getSide() == this.placementTarget.clickedFace()) {
                if (this.scope == null
-                  || this.placeHand != Hand.field_5808
+                  || this.placeHand != Hand.MAIN_HAND
                   || this.target == null
                   || this.dependencyManager
                      .verify(
                         this.target.expected().state(),
                         this.placementTarget.targetPos(),
                         var5,
-                        var2.method_36454(),
-                        var2.method_36455(),
-                        var2.method_31548().method_67532(),
-                        var2.method_5715()
+                        var2.getYaw(),
+                        var2.getPitch(),
+                        var2.getInventory().getSelectedSlot(),
+                        var2.isSneaking()
                      )) {
-                  BlockState var12 = this.mc.field_1687.method_8320(this.placementTarget.targetPos());
-                  ActionResult var13 = this.mc.field_1761.method_2896(var2, this.placeHand, var5);
-                  if (Boolean.getBoolean("easyplace.builder.debug")
-                     && this.target != null
-                     && this.target.expected().state().method_26204() instanceof ChestBlock) {
+                  BlockState var12 = this.mc.world.getBlockState(this.placementTarget.targetPos());
+                  ActionResult var13 = this.mc.interactionManager.interactBlock(var2, this.placeHand, var5);
+                  if (Boolean.getBoolean("easyplace.builder.debug") && this.target != null && this.target.expected().state().getBlock() instanceof ChestBlock) {
                      EasyPlace.LOG
                         .info(
                            "[builder] chest at {} want {} got {} (was {}) shift={} sneakFlag={} against {} face {}",
-                           new Object[]{
-                              this.placementTarget.targetPos().method_23854(),
-                              this.target.expected().state(),
-                              this.mc.field_1687.method_8320(this.placementTarget.targetPos()),
-                              var12,
-                              var2.method_5715(),
-                              this.placementTarget.sneak(),
-                              this.placementTarget.neighborPos().method_23854(),
-                              var5.method_17780()
-                           }
+                           this.placementTarget.targetPos().toShortString(),
+                           this.target.expected().state(),
+                           this.mc.world.getBlockState(this.placementTarget.targetPos()),
+                           var12,
+                           var2.isSneaking(),
+                           this.placementTarget.sneak(),
+                           this.placementTarget.neighborPos().toShortString(),
+                           var5.getSide()
                         );
                   }
 
                   this.releaseSneak();
-                  if (var13.method_23665()) {
-                     var2.method_6104(this.placeHand);
+                  if (var13.isAccepted()) {
+                     var2.swingHand(this.placeHand);
                      this.ackManager
                         .begin(
                            this.target,
                            this.tick,
                            40,
                            this.retry,
-                           BlockAcks.lastSent(this.mc.field_1687),
-                           this.mc.field_1687.method_8320(this.placementTarget.targetPos())
+                           BlockAcks.lastSent(this.mc.world),
+                           this.mc.world.getBlockState(this.placementTarget.targetPos())
                         );
                      this.ackResult = ServerAckManager.Result.WAITING;
                      this.state = PlacementState.WAIT_ACK;
-                     this.debug(var1, "placement-sent");
+                     this.debug(placementConfig, "placement-sent");
                   } else {
                      this.traceFail("use rejected: " + var13);
-                     this.debug(var1, "placement-rejected");
+                     this.debug(placementConfig, "placement-rejected");
                      this.failCurrent();
                      this.noCandidateUntil = this.tick + 2L;
                   }
@@ -544,8 +534,8 @@ public final class PlacementManager {
                      this.startTurn(var11[0], var11[1]);
                   } else {
                      this.zeroMouseDeltas();
-                     var2.method_36456(var2.method_36454() + MathHelper.method_15393(var11[0] - var2.method_36454()));
-                     var2.method_36457(var11[1]);
+                     var2.setYaw(var2.getYaw() + MathHelper.wrapDegrees(var11[0] - var2.getYaw()));
+                     var2.setPitch(var11[1]);
                      this.lastSentPitch = var11[1];
                      this.rotationTicksRemaining = 0;
                      this.state = PlacementState.WAIT_ROTATION;
@@ -553,30 +543,25 @@ public final class PlacementManager {
                } else {
                   this.traceFail(
                      "would not come out right, holding "
-                        + var2.method_31548().method_5438(var2.method_31548().method_67532())
+                        + var2.getInventory().getStack(var2.getInventory().getSelectedSlot())
                         + " shift "
-                        + var2.method_5715()
+                        + var2.isSneaking()
                         + " face "
-                        + var5.method_17780()
+                        + var5.getSide()
                         + " hit "
-                        + var5.method_17784()
+                        + var5.getPos()
                         + " planned "
                         + this.placementTarget.hitCursor()
                         + " eye "
                         + PlacementUtil.getEyePos(var2)
                         + " yaw "
-                        + var2.method_36454()
+                        + var2.getYaw()
                         + " pitch "
-                        + var2.method_36455()
+                        + var2.getPitch()
                         + " got "
                         + this.dependencyManager
                            .wouldBe(
-                              this.placementTarget.targetPos(),
-                              var5,
-                              var2.method_36454(),
-                              var2.method_36455(),
-                              var2.method_31548().method_67532(),
-                              var2.method_5715()
+                              this.placementTarget.targetPos(), var5, var2.getYaw(), var2.getPitch(), var2.getInventory().getSelectedSlot(), var2.isSneaking()
                            )
                   );
                   this.failCurrent();
@@ -595,22 +580,22 @@ public final class PlacementManager {
                   float[] var8 = PlacementUtil.calcRotation(var6, var7);
                   BlockHitResult var9 = PlacementUtil.rayTraceTowards(var2, var8[0], var8[1], var3);
                   if (var9 != null
-                     && var9.method_17783() == Type.field_1332
-                     && var9.method_17777().equals(this.placementTarget.neighborPos())
-                     && var9.method_17780() == this.placementTarget.clickedFace()) {
+                     && var9.getType() == Type.BLOCK
+                     && var9.getBlockPos().equals(this.placementTarget.neighborPos())
+                     && var9.getSide() == this.placementTarget.clickedFace()) {
                      if (this.scope != null) {
                         this.startTurn(var8[0], var8[1]);
                      } else {
                         this.zeroMouseDeltas();
-                        float var10 = MathHelper.method_15393(var8[0] - var2.method_36454());
-                        var2.method_36456(var2.method_36454() + var10);
-                        var2.method_36457(var8[1]);
+                        float var10 = MathHelper.wrapDegrees(var8[0] - var2.getYaw());
+                        var2.setYaw(var2.getYaw() + var10);
+                        var2.setPitch(var8[1]);
                         this.lastSentPitch = var8[1];
                         this.rotationTicksRemaining = 0;
                         this.state = PlacementState.WAIT_ROTATION;
                      }
                   } else {
-                     this.traceFail("aim hits " + (var9 == null ? "nothing" : var9.method_17777().method_23854() + " " + var9.method_17780()));
+                     this.traceFail("aim hits " + (var9 == null ? "nothing" : var9.getBlockPos().toShortString() + " " + var9.getSide()));
                      this.failCurrent();
                      this.noCandidateUntil = this.tick + 1L;
                   }
@@ -622,8 +607,8 @@ public final class PlacementManager {
       }
    }
 
-   private void waitForAck(PlacementConfig var1) {
-      this.ackResult = this.ackManager.poll(this.mc.field_1687, this.tick);
+   private void waitForAck(PlacementConfig placementConfig) {
+      this.ackResult = this.ackManager.poll(this.mc.world, this.tick);
       if (this.ackResult != ServerAckManager.Result.WAITING) {
          if (this.ackResult == ServerAckManager.Result.CONFIRMED) {
             if (this.slowdown > 0 && ++this.goodInRow >= 10) {
@@ -631,10 +616,10 @@ public final class PlacementManager {
                this.goodInRow = 0;
             }
 
-            this.listener.feedback("confirmed-" + this.target.pos().method_10063(), "Placement confirmed: " + this.target.pos().method_23854(), 1);
-            this.debug(var1, "confirmed");
-            this.recentlyPlaced.put(this.target.pos().method_10063(), this.tick + 1L);
-            this.failsAt.remove(this.target.pos().method_10063());
+            this.listener.feedback("confirmed-" + this.target.pos().asLong(), "Placement confirmed: " + this.target.pos().toShortString(), 1);
+            this.debug(placementConfig, "confirmed");
+            this.recentlyPlaced.put(this.target.pos().asLong(), this.tick + 1L);
+            this.failsAt.remove(this.target.pos().asLong());
             this.reaimed = false;
             this.placedCount++;
             if (this.outcome != null) {
@@ -658,9 +643,9 @@ public final class PlacementManager {
                EasyPlace.LOG
                   .info(
                      "[builder] server {} the block at {}, slowing to {} extra ticks",
-                     new Object[]{
-                        this.ackResult == ServerAckManager.Result.REFUSED ? "refused" : "never answered", this.target.pos().method_23854(), this.slowdown
-                     }
+                     this.ackResult == ServerAckManager.Result.REFUSED ? "refused" : "never answered",
+                     this.target.pos().toShortString(),
+                     this.slowdown
                   );
             }
 
@@ -669,8 +654,8 @@ public final class PlacementManager {
                this.ackManager.clear();
                this.placementTarget = null;
                this.state = PlacementState.CALCULATE_ROTATION;
-               this.listener.feedback("retry-" + this.target.pos().method_10063(), "Placement ACK timeout; retry " + this.retry + "/2", 10);
-               this.debug(var1, "ack-timeout-retry");
+               this.listener.feedback("retry-" + this.target.pos().asLong(), "Placement ACK timeout; retry " + this.retry + "/2", 10);
+               this.debug(placementConfig, "ack-timeout-retry");
             } else {
                this.failCurrent();
             }
@@ -678,29 +663,31 @@ public final class PlacementManager {
       }
    }
 
-   private static PlacementTarget withSlot(PlacementTarget var0, int var1) {
-      return var0.hotbarSlot() == var1
-         ? var0
+   private static PlacementTarget withSlot(PlacementTarget placementTarget, int i) {
+      return placementTarget.hotbarSlot() == i
+         ? placementTarget
          : new PlacementTarget(
-            var0.targetPos(),
-            var0.neighborPos(),
-            var0.placeSide(),
-            var0.clickedFace(),
-            var1,
-            var0.yaw(),
-            var0.pitch(),
-            var0.score(),
-            var0.hitCursor(),
-            var0.sneak()
+            placementTarget.targetPos(),
+            placementTarget.neighborPos(),
+            placementTarget.placeSide(),
+            placementTarget.clickedFace(),
+            i,
+            placementTarget.yaw(),
+            placementTarget.pitch(),
+            placementTarget.score(),
+            placementTarget.hitCursor(),
+            placementTarget.sneak()
          );
    }
 
-   private void traceFail(String var1) {
+   private void traceFail(String string) {
       if (Boolean.getBoolean("easyplace.builder.debug") && this.placementTarget != null) {
          EasyPlace.LOG
             .info(
                "[builder] place fail {} {}: {}",
-               new Object[]{this.placementTarget.targetPos().method_23854(), this.target == null ? "?" : this.target.expected().state(), var1}
+               this.placementTarget.targetPos().toShortString(),
+               this.target == null ? "?" : this.target.expected().state(),
+               string
             );
       }
    }
@@ -709,14 +696,14 @@ public final class PlacementManager {
       if (this.sneakPressed) {
          this.sneakPressed = false;
          this.sneakWait = 0;
-         this.mc.field_1690.field_1832.method_23481(false);
+         this.mc.options.sneakKey.setPressed(false);
       }
    }
 
    private void failCurrent() {
       this.releaseSneak();
       if (this.target != null) {
-         long var1 = this.target.pos().method_10063();
+         long var1 = this.target.pos().asLong();
          int var3 = this.failsAt.merge(var1, 1, Integer::sum);
          if (var3 >= 3) {
             this.blockedUntil.put(var1, this.tick + Math.min(600, 20 << Math.min(5, var3 - 3)));
@@ -751,11 +738,11 @@ public final class PlacementManager {
       this.schematicManager.clear();
    }
 
-   private void debug(PlacementConfig var1, String var2) {
-      if (var1.debug()) {
+   private void debug(PlacementConfig placementConfig, String string) {
+      if (placementConfig.debug()) {
          float var3 = this.placementTarget != null ? this.placementTarget.yaw() : 0.0F / 0.0F;
          float var4 = this.placementTarget != null ? this.placementTarget.pitch() : 0.0F / 0.0F;
-         EasyPlaceDebug.log(var2, this.state, this.placementTarget, new float[]{var3, var4}, this.ackResult, this.retry);
+         EasyPlaceDebug.log(string, this.state, this.placementTarget, new float[]{var3, var4}, this.ackResult, this.retry);
       }
    }
 
@@ -765,8 +752,8 @@ public final class PlacementManager {
 
    @Environment(EnvType.CLIENT)
    public interface Outcome {
-      void placed(BlockPos var1);
+      void placed(BlockPos blockPos);
 
-      void failed(BlockPos var1);
+      void failed(BlockPos blockPos);
    }
 }

@@ -16,10 +16,10 @@ public abstract class MixinNoInvLeakEquipment {
    }
 
    @ModifyReturnValue(
-      method = {"method_6118"},
+      method = {"getEquippedStack"},
       at = {@At("RETURN")}
    )
-   private ItemStack efn$noInvLeakBareModel(ItemStack var1) {
-      return NoInvLeakModule.modelItem((LivingEntity)this, var1);
+   private ItemStack efn$noInvLeakBareModel(ItemStack itemStack) {
+      return NoInvLeakModule.modelItem((LivingEntity)this, itemStack);
    }
 }

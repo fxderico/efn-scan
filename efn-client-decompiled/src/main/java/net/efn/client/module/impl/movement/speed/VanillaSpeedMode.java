@@ -13,55 +13,55 @@ import net.minecraft.util.math.Vec3d;
 public final class VanillaSpeedMode extends SpeedMode {
    private static final double DIAGONAL = 1.0 / Math.sqrt(2.0);
 
-   public VanillaSpeedMode(SpeedModule var1) {
-      super(var1);
+   public VanillaSpeedMode(SpeedModule speedModule) {
+      super(speedModule);
    }
 
    @Override
-   public Vec3d onMove(ClientPlayerEntity var1, Vec3d var2) {
-      Vec3d var3 = horizontalVelocity(var1, this.settings.vanillaSpeed());
-      double var4 = var3.field_1352;
-      double var6 = var3.field_1350;
-      StatusEffectInstance var8 = var1.method_6112(StatusEffects.field_5904);
+   public Vec3d onMove(ClientPlayerEntity clientPlayerEntity, Vec3d vec3d) {
+      Vec3d var3 = horizontalVelocity(clientPlayerEntity, this.settings.vanillaSpeed());
+      double var4 = var3.x;
+      double var6 = var3.z;
+      StatusEffectInstance var8 = clientPlayerEntity.getStatusEffect(StatusEffects.SPEED);
       if (var8 != null) {
-         double var9 = (var8.method_5578() + 1) * 0.205;
+         double var9 = (var8.getAmplifier() + 1) * 0.205;
          var4 += var4 * var9;
          var6 += var6 * var9;
       }
 
-      return new Vec3d(var4, var2.field_1351, var6);
+      return new Vec3d(var4, vec3d.y, var6);
    }
 
-   private static Vec3d horizontalVelocity(ClientPlayerEntity var0, double var1) {
-      float var3 = var0.method_36454();
-      Vec3d var4 = Vec3d.method_1030(0.0F, var3);
-      Vec3d var5 = Vec3d.method_1030(0.0F, var3 + 90.0F);
-      PlayerInput var6 = var0.field_3913.field_54155;
+   private static Vec3d horizontalVelocity(ClientPlayerEntity clientPlayerEntity, double d) {
+      float var3 = clientPlayerEntity.getYaw();
+      Vec3d var4 = Vec3d.fromPolar(0.0F, var3);
+      Vec3d var5 = Vec3d.fromPolar(0.0F, var3 + 90.0F);
+      PlayerInput var6 = clientPlayerEntity.input.playerInput;
       double var7 = 0.0;
       double var9 = 0.0;
       boolean var11 = false;
-      if (var6.comp_3159()) {
-         var7 += var4.field_1352 / 20.0 * var1;
-         var9 += var4.field_1350 / 20.0 * var1;
+      if (var6.forward()) {
+         var7 += var4.x / 20.0 * d;
+         var9 += var4.z / 20.0 * d;
          var11 = true;
       }
 
-      if (var6.comp_3160()) {
-         var7 -= var4.field_1352 / 20.0 * var1;
-         var9 -= var4.field_1350 / 20.0 * var1;
+      if (var6.backward()) {
+         var7 -= var4.x / 20.0 * d;
+         var9 -= var4.z / 20.0 * d;
          var11 = true;
       }
 
       boolean var12 = false;
-      if (var6.comp_3162()) {
-         var7 += var5.field_1352 / 20.0 * var1;
-         var9 += var5.field_1350 / 20.0 * var1;
+      if (var6.right()) {
+         var7 += var5.x / 20.0 * d;
+         var9 += var5.z / 20.0 * d;
          var12 = true;
       }
 
-      if (var6.comp_3161()) {
-         var7 -= var5.field_1352 / 20.0 * var1;
-         var9 -= var5.field_1350 / 20.0 * var1;
+      if (var6.left()) {
+         var7 -= var5.x / 20.0 * d;
+         var9 -= var5.z / 20.0 * d;
          var12 = true;
       }
 

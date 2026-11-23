@@ -10,25 +10,25 @@ final class SkyMips {
    private SkyMips() {
    }
 
-   static int size(int var0, int var1) {
-      return Math.max(1, var0 >> var1);
+   static int size(int i, int j) {
+      return Math.max(1, i >> j);
    }
 
-   static int[][] chain(int[] var0, int var1, int var2) {
+   static int[][] chain(int[] is, int i, int j) {
       int var3 = 1;
 
-      while (var3 < 6 && Math.min(var1, var2) >> var3 >= 1) {
+      while (var3 < 6 && Math.min(i, j) >> var3 >= 1) {
          var3++;
       }
 
       int[][] var4 = new int[var3][];
-      var4[0] = var0;
+      var4[0] = is;
 
       for (int var5 = 1; var5 < var3; var5++) {
-         int var6 = size(var1, var5 - 1);
-         int var7 = size(var2, var5 - 1);
-         int var8 = size(var1, var5);
-         int var9 = size(var2, var5);
+         int var6 = size(i, var5 - 1);
+         int var7 = size(j, var5 - 1);
+         int var8 = size(i, var5);
+         int var9 = size(j, var5);
          int[] var10 = var4[var5 - 1];
          int[] var11 = new int[var8 * var9];
 

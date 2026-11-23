@@ -15,26 +15,26 @@ public abstract class MixinTridentItem {
    }
 
    @ModifyExpressionValue(
-      method = {"method_7836", "method_7840"},
+      method = {"use", "onStoppedUsing"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_1657;method_5721()Z"
+         target = "Lnet/minecraft/entity/player/PlayerEntity;isTouchingWaterOrRain()Z"
       )},
       require = 0
    )
-   private boolean efn$allowOutOfWater(boolean var1) {
-      return var1 || TridentUtilModule.allowOutOfWater();
+   private boolean efn$allowOutOfWater(boolean bl) {
+      return bl || TridentUtilModule.allowOutOfWater();
    }
 
    @ModifyExpressionValue(
-      method = {"method_7840"},
+      method = {"onStoppedUsing"},
       at = {@At(
          value = "CONSTANT",
          args = {"intValue=10"}
       )},
       require = 0
    )
-   private int efn$scaleMinCharge(int var1) {
-      return TridentUtilModule.minChargeTicks(var1);
+   private int efn$scaleMinCharge(int i) {
+      return TridentUtilModule.minChargeTicks(i);
    }
 }

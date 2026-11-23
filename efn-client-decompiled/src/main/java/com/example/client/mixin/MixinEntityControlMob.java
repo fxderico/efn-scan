@@ -15,10 +15,10 @@ public abstract class MixinEntityControlMob {
    }
 
    @ModifyReturnValue(
-      method = {"method_66672"},
+      method = {"hasSaddleEquipped"},
       at = {@At("RETURN")}
    )
-   private boolean efn$entityControlSpoofSaddle(boolean var1) {
-      return var1 || EntityControlModule.spoofSaddle();
+   private boolean efn$entityControlSpoofSaddle(boolean bl) {
+      return bl || EntityControlModule.spoofSaddle();
    }
 }

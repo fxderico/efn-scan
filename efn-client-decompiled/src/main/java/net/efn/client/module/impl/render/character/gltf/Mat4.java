@@ -19,7 +19,7 @@ final class Mat4 {
       return var0;
    }
 
-   static float[] mul(float[] var0, float[] var1) {
+   static float[] mul(float[] fs, float[] gs) {
       float[] var2 = new float[16];
 
       for (int var3 = 0; var3 < 4; var3++) {
@@ -27,7 +27,7 @@ final class Mat4 {
             float var5 = 0.0F;
 
             for (int var6 = 0; var6 < 4; var6++) {
-               var5 += var0[var6 * 4 + var4] * var1[var3 * 4 + var6];
+               var5 += fs[var6 * 4 + var4] * gs[var3 * 4 + var6];
             }
 
             var2[var3 * 4 + var4] = var5;
@@ -37,14 +37,14 @@ final class Mat4 {
       return var2;
    }
 
-   static float[] local(JsonObject var0) {
-      JsonArray var2 = GltfFile.array(var0, "matrix");
+   static float[] local(JsonObject jsonObject) {
+      JsonArray var2 = GltfFile.array(jsonObject, "matrix");
       if (var2.size() != 16) {
-         float[] var10 = vec(var0, "translation", 0.0F, 3);
-         float[] var11 = vec(var0, "scale", 1.0F, 3);
+         float[] var10 = vec(jsonObject, "translation", 0.0F, 3);
+         float[] var11 = vec(jsonObject, "scale", 1.0F, 3);
          float[] var1;
-         if (var0.has("rotation")) {
-            var1 = vec(var0, "rotation", 0.0F, 4);
+         if (jsonObject.has("rotation")) {
+            var1 = vec(jsonObject, "rotation", 0.0F, 4);
          } else {
             float[] var5 = new float[]{0.0F, 0.0F, 0.0F, 0.0F};
             var1 = var5;
@@ -84,19 +84,19 @@ final class Mat4 {
       }
    }
 
-   private static float[] vec(JsonObject var0, String var1, float var2, int var3) {
-      float[] var4 = new float[var3];
-      JsonArray var5 = GltfFile.array(var0, var1);
+   private static float[] vec(JsonObject jsonObject, String string, float f, int i) {
+      float[] var4 = new float[i];
+      JsonArray var5 = GltfFile.array(jsonObject, string);
 
-      for (int var6 = 0; var6 < var3; var6++) {
-         var4[var6] = var6 < var5.size() ? var5.get(var6).getAsFloat() : var2;
+      for (int var6 = 0; var6 < i; var6++) {
+         var4[var6] = var6 < var5.size() ? var5.get(var6).getAsFloat() : f;
       }
 
       return var4;
    }
 
-   static float[] rollAbout(float var0, float[] var1) {
-      double var2 = Math.toRadians(var0);
+   static float[] rollAbout(float f, float[] fs) {
+      double var2 = Math.toRadians(f);
       float var4 = (float)Math.cos(var2);
       float var5 = (float)Math.sin(var2);
       float[] var6 = identity();
@@ -104,49 +104,43 @@ final class Mat4 {
       var6[1] = var5;
       var6[4] = -var5;
       var6[5] = var4;
-      var6[12] = var1[0] - var4 * var1[0] + var5 * var1[1];
-      var6[13] = var1[1] - var5 * var1[0] - var4 * var1[1];
+      var6[12] = fs[0] - var4 * fs[0] + var5 * fs[1];
+      var6[13] = fs[1] - var5 * fs[0] - var4 * fs[1];
       var6[14] = 0.0F;
       return var6;
    }
 
-   static float[] point(float[] var0, float var1, float var2, float var3) {
-      return new float[]{
-         var0[0] * var1 + var0[4] * var2 + var0[8] * var3 + var0[12],
-         var0[1] * var1 + var0[5] * var2 + var0[9] * var3 + var0[13],
-         var0[2] * var1 + var0[6] * var2 + var0[10] * var3 + var0[14]
-      };
+   static float[] point(float[] fs, float f, float g, float h) {
+      return new float[]{fs[0] * f + fs[4] * g + fs[8] * h + fs[12], fs[1] * f + fs[5] * g + fs[9] * h + fs[13], fs[2] * f + fs[6] * g + fs[10] * h + fs[14]};
    }
 
-   static float[] dir(float[] var0, float var1, float var2, float var3) {
-      return new float[]{
-         var0[0] * var1 + var0[4] * var2 + var0[8] * var3, var0[1] * var1 + var0[5] * var2 + var0[9] * var3, var0[2] * var1 + var0[6] * var2 + var0[10] * var3
-      };
+   static float[] dir(float[] fs, float f, float g, float h) {
+      return new float[]{fs[0] * f + fs[4] * g + fs[8] * h, fs[1] * f + fs[5] * g + fs[9] * h, fs[2] * f + fs[6] * g + fs[10] * h};
    }
 
-   static void normalise(float[] var0) {
-      float var1 = (float)Math.sqrt(var0[0] * var0[0] + var0[1] * var0[1] + var0[2] * var0[2]);
+   static void normalise(float[] fs) {
+      float var1 = (float)Math.sqrt(fs[0] * fs[0] + fs[1] * fs[1] + fs[2] * fs[2]);
       if (var1 < 1.0E-12F) {
-         var0[1] = 1.0F;
+         fs[1] = 1.0F;
       } else {
-         var0[0] /= var1;
-         var0[1] /= var1;
-         var0[2] /= var1;
+         fs[0] /= var1;
+         fs[1] /= var1;
+         fs[2] /= var1;
       }
    }
 
-   static float[] faceNormal(float[] var0, int var1, int var2, int var3) {
-      float var4 = var0[var2 * 3] - var0[var1 * 3];
-      float var5 = var0[var2 * 3 + 1] - var0[var1 * 3 + 1];
-      float var6 = var0[var2 * 3 + 2] - var0[var1 * 3 + 2];
-      float var7 = var0[var3 * 3] - var0[var1 * 3];
-      float var8 = var0[var3 * 3 + 1] - var0[var1 * 3 + 1];
-      float var9 = var0[var3 * 3 + 2] - var0[var1 * 3 + 2];
+   static float[] faceNormal(float[] fs, int i, int j, int k) {
+      float var4 = fs[j * 3] - fs[i * 3];
+      float var5 = fs[j * 3 + 1] - fs[i * 3 + 1];
+      float var6 = fs[j * 3 + 2] - fs[i * 3 + 2];
+      float var7 = fs[k * 3] - fs[i * 3];
+      float var8 = fs[k * 3 + 1] - fs[i * 3 + 1];
+      float var9 = fs[k * 3 + 2] - fs[i * 3 + 2];
       return new float[]{var5 * var9 - var6 * var8, var6 * var7 - var4 * var9, var4 * var8 - var5 * var7};
    }
 
-   static float area(float[] var0, int var1, int var2, int var3) {
-      float[] var4 = faceNormal(var0, var1, var2, var3);
+   static float area(float[] fs, int i, int j, int k) {
+      float[] var4 = faceNormal(fs, i, j, k);
       return (float)Math.sqrt(var4[0] * var4[0] + var4[1] * var4[1] + var4[2] * var4[2]) * 0.5F;
    }
 }

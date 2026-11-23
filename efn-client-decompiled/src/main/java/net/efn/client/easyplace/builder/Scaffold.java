@@ -19,48 +19,48 @@ final class Scaffold {
    private Scaffold() {
    }
 
-   static boolean item(ItemStack var0) {
-      return glass(var0) || var0.method_31573(ItemTags.field_15558);
+   static boolean item(ItemStack itemStack) {
+      return glass(itemStack) || itemStack.isIn(ItemTags.LEAVES);
    }
 
-   static boolean glass(ItemStack var0) {
-      Item var2 = var0.method_7909();
+   static boolean glass(ItemStack itemStack) {
+      Item var2 = itemStack.getItem();
       BlockItem var1;
-      return var2 instanceof BlockItem && (var1 = (BlockItem)var2).method_7711() instanceof TransparentBlock;
+      return var2 instanceof BlockItem && (var1 = (BlockItem)var2).getBlock() instanceof TransparentBlock;
    }
 
-   static boolean block(BlockState var0) {
-      return var0.method_26164(BlockTags.field_15503) || var0.method_26204() instanceof TransparentBlock;
+   static boolean block(BlockState blockState) {
+      return blockState.isIn(BlockTags.LEAVES) || blockState.getBlock() instanceof TransparentBlock;
    }
 
-   static int count(ClientPlayerEntity var0) {
+   static int count(ClientPlayerEntity clientPlayerEntity) {
       int var1 = 0;
-      PlayerInventory var2 = var0.method_31548();
+      PlayerInventory var2 = clientPlayerEntity.getInventory();
 
       for (int var3 = 0; var3 < 36; var3++) {
-         if (item(var2.method_5438(var3))) {
-            var1 += var2.method_5438(var3).method_7947();
+         if (item(var2.getStack(var3))) {
+            var1 += var2.getStack(var3).getCount();
          }
       }
 
-      if (item(var0.method_6079())) {
-         var1 += var0.method_6079().method_7947();
+      if (item(clientPlayerEntity.getOffHandStack())) {
+         var1 += clientPlayerEntity.getOffHandStack().getCount();
       }
 
       return var1;
    }
 
-   static boolean has(ClientPlayerEntity var0) {
-      return Hands.has(var0, Scaffold::item);
+   static boolean has(ClientPlayerEntity clientPlayerEntity) {
+      return Hands.has(clientPlayerEntity, Scaffold::item);
    }
 
-   static boolean hold(MinecraftClient var0, ClientPlayerEntity var1) {
-      if (Hands.has(var1, var0x -> var0x.method_31574(Items.field_8280))) {
-         return Hands.hold(var0, var1, var0x -> var0x.method_31574(Items.field_8280));
+   static boolean hold(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      if (Hands.has(clientPlayerEntity, itemStack -> itemStack.isOf(Items.GLASS))) {
+         return Hands.hold(minecraftClient, clientPlayerEntity, itemStack -> itemStack.isOf(Items.GLASS));
       } else {
-         return Hands.has(var1, var0x -> var0x.method_31573(ItemTags.field_15558))
-            ? Hands.hold(var0, var1, var0x -> var0x.method_31573(ItemTags.field_15558))
-            : Hands.hold(var0, var1, Scaffold::glass);
+         return Hands.has(clientPlayerEntity, itemStack -> itemStack.isIn(ItemTags.LEAVES))
+            ? Hands.hold(minecraftClient, clientPlayerEntity, itemStack -> itemStack.isIn(ItemTags.LEAVES))
+            : Hands.hold(minecraftClient, clientPlayerEntity, Scaffold::glass);
       }
    }
 }

@@ -10,6 +10,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Environment(EnvType.CLIENT)
 @Mixin({WorldRenderer.class})
 public interface AccessorPinkWaterLevelRenderer {
-   @Accessor("field_4112")
+   @Accessor("chunks")
    BuiltChunkStorage efn$pinkWaterViewArea();
 }

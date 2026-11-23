@@ -18,16 +18,18 @@ public final class ImGuiScreen extends Screen {
    private final EfnClickGui clickGui = new EfnClickGui();
 
    public ImGuiScreen() {
-      super(Text.method_43470("EFN"));
+      super(Text.literal("EFN"));
    }
 
-   protected void method_25426() {
-      super.method_25426();
+   @Override
+   protected void init() {
+      super.init();
       ImGuiManager.getInstance().activate(this.clickGui::render);
    }
 
-   public void method_25432() {
-      super.method_25432();
+   @Override
+   public void removed() {
+      super.removed();
       this.clickGui.handleEscape();
       ImGuiManager.getInstance().deactivate();
       ModuleConfigStore.getInstance().saveIfChanged();
@@ -35,29 +37,34 @@ public final class ImGuiScreen extends Screen {
       HudTheme.get().save();
    }
 
-   public void method_25420(DrawContext var1, int var2, int var3, float var4) {
+   @Override
+   public void renderBackground(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
       if (ThemeStore.get().menuBlur.get()) {
-         super.method_25420(var1, var2, var3, var4);
+         super.renderBackground(context, mouseX, mouseY, deltaTicks);
       }
    }
 
-   public void method_29638(List<Path> var1) {
-      this.clickGui.onFilesDropped(var1);
+   @Override
+   public void onFilesDropped(List<Path> paths) {
+      this.clickGui.onFilesDropped(paths);
    }
 
-   public void method_25394(DrawContext var1, int var2, int var3, float var4) {
-      ImGuiManager.getInstance().requestCursor(var1);
+   @Override
+   public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+      ImGuiManager.getInstance().requestCursor(context);
    }
 
-   public boolean method_25404(KeyInput var1) {
-      return var1.comp_4795() == 256 && this.clickGui.handleEscape() ? true : super.method_25404(var1);
+   @Override
+   public boolean keyPressed(KeyInput input) {
+      return input.key() == 256 && this.clickGui.handleEscape() ? true : super.keyPressed(input);
    }
 
    public boolean capturesKeys() {
       return this.clickGui.capturesKeys();
    }
 
-   public boolean method_25421() {
+   @Override
+   public boolean shouldPause() {
       return false;
    }
 }

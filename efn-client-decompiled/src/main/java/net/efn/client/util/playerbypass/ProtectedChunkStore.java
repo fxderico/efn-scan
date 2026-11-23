@@ -41,8 +41,8 @@ public final class ProtectedChunkStore {
    private static final Logger LOGGER = LoggerFactory.getLogger("EFN");
    private static final ProtectedChunkStore INSTANCE = new ProtectedChunkStore();
    private final Map<String, ProtectedChunkStore.Bucket> buckets = new HashMap<>();
-   private final Executor writer = Executors.newSingleThreadExecutor(var0 -> {
-      Thread var1 = new Thread(var0, "EFN Player Bypass saves");
+   private final Executor writer = Executors.newSingleThreadExecutor(runnable -> {
+      Thread var1 = new Thread(runnable, "EFN Player Bypass saves");
       var1.setDaemon(true);
       return var1;
    });
@@ -60,20 +60,20 @@ public final class ProtectedChunkStore {
       return INSTANCE;
    }
 
-   public static long key(int var0, int var1) {
-      return var0 & 4294967295L | (var1 & 4294967295L) << 32;
+   public static long key(int i, int j) {
+      return i & 4294967295L | (j & 4294967295L) << 32;
    }
 
-   static int chunkX(long var0) {
-      return (int)var0;
+   static int chunkX(long l) {
+      return (int)l;
    }
 
-   static int chunkZ(long var0) {
-      return (int)(var0 >>> 32);
+   static int chunkZ(long l) {
+      return (int)(l >>> 32);
    }
 
-   public static String serverKey(String var0) {
-      String var1 = var0 == null ? "" : var0.trim().toLowerCase(Locale.ROOT);
+   public static String serverKey(String string) {
+      String var1 = string == null ? "" : string.trim().toLowerCase(Locale.ROOT);
       if (var1.endsWith(":25565")) {
          var1 = var1.substring(0, var1.length() - ":25565".length());
       }
@@ -81,34 +81,34 @@ public final class ProtectedChunkStore {
       return var1.isEmpty() ? "unknown" : var1;
    }
 
-   public static String singleplayerKey(String var0) {
-      return "singleplayer/" + var0;
+   public static String singleplayerKey(String string) {
+      return "singleplayer/" + string;
    }
 
-   public static void forEachInArea(int var0, int var1, LongConsumer var2) {
-      for (int var3 = var0 - 2; var3 <= var0 + 2; var3++) {
-         for (int var4 = var1 - 2; var4 <= var1 + 2; var4++) {
-            var2.accept(key(var3, var4));
+   public static void forEachInArea(int i, int j, LongConsumer longConsumer) {
+      for (int var3 = i - 2; var3 <= i + 2; var3++) {
+         for (int var4 = j - 2; var4 <= j + 2; var4++) {
+            longConsumer.accept(key(var3, var4));
          }
       }
    }
 
-   static String fileName(String var0, String var1) {
+   static String fileName(String string, String string2) {
       try {
-         byte[] var2 = MessageDigest.getInstance("SHA-256").digest((var0 + "\n" + var1).getBytes(StandardCharsets.UTF_8));
+         byte[] var2 = MessageDigest.getInstance("SHA-256").digest((string + "\n" + string2).getBytes(StandardCharsets.UTF_8));
          String var3 = HexFormat.of().formatHex(var2, 0, 8);
-         return readable(var0) + "_" + readable(var1) + "-" + var3 + ".json";
+         return readable(string) + "_" + readable(string2) + "-" + var3 + ".json";
       } catch (NoSuchAlgorithmException var4) {
          throw new IllegalStateException("SHA-256 is always available", var4);
       }
    }
 
-   public void select(String var1, String var2) {
-      if (var1 != null && var2 != null) {
-         String var3 = fileName(var1, var2);
+   public void select(String string, String string2) {
+      if (string != null && string2 != null) {
+         String var3 = fileName(string, string2);
          ProtectedChunkStore.Bucket var4 = this.buckets.get(var3);
          if (var4 == null) {
-            var4 = new ProtectedChunkStore.Bucket(this.directory().resolve(var3), var1, var2);
+            var4 = new ProtectedChunkStore.Bucket(this.directory().resolve(var3), string, string2);
             load(var4);
             this.buckets.put(var3, var4);
          }
@@ -119,12 +119,12 @@ public final class ProtectedChunkStore {
       }
    }
 
-   public boolean isProtected(long var1) {
-      return this.active != null && this.active.chunks.contains(var1);
+   public boolean isProtected(long l) {
+      return this.active != null && this.active.chunks.contains(l);
    }
 
-   public boolean protect(long var1) {
-      if (this.active != null && this.active.chunks.add(var1)) {
+   public boolean protect(long l) {
+      if (this.active != null && this.active.chunks.add(l)) {
          this.changed(this.active);
          return true;
       } else {
@@ -132,8 +132,8 @@ public final class ProtectedChunkStore {
       }
    }
 
-   public boolean flagAllowed(long var1, boolean var3) {
-      return var3 || !this.isProtected(var1);
+   public boolean flagAllowed(long l, boolean bl) {
+      return bl || !this.isProtected(l);
    }
 
    public void tickAutosave() {
@@ -158,13 +158,13 @@ public final class ProtectedChunkStore {
       } catch (InterruptedException var2) {
          Thread.currentThread().interrupt();
       } catch (TimeoutException | ExecutionException var3) {
-         LOGGER.warn("[EFN] Player Bypass protected chunks may not all be saved", var3);
+         LOGGER.warn("[EFN] Player Bypass protected chunks may not all be saved", (Throwable)var3);
       }
    }
 
-   private void changed(ProtectedChunkStore.Bucket var1) {
-      if (!var1.readOnly) {
-         var1.dirty = true;
+   private void changed(ProtectedChunkStore.Bucket bucket) {
+      if (!bucket.readOnly) {
+         bucket.dirty = true;
          if (!this.dirty) {
             this.dirty = true;
             this.dirtySince = System.nanoTime();
@@ -196,157 +196,132 @@ public final class ProtectedChunkStore {
       }
    }
 
-   private void save(ProtectedChunkStore.Bucket var1) {
-      if (this.queued.put(var1.file, var1.chunks.toLongArray()) == null) {
-         this.lastWrite = CompletableFuture.runAsync(() -> this.writeQueued(var1), this.writer);
+   private void save(ProtectedChunkStore.Bucket bucket) {
+      if (this.queued.put(bucket.file, bucket.chunks.toLongArray()) == null) {
+         this.lastWrite = CompletableFuture.runAsync(() -> this.writeQueued(bucket), this.writer);
       }
    }
 
-   private void writeQueued(ProtectedChunkStore.Bucket var1) {
-      long[] var2 = this.queued.remove(var1.file);
+   private void writeQueued(ProtectedChunkStore.Bucket bucket) {
+      long[] var2 = this.queued.remove(bucket.file);
       if (var2 != null) {
          try {
-            write(var1, var2);
+            write(bucket, var2);
          } catch (RuntimeException | IOException var4) {
-            LOGGER.warn("[EFN] Failed to save Player Bypass protected chunks to {}", var1.file, var4);
-            var1.writeFailed = true;
+            LOGGER.warn("[EFN] Failed to save Player Bypass protected chunks to {}", bucket.file, var4);
+            bucket.writeFailed = true;
             this.writeFailed = true;
          }
       }
    }
 
-   private static void write(ProtectedChunkStore.Bucket var0, long[] var1) throws IOException {
-      Files.createDirectories(var0.file.getParent());
-      Path var2 = var0.file.resolveSibling(var0.file.getFileName() + ".tmp");
-      JsonWriter var3 = new JsonWriter(Files.newBufferedWriter(var2));
+   private static void write(ProtectedChunkStore.Bucket bucket, long[] ls) throws IOException {
+      Files.createDirectories(bucket.file.getParent());
+      Path var2 = bucket.file.resolveSibling(bucket.file.getFileName() + ".tmp");
 
-      try {
+      try (JsonWriter var3 = new JsonWriter(Files.newBufferedWriter(var2))) {
          var3.beginObject();
          var3.name("version").value(1L);
-         var3.name("server").value(var0.server);
-         var3.name("dimension").value(var0.dimension);
-         var3.name("count").value(var1.length);
+         var3.name("server").value(bucket.server);
+         var3.name("dimension").value(bucket.dimension);
+         var3.name("count").value((long)ls.length);
          var3.name("chunks").beginArray();
 
-         for (long var7 : var1) {
-            var3.value(chunkX(var7)).value(chunkZ(var7));
+         for (long var7 : ls) {
+            var3.value((long)chunkX(var7)).value((long)chunkZ(var7));
          }
 
          var3.endArray();
          var3.endObject();
-      } catch (Throwable var11) {
-         try {
-            var3.close();
-         } catch (Throwable var9) {
-            var11.addSuppressed(var9);
-         }
-
-         throw var11;
       }
 
-      var3.close();
-
       try {
-         Files.move(var2, var0.file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+         Files.move(var2, bucket.file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
       } catch (IOException var10) {
-         Files.move(var2, var0.file, StandardCopyOption.REPLACE_EXISTING);
+         Files.move(var2, bucket.file, StandardCopyOption.REPLACE_EXISTING);
       }
    }
 
-   private static void load(ProtectedChunkStore.Bucket var0) {
-      if (Files.isRegularFile(var0.file)) {
+   private static void load(ProtectedChunkStore.Bucket bucket) {
+      if (Files.isRegularFile(bucket.file)) {
          int var1 = 0;
 
-         try {
-            JsonReader var2 = new JsonReader(Files.newBufferedReader(var0.file));
+         try (JsonReader var2 = new JsonReader(Files.newBufferedReader(bucket.file))) {
+            long var3 = Files.size(bucket.file) / 4L;
+            var2.beginObject();
 
-            try {
-               long var3 = Files.size(var0.file) / 4L;
-               var2.beginObject();
-
-               while (var2.hasNext()) {
-                  String var5 = var2.nextName();
-                  switch (var5) {
-                     case "version":
-                        var1 = var2.nextInt();
-                        break;
-                     case "count":
-                        long var7 = wholeInt(var2);
-                        if (var7 > 0L) {
-                           var0.chunks.ensureCapacity((int)Math.min(var7, var3));
-                        }
-                        break;
-                     case "chunks":
-                        if (var2.peek() == JsonToken.BEGIN_ARRAY) {
-                           readChunks(var2, var0.chunks);
-                        } else {
-                           var2.skipValue();
-                        }
-                        break;
-                     default:
+            while (var2.hasNext()) {
+               String var5 = var2.nextName();
+               switch (var5) {
+                  case "version":
+                     var1 = var2.nextInt();
+                     break;
+                  case "count":
+                     long var7 = wholeInt(var2);
+                     if (var7 > 0L) {
+                        bucket.chunks.ensureCapacity((int)Math.min(var7, var3));
+                     }
+                     break;
+                  case "chunks":
+                     if (var2.peek() == JsonToken.BEGIN_ARRAY) {
+                        readChunks(var2, bucket.chunks);
+                     } else {
                         var2.skipValue();
-                  }
+                     }
+                     break;
+                  default:
+                     var2.skipValue();
                }
-
-               var2.endObject();
-            } catch (Throwable var10) {
-               try {
-                  var2.close();
-               } catch (Throwable var9) {
-                  var10.addSuppressed(var9);
-               }
-
-               throw var10;
             }
 
-            var2.close();
+            var2.endObject();
          } catch (RuntimeException | IOException var11) {
-            LOGGER.warn("[EFN] Failed to load Player Bypass protected chunks from {}; preserving the file", var0.file, var11);
-            var0.chunks.clear();
-            var0.readOnly = true;
+            LOGGER.warn("[EFN] Failed to load Player Bypass protected chunks from {}; preserving the file", bucket.file, var11);
+            bucket.chunks.clear();
+            bucket.readOnly = true;
             return;
          }
 
          if (var1 > 1) {
-            LOGGER.warn("[EFN] Player Bypass protected chunks file {} is version {}, newer than supported {}; skipping load", new Object[]{var0.file, var1, 1});
-            var0.chunks.clear();
-            var0.readOnly = true;
+            LOGGER.warn("[EFN] Player Bypass protected chunks file {} is version {}, newer than supported {}; skipping load", bucket.file, var1, 1);
+            bucket.chunks.clear();
+            bucket.readOnly = true;
          }
       }
    }
 
-   private static void readChunks(JsonReader var0, LongOpenHashSet var1) throws IOException {
-      var0.beginArray();
+   private static void readChunks(JsonReader jsonReader, LongOpenHashSet longOpenHashSet) throws IOException {
+      jsonReader.beginArray();
       int var2 = 0;
       long var3 = -9223372036854775808L;
 
-      while (var0.hasNext()) {
-         long var5 = wholeInt(var0);
+      while (jsonReader.hasNext()) {
+         long var5 = wholeInt(jsonReader);
          if ((var2++ & 1) == 0) {
             var3 = var5;
          } else if (var3 != -9223372036854775808L && var5 != -9223372036854775808L) {
-            var1.add(key((int)var3, (int)var5));
+            longOpenHashSet.add(key((int)var3, (int)var5));
          }
       }
 
-      var0.endArray();
+      jsonReader.endArray();
    }
 
-   private static long wholeInt(JsonReader var0) throws IOException {
-      if (var0.peek() != JsonToken.NUMBER) {
-         var0.skipValue();
+   private static long wholeInt(JsonReader jsonReader) throws IOException {
+      if (jsonReader.peek() != JsonToken.NUMBER) {
+         jsonReader.skipValue();
          return -9223372036854775808L;
       } else {
-         double var1 = var0.nextDouble();
+         double var1 = jsonReader.nextDouble();
          return var1 == Math.rint(var1) && !(var1 < -2.147483648E9) && !(var1 > 2.147483647E9) ? (long)var1 : -9223372036854775808L;
       }
    }
 
-   private static String readable(String var0) {
-      StringBuilder var1 = new StringBuilder(Math.min(var0.length(), 40));
+   private static String readable(String string) {
+      StringBuilder var1 = new StringBuilder(Math.min(string.length(), 40));
 
-      for (int var2 = 0; var2 < var0.length() && var1.length() < 40; var2++) {
-         char var3 = Character.toLowerCase(var0.charAt(var2));
+      for (int var2 = 0; var2 < string.length() && var1.length() < 40; var2++) {
+         char var3 = Character.toLowerCase(string.charAt(var2));
          var1.append((char)((var3 < 'a' || var3 > 'z') && (var3 < '0' || var3 > '9') && var3 != '.' && var3 != '-' ? 95 : var3));
       }
 
@@ -367,10 +342,10 @@ public final class ProtectedChunkStore {
       boolean dirty;
       volatile boolean writeFailed;
 
-      Bucket(Path var1, String var2, String var3) {
-         this.file = var1;
-         this.server = var2;
-         this.dimension = var3;
+      Bucket(Path path, String string, String string2) {
+         this.file = path;
+         this.server = string;
+         this.dimension = string2;
       }
    }
 }

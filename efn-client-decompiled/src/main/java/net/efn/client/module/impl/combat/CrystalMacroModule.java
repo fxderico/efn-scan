@@ -75,8 +75,8 @@ public final class CrystalMacroModule extends ClientModule {
    }
 
    @Override
-   public void migrateSettings(int var1) {
-      if (var1 < 1) {
+   public void migrateSettings(int i) {
+      if (i < 1) {
          this.breakDelay.set(this.breakDelay.get() - 1.0F);
          this.placeDelay.set(this.placeDelay.get() - 1.0F);
          this.obsidianDelay.set(this.obsidianDelay.get() - 1.0F);
@@ -90,9 +90,9 @@ public final class CrystalMacroModule extends ClientModule {
 
    @Override
    protected void onDisable() {
-      MinecraftClient var1 = MinecraftClient.method_1551();
+      MinecraftClient var1 = MinecraftClient.getInstance();
       this.endHold(var1);
-      ClientPlayerEntity var2 = var1.field_1724;
+      ClientPlayerEntity var2 = var1.player;
       if (var2 != null && !hotbarTakenByOther()) {
          this.restoreSlot(var2);
       }
@@ -101,27 +101,27 @@ public final class CrystalMacroModule extends ClientModule {
    }
 
    @EventHandler
-   public void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
       this.ageCounters();
-      ClientPlayerEntity var3 = var2.field_1724;
-      if (var3 != null && var2.field_1687 != null && var2.field_1761 != null && !var3.method_29504()) {
-         ItemStack var4 = var3.method_6047();
+      ClientPlayerEntity var3 = var2.player;
+      if (var3 != null && var2.world != null && var2.interactionManager != null && !var3.isDead()) {
+         ItemStack var4 = var3.getMainHandStack();
          if (var4 != this.lastMain) {
             this.lastMain = var4;
             this.mainAge = 0;
          }
 
-         this.forgetGone(var2.field_1687);
+         this.forgetGone(var2.world);
          LootLatch.update(var2, var3);
          if (LootLatch.latched()) {
             this.endHold(var2);
-            if (!var3.method_6115() && !AutoEatModule.isEating() && (this.ownsSelection(var3) || activationAllows(var3))) {
+            if (!var3.isUsingItem() && !AutoEatModule.isEating() && (this.ownsSelection(var3) || activationAllows(var3))) {
                suppressVanillaUse(var2);
             }
          } else if (!this.holdActive(var2, var3)) {
             this.endHold(var2);
-            if (var2.field_1755 == null && !hotbarTakenByOther() && !MeleeAttacks.actedThisTick(var3)) {
+            if (var2.currentScreen == null && !hotbarTakenByOther() && !MeleeAttacks.actedThisTick(var3)) {
                this.restoreSlot(var3);
             }
          } else if (!AutoInvTotemModule.wantsHotbar() && !CombatMacroLock.heldByOther(this)) {
@@ -130,7 +130,7 @@ public final class CrystalMacroModule extends ClientModule {
                   this.endHold(var2);
                   return;
                }
-            } else if (var3.method_6115() || !this.ownsSelection(var3) && !activationAllows(var3)) {
+            } else if (var3.isUsingItem() || !this.ownsSelection(var3) && !activationAllows(var3)) {
                return;
             }
 
@@ -175,58 +175,66 @@ public final class CrystalMacroModule extends ClientModule {
    }
 
    @EventHandler
-   public void onAttack(PlayerAttackEntityEvent var1) {
-      Entity var3 = var1.target;
+   public void onAttack(PlayerAttackEntityEvent playerAttackEntityEvent) {
+      Entity var3 = playerAttackEntityEvent.target;
       EndCrystalEntity var2;
-      if (var3 instanceof EndCrystalEntity && (var2 = (EndCrystalEntity)var3).method_73183().method_8608()) {
+      if (var3 instanceof EndCrystalEntity && (var2 = (EndCrystalEntity)var3).getEntityWorld().isClient()) {
          this.markBreak(var2);
       }
    }
 
-   private boolean holdActive(MinecraftClient var1, ClientPlayerEntity var2) {
-      return MeleeAttacks.canAct(var1) && var1.method_1569() && !var2.method_7325() && Crystals.isPhysicallyDown(var1, var1.field_1690.field_1904);
+   private boolean holdActive(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      return MeleeAttacks.canAct(minecraftClient)
+         && minecraftClient.isWindowFocused()
+         && !clientPlayerEntity.isSpectator()
+         && Crystals.isPhysicallyDown(minecraftClient, minecraftClient.options.useKey);
    }
 
    private static boolean hotbarTakenByOther() {
       return AutoEatModule.isEating() || AutoInvTotemModule.wantsHotbar();
    }
 
-   private boolean keepEngaged(ClientPlayerEntity var1) {
-      if (this.ownsSelection(var1)) {
+   private boolean keepEngaged(ClientPlayerEntity clientPlayerEntity) {
+      if (this.ownsSelection(clientPlayerEntity)) {
          return true;
       } else {
          this.forgetSlots();
-         return activationAllows(var1);
+         return activationAllows(clientPlayerEntity);
       }
    }
 
-   private boolean ownsSelection(ClientPlayerEntity var1) {
-      return this.ownSlot != -1 && var1.method_31548().method_67532() == this.ownSlot;
+   private boolean ownsSelection(ClientPlayerEntity clientPlayerEntity) {
+      return this.ownSlot != -1 && clientPlayerEntity.getInventory().getSelectedSlot() == this.ownSlot;
    }
 
-   private static boolean activationAllows(ClientPlayerEntity var0) {
-      ItemStack var1 = var0.method_6047();
-      ItemStack var2 = var0.method_6079();
-      return !var1.method_31574(Items.field_8301) && (!var2.method_31574(Items.field_8301) || !Crystals.isCombatItem(var1))
-         ? (var1.method_31573(ItemTags.field_42611) || var1.method_31573(ItemTags.field_42612) || var1.method_31574(Items.field_49814))
-            && (var2.method_7960() || var2.method_31574(Items.field_8288))
-            && Crystals.hotbarSlotOf(var0.method_31548(), Items.field_8301) != -1
+   private static boolean activationAllows(ClientPlayerEntity clientPlayerEntity) {
+      ItemStack var1 = clientPlayerEntity.getMainHandStack();
+      ItemStack var2 = clientPlayerEntity.getOffHandStack();
+      return !var1.isOf(Items.END_CRYSTAL) && (!var2.isOf(Items.END_CRYSTAL) || !Crystals.isCombatItem(var1))
+         ? (var1.isIn(ItemTags.SWORDS) || var1.isIn(ItemTags.AXES) || var1.isOf(Items.MACE))
+            && (var2.isEmpty() || var2.isOf(Items.TOTEM_OF_UNDYING))
+            && Crystals.hotbarSlotOf(clientPlayerEntity.getInventory(), Items.END_CRYSTAL) != -1
          : true;
    }
 
-   private void endHold(MinecraftClient var1) {
+   private void endHold(MinecraftClient minecraftClient) {
       CombatMacroLock.release(this);
       if (this.engaged) {
          this.engaged = false;
-         var1.field_1690.field_1904.method_23481(var1.field_1755 == null && Crystals.isPhysicallyDown(var1, var1.field_1690.field_1904));
+         minecraftClient.options
+            .useKey
+            .setPressed(minecraftClient.currentScreen == null && Crystals.isPhysicallyDown(minecraftClient, minecraftClient.options.useKey));
       }
    }
 
-   private void restoreSlot(ClientPlayerEntity var1) {
+   private void restoreSlot(ClientPlayerEntity clientPlayerEntity) {
       if (this.ownSlot != -1) {
-         PlayerInventory var2 = var1.method_31548();
-         if (this.switchBack.get() && PlayerInventory.method_7380(this.savedSlot) && this.savedSlot != this.ownSlot && var2.method_67532() == this.ownSlot) {
-            var2.method_61496(this.savedSlot);
+         PlayerInventory var2 = clientPlayerEntity.getInventory();
+         if (this.switchBack.get()
+            && PlayerInventory.isValidHotbarIndex(this.savedSlot)
+            && this.savedSlot != this.ownSlot
+            && var2.getSelectedSlot() == this.ownSlot) {
+            var2.setSelectedSlot(this.savedSlot);
          }
 
          this.forgetSlots();
@@ -256,34 +264,34 @@ public final class CrystalMacroModule extends ClientModule {
       CombatMacroLock.release(this);
    }
 
-   private static void suppressVanillaUse(MinecraftClient var0) {
-      KeyBinding var1 = var0.field_1690.field_1904;
-      var1.method_23481(false);
+   private static void suppressVanillaUse(MinecraftClient minecraftClient) {
+      KeyBinding var1 = minecraftClient.options.useKey;
+      var1.setPressed(false);
 
-      while (var1.method_1436()) {
+      while (var1.wasPressed()) {
       }
    }
 
-   private CrystalMacroModule.Plan plan(MinecraftClient var1, ClientPlayerEntity var2) {
-      HitResult var4 = var2.method_76762(1.0F, var2);
-      int var5 = Crystals.confirmWindow(var1, var2);
-      if (this.pendingCrystalBase != null && Crystals.hasCrystal(var1.field_1687, this.pendingCrystalBase, null)) {
+   private CrystalMacroModule.Plan plan(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      HitResult var4 = clientPlayerEntity.getCrosshairTarget(1.0F, clientPlayerEntity);
+      int var5 = Crystals.confirmWindow(minecraftClient, clientPlayerEntity);
+      if (this.pendingCrystalBase != null && Crystals.hasCrystal(minecraftClient.world, this.pendingCrystalBase, null)) {
          this.pendingCrystalBase = null;
       }
 
       if (var4 instanceof EntityHitResult var12) {
-         Entity var13 = var12.method_17782();
+         Entity var13 = var12.getEntity();
          EndCrystalEntity var11;
-         if (!(var13 instanceof EndCrystalEntity) || !(var11 = (EndCrystalEntity)var13).method_5805()) {
+         if (!(var13 instanceof EndCrystalEntity) || !(var11 = (EndCrystalEntity)var13).isAlive()) {
             return null;
-         } else if (var11.method_5628() == this.pendingBreakId && this.pendingBreakAge < var5) {
+         } else if (var11.getId() == this.pendingBreakId && this.pendingBreakAge < var5) {
             return null;
-         } else if (this.restUntil.get(var11.method_5628()) > var2.field_6012) {
+         } else if (this.restUntil.get(var11.getId()) > clientPlayerEntity.age) {
             return null;
          } else {
-            float var15 = CrystalDamage.estimate(var11.method_73189(), var2);
-            if (!(var15 > this.maxSelfDamage.get()) && !CrystalDamage.endangers(var2, var15)) {
-               int var16 = Crystals.weaponRoute(var2);
+            float var15 = CrystalDamage.estimate(var11.getEntityPos(), clientPlayerEntity);
+            if (!(var15 > this.maxSelfDamage.get()) && !CrystalDamage.endangers(clientPlayerEntity, var15)) {
+               int var16 = Crystals.weaponRoute(clientPlayerEntity);
                return var16 == -1 ? null : CrystalMacroModule.Plan.forBreak(var11, var16);
             } else {
                return null;
@@ -291,32 +299,32 @@ public final class CrystalMacroModule extends ClientModule {
          }
       } else {
          BlockHitResult var3;
-         if (var4 instanceof BlockHitResult && (var3 = (BlockHitResult)var4).method_17783() == Type.field_1332) {
-            ClientWorld var6 = var1.field_1687;
-            BlockPos var7 = var3.method_17777();
-            if (!var6.method_8621().method_11952(var7)) {
+         if (var4 instanceof BlockHitResult && (var3 = (BlockHitResult)var4).getType() == Type.BLOCK) {
+            ClientWorld var6 = minecraftClient.world;
+            BlockPos var7 = var3.getBlockPos();
+            if (!var6.getWorldBorder().contains(var7)) {
                return null;
             } else {
-               BlockState var8 = var6.method_8320(var7);
+               BlockState var8 = var6.getBlockState(var7);
                if (Crystals.isBase(var8)) {
                   if (var7.equals(this.pendingCrystalBase) && this.pendingCrystalAge < var5) {
                      return null;
                   } else if (!Crystals.canHost(var6, var7, null)) {
                      return null;
                   } else {
-                     int var14 = Crystals.route(var2, Items.field_8301, var8, this.savedSlot);
+                     int var14 = Crystals.route(clientPlayerEntity, Items.END_CRYSTAL, var8, this.savedSlot);
                      return var14 == -1 ? null : CrystalMacroModule.Plan.forPlace(CrystalMacroModule.Step.CRYSTAL, var3, var7, var14);
                   }
                } else if (!this.autoObsidian.get()) {
                   return null;
-               } else if (Crystals.route(var2, Items.field_8301, Blocks.field_10540.method_9564(), this.savedSlot) == -1) {
+               } else if (Crystals.route(clientPlayerEntity, Items.END_CRYSTAL, Blocks.OBSIDIAN.getDefaultState(), this.savedSlot) == -1) {
                   return null;
                } else {
-                  int var9 = Crystals.route(var2, Items.field_8281, var8, this.savedSlot);
+                  int var9 = Crystals.route(clientPlayerEntity, Items.OBSIDIAN, var8, this.savedSlot);
                   if (var9 == -1) {
                      return null;
                   } else {
-                     BlockPos var10 = Crystals.obsidianTarget(var6, var2, var3, var8);
+                     BlockPos var10 = Crystals.obsidianTarget(var6, clientPlayerEntity, var3, var8);
                      return var10 != null && (!var10.equals(this.pendingObsidian) || this.pendingObsidianAge >= var5)
                         ? CrystalMacroModule.Plan.forPlace(CrystalMacroModule.Step.OBSIDIAN, var3, var10, var9)
                         : null;
@@ -329,20 +337,22 @@ public final class CrystalMacroModule extends ClientModule {
       }
    }
 
-   private void breakCrystal(MinecraftClient var1, ClientPlayerEntity var2, CrystalMacroModule.Plan var3) {
+   private void breakCrystal(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, CrystalMacroModule.Plan plan) {
       if (this.due(this.breakDelay)) {
-         if (var3.route() != -2) {
-            this.select(var2, var3.route());
+         if (plan.route() != -2) {
+            this.select(clientPlayerEntity, plan.route());
          }
 
-         if (this.mainAge >= 2 || Crystals.enchantsAddDamage(var2.method_6047()) || Crystals.dealsDamage(var2, ItemStack.field_8037)) {
-            if (Crystals.strike(var1, var2, var3.crystal())) {
-               MeleeAttacks.claimTick(var1);
-               this.markBreak(var3.crystal());
-               int var4 = var3.crystal().method_5628();
+         if (this.mainAge >= 2
+            || Crystals.enchantsAddDamage(clientPlayerEntity.getMainHandStack())
+            || Crystals.dealsDamage(clientPlayerEntity, ItemStack.EMPTY)) {
+            if (Crystals.strike(minecraftClient, clientPlayerEntity, plan.crystal())) {
+               MeleeAttacks.claimTick(minecraftClient);
+               this.markBreak(plan.crystal());
+               int var4 = plan.crystal().getId();
                if (this.breakAttempts.addTo(var4, 1) + 1 >= 3) {
                   this.breakAttempts.remove(var4);
-                  this.restUntil.put(var4, var2.field_6012 + 100);
+                  this.restUntil.put(var4, clientPlayerEntity.age + 100);
                }
 
                this.acted();
@@ -351,26 +361,28 @@ public final class CrystalMacroModule extends ClientModule {
       }
    }
 
-   private boolean useOnCrosshair(MinecraftClient var1, ClientPlayerEntity var2, NumberSetting var3, CrystalMacroModule.Plan var4) {
-      if (!this.due(var3)) {
+   private boolean useOnCrosshair(
+      MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, NumberSetting numberSetting, CrystalMacroModule.Plan plan
+   ) {
+      if (!this.due(numberSetting)) {
          return false;
       } else {
-         if (var4.route() != -2) {
-            this.select(var2, var4.route());
+         if (plan.route() != -2) {
+            this.select(clientPlayerEntity, plan.route());
          }
 
-         if (!Crystals.rightClick(var1, var2, var4.blockHit())) {
+         if (!Crystals.rightClick(minecraftClient, clientPlayerEntity, plan.blockHit())) {
             return false;
          } else {
-            MeleeAttacks.claimTick(var1);
+            MeleeAttacks.claimTick(minecraftClient);
             this.acted();
             return true;
          }
       }
    }
 
-   private boolean due(NumberSetting var1) {
-      return this.ticksSinceAction > Math.max(var1.getInt(), this.actionGap - 1);
+   private boolean due(NumberSetting numberSetting) {
+      return this.ticksSinceAction > Math.max(numberSetting.getInt(), this.actionGap - 1);
    }
 
    private void acted() {
@@ -378,25 +390,25 @@ public final class CrystalMacroModule extends ClientModule {
       this.actionGap = this.humanize.get() ? Crystals.humanGap() : 0;
    }
 
-   private void forgetGone(ClientWorld var1) {
-      this.breakAttempts.keySet().removeIf(var1x -> var1.method_8469(var1x) == null);
-      this.restUntil.keySet().removeIf(var1x -> var1.method_8469(var1x) == null);
+   private void forgetGone(ClientWorld clientWorld) {
+      this.breakAttempts.keySet().removeIf(i -> clientWorld.getEntityById(i) == null);
+      this.restUntil.keySet().removeIf(i -> clientWorld.getEntityById(i) == null);
    }
 
-   private void select(ClientPlayerEntity var1, int var2) {
-      PlayerInventory var3 = var1.method_31548();
+   private void select(ClientPlayerEntity clientPlayerEntity, int i) {
+      PlayerInventory var3 = clientPlayerEntity.getInventory();
       if (this.savedSlot == -1) {
-         this.savedSlot = var3.method_67532();
+         this.savedSlot = var3.getSelectedSlot();
       }
 
-      var3.method_61496(var2);
-      this.ownSlot = var2;
-      this.lastMain = var1.method_6047();
+      var3.setSelectedSlot(i);
+      this.ownSlot = i;
+      this.lastMain = clientPlayerEntity.getMainHandStack();
       this.mainAge = 0;
    }
 
-   private void markBreak(EndCrystalEntity var1) {
-      this.pendingBreakId = var1.method_5628();
+   private void markBreak(EndCrystalEntity endCrystalEntity) {
+      this.pendingBreakId = endCrystalEntity.getId();
       this.pendingBreakAge = 0;
    }
 
@@ -410,12 +422,12 @@ public final class CrystalMacroModule extends ClientModule {
 
    @Environment(EnvType.CLIENT)
    private record Plan(CrystalMacroModule.Step step, EndCrystalEntity crystal, BlockHitResult blockHit, BlockPos target, int route) {
-      static CrystalMacroModule.Plan forBreak(EndCrystalEntity var0, int var1) {
-         return new CrystalMacroModule.Plan(CrystalMacroModule.Step.BREAK, var0, null, null, var1);
+      static CrystalMacroModule.Plan forBreak(EndCrystalEntity endCrystalEntity, int i) {
+         return new CrystalMacroModule.Plan(CrystalMacroModule.Step.BREAK, endCrystalEntity, null, null, i);
       }
 
-      static CrystalMacroModule.Plan forPlace(CrystalMacroModule.Step var0, BlockHitResult var1, BlockPos var2, int var3) {
-         return new CrystalMacroModule.Plan(var0, null, var1, var2, var3);
+      static CrystalMacroModule.Plan forPlace(CrystalMacroModule.Step step, BlockHitResult blockHitResult, BlockPos blockPos, int i) {
+         return new CrystalMacroModule.Plan(step, null, blockHitResult, blockPos, i);
       }
    }
 

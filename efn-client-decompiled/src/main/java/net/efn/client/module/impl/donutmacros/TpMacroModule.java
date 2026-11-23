@@ -67,11 +67,11 @@ public final class TpMacroModule extends ClientModule {
    }
 
    @EventHandler
-   public void onPacket(PacketReceiveNettyEvent var1) {
-      Packet var3 = var1.packet;
+   public void onPacket(PacketReceiveNettyEvent packetReceiveNettyEvent) {
+      Packet var3 = packetReceiveNettyEvent.packet;
       GameMessageS2CPacket var2;
-      if (var3 instanceof GameMessageS2CPacket && (var2 = (GameMessageS2CPacket)var3).comp_763() != null) {
-         Matcher var4 = RATE_LIMIT.matcher(ServerText.normalize(var2.comp_763().getString()));
+      if (var3 instanceof GameMessageS2CPacket && (var2 = (GameMessageS2CPacket)var3).content() != null) {
+         Matcher var4 = RATE_LIMIT.matcher(ServerText.normalize(var2.content().getString()));
          if (var4.find()) {
             try {
                this.holdUntil = System.currentTimeMillis() + (long)Math.ceil(Math.min(30.0, Double.parseDouble(var4.group(1))) * 1000.0) + 80L;
@@ -82,14 +82,14 @@ public final class TpMacroModule extends ClientModule {
    }
 
    @EventHandler
-   public void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientPlayerEntity var3 = var2.field_1724;
-      if (var3 != null && var2.method_1562() != null && !var3.method_29504()) {
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientPlayerEntity var3 = var2.player;
+      if (var3 != null && var2.getNetworkHandler() != null && !var3.isDead()) {
          this.confirm.tick(var2);
          long var4 = System.currentTimeMillis();
          if (var4 >= this.nextAt && var4 >= this.holdUntil) {
-            var3.field_3944.method_45730(this.command.get() + " " + this.target.get().trim());
+            var3.networkHandler.sendChatCommand(this.command.get() + " " + this.target.get().trim());
             this.confirm.sent();
             this.sent++;
             this.nextAt = var4 + (long)(this.interval.get() * 1000.0F);

@@ -36,17 +36,17 @@ public final class RenderDistanceToggleModule extends ClientModule {
    @Override
    protected void onDisable() {
       if (this.restoring) {
-         this.restore(MinecraftClient.method_1551());
+         this.restore(MinecraftClient.getInstance());
       }
    }
 
    @EventHandler(
       stage = Stage.POST
    )
-   public void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      if (var2.field_1724 != null && var2.field_1687 != null) {
-         int var3 = var2.field_1724.method_31478();
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      if (var2.player != null && var2.world != null) {
+         int var3 = var2.player.getBlockY();
          if (!this.restoring && var3 > this.resetY.getInt() + 2) {
             this.armed = true;
          }
@@ -55,7 +55,7 @@ public final class RenderDistanceToggleModule extends ClientModule {
             this.armed = false;
             this.restoring = true;
             this.timer = 0;
-            this.savedDistance = (Integer)var2.field_1690.method_42503().method_41753();
+            this.savedDistance = var2.options.getViewDistance().getValue();
             apply(var2, this.lowDistance.getInt());
          } else if (this.restoring && ++this.timer >= 10) {
             this.restore(var2);
@@ -67,16 +67,16 @@ public final class RenderDistanceToggleModule extends ClientModule {
       }
    }
 
-   private void restore(MinecraftClient var1) {
+   private void restore(MinecraftClient minecraftClient) {
       if (this.savedDistance >= 0) {
-         apply(var1, this.savedDistance);
+         apply(minecraftClient, this.savedDistance);
       }
 
       this.restoring = false;
    }
 
-   private static void apply(MinecraftClient var0, int var1) {
-      var0.field_1690.method_42503().method_41748(var1);
-      var0.field_1690.method_1643();
+   private static void apply(MinecraftClient minecraftClient, int i) {
+      minecraftClient.options.getViewDistance().setValue(i);
+      minecraftClient.options.sendClientSettings();
    }
 }

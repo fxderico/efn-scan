@@ -25,12 +25,12 @@ public final class GlyphTint {
    public GlyphTint() {
    }
 
-   public GlyphTint resolve(String var1, int var2, int var3, int var4) {
-      boolean var5 = "Manual".equals(var1);
-      this.primary = ColorHelper.method_61334(var5 ? var3 : var2);
+   public GlyphTint resolve(String string, int i, int j, int k) {
+      boolean var5 = "Manual".equals(string);
+      this.primary = ColorHelper.fullAlpha(var5 ? j : i);
       this.split(this.primary);
       if (var5) {
-         this.secondary = ColorHelper.method_61334(var4);
+         this.secondary = ColorHelper.fullAlpha(k);
          this.companion = mix(this.primary, this.secondary, 0.5F);
       } else {
          this.secondary = hsv(toward(this.hue, 0.6666667F, 0.025F), this.saturation * 1.05F, this.value * 0.66F);
@@ -43,10 +43,10 @@ public final class GlyphTint {
       return this;
    }
 
-   private void split(int var1) {
-      int var2 = ColorHelper.method_61327(var1);
-      int var3 = ColorHelper.method_61329(var1);
-      int var4 = ColorHelper.method_61331(var1);
+   private void split(int i) {
+      int var2 = ColorHelper.getRed(i);
+      int var3 = ColorHelper.getGreen(i);
+      int var4 = ColorHelper.getBlue(i);
       int var5 = Math.max(var2, Math.max(var3, var4));
       int var6 = Math.min(var2, Math.min(var3, var4));
       float var7 = var5 - var6;
@@ -56,24 +56,24 @@ public final class GlyphTint {
          ? 0.0F
          : (
             var5 == var2
-               ? MathHelper.method_22450((var3 - var4) / var7 / 6.0F)
+               ? MathHelper.fractionalPart((var3 - var4) / var7 / 6.0F)
                : (var5 == var3 ? (2.0F + (var4 - var2) / var7) / 6.0F : (4.0F + (var2 - var3) / var7) / 6.0F)
          );
    }
 
-   private static float toward(float var0, float var1, float var2) {
-      float var3 = var1 - var0;
+   private static float toward(float f, float g, float h) {
+      float var3 = g - f;
       float var4;
-      return Math.abs(var4 = var3 - MathHelper.method_15375(var3 + 0.5F)) <= var2 ? var1 : var0 + Math.copySign(var2, var4);
+      return Math.abs(var4 = var3 - MathHelper.floor(var3 + 0.5F)) <= h ? g : f + Math.copySign(h, var4);
    }
 
-   private static int hsv(float var0, float var1, float var2) {
-      float var3 = MathHelper.method_22450(var0);
+   private static int hsv(float f, float g, float h) {
+      float var3 = MathHelper.fractionalPart(f);
       if (var3 >= 1.0F) {
          var3 = 0.0F;
       }
 
-      return MathHelper.method_60599(var3, MathHelper.method_15363(var1, 0.0F, 1.0F), MathHelper.method_15363(var2, 0.0F, 1.0F), 255);
+      return MathHelper.hsvToArgb(var3, MathHelper.clamp(g, 0.0F, 1.0F), MathHelper.clamp(h, 0.0F, 1.0F), 255);
    }
 
    public int primary() {
@@ -100,16 +100,16 @@ public final class GlyphTint {
       return this.flash;
    }
 
-   public static int alpha(int var0, float var1) {
-      float var2 = var1 <= 0.0F ? 0.0F : Math.min(1.0F, var1);
-      return (int)(var2 * 255.0F + 0.5F) << 24 | var0 & 16777215;
+   public static int alpha(int i, float f) {
+      float var2 = f <= 0.0F ? 0.0F : Math.min(1.0F, f);
+      return (int)(var2 * 255.0F + 0.5F) << 24 | i & 16777215;
    }
 
-   public static int mix(int var0, int var1, float var2) {
-      return ColorHelper.method_61319(Math.max(0.0F, Math.min(1.0F, var2)), var0, var1);
+   public static int mix(int i, int j, float f) {
+      return ColorHelper.lerp(Math.max(0.0F, Math.min(1.0F, f)), i, j);
    }
 
-   public static int lift(int var0, float var1) {
-      return mix(ColorHelper.method_61334(var0), -1, var1);
+   public static int lift(int i, float f) {
+      return mix(ColorHelper.fullAlpha(i), -1, f);
    }
 }

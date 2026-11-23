@@ -16,46 +16,46 @@ public final class InventoryCalm {
    private InventoryCalm() {
    }
 
-   public static boolean idle(ClientPlayerEntity var0) {
-      PlayerInput var1 = var0.field_3913.field_54155;
-      return !moving(var1) && !var1.comp_3164();
+   public static boolean idle(ClientPlayerEntity clientPlayerEntity) {
+      PlayerInput var1 = clientPlayerEntity.input.playerInput;
+      return !moving(var1) && !var1.sneak();
    }
 
-   public static boolean still(ClientPlayerEntity var0) {
-      return idle(var0) && var0.method_24828() && var0.method_18798().method_37268() < 0.0025;
+   public static boolean still(ClientPlayerEntity clientPlayerEntity) {
+      return idle(clientPlayerEntity) && clientPlayerEntity.isOnGround() && clientPlayerEntity.getVelocity().horizontalLengthSquared() < 0.0025;
    }
 
-   public static boolean settle(MinecraftClient var0, ClientPlayerEntity var1) {
-      if (still(var1)) {
+   public static boolean settle(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      if (still(clientPlayerEntity)) {
          return true;
       } else {
-         GameOptions var2 = var0.field_1690;
-         var2.field_1894.method_23481(false);
-         var2.field_1881.method_23481(false);
-         var2.field_1913.method_23481(false);
-         var2.field_1849.method_23481(false);
-         var2.field_1903.method_23481(false);
-         var2.field_1867.method_23481(false);
-         var2.field_1904.method_23481(false);
-         var2.field_1886.method_23481(false);
-         PlayerInput var3 = var1.field_3913.field_54155;
-         if (moving(var3) || !var1.method_24828() || var1.method_18798().method_37268() >= 1.0E-4) {
+         GameOptions var2 = minecraftClient.options;
+         var2.forwardKey.setPressed(false);
+         var2.backKey.setPressed(false);
+         var2.leftKey.setPressed(false);
+         var2.rightKey.setPressed(false);
+         var2.jumpKey.setPressed(false);
+         var2.sprintKey.setPressed(false);
+         var2.useKey.setPressed(false);
+         var2.attackKey.setPressed(false);
+         PlayerInput var3 = clientPlayerEntity.input.playerInput;
+         if (moving(var3) || !clientPlayerEntity.isOnGround() || clientPlayerEntity.getVelocity().horizontalLengthSquared() >= 1.0E-4) {
             return false;
-         } else if (!overGround(var1)) {
+         } else if (!overGround(clientPlayerEntity)) {
             return true;
          } else {
-            var2.field_1832.method_23481(false);
+            var2.sneakKey.setPressed(false);
             return false;
          }
       }
    }
 
-   private static boolean moving(PlayerInput var0) {
-      return var0.comp_3159() || var0.comp_3160() || var0.comp_3161() || var0.comp_3162() || var0.comp_3163() || var0.comp_3165();
+   private static boolean moving(PlayerInput playerInput) {
+      return playerInput.forward() || playerInput.backward() || playerInput.left() || playerInput.right() || playerInput.jump() || playerInput.sprint();
    }
 
-   private static boolean overGround(ClientPlayerEntity var0) {
-      BlockPos var1 = BlockPos.method_49637(var0.method_23317(), var0.method_23318() - 0.05, var0.method_23321());
-      return !var0.method_73183().method_8320(var1).method_26220(var0.method_73183(), var1).method_1110();
+   private static boolean overGround(ClientPlayerEntity clientPlayerEntity) {
+      BlockPos var1 = BlockPos.ofFloored(clientPlayerEntity.getX(), clientPlayerEntity.getY() - 0.05, clientPlayerEntity.getZ());
+      return !clientPlayerEntity.getEntityWorld().getBlockState(var1).getCollisionShape(clientPlayerEntity.getEntityWorld(), var1).isEmpty();
    }
 }

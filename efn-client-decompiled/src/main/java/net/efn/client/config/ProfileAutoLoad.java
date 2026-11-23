@@ -33,26 +33,26 @@ public final class ProfileAutoLoad {
    }
 
    public static void install() {
-      PacketAppliedEvent.TYPE.listen(OWNER, var0 -> {
-         if (var0.packet instanceof GameJoinS2CPacket) {
+      PacketAppliedEvent.TYPE.listen(OWNER, packetAppliedEvent -> {
+         if (packetAppliedEvent.packet instanceof GameJoinS2CPacket) {
             onJoin();
          }
       });
-      TickEvent.TYPE.listen(OWNER, var0 -> showPendingToast());
+      TickEvent.TYPE.listen(OWNER, tickEvent -> showPendingToast());
    }
 
    private static void onJoin() {
-      MinecraftClient var1 = MinecraftClient.method_1551();
-      if (!var1.method_1542()) {
-         ClientPlayNetworkHandler var2 = var1.method_1562();
-         ServerInfo var0 = var2 == null ? null : var2.method_45734();
-         if (var0 != null && var0.field_3761 != null) {
-            ClientConnection var4 = var2.method_48296();
+      MinecraftClient var1 = MinecraftClient.getInstance();
+      if (!var1.isInSingleplayer()) {
+         ClientPlayNetworkHandler var2 = var1.getNetworkHandler();
+         ServerInfo var0 = var2 == null ? null : var2.getServerInfo();
+         if (var0 != null && var0.address != null) {
+            ClientConnection var4 = var2.getConnection();
             if (var4 != handled.get()) {
                handled = new WeakReference<>(var4);
-               List var5 = ConfigProfiles.getInstance().loadForServer(var0.field_3761);
+               List var5 = ConfigProfiles.getInstance().loadForServer(var0.address);
                if (!var5.isEmpty()) {
-                  LOGGER.info("[EFN] Joined {} - loaded profile {}", var0.field_3761, String.join(", ", var5));
+                  LOGGER.info("[EFN] Joined {} - loaded profile {}", var0.address, String.join(", ", var5));
                   pendingTitle = var5.size() == 1 ? "Profile loaded" : "Profiles loaded";
                   pendingMessage = String.join(", ", var5);
                   pendingSince = System.nanoTime();
@@ -64,15 +64,15 @@ public final class ProfileAutoLoad {
 
    private static void showPendingToast() {
       if (pendingTitle != null) {
-         MinecraftClient var1 = MinecraftClient.method_1551();
+         MinecraftClient var1 = MinecraftClient.getInstance();
          boolean var0 = System.nanoTime() - pendingSince > 15000000000L;
-         if (var0 || var1.field_1724 != null && !(var1.field_1755 instanceof LevelLoadingScreen)) {
+         if (var0 || var1.player != null && !(var1.currentScreen instanceof LevelLoadingScreen)) {
             String var3 = pendingTitle;
             String var4 = pendingMessage;
             pendingTitle = null;
             pendingMessage = null;
-            if (var1.field_1687 != null) {
-               ChallengeToast.addOrUpdate(new ItemStack(Items.field_8674), var3, Text.method_43470(var4), false);
+            if (var1.world != null) {
+               ChallengeToast.addOrUpdate(new ItemStack(Items.WRITABLE_BOOK), var3, Text.literal(var4), false);
             }
          }
       }

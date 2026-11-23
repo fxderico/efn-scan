@@ -21,9 +21,9 @@ public final class InputControl {
       dropSprint = true;
    }
 
-   public static void releaseForward(boolean var0) {
+   public static void releaseForward(boolean bl) {
       releaseForward = true;
-      backward |= var0;
+      backward |= bl;
    }
 
    public static void jump() {
@@ -34,13 +34,13 @@ public final class InputControl {
       idle = true;
    }
 
-   public static PlayerInput shape(ClientPlayerEntity var0, PlayerInput var1) {
-      boolean var3 = var1.comp_3159();
-      boolean var4 = var1.comp_3160();
-      boolean var5 = var1.comp_3161();
-      boolean var6 = var1.comp_3162();
-      boolean var7 = var1.comp_3163();
-      boolean var2 = var1.comp_3165() || SprintModule.holding();
+   public static PlayerInput shape(ClientPlayerEntity clientPlayerEntity, PlayerInput playerInput) {
+      boolean var3 = playerInput.forward();
+      boolean var4 = playerInput.backward();
+      boolean var5 = playerInput.left();
+      boolean var6 = playerInput.right();
+      boolean var7 = playerInput.jump();
+      boolean var2 = playerInput.sprint() || SprintModule.holding();
       if (idle) {
          var2 = false;
          var7 = false;
@@ -61,7 +61,7 @@ public final class InputControl {
 
       if (dropSprint || idle) {
          var2 = false;
-         var0.method_5728(false);
+         clientPlayerEntity.setSprinting(false);
       }
 
       idle = false;
@@ -69,13 +69,13 @@ public final class InputControl {
       backward = false;
       releaseForward = false;
       dropSprint = false;
-      return var3 == var1.comp_3159()
-            && var4 == var1.comp_3160()
-            && var5 == var1.comp_3161()
-            && var6 == var1.comp_3162()
-            && var7 == var1.comp_3163()
-            && var2 == var1.comp_3165()
-         ? var1
-         : new PlayerInput(var3, var4, var5, var6, var7, var1.comp_3164(), var2);
+      return var3 == playerInput.forward()
+            && var4 == playerInput.backward()
+            && var5 == playerInput.left()
+            && var6 == playerInput.right()
+            && var7 == playerInput.jump()
+            && var2 == playerInput.sprint()
+         ? playerInput
+         : new PlayerInput(var3, var4, var5, var6, var7, playerInput.sneak(), var2);
    }
 }

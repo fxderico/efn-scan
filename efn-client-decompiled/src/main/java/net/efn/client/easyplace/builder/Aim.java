@@ -33,9 +33,7 @@ import net.minecraft.world.RaycastContext.ShapeType;
 
 @Environment(EnvType.CLIENT)
 public final class Aim {
-   private static final Direction[] ORDER = new Direction[]{
-      Direction.field_11036, Direction.field_11043, Direction.field_11035, Direction.field_11034, Direction.field_11039, Direction.field_11033
-   };
+   private static final Direction[] ORDER = new Direction[]{Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST, Direction.DOWN};
    private static final double[][] FACE_POINTS = new double[][]{{0.5, 0.5}, {0.5, 0.85}, {0.5, 0.15}, {0.15, 0.5}, {0.85, 0.5}};
    private static final float SETTLED = 0.6F;
    private static final float RETARGET = 25.0F;
@@ -46,28 +44,28 @@ public final class Aim {
    private Aim() {
    }
 
-   static Aim.Shot at(MinecraftClient var0, BlockPos var1) {
-      ClientPlayerEntity var2 = var0.field_1724;
-      if (var2 != null && var0.field_1687 != null) {
-         BlockState var3 = var0.field_1687.method_8320(var1);
-         VoxelShape var4 = var3.method_26218(var0.field_1687, var1);
-         if (var4.method_1110()) {
+   static Aim.Shot at(MinecraftClient minecraftClient, BlockPos blockPos) {
+      ClientPlayerEntity var2 = minecraftClient.player;
+      if (var2 != null && minecraftClient.world != null) {
+         BlockState var3 = minecraftClient.world.getBlockState(blockPos);
+         VoxelShape var4 = var3.getOutlineShape(minecraftClient.world, blockPos);
+         if (var4.isEmpty()) {
             return null;
          } else {
-            Box var5 = var4.method_1107().method_996(var1);
-            Vec3d var6 = var2.method_33571();
-            double var7 = var2.method_55754();
+            Box var5 = var4.getBoundingBox().offset(blockPos);
+            Vec3d var6 = var2.getEyePos();
+            double var7 = var2.getBlockInteractionRange();
 
             for (Direction var12 : ORDER) {
                float[] var13;
                BlockHitResult var14;
                Vec3d var15;
                if (faces(var5, var12, var6)
-                  && !((var15 = faceCenter(var5, var12)).method_1022(var6) > var7)
-                  && (var14 = trace(var0, var2, (var13 = PlacementUtil.calcRotation(var6, var15))[0], var13[1], var7)) != null
-                  && var14.method_17783() == Type.field_1332
-                  && var14.method_17777().equals(var1)
-                  && var14.method_17780() == var12) {
+                  && !((var15 = faceCenter(var5, var12)).distanceTo(var6) > var7)
+                  && (var14 = trace(minecraftClient, var2, (var13 = PlacementUtil.calcRotation(var6, var15))[0], var13[1], var7)) != null
+                  && var14.getType() == Type.BLOCK
+                  && var14.getBlockPos().equals(blockPos)
+                  && var14.getSide() == var12) {
                   return new Aim.Shot(var14, var13[0], var13[1]);
                }
             }
@@ -79,40 +77,40 @@ public final class Aim {
       }
    }
 
-   static Aim.Shot against(MinecraftClient var0, BlockPos var1, Fluid var2) {
-      return var0.field_1724 == null ? null : against(var0, var1, var2, var0.field_1724.method_33571());
+   static Aim.Shot against(MinecraftClient minecraftClient, BlockPos blockPos, Fluid fluid) {
+      return minecraftClient.player == null ? null : against(minecraftClient, blockPos, fluid, minecraftClient.player.getEyePos());
    }
 
-   static Aim.Shot against(MinecraftClient var0, BlockPos var1, Fluid var2, Vec3d var3) {
-      ClientPlayerEntity var4 = var0.field_1724;
-      if (var4 != null && var0.field_1687 != null) {
-         double var5 = var4.method_55754();
+   static Aim.Shot against(MinecraftClient minecraftClient, BlockPos blockPos, Fluid fluid, Vec3d vec3d) {
+      ClientPlayerEntity var4 = minecraftClient.player;
+      if (var4 != null && minecraftClient.world != null) {
+         double var5 = var4.getBlockInteractionRange();
 
          for (Direction var10 : ORDER) {
-            BlockPos var15 = var1.method_10093(var10.method_10153());
-            BlockState var16 = var0.field_1687.method_8320(var15);
+            BlockPos var15 = blockPos.offset(var10.getOpposite());
+            BlockState var16 = minecraftClient.world.getBlockState(var15);
             Box var11;
             VoxelShape var12;
             FluidFillable var13;
             Block var14;
-            if (!var16.method_45474()
-               && !clickable(var0, var15, var16)
+            if (!var16.isReplaceable()
+               && !clickable(minecraftClient, var15, var16)
                && (
-                  var2 == null
-                     || !((var14 = var16.method_26204()) instanceof FluidFillable)
-                     || !(var13 = (FluidFillable)var14).method_10310(var4, var0.field_1687, var15, var16, var2)
+                  fluid == null
+                     || !((var14 = var16.getBlock()) instanceof FluidFillable)
+                     || !(var13 = (FluidFillable)var14).canFillWithFluid(var4, minecraftClient.world, var15, var16, fluid)
                )
-               && !(var12 = var16.method_26218(var0.field_1687, var15)).method_1110()
-               && faces(var11 = var12.method_1107().method_996(var15), var10, var3)) {
+               && !(var12 = var16.getOutlineShape(minecraftClient.world, var15)).isEmpty()
+               && faces(var11 = var12.getBoundingBox().offset(var15), var10, vec3d)) {
                for (double[] var20 : FACE_POINTS) {
                   Vec3d var23 = facePoint(var11, var10, var20[0], var20[1]);
                   float[] var21;
                   BlockHitResult var22;
-                  if (!(var23.method_1022(var3) > var5)
-                     && (var22 = PlacementUtil.rayTraceFrom(var4, var3, (var21 = PlacementUtil.calcRotation(var3, var23))[0], var21[1], var5)) != null
-                     && var22.method_17783() == Type.field_1332
-                     && var22.method_17777().equals(var15)
-                     && var22.method_17780() == var10) {
+                  if (!(var23.distanceTo(vec3d) > var5)
+                     && (var22 = PlacementUtil.rayTraceFrom(var4, vec3d, (var21 = PlacementUtil.calcRotation(vec3d, var23))[0], var21[1], var5)) != null
+                     && var22.getType() == Type.BLOCK
+                     && var22.getBlockPos().equals(var15)
+                     && var22.getSide() == var10) {
                      return new Aim.Shot(var22, var21[0], var21[1]);
                   }
                }
@@ -125,52 +123,51 @@ public final class Aim {
       }
    }
 
-   private static Vec3d facePoint(Box var0, Direction var1, double var2, double var4) {
-      double var6 = var0.field_1323 + (var0.field_1320 - var0.field_1323) * var2;
-      double var8 = var0.field_1321 + (var0.field_1324 - var0.field_1321) * (var1.method_10166() == Axis.field_11052 ? var4 : var2);
-      double var10 = var0.field_1322 + (var0.field_1325 - var0.field_1322) * var4;
+   private static Vec3d facePoint(Box box, Direction direction, double d, double e) {
+      double var6 = box.minX + (box.maxX - box.minX) * d;
+      double var8 = box.minZ + (box.maxZ - box.minZ) * (direction.getAxis() == Axis.Y ? e : d);
+      double var10 = box.minY + (box.maxY - box.minY) * e;
 
-      return switch (var1) {
-         case field_11036 -> new Vec3d(var6, var0.field_1325, var8);
-         case field_11033 -> new Vec3d(var6, var0.field_1322, var8);
-         case field_11043 -> new Vec3d(var6, var10, var0.field_1321);
-         case field_11035 -> new Vec3d(var6, var10, var0.field_1324);
-         case field_11039 -> new Vec3d(var0.field_1323, var10, var8);
-         case field_11034 -> new Vec3d(var0.field_1320, var10, var8);
-         default -> throw new MatchException(null, null);
+      return switch (direction) {
+         case UP -> new Vec3d(var6, box.maxY, var8);
+         case DOWN -> new Vec3d(var6, box.minY, var8);
+         case NORTH -> new Vec3d(var6, var10, box.minZ);
+         case SOUTH -> new Vec3d(var6, var10, box.maxZ);
+         case WEST -> new Vec3d(box.minX, var10, var8);
+         case EAST -> new Vec3d(box.maxX, var10, var8);
       };
    }
 
-   static Aim.Shot side(MinecraftClient var0, BlockPos var1, Direction var2) {
-      return side(var0, var1, var2, new double[][]{{0.5, 0.85}, {0.5, 0.5}, {0.5, 0.2}});
+   static Aim.Shot side(MinecraftClient minecraftClient, BlockPos blockPos, Direction direction) {
+      return side(minecraftClient, blockPos, direction, new double[][]{{0.5, 0.85}, {0.5, 0.5}, {0.5, 0.2}});
    }
 
-   static Aim.Shot mine(MinecraftClient var0, BlockPos var1, Direction var2, double var3, double var5) {
-      return side(var0, var1, var2, new double[][]{{var3, var5}, {0.5, 0.5}, {0.5, 0.85}, {0.5, 0.2}});
+   static Aim.Shot mine(MinecraftClient minecraftClient, BlockPos blockPos, Direction direction, double d, double e) {
+      return side(minecraftClient, blockPos, direction, new double[][]{{d, e}, {0.5, 0.5}, {0.5, 0.85}, {0.5, 0.2}});
    }
 
-   private static Aim.Shot side(MinecraftClient var0, BlockPos var1, Direction var2, double[][] var3) {
-      ClientPlayerEntity var4 = var0.field_1724;
-      if (var4 != null && var0.field_1687 != null) {
-         VoxelShape var5 = var0.field_1687.method_8320(var1).method_26218(var0.field_1687, var1);
-         if (var5.method_1110()) {
+   private static Aim.Shot side(MinecraftClient minecraftClient, BlockPos blockPos, Direction direction, double[][] ds) {
+      ClientPlayerEntity var4 = minecraftClient.player;
+      if (var4 != null && minecraftClient.world != null) {
+         VoxelShape var5 = minecraftClient.world.getBlockState(blockPos).getOutlineShape(minecraftClient.world, blockPos);
+         if (var5.isEmpty()) {
             return null;
          } else {
-            Box var6 = var5.method_1107().method_996(var1);
-            Vec3d var7 = var4.method_33571();
-            double var8 = var4.method_55754();
-            if (!faces(var6, var2, var7)) {
+            Box var6 = var5.getBoundingBox().offset(blockPos);
+            Vec3d var7 = var4.getEyePos();
+            double var8 = var4.getBlockInteractionRange();
+            if (!faces(var6, direction, var7)) {
                return null;
             } else {
-               for (double[] var13 : var3) {
-                  Vec3d var16 = facePoint(var6, var2, var13[0], var13[1]);
+               for (double[] var13 : ds) {
+                  Vec3d var16 = facePoint(var6, direction, var13[0], var13[1]);
                   float[] var14;
                   BlockHitResult var15;
-                  if (!(var16.method_1022(var7) > var8)
-                     && (var15 = trace(var0, var4, (var14 = PlacementUtil.calcRotation(var7, var16))[0], var14[1], var8)) != null
-                     && var15.method_17783() == Type.field_1332
-                     && var15.method_17777().equals(var1)
-                     && var15.method_17780() == var2) {
+                  if (!(var16.distanceTo(var7) > var8)
+                     && (var15 = trace(minecraftClient, var4, (var14 = PlacementUtil.calcRotation(var7, var16))[0], var14[1], var8)) != null
+                     && var15.getType() == Type.BLOCK
+                     && var15.getBlockPos().equals(blockPos)
+                     && var15.getSide() == direction) {
                      return new Aim.Shot(var15, var14[0], var14[1]);
                   }
                }
@@ -183,16 +180,16 @@ public final class Aim {
       }
    }
 
-   static Aim.Shot water(MinecraftClient var0, BlockPos var1) {
-      ClientPlayerEntity var2 = var0.field_1724;
-      if (var2 != null && var0.field_1687 != null) {
-         Vec3d var3 = var2.method_33571();
-         double var4 = var2.method_55754();
-         Vec3d var6 = new Vec3d(var1.method_10263() + 0.5, var1.method_10264() + 0.85, var1.method_10260() + 0.5);
-         if (!(var3.field_1351 <= var6.field_1351) && !(var6.method_1022(var3) > var4)) {
+   static Aim.Shot water(MinecraftClient minecraftClient, BlockPos blockPos) {
+      ClientPlayerEntity var2 = minecraftClient.player;
+      if (var2 != null && minecraftClient.world != null) {
+         Vec3d var3 = var2.getEyePos();
+         double var4 = var2.getBlockInteractionRange();
+         Vec3d var6 = new Vec3d(blockPos.getX() + 0.5, blockPos.getY() + 0.85, blockPos.getZ() + 0.5);
+         if (!(var3.y <= var6.y) && !(var6.distanceTo(var3) > var4)) {
             float[] var7 = PlacementUtil.calcRotation(var3, var6);
-            BlockHitResult var8 = trace(var0, var2, var7[0], var7[1], var4, FluidHandling.field_1345);
-            return var8 != null && var8.method_17783() == Type.field_1332 && var8.method_17777().equals(var1) ? new Aim.Shot(var8, var7[0], var7[1]) : null;
+            BlockHitResult var8 = trace(minecraftClient, var2, var7[0], var7[1], var4, FluidHandling.SOURCE_ONLY);
+            return var8 != null && var8.getType() == Type.BLOCK && var8.getBlockPos().equals(blockPos) ? new Aim.Shot(var8, var7[0], var7[1]) : null;
          } else {
             return null;
          }
@@ -201,13 +198,13 @@ public final class Aim {
       }
    }
 
-   static boolean clickable(MinecraftClient var0, BlockPos var1) {
-      return clickable(var0, var1, var0.field_1687.method_8320(var1));
+   static boolean clickable(MinecraftClient minecraftClient, BlockPos blockPos) {
+      return clickable(minecraftClient, blockPos, minecraftClient.world.getBlockState(blockPos));
    }
 
-   private static boolean clickable(MinecraftClient var0, BlockPos var1, BlockState var2) {
-      Block var3 = var2.method_26204();
-      return var0.field_1687.method_8321(var1) != null
+   private static boolean clickable(MinecraftClient minecraftClient, BlockPos blockPos, BlockState blockState) {
+      Block var3 = blockState.getBlock();
+      return minecraftClient.world.getBlockEntity(blockPos) != null
          || var3 instanceof DoorBlock
          || var3 instanceof TrapdoorBlock
          || var3 instanceof FenceGateBlock
@@ -217,37 +214,37 @@ public final class Aim {
          || var3 instanceof NoteBlock;
    }
 
-   static void look(MinecraftClient var0, float var1, float var2) {
-      ClientPlayerEntity var3 = var0.field_1724;
+   static void look(MinecraftClient minecraftClient, float f, float g) {
+      ClientPlayerEntity var3 = minecraftClient.player;
       if (var3 != null) {
-         clearMouse(var0);
+         clearMouse(minecraftClient);
          motion = null;
-         float var4 = var3.method_36454();
-         float var5 = mouseStep(var0);
-         var3.method_36456(var4 + mouse(MathHelper.method_15393(var1 - var4), var5));
-         var3.method_36457(MathHelper.method_15363(var3.method_36455() + mouse(var2 - var3.method_36455(), var5), -90.0F, 90.0F));
+         float var4 = var3.getYaw();
+         float var5 = mouseStep(minecraftClient);
+         var3.setYaw(var4 + mouse(MathHelper.wrapDegrees(f - var4), var5));
+         var3.setPitch(MathHelper.clamp(var3.getPitch() + mouse(g - var3.getPitch(), var5), -90.0F, 90.0F));
       }
    }
 
-   static float mouseStep(MinecraftClient var0) {
-      double var1 = (Double)var0.field_1690.method_42495().method_41753() * 0.6 + 0.2;
+   static float mouseStep(MinecraftClient minecraftClient) {
+      double var1 = minecraftClient.options.getMouseSensitivity().getValue() * 0.6 + 0.2;
       return (float)(var1 * var1 * var1 * 8.0 * 0.15);
    }
 
-   private static float mouse(float var0, float var1) {
-      return var1 <= 0.0F ? var0 : Math.round(var0 / var1) * var1;
+   private static float mouse(float f, float g) {
+      return g <= 0.0F ? f : Math.round(f / g) * g;
    }
 
-   public static float turn(MinecraftClient var0, float var1, float var2, float var3) {
-      ClientPlayerEntity var6 = var0.field_1724;
+   public static float turn(MinecraftClient minecraftClient, float f, float g, float h) {
+      ClientPlayerEntity var6 = minecraftClient.player;
       if (var6 == null) {
          return 0.0F;
       } else {
-         clearMouse(var0);
-         float var7 = var6.method_36454();
-         float var8 = var6.method_36455();
-         float var9 = MathHelper.method_15393(var1 - var7);
-         float var10 = var2 - var8;
+         clearMouse(minecraftClient);
+         float var7 = var6.getYaw();
+         float var8 = var6.getPitch();
+         float var9 = MathHelper.wrapDegrees(f - var7);
+         float var10 = g - var8;
          float var4;
          float var5;
          if (Math.abs(var9) < 0.6F && Math.abs(var10) < 0.6F) {
@@ -255,73 +252,73 @@ public final class Aim {
             var5 = var9;
             var4 = var10;
          } else {
-            if (motion != null && !motion.done() && !motion.drifted(var1, var2)) {
-               motion.retarget(var1, var2);
+            if (motion != null && !motion.done() && !motion.drifted(f, g)) {
+               motion.retarget(f, g);
             } else {
-               motion = Aim.Motion.start(var7, var8, var1, var2, var3);
+               motion = Aim.Motion.start(var7, var8, f, g, h);
             }
 
             float[] var11 = motion.next();
-            var5 = MathHelper.method_15363(MathHelper.method_15393(var11[0] - var7), -var3, var3);
-            var4 = MathHelper.method_15363(var11[1] - var8, -var3, var3);
+            var5 = MathHelper.clamp(MathHelper.wrapDegrees(var11[0] - var7), -h, h);
+            var4 = MathHelper.clamp(var11[1] - var8, -h, h);
          }
 
-         float var12 = mouseStep(var0);
-         var6.method_36456(var7 + mouse(var5, var12));
-         var6.method_36457(MathHelper.method_15363(var8 + mouse(var4, var12), -90.0F, 90.0F));
-         return Math.abs(MathHelper.method_15393(var1 - var6.method_36454()));
+         float var12 = mouseStep(minecraftClient);
+         var6.setYaw(var7 + mouse(var5, var12));
+         var6.setPitch(MathHelper.clamp(var8 + mouse(var4, var12), -90.0F, 90.0F));
+         return Math.abs(MathHelper.wrapDegrees(f - var6.getYaw()));
       }
    }
 
-   private static void clearMouse(MinecraftClient var0) {
-      if (var0.field_1729 != null) {
-         AccessorMouseHandler var1 = (AccessorMouseHandler)var0.field_1729;
+   private static void clearMouse(MinecraftClient minecraftClient) {
+      if (minecraftClient.mouse != null) {
+         AccessorMouseHandler var1 = (AccessorMouseHandler)minecraftClient.mouse;
          var1.easyplace$setAccumulatedDX(0.0);
          var1.easyplace$setAccumulatedDY(0.0);
       }
    }
 
-   static boolean looking(ClientPlayerEntity var0, float var1, float var2) {
-      return Math.abs(MathHelper.method_15393(var0.method_36454() - var1)) < 0.5F && Math.abs(var0.method_36455() - var2) < 0.5F;
+   static boolean looking(ClientPlayerEntity clientPlayerEntity, float f, float g) {
+      return Math.abs(MathHelper.wrapDegrees(clientPlayerEntity.getYaw() - f)) < 0.5F && Math.abs(clientPlayerEntity.getPitch() - g) < 0.5F;
    }
 
-   static BlockHitResult trace(MinecraftClient var0, ClientPlayerEntity var1, float var2, float var3, double var4) {
-      return trace(var0, var1, var2, var3, var4, FluidHandling.field_1348);
+   static BlockHitResult trace(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, float f, float g, double d) {
+      return trace(minecraftClient, clientPlayerEntity, f, g, d, FluidHandling.NONE);
    }
 
-   private static BlockHitResult trace(MinecraftClient var0, ClientPlayerEntity var1, float var2, float var3, double var4, FluidHandling var6) {
-      Vec3d var7 = var1.method_33571();
-      double var8 = Math.toRadians(var2);
-      double var10 = Math.cos(Math.toRadians(var3));
-      Vec3d var12 = new Vec3d(-Math.sin(var8) * var10, -Math.sin(Math.toRadians(var3)), Math.cos(var8) * var10);
-      return var0.field_1687.method_17742(new RaycastContext(var7, var7.method_1019(var12.method_1021(var4)), ShapeType.field_17559, var6, var1));
+   private static BlockHitResult trace(
+      MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, float f, float g, double d, FluidHandling fluidHandling
+   ) {
+      Vec3d var7 = clientPlayerEntity.getEyePos();
+      double var8 = Math.toRadians(f);
+      double var10 = Math.cos(Math.toRadians(g));
+      Vec3d var12 = new Vec3d(-Math.sin(var8) * var10, -Math.sin(Math.toRadians(g)), Math.cos(var8) * var10);
+      return minecraftClient.world.raycast(new RaycastContext(var7, var7.add(var12.multiply(d)), ShapeType.OUTLINE, fluidHandling, clientPlayerEntity));
    }
 
-   private static boolean faces(Box var0, Direction var1, Vec3d var2) {
+   private static boolean faces(Box box, Direction direction, Vec3d vec3d) {
       double var3 = 0.02;
 
-      return switch (var1) {
-         case field_11036 -> var2.field_1351 > var0.field_1325 + var3;
-         case field_11033 -> var2.field_1351 < var0.field_1322 - var3;
-         case field_11043 -> var2.field_1350 < var0.field_1321 - var3;
-         case field_11035 -> var2.field_1350 > var0.field_1324 + var3;
-         case field_11039 -> var2.field_1352 < var0.field_1323 - var3;
-         case field_11034 -> var2.field_1352 > var0.field_1320 + var3;
-         default -> throw new MatchException(null, null);
+      return switch (direction) {
+         case UP -> vec3d.y > box.maxY + var3;
+         case DOWN -> vec3d.y < box.minY - var3;
+         case NORTH -> vec3d.z < box.minZ - var3;
+         case SOUTH -> vec3d.z > box.maxZ + var3;
+         case WEST -> vec3d.x < box.minX - var3;
+         case EAST -> vec3d.x > box.maxX + var3;
       };
    }
 
-   private static Vec3d faceCenter(Box var0, Direction var1) {
-      Vec3d var2 = var0.method_1005();
+   private static Vec3d faceCenter(Box box, Direction direction) {
+      Vec3d var2 = box.getCenter();
 
-      return switch (var1) {
-         case field_11036 -> new Vec3d(var2.field_1352, var0.field_1325, var2.field_1350);
-         case field_11033 -> new Vec3d(var2.field_1352, var0.field_1322, var2.field_1350);
-         case field_11043 -> new Vec3d(var2.field_1352, var2.field_1351, var0.field_1321);
-         case field_11035 -> new Vec3d(var2.field_1352, var2.field_1351, var0.field_1324);
-         case field_11039 -> new Vec3d(var0.field_1323, var2.field_1351, var2.field_1350);
-         case field_11034 -> new Vec3d(var0.field_1320, var2.field_1351, var2.field_1350);
-         default -> throw new MatchException(null, null);
+      return switch (direction) {
+         case UP -> new Vec3d(var2.x, box.maxY, var2.z);
+         case DOWN -> new Vec3d(var2.x, box.minY, var2.z);
+         case NORTH -> new Vec3d(var2.x, var2.y, box.minZ);
+         case SOUTH -> new Vec3d(var2.x, var2.y, box.maxZ);
+         case WEST -> new Vec3d(box.minX, var2.y, var2.z);
+         case EAST -> new Vec3d(box.maxX, var2.y, var2.z);
       };
    }
 
@@ -337,29 +334,29 @@ public final class Aim {
       private float targetPitch;
       private int elapsed;
 
-      private Motion(float var1, float var2, float var3, float var4, float var5, float var6, float var7, int var8) {
-         this.startYaw = var1;
-         this.startPitch = var2;
-         this.endYaw = var3;
-         this.endPitch = var4;
-         this.targetYaw = var5;
-         this.targetPitch = var6;
-         this.bend = var7;
-         this.ticks = var8;
+      private Motion(float f, float g, float h, float i, float j, float k, float l, int m) {
+         this.startYaw = f;
+         this.startPitch = g;
+         this.endYaw = h;
+         this.endPitch = i;
+         this.targetYaw = j;
+         this.targetPitch = k;
+         this.bend = l;
+         this.ticks = m;
       }
 
-      static Aim.Motion start(float var0, float var1, float var2, float var3, float var4) {
-         float var5 = MathHelper.method_15393(var2 - var0);
-         float var6 = var3 - var1;
+      static Aim.Motion start(float f, float g, float h, float i, float j) {
+         float var5 = MathHelper.wrapDegrees(h - f);
+         float var6 = i - g;
          double var7 = Math.hypot(var5, var6);
          double var9 = (0.07 + 0.055 * Math.log(1.0 + var7 / 3.0) / Math.log(2.0)) * Math.exp(Aim.HAND.nextGaussian() * 0.22);
-         int var11 = (int)Math.max(Math.ceil(var7 * 1.9 / var4), (double)Math.max(1L, Math.round(var9 * 20.0)));
+         int var11 = (int)Math.max(Math.ceil(var7 * 1.9 / j), (double)Math.max(1L, Math.round(var9 * 20.0)));
          double var12 = var7 > 6.0 ? Aim.HAND.nextGaussian() * 0.045 : 0.0;
          double var14 = Math.min(1.2, var7 * 0.015);
-         float var16 = (float)(var0 + var5 * (1.0 + var12) + Aim.HAND.nextGaussian() * var14);
-         float var17 = (float)(var1 + var6 * (1.0 + var12) + Aim.HAND.nextGaussian() * var14 * 0.7);
+         float var16 = (float)(f + var5 * (1.0 + var12) + Aim.HAND.nextGaussian() * var14);
+         float var17 = (float)(g + var6 * (1.0 + var12) + Aim.HAND.nextGaussian() * var14 * 0.7);
          float var18 = (float)(Aim.HAND.nextGaussian() * 0.06);
-         return new Aim.Motion(var0, var1, var16, var17, var0 + var5, var3, var18, var11);
+         return new Aim.Motion(f, g, var16, var17, f + var5, i, var18, var11);
       }
 
       float[] next() {
@@ -376,17 +373,17 @@ public final class Aim {
          return this.elapsed >= this.ticks;
       }
 
-      boolean drifted(float var1, float var2) {
-         return Math.hypot(MathHelper.method_15393(var1 - this.targetYaw), var2 - this.targetPitch) > 25.0;
+      boolean drifted(float f, float g) {
+         return Math.hypot(MathHelper.wrapDegrees(f - this.targetYaw), g - this.targetPitch) > 25.0;
       }
 
-      void retarget(float var1, float var2) {
-         float var3 = MathHelper.method_15393(var1 - this.targetYaw);
-         float var4 = var2 - this.targetPitch;
+      void retarget(float f, float g) {
+         float var3 = MathHelper.wrapDegrees(f - this.targetYaw);
+         float var4 = g - this.targetPitch;
          this.endYaw += var3;
          this.endPitch += var4;
          this.targetYaw += var3;
-         this.targetPitch = var2;
+         this.targetPitch = g;
       }
    }
 

@@ -30,56 +30,57 @@ final class AuthHttp {
    private AuthHttp() {
    }
 
-   static AuthHttp.Reply postForm(String var0, Map<String, String> var1) throws InterruptedException {
-      String var2 = var1.entrySet()
+   static AuthHttp.Reply postForm(String string, Map<String, String> map) throws InterruptedException {
+      String var2 = map.entrySet()
          .stream()
          .map(
-            var0x -> URLEncoder.encode((String)var0x.getKey(), StandardCharsets.UTF_8)
+            entry -> URLEncoder.encode((String)entry.getKey(), StandardCharsets.UTF_8)
                + "="
-               + URLEncoder.encode((String)var0x.getValue(), StandardCharsets.UTF_8)
+               + URLEncoder.encode((String)entry.getValue(), StandardCharsets.UTF_8)
          )
          .collect(Collectors.joining("&"));
       return send(
-         var0, HttpRequest.newBuilder(URI.create(var0)).header("Content-Type", "application/x-www-form-urlencoded").POST(BodyPublishers.ofString(var2))
+         string, HttpRequest.newBuilder(URI.create(string)).header("Content-Type", "application/x-www-form-urlencoded").POST(BodyPublishers.ofString(var2))
       );
    }
 
-   static AuthHttp.Reply postJson(String var0, String var1, Map<String, String> var2) throws InterruptedException {
-      Builder var3 = HttpRequest.newBuilder(URI.create(var0))
+   static AuthHttp.Reply postJson(String string, String string2, Map<String, String> map) throws InterruptedException {
+      Builder var3 = HttpRequest.newBuilder(URI.create(string))
          .header("Content-Type", "application/json")
-         .POST(BodyPublishers.ofString(var1, StandardCharsets.UTF_8));
-      var2.forEach(var3::header);
-      return send(var0, var3);
+         .POST(BodyPublishers.ofString(string2, StandardCharsets.UTF_8));
+      map.forEach(var3::header);
+      return send(string, var3);
    }
 
-   static AuthHttp.Reply get(String var0, String var1) throws InterruptedException {
-      return send(var0, HttpRequest.newBuilder(URI.create(var0)).header("Authorization", "Bearer " + var1).GET());
+   static AuthHttp.Reply get(String string, String string2) throws InterruptedException {
+      return send(string, HttpRequest.newBuilder(URI.create(string)).header("Authorization", "Bearer " + string2).GET());
    }
 
-   static String text(JsonObject var0, String var1) {
-      JsonElement var2 = var0 == null ? null : var0.get(var1);
+   static String text(JsonObject jsonObject, String string) {
+      JsonElement var2 = jsonObject == null ? null : jsonObject.get(string);
       return var2 != null && var2.isJsonPrimitive() ? var2.getAsString() : null;
    }
 
-   static JsonObject object(JsonObject var0, String var1) {
-      JsonElement var2 = var0 == null ? null : var0.get(var1);
+   static JsonObject object(JsonObject jsonObject, String string) {
+      JsonElement var2 = jsonObject == null ? null : jsonObject.get(string);
       return var2 != null && var2.isJsonObject() ? var2.getAsJsonObject() : null;
    }
 
-   private static AuthHttp.Reply send(String var0, Builder var1) throws InterruptedException {
+   private static AuthHttp.Reply send(String string, Builder builder) throws InterruptedException {
       try {
          HttpResponse var2 = CLIENT.send(
-            var1.timeout(TIMEOUT).header("Accept", "application/json").header("User-Agent", "EFNClient").build(), BodyHandlers.ofString(StandardCharsets.UTF_8)
+            builder.timeout(TIMEOUT).header("Accept", "application/json").header("User-Agent", "EFNClient").build(),
+            BodyHandlers.ofString(StandardCharsets.UTF_8)
          );
          return new AuthHttp.Reply(var2.statusCode(), parse((String)var2.body()), var2.headers());
       } catch (IOException var3) {
-         throw new AccountException("Couldn't reach " + URI.create(var0).getHost() + " - check your connection", var3);
+         throw new AccountException("Couldn't reach " + URI.create(string).getHost() + " - check your connection", var3);
       }
    }
 
-   private static JsonObject parse(String var0) {
+   private static JsonObject parse(String string) {
       try {
-         JsonElement var1 = JsonParser.parseString(var0);
+         JsonElement var1 = JsonParser.parseString(string);
          return var1.isJsonObject() ? var1.getAsJsonObject() : new JsonObject();
       } catch (RuntimeException var2) {
          return new JsonObject();
@@ -92,8 +93,8 @@ final class AuthHttp {
          return this.status >= 200 && this.status < 300;
       }
 
-      String text(String var1) {
-         return AuthHttp.text(this.json, var1);
+      String text(String string) {
+         return AuthHttp.text(this.json, string);
       }
    }
 }

@@ -11,10 +11,10 @@ import net.minecraft.util.Identifier;
 
 @Environment(EnvType.CLIENT)
 public record SchematicBlockState(BlockState state, Identifier blockId, Map<String, String> properties) {
-   public static SchematicBlockState of(BlockState var0) {
+   public static SchematicBlockState of(BlockState blockState) {
       LinkedHashMap var1 = new LinkedHashMap();
-      var0.method_11656().forEach((var1x, var2) -> var1.put(var1x.method_11899(), var2.toString()));
-      return new SchematicBlockState(var0, Registries.field_41175.method_10221(var0.method_26204()), Collections.unmodifiableMap(var1));
+      blockState.getEntries().forEach((property, comparable) -> var1.put(property.getName(), comparable.toString()));
+      return new SchematicBlockState(blockState, Registries.BLOCK.getId(blockState.getBlock()), Collections.unmodifiableMap(var1));
    }
 
    public String debugString() {
@@ -22,7 +22,7 @@ public record SchematicBlockState(BlockState state, Identifier blockId, Map<Stri
          return this.blockId.toString();
       } else {
          StringBuilder var1 = new StringBuilder(this.blockId.toString()).append('[');
-         this.properties.forEach((var1x, var2) -> var1.append(var1x).append('=').append(var2).append(','));
+         this.properties.forEach((string, string2) -> var1.append(string).append('=').append(string2).append(','));
          var1.setCharAt(var1.length() - 1, ']');
          return var1.toString();
       }

@@ -18,13 +18,13 @@ public abstract class MixinCustomCrosshairGui {
    }
 
    @Inject(
-      method = {"method_1736"},
+      method = {"renderCrosshair"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$hideVanillaCrosshair(DrawContext var1, RenderTickCounter var2, CallbackInfo var3) {
+   private void efn$hideVanillaCrosshair(DrawContext drawContext, RenderTickCounter renderTickCounter, CallbackInfo callbackInfo) {
       if (CustomCrosshairModule.active != null) {
-         var3.cancel();
+         callbackInfo.cancel();
       }
    }
 }

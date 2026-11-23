@@ -16,28 +16,28 @@ final class CompletionRequests {
       return this.form;
    }
 
-   void form(CompletionChannel.Form var1) {
-      this.form = var1;
+   void form(CompletionChannel.Form form) {
+      this.form = form;
    }
 
-   int fire(String var1) {
-      return this.fire(var1, this.form);
+   int fire(String string) {
+      return this.fire(string, this.form);
    }
 
-   int fire(String var1, CompletionChannel.Form var2) {
-      return CompletionChannel.INSTANCE.fire(this, var1, var2);
+   int fire(String string, CompletionChannel.Form form) {
+      return CompletionChannel.INSTANCE.fire(this, string, form);
    }
 
-   List<String> poll(int var1) {
-      return CompletionChannel.INSTANCE.poll(var1);
+   List<String> poll(int i) {
+      return CompletionChannel.INSTANCE.poll(i);
    }
 
-   void forget(int var1) {
-      CompletionChannel.INSTANCE.forget(var1);
+   void forget(int i) {
+      CompletionChannel.INSTANCE.forget(i);
    }
 
-   void prune(long var1) {
-      CompletionChannel.INSTANCE.prune(var1);
+   void prune(long l) {
+      CompletionChannel.INSTANCE.prune(l);
    }
 
    void clear() {

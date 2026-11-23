@@ -21,8 +21,8 @@ public enum MenuAction {
    public static final List<MenuAction> MAIN = List.of(SINGLEPLAYER, MULTIPLAYER, REALMS, OPTIONS, QUIT);
    private final String label;
 
-   private MenuAction(String nullxx) {
-      this.label = nullxx;
+   private MenuAction(String string2) {
+      this.label = string2;
    }
 
    public String label() {

@@ -25,40 +25,40 @@ public abstract class MixinScreenEffectRenderer {
    }
 
    @ModifyExpressionValue(
-      method = {"method_23067"},
+      method = {"renderOverlays"},
       at = {@At(
          value = "NEW",
-         target = "()Lnet/minecraft/class_4587;"
+         target = "()Lnet/minecraft/client/util/math/MatrixStack;"
       )}
    )
-   private MatrixStack efn$undoCustomFov(MatrixStack var1) {
+   private MatrixStack efn$undoCustomFov(MatrixStack matrixStack) {
       float var2 = CustomFovModule.screenEffectScale();
       if (var2 != 1.0F) {
-         var1.method_23760().method_23761().scale(var2, var2, 1.0F);
+         matrixStack.peek().getPositionMatrix().scale(var2, var2, 1.0F);
       }
 
-      return var1;
+      return matrixStack;
    }
 
    @Inject(
-      method = {"method_23070"},
+      method = {"renderFireOverlay"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private static void efn$cancelFireOverlay(MatrixStack var0, VertexConsumerProvider var1, Sprite var2, CallbackInfo var3) {
+   private static void efn$cancelFireOverlay(MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, Sprite sprite, CallbackInfo callbackInfo) {
       if (NoRenderModule.hideFireOverlay()) {
-         var3.cancel();
+         callbackInfo.cancel();
       }
    }
 
    @Inject(
-      method = {"method_24225"},
+      method = {"getInWallBlockState"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private static void efn$noWallOverlayInNoclipBoat(PlayerEntity var0, CallbackInfoReturnable<BlockState> var1) {
-      if (BoatNoclipModule.hidesWallOverlay(var0)) {
-         var1.setReturnValue(null);
+   private static void efn$noWallOverlayInNoclipBoat(PlayerEntity playerEntity, CallbackInfoReturnable<BlockState> callbackInfoReturnable) {
+      if (BoatNoclipModule.hidesWallOverlay(playerEntity)) {
+         callbackInfoReturnable.setReturnValue(null);
       }
    }
 }

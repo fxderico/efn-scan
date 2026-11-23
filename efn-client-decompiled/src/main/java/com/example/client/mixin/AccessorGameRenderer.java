@@ -12,12 +12,12 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 @Environment(EnvType.CLIENT)
 @Mixin({GameRenderer.class})
 public interface AccessorGameRenderer {
-   @Invoker("method_3196")
-   float efn$getFov(Camera var1, float var2, boolean var3);
+   @Invoker("getFov")
+   float efn$getFov(Camera camera, float f, boolean bl);
 
-   @Accessor("field_60793")
+   @Accessor("fogRenderer")
    FogRenderer efn$getFogRenderer();
 
-   @Invoker("method_3202")
+   @Invoker("shouldRenderBlockOutline")
    boolean efn$shouldRenderBlockOutline();
 }

@@ -18,13 +18,13 @@ public abstract class MixinMobEffectFogEnvironment {
    }
 
    @Inject(
-      method = {"method_42593"},
+      method = {"shouldApply"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$cancelBlindnessDarknessFog(CameraSubmersionType var1, Entity var2, CallbackInfoReturnable<Boolean> var3) {
+   private void efn$cancelBlindnessDarknessFog(CameraSubmersionType cameraSubmersionType, Entity entity, CallbackInfoReturnable<Boolean> callbackInfoReturnable) {
       if (NoRenderModule.hideBlindnessDarkness()) {
-         var3.setReturnValue(false);
+         callbackInfoReturnable.setReturnValue(false);
       }
    }
 }

@@ -78,16 +78,16 @@ final class CustomCharacters {
       return var12;
    }
 
-   private static String slug(String var0) {
-      String var1 = var0.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "_").replaceAll("^_+|_+$", "");
+   private static String slug(String string) {
+      String var1 = string.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "_").replaceAll("^_+|_+$", "");
       return var1.isEmpty() ? "model" : (var1.length() > 32 ? var1.substring(0, 32) : var1);
    }
 
-   private static void prune(Set<String> var0) {
+   private static void prune(Set<String> set) {
       try (DirectoryStream var1 = Files.newDirectoryStream(cache(), "*.anc")) {
          for (Path var3 : var1) {
             String var4 = var3.getFileName().toString().replace(".anc", "");
-            if (!var0.contains(var4)) {
+            if (!set.contains(var4)) {
                Files.deleteIfExists(var3);
             }
          }
@@ -95,82 +95,64 @@ final class CustomCharacters {
       }
    }
 
-   private static synchronized InputStream open(Path var0, String var1) throws IOException {
-      Path var2 = cache().resolve(var1 + ".anc");
+   private static synchronized InputStream open(Path path, String string) throws IOException {
+      Path var2 = cache().resolve(string + ".anc");
       if (Files.exists(var2)) {
          return Files.newInputStream(var2);
-      } else if (Files.size(var0) > 268435456L) {
+      } else if (Files.size(path) > 268435456L) {
          throw new IOException("the file is larger than 256 MB");
       } else {
-         String var3 = var0.getFileName().toString();
+         String var3 = path.getFileName().toString();
          CharacterModule.baking(var3);
          long var4 = System.nanoTime();
-         CharacterBake.Result var6 = CharacterBake.bake(Files.readAllBytes(var0), new CharacterBake.Options(), CustomCharacters::decode);
-         LOGGER.info("[EFN] Baked custom character {} in {} ms, moving {}", new Object[]{var3, (System.nanoTime() - var4) / 1000000L, var6.limbs()});
+         CharacterBake.Result var6 = CharacterBake.bake(Files.readAllBytes(path), new CharacterBake.Options(), CustomCharacters::decode);
+         LOGGER.info("[EFN] Baked custom character {} in {} ms, moving {}", var3, (System.nanoTime() - var4) / 1000000L, var6.limbs());
          if (var6.limbs().size() < 3) {
             CharacterModule.notice(var3, var6.limbs());
          }
 
          Files.createDirectories(cache());
-         Path var7 = cache().resolve(var1 + ".tmp");
+         Path var7 = cache().resolve(string + ".tmp");
          Files.write(var7, var6.data());
          Files.move(var7, var2, StandardCopyOption.REPLACE_EXISTING);
          return new ByteArrayInputStream(var6.data());
       }
    }
 
-   private static ImageDecoder.Picture decode(byte[] var0) throws IOException {
-      ByteBuffer var1 = MemoryUtil.memAlloc(var0.length);
+   private static ImageDecoder.Picture decode(byte[] bs) throws IOException {
+      ByteBuffer var1 = MemoryUtil.memAlloc(bs.length);
 
       ImageDecoder.Picture var29;
-      try {
-         MemoryStack var2 = MemoryStack.stackPush();
-
-         try {
-            var1.put(var0).flip();
-            IntBuffer var3 = var2.mallocInt(1);
-            IntBuffer var4 = var2.mallocInt(1);
-            IntBuffer var5 = var2.mallocInt(1);
-            ByteBuffer var6 = STBImage.stbi_load_from_memory(var1, var3, var4, var5, 4);
-            if (var6 == null) {
-               throw new IOException("a texture can't be read: " + STBImage.stbi_failure_reason());
-            }
-
-            try {
-               int var7 = var3.get(0);
-               int var8 = var4.get(0);
-               if (var7 > 8192 || var8 > 8192) {
-                  throw new IOException("a texture is over 8192 px");
-               }
-
-               int[] var9 = new int[var7 * var8];
-
-               for (int var10 = 0; var10 < var9.length; var10++) {
-                  int var11 = var6.get(var10 * 4) & 255;
-                  int var12 = var6.get(var10 * 4 + 1) & 255;
-                  int var13 = var6.get(var10 * 4 + 2) & 255;
-                  int var14 = var6.get(var10 * 4 + 3) & 255;
-                  var9[var10] = var14 << 24 | var11 << 16 | var12 << 8 | var13;
-               }
-
-               var29 = new ImageDecoder.Picture(var7, var8, var9);
-            } finally {
-               STBImage.stbi_image_free(var6);
-            }
-         } catch (Throwable var27) {
-            if (var2 != null) {
-               try {
-                  var2.close();
-               } catch (Throwable var25) {
-                  var27.addSuppressed(var25);
-               }
-            }
-
-            throw var27;
+      try (MemoryStack var2 = MemoryStack.stackPush()) {
+         var1.put(bs).flip();
+         IntBuffer var3 = var2.mallocInt(1);
+         IntBuffer var4 = var2.mallocInt(1);
+         IntBuffer var5 = var2.mallocInt(1);
+         ByteBuffer var6 = STBImage.stbi_load_from_memory(var1, var3, var4, var5, 4);
+         if (var6 == null) {
+            throw new IOException("a texture can't be read: " + STBImage.stbi_failure_reason());
          }
 
-         if (var2 != null) {
-            var2.close();
+         try {
+            int var7 = var3.get(0);
+            int var8 = var4.get(0);
+            if (var7 > 8192 || var8 > 8192) {
+               throw new IOException("a texture is over 8192 px");
+            }
+
+            int[] var9 = new int[var7 * var8];
+
+            for (int var10 = 0; var10 < var9.length; var10++) {
+               int var11 = var6.get(var10 * 4) & 255;
+               int var12 = var6.get(var10 * 4 + 1) & 255;
+               int var13 = var6.get(var10 * 4 + 2) & 255;
+               int var14 = var6.get(var10 * 4 + 3) & 255;
+               var9[var10] = var14 << 24 | var11 << 16 | var12 << 8 | var13;
+            }
+
+            var29 = new ImageDecoder.Picture(var7, var8, var9);
+         } finally {
+            STBImage.stbi_image_free(var6);
          }
       } finally {
          MemoryUtil.memFree(var1);

@@ -10,8 +10,8 @@ public enum InventoryPickSourceMode {
 
    private final String title;
 
-   private InventoryPickSourceMode(String nullxx) {
-      this.title = nullxx;
+   private InventoryPickSourceMode(String string2) {
+      this.title = string2;
    }
 
    public String title() {
@@ -29,9 +29,9 @@ public enum InventoryPickSourceMode {
       return var1;
    }
 
-   public static InventoryPickSourceMode of(String var0) {
+   public static InventoryPickSourceMode of(String string) {
       for (InventoryPickSourceMode var4 : values()) {
-         if (var4.title.equals(var0)) {
+         if (var4.title.equals(string)) {
             return var4;
          }
       }

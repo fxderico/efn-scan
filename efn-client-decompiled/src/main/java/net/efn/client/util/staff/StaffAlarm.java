@@ -35,15 +35,15 @@ public final class StaffAlarm {
    public StaffAlarm() {
    }
 
-   public void start(String var1, float var2, float var3) {
-      if (var1 != null && !"Off".equals(var1) && !(var3 <= 0.0F) && !(var2 <= 0.0F)) {
-         int var4 = Math.max(1, Math.round(var2 * 20.0F));
-         this.volume = Math.min(1.0F, var3);
-         if (this.isPlaying() && var1.equals(this.mode)) {
+   public void start(String string, float f, float g) {
+      if (string != null && !"Off".equals(string) && !(g <= 0.0F) && !(f <= 0.0F)) {
+         int var4 = Math.max(1, Math.round(f * 20.0F));
+         this.volume = Math.min(1.0F, g);
+         if (this.isPlaying() && string.equals(this.mode)) {
             this.ticksLeft = Math.max(this.ticksLeft, var4);
          } else {
             this.stop();
-            this.mode = var1;
+            this.mode = string;
             this.ticksLeft = var4;
             this.step = 0;
          }
@@ -68,9 +68,9 @@ public final class StaffAlarm {
       this.ticksLeft = 0;
       this.step = 0;
       if (!this.ringing.isEmpty()) {
-         SoundManager var1 = MinecraftClient.method_1551().method_1483();
+         SoundManager var1 = MinecraftClient.getInstance().getSoundManager();
          if (var1 != null) {
-            this.ringing.forEach(var1x -> var1.method_4870(var1x));
+            this.ringing.forEach(soundInstance -> var1.stop(soundInstance));
          }
 
          this.ringing.clear();
@@ -81,55 +81,44 @@ public final class StaffAlarm {
       return this.ticksLeft > 0;
    }
 
-   private void play(int var1) {
-      SoundManager var3 = MinecraftClient.method_1551().method_1483();
+   private void play(int i) {
+      SoundManager var3 = MinecraftClient.getInstance().getSoundManager();
       if (var3 != null) {
          String var5 = this.mode;
          SoundEvent var2;
 
          float var4 = switch (var5) {
             case "Beep" -> {
-               var2 = (SoundEvent)SoundEvents.field_18311.comp_349();
+               var2 = SoundEvents.BLOCK_NOTE_BLOCK_BIT.value();
                yield 1.6F;
             }
             case "Bell" -> {
-               var2 = SoundEvents.field_17265;
+               var2 = SoundEvents.BLOCK_BELL_USE;
                yield 1.0F;
             }
             case "Guardian" -> {
-               var2 = SoundEvents.field_15203;
+               var2 = SoundEvents.ENTITY_ELDER_GUARDIAN_CURSE;
                yield 1.0F;
             }
             default -> {
-               var2 = (SoundEvent)SoundEvents.field_14622.comp_349();
-               yield var1 % 2 == 0 ? 1.5F : 1.0F;
+               var2 = SoundEvents.BLOCK_NOTE_BLOCK_PLING.value();
+               yield i % 2 == 0 ? 1.5F : 1.0F;
             }
          };
          PositionedSoundInstance var7 = new PositionedSoundInstance(
-            var2.comp_3319(),
-            SoundCategory.field_15250,
-            this.volume,
-            var4,
-            SoundInstance.method_43221(),
-            false,
-            0,
-            AttenuationType.field_5478,
-            0.0,
-            0.0,
-            0.0,
-            true
+            var2.id(), SoundCategory.MASTER, this.volume, var4, SoundInstance.createRandom(), false, 0, AttenuationType.NONE, 0.0, 0.0, 0.0, true
          );
          if (this.ringing.size() >= 8) {
             this.ringing.removeFirst();
          }
 
          this.ringing.addLast(var7);
-         var3.method_4873(var7);
+         var3.play(var7);
       }
    }
 
-   private static int interval(String var0) {
-      return switch (var0) {
+   private static int interval(String string) {
+      return switch (string) {
          case "Beep" -> 3;
          case "Bell" -> 10;
          case "Guardian" -> 60;

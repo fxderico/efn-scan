@@ -15,25 +15,23 @@ public final class EasyPlaceDebug {
    private EasyPlaceDebug() {
    }
 
-   public static void log(String var0, PlacementState var1, PlacementTarget var2, float[] var3, ServerAckManager.Result var4, int var5) {
-      ClientPlayerEntity var6 = MinecraftClient.method_1551().field_1724;
-      float var7 = var6 != null ? var6.method_36454() : 0.0F / 0.0F;
-      float var8 = var6 != null ? var6.method_36455() : 0.0F / 0.0F;
+   public static void log(String string, PlacementState placementState, PlacementTarget placementTarget, float[] fs, ServerAckManager.Result result, int i) {
+      ClientPlayerEntity var6 = MinecraftClient.getInstance().player;
+      float var7 = var6 != null ? var6.getYaw() : 0.0F / 0.0F;
+      float var8 = var6 != null ? var6.getPitch() : 0.0F / 0.0F;
       EasyPlace.LOG
          .info(
             "EasyPlace Debug | event={} | Face={} | PlaceSide={} | Yaw={} | Pitch={} | PlayerYaw={} | PlayerPitch={} | State={} | ACK={} | Retry={}",
-            new Object[]{
-               var0,
-               var2 == null ? "-" : var2.clickedFace(),
-               var2 == null ? "-" : var2.placeSide(),
-               var3 == null ? "-" : String.format(Locale.ROOT, "%.2f", var3[0]),
-               var3 == null ? "-" : String.format(Locale.ROOT, "%.2f", var3[1]),
-               String.format(Locale.ROOT, "%.2f", var7),
-               String.format(Locale.ROOT, "%.2f", var8),
-               var1,
-               var4,
-               var5
-            }
+            string,
+            placementTarget == null ? "-" : placementTarget.clickedFace(),
+            placementTarget == null ? "-" : placementTarget.placeSide(),
+            fs == null ? "-" : String.format(Locale.ROOT, "%.2f", fs[0]),
+            fs == null ? "-" : String.format(Locale.ROOT, "%.2f", fs[1]),
+            String.format(Locale.ROOT, "%.2f", var7),
+            String.format(Locale.ROOT, "%.2f", var8),
+            placementState,
+            result,
+            i
          );
    }
 }

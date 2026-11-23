@@ -44,16 +44,16 @@ final class LyricsMatcher {
    private LyricsMatcher() {
    }
 
-   static LrclibTrack best(List<LrclibTrack> var0, LyricsQuery var1) {
-      if (var0 != null && !var0.isEmpty() && var1 != null) {
+   static LrclibTrack best(List<LrclibTrack> list, LyricsQuery lyricsQuery) {
+      if (list != null && !list.isEmpty() && lyricsQuery != null) {
          LrclibTrack var2 = null;
          int var3 = -1;
          double var4 = 1.7976931348623157E308;
 
-         for (LrclibTrack var7 : var0) {
+         for (LrclibTrack var7 : list) {
             int var8;
-            if (var7 != null && (var8 = score(var7, var1)) >= 0) {
-               double var9 = drift(var7, var1);
+            if (var7 != null && (var8 = score(var7, lyricsQuery)) >= 0) {
+               double var9 = drift(var7, lyricsQuery);
                if (var8 > var3 || var8 == var3 && var9 < var4) {
                   var2 = var7;
                   var3 = var8;
@@ -68,23 +68,23 @@ final class LyricsMatcher {
       }
    }
 
-   static int score(LrclibTrack var0, LyricsQuery var1) {
-      if (!var0.usable()) {
+   static int score(LrclibTrack lrclibTrack, LyricsQuery lyricsQuery) {
+      if (!lrclibTrack.usable()) {
          return -1;
       } else {
-         int var2 = durationScore(var0, var1);
+         int var2 = durationScore(lrclibTrack, lyricsQuery);
          if (var2 < 0) {
             return -1;
          } else {
-            int var3 = titleScore(var1.title(), var0.trackName());
+            int var3 = titleScore(lyricsQuery.title(), lrclibTrack.trackName());
             if (var3 <= 0) {
                return -1;
             } else {
-               int var4 = artistScore(var1.artist(), var0.artistName());
+               int var4 = artistScore(lyricsQuery.artist(), lrclibTrack.artistName());
                if (var4 <= 0) {
                   return -1;
                } else {
-                  int var5 = var0.hasSynced() ? 25 : (var0.hasPlain() ? 5 : 8);
+                  int var5 = lrclibTrack.hasSynced() ? 25 : (lrclibTrack.hasPlain() ? 5 : 8);
                   return var3 + var4 + var2 + var5;
                }
             }
@@ -92,29 +92,29 @@ final class LyricsMatcher {
       }
    }
 
-   private static int durationScore(LrclibTrack var0, LyricsQuery var1) {
-      if (var1.hasDuration() && !(var0.duration() <= 0.0)) {
-         double var2 = Math.abs(var0.duration() - var1.durationSeconds());
+   private static int durationScore(LrclibTrack lrclibTrack, LyricsQuery lyricsQuery) {
+      if (lyricsQuery.hasDuration() && !(lrclibTrack.duration() <= 0.0)) {
+         double var2 = Math.abs(lrclibTrack.duration() - lyricsQuery.durationSeconds());
          return var2 > 3.0 ? -1 : (int)Math.round(20.0 * (1.0 - var2 / 6.0));
       } else {
          return 0;
       }
    }
 
-   private static double drift(LrclibTrack var0, LyricsQuery var1) {
-      return var1.hasDuration() && !(var0.duration() <= 0.0) ? Math.abs(var0.duration() - var1.durationSeconds()) : 3.0;
+   private static double drift(LrclibTrack lrclibTrack, LyricsQuery lyricsQuery) {
+      return lyricsQuery.hasDuration() && !(lrclibTrack.duration() <= 0.0) ? Math.abs(lrclibTrack.duration() - lyricsQuery.durationSeconds()) : 3.0;
    }
 
-   static int titleScore(String var0, String var1) {
-      String var2 = normalize(var0);
-      String var3 = normalize(var1);
+   static int titleScore(String string, String string2) {
+      String var2 = normalize(string);
+      String var3 = normalize(string2);
       if (var2.isEmpty() || var3.isEmpty()) {
          return 0;
       } else if (var2.equals(var3)) {
          return 40;
       } else {
-         String var4 = normalize(baseTitle(var0));
-         String var5 = normalize(baseTitle(var1));
+         String var4 = normalize(baseTitle(string));
+         String var5 = normalize(baseTitle(string2));
          if (!var4.isEmpty() && var4.equals(var5)) {
             return 30;
          } else {
@@ -123,15 +123,15 @@ final class LyricsMatcher {
       }
    }
 
-   static int artistScore(String var0, String var1) {
-      String var3 = normalize(var0);
-      String var4 = normalize(var1);
+   static int artistScore(String string, String string2) {
+      String var3 = normalize(string);
+      String var4 = normalize(string2);
       if (!var3.isEmpty() && !var4.isEmpty()) {
          if (var3.equals(var4)) {
             return 30;
          } else {
-            Set var5 = artists(var0);
-            Set var6 = artists(var1);
+            Set var5 = artists(string);
+            Set var6 = artists(string2);
 
             for (String var8 : var5) {
                if (var6.contains(var8)) {
@@ -147,35 +147,35 @@ final class LyricsMatcher {
       }
    }
 
-   static String baseTitle(String var0) {
-      if (var0 == null) {
+   static String baseTitle(String string) {
+      if (string == null) {
          return "";
       } else {
-         String var1 = BRACKETED.matcher(var0).replaceAll("");
+         String var1 = BRACKETED.matcher(string).replaceAll("");
          var1 = DASHED.matcher(var1).replaceFirst("");
          var1 = FEATURING.matcher(var1).replaceFirst("");
          String var4;
-         return (var4 = var1.strip()).isEmpty() ? var0.strip() : var4;
+         return (var4 = var1.strip()).isEmpty() ? string.strip() : var4;
       }
    }
 
-   static String primaryArtist(String var0) {
-      if (var0 == null) {
+   static String primaryArtist(String string) {
+      if (string == null) {
          return "";
       } else {
-         for (String var5 : CREDIT_SPLIT.split(var0.strip())) {
+         for (String var5 : CREDIT_SPLIT.split(string.strip())) {
             if (!var5.isBlank()) {
                return var5.strip();
             }
          }
 
-         return var0.strip();
+         return string.strip();
       }
    }
 
-   static String normalize(String var0) {
-      if (var0 != null && !var0.isEmpty()) {
-         String var1 = var0.toLowerCase(Locale.ROOT)
+   static String normalize(String string) {
+      if (string != null && !string.isEmpty()) {
+         String var1 = string.toLowerCase(Locale.ROOT)
             .replace('\u0131', 'i')
             .replace("\u00df", "ss")
             .replace("\u00e6", "ae")
@@ -192,10 +192,10 @@ final class LyricsMatcher {
       }
    }
 
-   private static Set<String> artists(String var0) {
+   private static Set<String> artists(String string) {
       LinkedHashSet var1 = new LinkedHashSet();
 
-      for (String var5 : ARTIST_SPLIT.split(var0)) {
+      for (String var5 : ARTIST_SPLIT.split(string)) {
          String var6 = normalize(var5);
          if (!var6.isEmpty()) {
             var1.add(var6);
@@ -205,16 +205,16 @@ final class LyricsMatcher {
       return var1;
    }
 
-   private static boolean containsWords(String var0, String var1) {
-      return var1.length() >= 3 && var0.length() >= var1.length() ? (" " + var0 + " ").contains(" " + var1 + " ") : false;
+   private static boolean containsWords(String string, String string2) {
+      return string2.length() >= 3 && string.length() >= string2.length() ? (" " + string + " ").contains(" " + string2 + " ") : false;
    }
 
-   static List<String[]> searchTerms(LyricsQuery var0) {
+   static List<String[]> searchTerms(LyricsQuery lyricsQuery) {
       ArrayList var1 = new ArrayList(2);
-      var1.add(new String[]{var0.title(), var0.artist()});
-      String var2 = baseTitle(var0.title());
-      String var3 = primaryArtist(var0.artist());
-      if (!var2.equals(var0.title()) || !var3.equals(var0.artist())) {
+      var1.add(new String[]{lyricsQuery.title(), lyricsQuery.artist()});
+      String var2 = baseTitle(lyricsQuery.title());
+      String var3 = primaryArtist(lyricsQuery.artist());
+      if (!var2.equals(lyricsQuery.title()) || !var3.equals(lyricsQuery.artist())) {
          var1.add(new String[]{var2, var3});
       }
 

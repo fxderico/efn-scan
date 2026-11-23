@@ -9,41 +9,41 @@ public class CancellableEventType<E extends CancellableEvent> extends EventType<
    public CancellableEventType() {
    }
 
-   public CancellableEventType(String var1) {
-      super(var1);
+   public CancellableEventType(String string) {
+      super(string);
    }
 
-   public void dispatchPre(E var1) {
-      dispatchPreCancellable(this.list, (E)var1);
+   public void dispatchPre(E cancellableEvent) {
+      dispatchPreCancellable(this.list, (E)cancellableEvent);
    }
 
-   public void dispatchPost(E var1) {
-      dispatchPostGuarded(this.list, (E)var1);
+   public void dispatchPost(E cancellableEvent) {
+      dispatchPostGuarded(this.list, (E)cancellableEvent);
    }
 
-   static <E extends CancellableEvent> void dispatchPreCancellable(ListenerList<E> var0, E var1) {
-      Consumer[] var2 = var0.preCallbacks();
+   static <E extends CancellableEvent> void dispatchPreCancellable(ListenerList<E> listenerList, E cancellableEvent) {
+      Consumer[] var2 = listenerList.preCallbacks();
 
       for (int var3 = 0; var3 < var2.length; var3++) {
          try {
-            var2[var3].accept(var1);
+            var2[var3].accept(cancellableEvent);
          } catch (Exception var5) {
-            ListenerErrorReporter.report(var0.handleOf(Stage.PRE, var2[var3]), var1, var5);
+            ListenerErrorReporter.report(listenerList.handleOf(Stage.PRE, var2[var3]), cancellableEvent, var5);
          }
 
-         if (var1.cancelled) {
+         if (cancellableEvent.cancelled) {
             break;
          }
       }
    }
 
-   static <E extends CancellableEvent> void dispatchPostGuarded(ListenerList<E> var0, E var1) {
-      var1.postStage = true;
+   static <E extends CancellableEvent> void dispatchPostGuarded(ListenerList<E> listenerList, E cancellableEvent) {
+      cancellableEvent.postStage = true;
 
       try {
-         var0.dispatchPost(var1);
+         listenerList.dispatchPost(cancellableEvent);
       } finally {
-         var1.postStage = false;
+         cancellableEvent.postStage = false;
       }
    }
 }

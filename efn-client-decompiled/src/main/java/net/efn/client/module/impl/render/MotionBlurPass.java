@@ -4,7 +4,6 @@ import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.pipeline.RenderPipeline.Snippet;
 import com.mojang.blaze3d.platform.DepthTestFunction;
 import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.GpuDevice;
@@ -31,17 +30,17 @@ import org.slf4j.LoggerFactory;
 @Environment(EnvType.CLIENT)
 final class MotionBlurPass {
    private static final Logger LOGGER = LoggerFactory.getLogger("EFN");
-   private static final RenderPipeline PIPELINE = RenderPipeline.builder(new Snippet[0])
-      .withLocation(Identifier.method_60655("efn", "pipeline/motion_blur"))
+   private static final RenderPipeline PIPELINE = RenderPipeline.builder()
+      .withLocation(Identifier.of("efn", "pipeline/motion_blur"))
       .withVertexShader("core/screenquad")
-      .withFragmentShader(Identifier.method_60655("efn", "core/motion_blur"))
+      .withFragmentShader(Identifier.of("efn", "core/motion_blur"))
       .withSampler("InSampler")
-      .withUniform("MotionBlurConfig", UniformType.field_60031)
+      .withUniform("MotionBlurConfig", UniformType.UNIFORM_BUFFER)
       .withBlend(BlendFunction.TRANSLUCENT)
       .withColorWrite(true, false)
       .withDepthWrite(false)
       .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
-      .withVertexFormat(VertexFormats.field_60033, DrawMode.field_27379)
+      .withVertexFormat(VertexFormats.EMPTY, DrawMode.TRIANGLES)
       .build();
    private static final Supplier<String> PASS_LABEL = () -> "EFN motion blur";
    private static final Supplier<String> CONFIG_LABEL = () -> "EFN motion blur config";
@@ -61,79 +60,64 @@ final class MotionBlurPass {
    private MotionBlurPass() {
    }
 
-   static void apply(boolean var0, float var1) {
-      MinecraftClient var3 = MinecraftClient.method_1551();
-      Framebuffer var4 = var3.method_1522();
-      GpuTexture var5 = var4.method_30277();
-      if (var0
-         && var3.field_1687 != null
-         && var3.method_53466()
-         && !var3.field_1773.method_35765()
+   static void apply(boolean bl, float f) {
+      MinecraftClient var3 = MinecraftClient.getInstance();
+      Framebuffer var4 = var3.getFramebuffer();
+      GpuTexture var5 = var4.getColorAttachment();
+      if (bl
+         && var3.world != null
+         && var3.isFinishedLoading()
+         && !var3.gameRenderer.isRenderingPanorama()
          && var5 != null
-         && var4.field_1482 > 0
-         && var4.field_1481 > 0) {
+         && var4.textureWidth > 0
+         && var4.textureHeight > 0) {
          long var6 = System.nanoTime();
          long var8 = var6 - lastFrameNanos;
          lastFrameNanos = var6;
-         int var10 = System.identityHashCode(var3.field_1687);
+         int var10 = System.identityHashCode(var3.world);
          if (var10 != levelKey) {
             levelKey = var10;
             primed = false;
          }
 
          if (history == null) {
-            allocate(var4.field_1482, var4.field_1481);
+            allocate(var4.textureWidth, var4.textureHeight);
             primed = false;
-         } else if (history.field_1482 != var4.field_1482 || history.field_1481 != var4.field_1481) {
-            history.method_1234(var4.field_1482, var4.field_1481);
+         } else if (history.textureWidth != var4.textureWidth || history.textureHeight != var4.textureHeight) {
+            history.resize(var4.textureWidth, var4.textureHeight);
             primed = false;
          }
 
          GpuDevice var11 = RenderSystem.getDevice();
          CommandEncoder var12 = var11.createCommandEncoder();
          float var2;
-         if (primed && var8 > 0L && var8 < 1000000000L && (var2 = (float)Math.pow(var1, var8 * 6.0E-8)) >= 0.003921569F && shaderReady(var11)) {
+         if (primed && var8 > 0L && var8 < 1000000000L && (var2 = (float)Math.pow(f, var8 * 6.0E-8)) >= 0.003921569F && shaderReady(var11)) {
             blend(var12, var4, var2);
          }
 
-         var12.copyTextureToTexture(var5, history.method_30277(), 0, 0, 0, 0, 0, var4.field_1482, var4.field_1481);
+         var12.copyTextureToTexture(var5, history.getColorAttachment(), 0, 0, 0, 0, 0, var4.textureWidth, var4.textureHeight);
          primed = true;
       } else {
          primed = false;
       }
    }
 
-   private static void blend(CommandEncoder var0, Framebuffer var1, float var2) {
+   private static void blend(CommandEncoder commandEncoder, Framebuffer framebuffer, float f) {
       seed = seed + 1 & 63;
-      configData.putFloat(0, var2);
+      configData.putFloat(0, f);
       configData.putFloat(4, seed * 7.0F);
-      var0.writeToBuffer(configSlice, configData);
-      RenderPass var3 = var0.createRenderPass(PASS_LABEL, var1.method_71639(), OptionalInt.empty());
+      commandEncoder.writeToBuffer(configSlice, configData);
 
-      try {
+      try (RenderPass var3 = commandEncoder.createRenderPass(PASS_LABEL, framebuffer.getColorAttachmentView(), OptionalInt.empty())) {
          var3.setPipeline(PIPELINE);
          var3.setUniform("MotionBlurConfig", configSlice);
-         var3.bindTexture("InSampler", history.method_71639(), RenderSystem.getSamplerCache().method_75294(FilterMode.NEAREST));
+         var3.bindTexture("InSampler", history.getColorAttachmentView(), RenderSystem.getSamplerCache().get(FilterMode.NEAREST));
          var3.draw(0, 3);
-      } catch (Throwable var7) {
-         if (var3 != null) {
-            try {
-               var3.close();
-            } catch (Throwable var6) {
-               var7.addSuppressed(var6);
-            }
-         }
-
-         throw var7;
-      }
-
-      if (var3 != null) {
-         var3.close();
       }
    }
 
-   private static boolean shaderReady(GpuDevice var0) {
-      if (var0.precompilePipeline(PIPELINE).isValid()) {
+   private static boolean shaderReady(GpuDevice gpuDevice) {
+      if (gpuDevice.precompilePipeline(PIPELINE).isValid()) {
          invalidShaderLogged = false;
          return true;
       } else {
@@ -146,8 +130,8 @@ final class MotionBlurPass {
       }
    }
 
-   private static void allocate(int var0, int var1) {
-      history = new SimpleFramebuffer("EFN motion blur history", var0, var1, false);
+   private static void allocate(int i, int j) {
+      history = new SimpleFramebuffer("EFN motion blur history", i, j, false);
       config = RenderSystem.getDevice().createBuffer(CONFIG_LABEL, 136, 16L);
       configSlice = config.slice();
       configData = BufferUtils.createByteBuffer(16);
@@ -155,7 +139,7 @@ final class MotionBlurPass {
 
    static void release() {
       if (history != null) {
-         history.method_1238();
+         history.delete();
          history = null;
       }
 

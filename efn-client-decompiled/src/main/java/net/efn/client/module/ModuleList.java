@@ -15,22 +15,22 @@ final class ModuleList extends AbstractList<ClientModule> implements RandomAcces
    static final ModuleList EMPTY = new ModuleList(new ClientModule[0]);
    private final ClientModule[] modules;
 
-   private ModuleList(ClientModule[] var1) {
-      this.modules = var1;
+   private ModuleList(ClientModule[] clientModules) {
+      this.modules = clientModules;
    }
 
-   static ModuleList of(Collection<ClientModule> var0) {
-      return var0.isEmpty() ? EMPTY : new ModuleList(var0.toArray(new ClientModule[0]));
+   static ModuleList of(Collection<ClientModule> collection) {
+      return collection.isEmpty() ? EMPTY : new ModuleList(collection.toArray(new ClientModule[0]));
    }
 
-   ModuleList with(ClientModule var1) {
+   ModuleList with(ClientModule clientModule) {
       ClientModule[] var2 = Arrays.copyOf(this.modules, this.modules.length + 1);
-      var2[this.modules.length] = var1;
+      var2[this.modules.length] = clientModule;
       return new ModuleList(var2);
    }
 
-   ModuleList without(ClientModule var1) {
-      int var2 = this.indexOfIdentity(var1);
+   ModuleList without(ClientModule clientModule) {
+      int var2 = this.indexOfIdentity(clientModule);
       if (var2 < 0) {
          return this;
       } else if (this.modules.length == 1) {
@@ -43,13 +43,13 @@ final class ModuleList extends AbstractList<ClientModule> implements RandomAcces
       }
    }
 
-   boolean containsIdentity(ClientModule var1) {
-      return this.indexOfIdentity(var1) >= 0;
+   boolean containsIdentity(ClientModule clientModule) {
+      return this.indexOfIdentity(clientModule) >= 0;
    }
 
-   private int indexOfIdentity(ClientModule var1) {
+   private int indexOfIdentity(ClientModule clientModule) {
       for (int var2 = 0; var2 < this.modules.length; var2++) {
-         if (this.modules[var2] == var1) {
+         if (this.modules[var2] == clientModule) {
             return var2;
          }
       }
@@ -57,8 +57,8 @@ final class ModuleList extends AbstractList<ClientModule> implements RandomAcces
       return -1;
    }
 
-   public ClientModule get(int var1) {
-      return this.modules[var1];
+   public ClientModule get(int i) {
+      return this.modules[i];
    }
 
    @Override
@@ -87,9 +87,9 @@ final class ModuleList extends AbstractList<ClientModule> implements RandomAcces
    }
 
    @Override
-   public void forEach(Consumer<? super ClientModule> var1) {
+   public void forEach(Consumer<? super ClientModule> consumer) {
       for (ClientModule var5 : this.modules) {
-         var1.accept(var5);
+         consumer.accept(var5);
       }
    }
 

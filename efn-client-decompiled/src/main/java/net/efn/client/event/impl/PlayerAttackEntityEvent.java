@@ -15,11 +15,11 @@ public final class PlayerAttackEntityEvent extends CancellableEvent {
    private PlayerAttackEntityEvent() {
    }
 
-   public static boolean dispatch(Entity var0) {
+   public static boolean dispatch(Entity entity) {
       if (!TYPE.hasPreListeners()) {
          return false;
       } else {
-         INSTANCE.target = var0;
+         INSTANCE.target = entity;
          INSTANCE.resetCancellation();
          TYPE.dispatch(INSTANCE);
          boolean var1 = INSTANCE.isCancelled();

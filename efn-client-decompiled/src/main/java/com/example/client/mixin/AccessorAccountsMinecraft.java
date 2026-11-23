@@ -19,29 +19,29 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin({MinecraftClient.class})
 public interface AccessorAccountsMinecraft {
    @Mutable
-   @Accessor("field_1726")
-   void efn$setUser(Session var1);
+   @Accessor("session")
+   void efn$setUser(Session session);
 
    @Mutable
-   @Accessor("field_26902")
-   void efn$setUserApiService(UserApiService var1);
+   @Accessor("userApiService")
+   void efn$setUserApiService(UserApiService userApiService);
 
    @Mutable
-   @Accessor("field_47680")
-   void efn$setUserPropertiesFuture(CompletableFuture<UserProperties> var1);
+   @Accessor("userPropertiesFuture")
+   void efn$setUserPropertiesFuture(CompletableFuture<UserProperties> completableFuture);
 
    @Mutable
-   @Accessor("field_45899")
-   void efn$setProfileFuture(CompletableFuture<ProfileResult> var1);
+   @Accessor("gameProfileFuture")
+   void efn$setProfileFuture(CompletableFuture<ProfileResult> completableFuture);
 
    @Mutable
-   @Accessor("field_26842")
-   void efn$setPlayerSocialManager(SocialInteractionsManager var1);
+   @Accessor("socialInteractionsManager")
+   void efn$setPlayerSocialManager(SocialInteractionsManager socialInteractionsManager);
 
    @Mutable
-   @Accessor("field_39068")
-   void efn$setProfileKeyPairManager(ProfileKeys var1);
+   @Accessor("profileKeys")
+   void efn$setProfileKeyPairManager(ProfileKeys profileKeys);
 
-   @Accessor("field_39492")
-   void efn$setReportingContext(AbuseReportContext var1);
+   @Accessor("abuseReportContext")
+   void efn$setReportingContext(AbuseReportContext abuseReportContext);
 }

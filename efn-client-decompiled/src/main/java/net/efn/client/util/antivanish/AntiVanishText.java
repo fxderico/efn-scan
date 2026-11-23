@@ -11,9 +11,9 @@ public final class AntiVanishText {
    private AntiVanishText() {
    }
 
-   public static String normalize(String var0) {
-      if (var0 != null && !var0.isBlank()) {
-         String var2 = Normalizer.normalize(stripLegacyCodes(var0), Form.NFKD).toLowerCase(Locale.ROOT);
+   public static String normalize(String string) {
+      if (string != null && !string.isBlank()) {
+         String var2 = Normalizer.normalize(stripLegacyCodes(string), Form.NFKD).toLowerCase(Locale.ROOT);
          StringBuilder var3 = new StringBuilder(var2.length());
          boolean var4 = true;
          int var5 = 0;
@@ -42,9 +42,9 @@ public final class AntiVanishText {
       }
    }
 
-   public static boolean containsPlayerName(String var0, String var1) {
-      String var2 = stripLegacyCodes(var0 == null ? "" : var0).toLowerCase(Locale.ROOT);
-      String var3 = stripLegacyCodes(var1 == null ? "" : var1).trim().toLowerCase(Locale.ROOT);
+   public static boolean containsPlayerName(String string, String string2) {
+      String var2 = stripLegacyCodes(string == null ? "" : string).toLowerCase(Locale.ROOT);
+      String var3 = stripLegacyCodes(string2 == null ? "" : string2).trim().toLowerCase(Locale.ROOT);
       if (var3.matches("[a-z0-9_]{1,16}")) {
          int var10 = 0;
 
@@ -66,18 +66,18 @@ public final class AntiVanishText {
 
          return false;
       } else {
-         String var4 = normalize(var0);
-         String var5 = normalize(var1);
+         String var4 = normalize(string);
+         String var5 = normalize(string2);
          return !var4.isBlank() && !var5.isBlank() ? var4.equals(var5) || (" " + var4 + " ").contains(" " + var5 + " ") : false;
       }
    }
 
-   public static boolean looksLikeLeaveMessage(String var0, String var1) {
-      if (!containsPlayerName(var0, var1)) {
+   public static boolean looksLikeLeaveMessage(String string, String string2) {
+      if (!containsPlayerName(string, string2)) {
          return false;
       } else {
-         String var2 = " " + normalize(var0) + " ";
-         String var3 = normalize(var1);
+         String var2 = " " + normalize(string) + " ";
+         String var3 = normalize(string2);
          if (var3.isBlank()) {
             return false;
          } else {
@@ -93,26 +93,26 @@ public final class AntiVanishText {
       }
    }
 
-   public static boolean isPlausiblePlayerName(String var0) {
-      if (var0 == null) {
+   public static boolean isPlausiblePlayerName(String string) {
+      if (string == null) {
          return false;
       } else {
-         String var1 = var0.trim();
+         String var1 = string.trim();
          int var2 = var1.length();
          return var2 >= 3 && var2 <= 16 ? var1.indexOf(32) < 0 : false;
       }
    }
 
-   public static boolean isUsername(String var0) {
-      if (var0 == null) {
+   public static boolean isUsername(String string) {
+      if (string == null) {
          return false;
       } else {
-         int var1 = var0.length();
+         int var1 = string.length();
          if (var1 >= 2 && var1 <= 32) {
             boolean var2 = false;
 
             for (int var3 = 0; var3 < var1; var3++) {
-               char var5 = var0.charAt(var3);
+               char var5 = string.charAt(var3);
                boolean var4 = var5 >= 'A' && var5 <= 'Z' || var5 >= 'a' && var5 <= 'z' || var5 >= '0' && var5 <= '9';
                if (var4) {
                   var2 = true;
@@ -128,26 +128,26 @@ public final class AntiVanishText {
       }
    }
 
-   private static boolean isUsernameCharacter(char var0) {
-      return var0 >= 'a' && var0 <= 'z' || var0 >= '0' && var0 <= '9' || var0 == '_';
+   private static boolean isUsernameCharacter(char c) {
+      return c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '_';
    }
 
-   private static boolean isMark(int var0) {
-      int var1 = Character.getType(var0);
+   private static boolean isMark(int i) {
+      int var1 = Character.getType(i);
       return var1 == 6 || var1 == 8 || var1 == 7;
    }
 
-   private static boolean isFormatCode(int var0) {
-      return var0 == 167 || var0 == 8203 || var0 == 8204 || var0 == 8205 || var0 == 65279;
+   private static boolean isFormatCode(int i) {
+      return i == 167 || i == 8203 || i == 8204 || i == 8205 || i == 65279;
    }
 
-   private static String stripLegacyCodes(String var0) {
-      if (var0 != null && !var0.isEmpty()) {
-         StringBuilder var1 = new StringBuilder(var0.length());
+   private static String stripLegacyCodes(String string) {
+      if (string != null && !string.isEmpty()) {
+         StringBuilder var1 = new StringBuilder(string.length());
 
-         for (int var2 = 0; var2 < var0.length(); var2++) {
-            char var4 = var0.charAt(var2);
-            if (var4 == 167 && var2 + 1 < var0.length() && "0123456789abcdefklmnorx".indexOf(Character.toLowerCase(var0.charAt(var2 + 1))) >= 0) {
+         for (int var2 = 0; var2 < string.length(); var2++) {
+            char var4 = string.charAt(var2);
+            if (var4 == 167 && var2 + 1 < string.length() && "0123456789abcdefklmnorx".indexOf(Character.toLowerCase(string.charAt(var2 + 1))) >= 0) {
                var2++;
             } else {
                var1.append(var4);
@@ -160,8 +160,8 @@ public final class AntiVanishText {
       }
    }
 
-   private static int foldConfusable(int var0) {
-      return switch (var0) {
+   private static int foldConfusable(int i) {
+      return switch (i) {
          case 593, 945, 1072, 7424 -> 97;
          case 609, 610 -> 103;
          case 618, 953, 1110 -> 105;
@@ -188,7 +188,7 @@ public final class AntiVanishText {
          case 1307 -> 113;
          case 7458, 7459 -> 122;
          case 42800 -> 102;
-         default -> var0;
+         default -> i;
       };
    }
 }

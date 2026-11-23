@@ -19,12 +19,12 @@ public abstract class MixinJumpCirclesLevelRenderer {
    }
 
    @Inject(
-      method = {"method_62206"},
+      method = {"renderBlockDamage"},
       at = {@At("HEAD")}
    )
-   private void efn$jumpCircles(MatrixStack var1, Immediate var2, WorldRenderState var3, CallbackInfo var4) {
+   private void efn$jumpCircles(MatrixStack matrixStack, Immediate immediate, WorldRenderState worldRenderState, CallbackInfo callbackInfo) {
       if (JumpCirclesModule.active != null) {
-         JumpCirclesModule.renderLevel(var3.field_63082);
+         JumpCirclesModule.renderLevel(worldRenderState.cameraRenderState);
       }
    }
 }

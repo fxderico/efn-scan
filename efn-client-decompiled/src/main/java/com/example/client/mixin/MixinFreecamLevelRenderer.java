@@ -22,24 +22,24 @@ public abstract class MixinFreecamLevelRenderer {
    }
 
    @Inject(
-      method = {"method_40050"},
+      method = {"isRenderingReady"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$freecamEntitiesReady(BlockPos var1, CallbackInfoReturnable<Boolean> var2) {
+   private void efn$freecamEntitiesReady(BlockPos blockPos, CallbackInfoReturnable<Boolean> callbackInfoReturnable) {
       if (FreecamModule.active != null) {
-         var2.setReturnValue(true);
+         callbackInfoReturnable.setReturnValue(true);
       }
    }
 
    @WrapOperation(
-      method = {"method_22710"},
+      method = {"render"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_761;method_74752(Lnet/minecraft/class_4184;Lnet/minecraft/class_4604;Z)V"
+         target = "Lnet/minecraft/client/render/WorldRenderer;updateCamera(Lnet/minecraft/client/render/Camera;Lnet/minecraft/client/render/Frustum;Z)V"
       )}
    )
-   private void efn$freelookCullInsideBlocks(WorldRenderer var1, Camera var2, Frustum var3, boolean var4, Operation<Void> var5) {
-      var5.call(new Object[]{var1, var2, var3, var4 || var2.method_19333() && FreelookModule.throughBlocks()});
+   private void efn$freelookCullInsideBlocks(WorldRenderer worldRenderer, Camera camera, Frustum frustum, boolean bl, Operation<Void> operation) {
+      operation.call(worldRenderer, camera, frustum, bl || camera.isThirdPerson() && FreelookModule.throughBlocks());
    }
 }

@@ -22,6 +22,5 @@ tasks.withType(JavaCompile).configureEach {
     options.compilerArgs += ['-Xlint:none']
 }
 
-// The obfuscated decompile does not round-trip (e.g. `this` aliased to `fvXo`), and this
-// code must never be built into something runnable. Sources are here to be READ.
-tasks.named('compileJava') { enabled = false }
+// Sources compile (javac only, for IDE navigation / type checking). Never package or run them.
+tasks.named('jar') { enabled = false }

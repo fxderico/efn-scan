@@ -24,70 +24,70 @@ public abstract class MixinLocalPlayer {
    }
 
    @WrapMethod(
-      method = {"method_5784"}
+      method = {"move"}
    )
-   private void efn$onMove(MovementType var1, Vec3d var2, Operation<Void> var3) {
+   private void efn$onMove(MovementType movementType, Vec3d vec3d, Operation<Void> operation) {
       if (!PlayerMoveEvent.TYPE.hasListeners()) {
-         var3.call(new Object[]{var1, var2});
+         operation.call(movementType, vec3d);
       } else {
-         PlayerMoveEvent.move(var2, var2x -> var3.call(new Object[]{var1, var2x}));
+         PlayerMoveEvent.move(vec3d, vec3dx -> operation.call(movementType, vec3dx));
       }
    }
 
    @Inject(
-      method = {"method_5773"},
+      method = {"tick"},
       at = {@At("HEAD")}
    )
-   private void efn$walkServerRotation(CallbackInfo var1) {
+   private void efn$walkServerRotation(CallbackInfo callbackInfo) {
       ClientPlayerEntity var2 = (ClientPlayerEntity)this;
-      if (MinecraftClient.method_1551().field_1724 == var2) {
+      if (MinecraftClient.getInstance().player == var2) {
          ServerRotation.applyForMovement(var2);
       }
    }
 
    @Inject(
-      method = {"method_5773"},
+      method = {"tick"},
       at = {@At("RETURN")}
    )
-   private void efn$finishServerRotation(CallbackInfo var1) {
+   private void efn$finishServerRotation(CallbackInfo callbackInfo) {
       ServerRotation.finishTick((ClientPlayerEntity)this);
    }
 
    @Inject(
-      method = {"method_6007"},
+      method = {"tickMovement"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_744;method_3129()V",
+         target = "Lnet/minecraft/client/input/Input;tick()V",
          shift = Shift.AFTER
       )}
    )
-   private void efn$freecamAfterInput(CallbackInfo var1) {
+   private void efn$freecamAfterInput(CallbackInfo callbackInfo) {
       ClientPlayerEntity var2 = (ClientPlayerEntity)this;
-      MinecraftClient var3 = MinecraftClient.method_1551();
-      if (var3.field_1724 == var2) {
+      MinecraftClient var3 = MinecraftClient.getInstance();
+      if (var3.player == var2) {
          FreecamModule.drive(var3);
       }
    }
 
    @Inject(
-      method = {"method_3136"},
+      method = {"sendMovementPackets"},
       at = {@At("HEAD")}
    )
-   private void efn$freecamBeforeSend(CallbackInfo var1) {
+   private void efn$freecamBeforeSend(CallbackInfo callbackInfo) {
       ClientPlayerEntity var2 = (ClientPlayerEntity)this;
-      MinecraftClient var3 = MinecraftClient.method_1551();
-      if (var3.field_1724 == var2) {
+      MinecraftClient var3 = MinecraftClient.getInstance();
+      if (var3.player == var2) {
          FreecamModule.drive(var3);
       }
    }
 
    @Inject(
-      method = {"method_3136"},
+      method = {"sendMovementPackets"},
       at = {@At("RETURN")}
    )
-   private void efn$swapOutServerRotation(CallbackInfo var1) {
+   private void efn$swapOutServerRotation(CallbackInfo callbackInfo) {
       ClientPlayerEntity var2 = (ClientPlayerEntity)this;
-      if (MinecraftClient.method_1551().field_1724 == var2) {
+      if (MinecraftClient.getInstance().player == var2) {
          ServerRotation.afterSend(var2);
       }
    }

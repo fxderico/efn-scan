@@ -37,14 +37,14 @@ public final class ServerRotation {
    private ServerRotation() {
    }
 
-   public static void request(Rotation var0) {
-      request(var0, 0.0F);
+   public static void request(Rotation rotation) {
+      request(rotation, 0.0F);
    }
 
-   public static void request(Rotation var0, float var1) {
+   public static void request(Rotation rotation, float f) {
       if (requested == null && committed == null) {
-         requested = var0;
-         requestedSpeed = var1;
+         requested = rotation;
+         requestedSpeed = f;
       }
    }
 
@@ -52,8 +52,8 @@ public final class ServerRotation {
       return requested != null || committed != null;
    }
 
-   public static Rotation nextStep(ClientPlayerEntity var0, Rotation var1) {
-      return step(var0, var1, 0.0F);
+   public static Rotation nextStep(ClientPlayerEntity clientPlayerEntity, Rotation rotation) {
+      return step(clientPlayerEntity, rotation, 0.0F);
    }
 
    public static Rotation sent() {
@@ -64,23 +64,27 @@ public final class ServerRotation {
       return silent;
    }
 
-   public static boolean canRotate(ClientPlayerEntity var0) {
-      return !var0.method_6128() && !var0.method_6123() && !var0.method_5765() && !var0.method_5681() && var0.field_3944.method_76760();
+   public static boolean canRotate(ClientPlayerEntity clientPlayerEntity) {
+      return !clientPlayerEntity.isGliding()
+         && !clientPlayerEntity.isUsingRiptide()
+         && !clientPlayerEntity.hasVehicle()
+         && !clientPlayerEntity.isSwimming()
+         && clientPlayerEntity.networkHandler.isLoaded();
    }
 
-   public static Rotation next(ClientPlayerEntity var0, Rotation var1) {
-      Rotation var2 = server != null ? server : new Rotation(var0.method_36454(), var0.method_36455());
-      double var3 = RotationUtils.mouseScale(MinecraftClient.method_1551(), var0);
+   public static Rotation next(ClientPlayerEntity clientPlayerEntity, Rotation rotation) {
+      Rotation var2 = server != null ? server : new Rotation(clientPlayerEntity.getYaw(), clientPlayerEntity.getPitch());
+      double var3 = RotationUtils.mouseScale(MinecraftClient.getInstance(), clientPlayerEntity);
       float var5 = (float)var3 * 0.15F;
-      long var6 = Math.round(MathHelper.method_15393(var1.yaw() - var2.yaw()) / var5);
-      long var8 = Math.round((var1.pitch() - var2.pitch()) / var5);
+      long var6 = Math.round(MathHelper.wrapDegrees(rotation.yaw() - var2.yaw()) / var5);
+      long var8 = Math.round((rotation.pitch() - var2.pitch()) / var5);
       float var10 = var2.yaw() + (float)(var6 * var3) * 0.15F;
-      float var11 = MathHelper.method_15363(var2.pitch() + (float)(var8 * var3) * 0.15F, -90.0F, 90.0F);
+      float var11 = MathHelper.clamp(var2.pitch() + (float)(var8 * var3) * 0.15F, -90.0F, 90.0F);
       return new Rotation(var10, var11);
    }
 
    public static void startTick() {
-      ClientPlayerEntity var0 = MinecraftClient.method_1551().field_1724;
+      ClientPlayerEntity var0 = MinecraftClient.getInstance().player;
       if (var0 != owner) {
          owner = var0;
          server = null;
@@ -100,34 +104,34 @@ public final class ServerRotation {
          easeLeft = 0;
       }
 
-      if (var0 != null && server != null && steered && !(Math.abs(var0.method_36454() - server.yaw()) <= 180.0F)) {
-         float var1 = server.yaw() + MathHelper.method_15393(var0.method_36454() - server.yaw()) - var0.method_36454();
-         var0.method_36456(var0.method_36454() + var1);
-         var0.field_5982 += var1;
-         var0.field_3932 += var1;
-         var0.field_3931 += var1;
-         var0.field_6241 += var1;
-         var0.field_6259 += var1;
-         var0.field_6283 += var1;
-         var0.field_6220 += var1;
+      if (var0 != null && server != null && steered && !(Math.abs(var0.getYaw() - server.yaw()) <= 180.0F)) {
+         float var1 = server.yaw() + MathHelper.wrapDegrees(var0.getYaw() - server.yaw()) - var0.getYaw();
+         var0.setYaw(var0.getYaw() + var1);
+         var0.lastYaw += var1;
+         var0.renderYaw += var1;
+         var0.lastRenderYaw += var1;
+         var0.headYaw += var1;
+         var0.lastHeadYaw += var1;
+         var0.bodyYaw += var1;
+         var0.lastBodyYaw += var1;
       }
    }
 
-   public static void noteSent(Packet<?> var0) {
+   public static void noteSent(Packet<?> packet) {
       PlayerMoveC2SPacket var1;
-      if (var0 instanceof PlayerMoveC2SPacket && (var1 = (PlayerMoveC2SPacket)var0).method_36172() && MinecraftClient.method_1551().method_18854()) {
-         ClientPlayerEntity var2 = MinecraftClient.method_1551().field_1724;
-         server = new Rotation(var1.method_12271(0.0F), var1.method_12270(0.0F));
+      if (packet instanceof PlayerMoveC2SPacket && (var1 = (PlayerMoveC2SPacket)packet).changesLook() && MinecraftClient.getInstance().isOnThread()) {
+         ClientPlayerEntity var2 = MinecraftClient.getInstance().player;
+         server = new Rotation(var1.getYaw(0.0F), var1.getPitch(0.0F));
          silent = swapped;
-         steered = swapped || var2 != null && (server.yaw() != var2.method_36454() || server.pitch() != var2.method_36455());
+         steered = swapped || var2 != null && (server.yaw() != var2.getYaw() || server.pitch() != var2.getPitch());
          owner = var2;
       }
    }
 
-   public static Rotation commit(ClientPlayerEntity var0) {
+   public static Rotation commit(ClientPlayerEntity clientPlayerEntity) {
       if (committed == null) {
-         Rotation var1 = canRotate(var0) ? target(var0) : null;
-         committed = var1 != null ? var1 : new Rotation(var0.method_36454(), var0.method_36455());
+         Rotation var1 = canRotate(clientPlayerEntity) ? target(clientPlayerEntity) : null;
+         committed = var1 != null ? var1 : new Rotation(clientPlayerEntity.getYaw(), clientPlayerEntity.getPitch());
       }
 
       return committed;
@@ -137,28 +141,28 @@ public final class ServerRotation {
       return swapped;
    }
 
-   public static void applyForMovement(ClientPlayerEntity var0) {
-      if (!swapped && canRotate(var0)) {
-         Rotation var1 = target(var0);
-         if (var1 != null && (var1.yaw() != var0.method_36454() || var1.pitch() != var0.method_36455())) {
-            ownYaw = var0.method_36454();
-            ownPitch = var0.method_36455();
-            var0.method_36456(var1.yaw());
-            var0.method_36457(var1.pitch());
+   public static void applyForMovement(ClientPlayerEntity clientPlayerEntity) {
+      if (!swapped && canRotate(clientPlayerEntity)) {
+         Rotation var1 = target(clientPlayerEntity);
+         if (var1 != null && (var1.yaw() != clientPlayerEntity.getYaw() || var1.pitch() != clientPlayerEntity.getPitch())) {
+            ownYaw = clientPlayerEntity.getYaw();
+            ownPitch = clientPlayerEntity.getPitch();
+            clientPlayerEntity.setYaw(var1.yaw());
+            clientPlayerEntity.setPitch(var1.pitch());
             walked = var1;
             swapped = true;
          }
       }
    }
 
-   public static PlayerInput correctInput(PlayerInput var0) {
+   public static PlayerInput correctInput(PlayerInput playerInput) {
       if (walked == null) {
-         return var0;
+         return playerInput;
       } else {
-         int var1 = impulse(var0.comp_3159(), var0.comp_3160());
-         int var2 = impulse(var0.comp_3161(), var0.comp_3162());
+         int var1 = impulse(playerInput.forward(), playerInput.backward());
+         int var2 = impulse(playerInput.left(), playerInput.right());
          if (var1 == 0 && var2 == 0) {
-            return var0;
+            return playerInput;
          } else {
             double[] var3 = heading(ownYaw, var2, var1);
             int var4 = var1;
@@ -178,36 +182,36 @@ public final class ServerRotation {
             }
 
             return var4 == var1 && var5 == var2
-               ? var0
-               : new PlayerInput(var4 > 0, var4 < 0, var5 > 0, var5 < 0, var0.comp_3163(), var0.comp_3164(), var0.comp_3165());
+               ? playerInput
+               : new PlayerInput(var4 > 0, var4 < 0, var5 > 0, var5 < 0, playerInput.jump(), playerInput.sneak(), playerInput.sprint());
          }
       }
    }
 
-   public static boolean misses(ClientPlayerEntity var0, Box var1, double var2) {
-      if (server == null || !canRotate(var0)) {
+   public static boolean misses(ClientPlayerEntity clientPlayerEntity, Box box, double d) {
+      if (server == null || !canRotate(clientPlayerEntity)) {
          return false;
       } else if (!pending()) {
          endEase();
          return false;
       } else {
-         Vec3d var4 = var0.method_33571();
-         if (var1.method_1006(var4)) {
+         Vec3d var4 = clientPlayerEntity.getEyePos();
+         if (box.contains(var4)) {
             return false;
          } else {
-            Rotation var5 = target(var0);
+            Rotation var5 = target(clientPlayerEntity);
             if (var5 == null) {
-               var5 = new Rotation(var0.method_36454(), var0.method_36455());
+               var5 = new Rotation(clientPlayerEntity.getYaw(), clientPlayerEntity.getPitch());
             }
 
-            return !hits(var4, var1, var2, var5.yaw(), var5.pitch())
-               && !hits(var4, var1, var2, server.yaw(), var5.pitch())
-               && !hits(var4, var1, var2, server.yaw(), server.pitch());
+            return !hits(var4, box, d, var5.yaw(), var5.pitch())
+               && !hits(var4, box, d, server.yaw(), var5.pitch())
+               && !hits(var4, box, d, server.yaw(), server.pitch());
          }
       }
    }
 
-   public static boolean missesBlock(ClientPlayerEntity var0, Box var1, double var2) {
+   public static boolean missesBlock(ClientPlayerEntity clientPlayerEntity, Box box, double d) {
       if (server == null) {
          return false;
       } else {
@@ -216,61 +220,61 @@ public final class ServerRotation {
          }
 
          if (!silent) {
-            if (!pending() || !canRotate(var0)) {
+            if (!pending() || !canRotate(clientPlayerEntity)) {
                return false;
             }
 
-            Rotation var5 = target(var0);
-            if (var5 == null || var5.yaw() == var0.method_36454() && var5.pitch() == var0.method_36455()) {
+            Rotation var5 = target(clientPlayerEntity);
+            if (var5 == null || var5.yaw() == clientPlayerEntity.getYaw() && var5.pitch() == clientPlayerEntity.getPitch()) {
                return false;
             }
          }
 
          Vec3d var4;
-         return !var1.method_1006(var4 = var0.method_33571()) && !hits(var4, var1, var2, server.yaw(), server.pitch());
+         return !box.contains(var4 = clientPlayerEntity.getEyePos()) && !hits(var4, box, d, server.yaw(), server.pitch());
       }
    }
 
-   public static void afterSend(ClientPlayerEntity var0) {
+   public static void afterSend(ClientPlayerEntity clientPlayerEntity) {
       if (swapped) {
-         restore(var0);
+         restore(clientPlayerEntity);
       }
    }
 
-   public static void finishTick(ClientPlayerEntity var0) {
+   public static void finishTick(ClientPlayerEntity clientPlayerEntity) {
       if (swapped) {
-         restore(var0);
+         restore(clientPlayerEntity);
       }
    }
 
-   private static Rotation target(ClientPlayerEntity var0) {
+   private static Rotation target(ClientPlayerEntity clientPlayerEntity) {
       if (committed != null) {
          return committed;
       } else if (stepped != null) {
          return stepped;
       } else {
          if (requested != null) {
-            stepped = step(var0, requested, requestedSpeed);
+            stepped = step(clientPlayerEntity, requested, requestedSpeed);
          } else if (easeLeft > 0 && server != null) {
-            stepped = step(var0, new Rotation(var0.method_36454(), var0.method_36455()), 5.0F);
+            stepped = step(clientPlayerEntity, new Rotation(clientPlayerEntity.getYaw(), clientPlayerEntity.getPitch()), 5.0F);
          }
 
          return stepped;
       }
    }
 
-   private static Rotation step(ClientPlayerEntity var0, Rotation var1, float var2) {
-      Rotation var7 = server != null ? server : new Rotation(var0.method_36454(), var0.method_36455());
-      double var8 = RotationUtils.mouseScale(MinecraftClient.method_1551(), var0) * 0.15;
-      double var10 = MathHelper.method_15393(var1.yaw() - var7.yaw());
+   private static Rotation step(ClientPlayerEntity clientPlayerEntity, Rotation rotation, float f) {
+      Rotation var7 = server != null ? server : new Rotation(clientPlayerEntity.getYaw(), clientPlayerEntity.getPitch());
+      double var8 = RotationUtils.mouseScale(MinecraftClient.getInstance(), clientPlayerEntity) * 0.15;
+      double var10 = MathHelper.wrapDegrees(rotation.yaw() - var7.yaw());
       double var5;
-      double var12 = Math.hypot(var10, var5 = var1.pitch() - var7.pitch());
+      double var12 = Math.hypot(var10, var5 = rotation.pitch() - var7.pitch());
       if (var12 < 1.0E-4) {
-         return next(var0, var1);
+         return next(clientPlayerEntity, rotation);
       } else {
          double var14 = 1.0;
-         if (var2 > 0.0F) {
-            double var16 = Math.min(var12, 0.313 * var12 + 1.56 * var2);
+         if (f > 0.0F) {
+            double var16 = Math.min(var12, 0.313 * var12 + 1.56 * f);
             if (var16 < var12) {
                var16 *= 0.85 + 0.15 * ThreadLocalRandom.current().nextDouble();
             }
@@ -284,9 +288,9 @@ public final class ServerRotation {
          }
 
          long var22 = Math.max(1L, (long)Math.floor(25.0 / var8));
-         long var18 = MathHelper.method_53062(Math.round(var10 * var14 / var8), -var22, var22);
-         long var20 = MathHelper.method_53062(Math.round(var5 * var14 / var8), -var22, var22);
-         return new Rotation(var7.yaw() + (float)(var18 * var8), MathHelper.method_15363(var7.pitch() + (float)(var20 * var8), -90.0F, 90.0F));
+         long var18 = MathHelper.clamp(Math.round(var10 * var14 / var8), -var22, var22);
+         long var20 = MathHelper.clamp(Math.round(var5 * var14 / var8), -var22, var22);
+         return new Rotation(var7.yaw() + (float)(var18 * var8), MathHelper.clamp(var7.pitch() + (float)(var20 * var8), -90.0F, 90.0F));
       }
    }
 
@@ -297,37 +301,37 @@ public final class ServerRotation {
       }
    }
 
-   private static boolean closeToCamera(ClientPlayerEntity var0) {
-      double var3 = RotationUtils.mouseScale(MinecraftClient.method_1551(), var0) * 0.15;
-      double var5 = Math.abs(MathHelper.method_15393(var0.method_36454() - server.yaw()));
-      double var7 = Math.max(var5, (double)Math.abs(var0.method_36455() - server.pitch()));
+   private static boolean closeToCamera(ClientPlayerEntity clientPlayerEntity) {
+      double var3 = RotationUtils.mouseScale(MinecraftClient.getInstance(), clientPlayerEntity) * 0.15;
+      double var5 = Math.abs(MathHelper.wrapDegrees(clientPlayerEntity.getYaw() - server.yaw()));
+      double var7 = Math.max(var5, (double)Math.abs(clientPlayerEntity.getPitch() - server.pitch()));
       return var7 <= Math.max(0.5, 2.0 * var3) || var7 > 150.0;
    }
 
-   private static int impulse(boolean var0, boolean var1) {
-      return var0 == var1 ? 0 : (var0 ? 1 : -1);
+   private static int impulse(boolean bl, boolean bl2) {
+      return bl == bl2 ? 0 : (bl ? 1 : -1);
    }
 
-   private static double[] heading(float var0, int var1, int var2) {
-      double var3 = MathHelper.method_15374(var0 * 0.017453292F);
-      double var5 = MathHelper.method_15362(var0 * 0.017453292F);
-      double var7 = var1 * var5 - var2 * var3;
-      double var9 = var2 * var5 + var1 * var3;
+   private static double[] heading(float f, int i, int j) {
+      double var3 = MathHelper.sin(f * 0.017453292F);
+      double var5 = MathHelper.cos(f * 0.017453292F);
+      double var7 = i * var5 - j * var3;
+      double var9 = j * var5 + i * var3;
       double var11 = Math.sqrt(var7 * var7 + var9 * var9);
       return new double[]{var7 / var11, var9 / var11};
    }
 
-   private static boolean hits(Vec3d var0, Box var1, double var2, float var4, float var5) {
-      Vec3d var6 = Vec3d.method_1030(var5, var4);
-      return var1.method_992(var0, var0.method_1019(var6.method_1021(var2))).isPresent();
+   private static boolean hits(Vec3d vec3d, Box box, double d, float f, float g) {
+      Vec3d var6 = Vec3d.fromPolar(g, f);
+      return box.raycast(vec3d, vec3d.add(var6.multiply(d))).isPresent();
    }
 
-   private static void restore(ClientPlayerEntity var0) {
-      var0.field_3932 = var0.field_3932 + (ownYaw - walked.yaw()) * 0.5F;
-      var0.field_3916 = var0.field_3916 + (ownPitch - walked.pitch()) * 0.5F;
+   private static void restore(ClientPlayerEntity clientPlayerEntity) {
+      clientPlayerEntity.renderYaw = clientPlayerEntity.renderYaw + (ownYaw - walked.yaw()) * 0.5F;
+      clientPlayerEntity.renderPitch = clientPlayerEntity.renderPitch + (ownPitch - walked.pitch()) * 0.5F;
       walked = null;
-      var0.method_36456(ownYaw);
-      var0.method_36457(ownPitch);
+      clientPlayerEntity.setYaw(ownYaw);
+      clientPlayerEntity.setPitch(ownPitch);
       swapped = false;
    }
 }

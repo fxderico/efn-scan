@@ -88,7 +88,7 @@ public final class MediaBaseFinderModule extends ClientModule implements HudOver
 
    @Override
    protected void onEnable() {
-      this.arrive(MinecraftClient.method_1551());
+      this.arrive(MinecraftClient.getInstance());
    }
 
    @Override
@@ -99,24 +99,24 @@ public final class MediaBaseFinderModule extends ClientModule implements HudOver
       this.here = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
    }
 
-   private void arrive(MinecraftClient var1) {
+   private void arrive(MinecraftClient minecraftClient) {
       this.modeUpdates.clear();
       this.proven.clear();
       this.here = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
       this.settle = 60;
       this.reported = false;
-      this.goliath = label(var1);
+      this.goliath = label(minecraftClient);
       long var2 = this.rtpAt;
       this.afterRtp = var2 != 0L && System.nanoTime() - var2 < 60000000000L;
    }
 
    @EventHandler
-   public void onPacketSend(PacketSendEvent var1) {
+   public void onPacketSend(PacketSendEvent packetSendEvent) {
       String var2;
-      if (var1.packet instanceof CommandExecutionC2SPacket var4) {
-         var2 = var4.comp_808();
-      } else if (var1.packet instanceof ChatCommandSignedC2SPacket var6) {
-         var2 = var6.comp_2532();
+      if (packetSendEvent.packet instanceof CommandExecutionC2SPacket var4) {
+         var2 = var4.command();
+      } else if (packetSendEvent.packet instanceof ChatCommandSignedC2SPacket var6) {
+         var2 = var6.command();
       } else {
          var2 = null;
       }
@@ -132,11 +132,11 @@ public final class MediaBaseFinderModule extends ClientModule implements HudOver
    @EventHandler(
       stage = Stage.POST
    )
-   public void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientPlayNetworkHandler var3 = var2.method_1562();
-      ClientPlayerEntity var4 = var2.field_1724;
-      if (var3 != null && var4 != null && var2.field_1687 != null) {
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientPlayNetworkHandler var3 = var2.getNetworkHandler();
+      ClientPlayerEntity var4 = var2.player;
+      if (var3 != null && var4 != null && var2.world != null) {
          if (this.shard.moved(var2)) {
             this.arrive(var2);
          }
@@ -171,14 +171,14 @@ public final class MediaBaseFinderModule extends ClientModule implements HudOver
       }
    }
 
-   private Set<String> scan(MinecraftClient var1, ClientPlayNetworkHandler var2, ClientPlayerEntity var3) {
+   private Set<String> scan(MinecraftClient minecraftClient, ClientPlayNetworkHandler clientPlayNetworkHandler, ClientPlayerEntity clientPlayerEntity) {
       TreeSet var4 = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-      String var5 = var3.method_7334().name();
+      String var5 = clientPlayerEntity.getGameProfile().name();
 
-      for (Team var7 : var1.field_1687.method_8428().method_1159()) {
+      for (Team var7 : minecraftClient.world.getScoreboard().getTeams()) {
          if (isMedia(var7)) {
-            for (String var9 : var7.method_1204()) {
-               if (!var9.equalsIgnoreCase(var5) && (var2.method_2874(var9) == null || this.proven.contains(var9))) {
+            for (String var9 : var7.getPlayerList()) {
+               if (!var9.equalsIgnoreCase(var5) && (clientPlayNetworkHandler.getPlayerListEntry(var9) == null || this.proven.contains(var9))) {
                   var4.add(var9);
                }
             }
@@ -188,81 +188,81 @@ public final class MediaBaseFinderModule extends ClientModule implements HudOver
       return var4;
    }
 
-   private static boolean isMedia(Team var0) {
-      return var0.method_1197().startsWith("09-") || var0.method_1144().getString().contains("\ud83d\udcf9");
+   private static boolean isMedia(Team team) {
+      return team.getName().startsWith("09-") || team.getPrefix().getString().contains("\ud83d\udcf9");
    }
 
    @EventHandler
-   public void onPacketReceiveNetty(PacketReceiveNettyEvent var1) {
-      this.collect(var1.packet);
+   public void onPacketReceiveNetty(PacketReceiveNettyEvent packetReceiveNettyEvent) {
+      this.collect(packetReceiveNettyEvent.packet);
    }
 
-   private void collect(Packet<?> var1) {
-      if (!(var1 instanceof BundleS2CPacket var2)) {
-         if (var1 instanceof PlayerListS2CPacket var5) {
-            if (var5.method_46327().contains(Action.field_29137) && !var5.method_46327().contains(Action.field_29136)) {
-               for (Entry var7 : var5.method_46329()) {
-                  if (var7 != null && var7.comp_1106() != null) {
-                     this.modeUpdates.offer(var7.comp_1106());
+   private void collect(Packet<?> packet) {
+      if (!(packet instanceof BundleS2CPacket var2)) {
+         if (packet instanceof PlayerListS2CPacket var5) {
+            if (var5.getActions().contains(Action.UPDATE_GAME_MODE) && !var5.getActions().contains(Action.ADD_PLAYER)) {
+               for (Entry var7 : var5.getEntries()) {
+                  if (var7 != null && var7.profileId() != null) {
+                     this.modeUpdates.offer(var7.profileId());
                   }
                }
             }
          }
       } else {
-         for (Packet var4 : var2.method_48324()) {
+         for (Packet var4 : var2.getPackets()) {
             this.collect(var4);
          }
       }
    }
 
-   private void drainModeUpdates(ClientPlayNetworkHandler var1) {
+   private void drainModeUpdates(ClientPlayNetworkHandler clientPlayNetworkHandler) {
       UUID var2;
       while ((var2 = this.modeUpdates.poll()) != null) {
-         PlayerListEntry var4 = var1.method_2871(var2);
+         PlayerListEntry var4 = clientPlayNetworkHandler.getPlayerListEntry(var2);
          String var3;
-         if (var4 != null && var4.method_2955() != null && isMedia(var4.method_2955()) && this.proven.add(var3 = var4.method_2966().name())) {
+         if (var4 != null && var4.getScoreboardTeam() != null && isMedia(var4.getScoreboardTeam()) && this.proven.add(var3 = var4.getProfile().name())) {
             LOGGER.info("[Media Base Finder] game mode update places {} on {}", var3, this.goliath);
          }
       }
    }
 
-   private void report(Set<String> var1) {
+   private void report(Set<String> set) {
       this.rtpAt = 0L;
-      LOGGER.info("[Media Base Finder] {}: {} media {}", new Object[]{this.goliath, var1.size(), var1});
-      if (var1.isEmpty()) {
+      LOGGER.info("[Media Base Finder] {}: {} media {}", this.goliath, set.size(), set);
+      if (set.isEmpty()) {
          if (this.reportEmpty.get()) {
             ModuleChat.send(this, ModuleChat.body().text("No media on ").name(this.goliath).text("."));
          }
       } else {
-         this.announce(new ArrayList<>(var1), var1.size(), true);
+         this.announce(new ArrayList<>(set), set.size(), true);
       }
    }
 
-   private void announce(List<String> var1, int var2, boolean var3) {
-      MinecraftClient var4 = MinecraftClient.method_1551();
-      String var5 = names(var1);
+   private void announce(List<String> list, int i, boolean bl) {
+      MinecraftClient var4 = MinecraftClient.getInstance();
+      String var5 = names(list);
       String var6 = area(var4);
-      String var7 = var2 + (var2 == 1 ? " media base" : " media bases") + (var6 == null ? "" : " within " + var6 + " blocks");
-      if (var3) {
+      String var7 = i + (i == 1 ? " media base" : " media bases") + (var6 == null ? "" : " within " + var6 + " blocks");
+      if (bl) {
          ModuleChat.send(this, ModuleChat.body().text(var7 + " on ").name(this.goliath).text(": ").name(var5));
       } else {
          ModuleChat.send(this, ModuleChat.body().name(var5).text(" joined ").name(this.goliath).text(", now " + var7 + "."));
-         LOGGER.info("[Media Base Finder] {} joined {}, now {}", new Object[]{var5, this.goliath, var2});
+         LOGGER.info("[Media Base Finder] {} joined {}, now {}", var5, this.goliath, i);
       }
 
-      if (var3) {
+      if (bl) {
          LOGGER.info("[Media Base Finder] screen text: afterRtp={} notifications={}", this.afterRtp, this.notificationsOn());
       }
 
-      if (var3 && this.afterRtp && this.notificationsOn()) {
-         this.screenText.show(var2 + (var2 == 1 ? " Media Base" : " Media Bases"), var6 == null ? "on this goliath" : "within " + var6 + " blocks");
-         var4.method_1483().method_4873(PositionedSoundInstance.method_47978(SoundEvents.field_14622, 1.4F));
+      if (bl && this.afterRtp && this.notificationsOn()) {
+         this.screenText.show(i + (i == 1 ? " Media Base" : " Media Bases"), var6 == null ? "on this goliath" : "within " + var6 + " blocks");
+         var4.getSoundManager().play(PositionedSoundInstance.ui(SoundEvents.BLOCK_NOTE_BLOCK_PLING, 1.4F));
       }
    }
 
-   private static String area(MinecraftClient var0) {
-      if (var0.field_1724 != null && var0.field_1687 != null && var0.field_1687.method_27983() == World.field_25179) {
-         DonutGoliaths.Goliath var2 = DonutGoliaths.at(var0.field_1724.method_23317(), var0.field_1724.method_23321());
+   private static String area(MinecraftClient minecraftClient) {
+      if (minecraftClient.player != null && minecraftClient.world != null && minecraftClient.world.getRegistryKey() == World.OVERWORLD) {
+         DonutGoliaths.Goliath var2 = DonutGoliaths.at(minecraftClient.player.getX(), minecraftClient.player.getZ());
          if (var2 == null) {
             return null;
          } else {
@@ -276,29 +276,29 @@ public final class MediaBaseFinderModule extends ClientModule implements HudOver
       }
    }
 
-   private static String blocks(int var0) {
-      int var1 = var0 * 12500;
+   private static String blocks(int i) {
+      int var1 = i * 12500;
       return var1 % 1000 == 0 ? var1 / 1000 + "k" : String.format(Locale.ROOT, "%.1fk", var1 / 1000.0);
    }
 
-   private static String names(List<String> var0) {
+   private static String names(List<String> list) {
       StringBuilder var1 = new StringBuilder();
-      int var2 = Math.min(var0.size(), 8);
+      int var2 = Math.min(list.size(), 8);
 
       for (int var3 = 0; var3 < var2; var3++) {
-         var1.append(var3 == 0 ? "" : ", ").append(NameFilter.apply((String)var0.get(var3)));
+         var1.append(var3 == 0 ? "" : ", ").append(NameFilter.apply((String)list.get(var3)));
       }
 
-      if (var0.size() > var2) {
-         var1.append(" +").append(var0.size() - var2);
+      if (list.size() > var2) {
+         var1.append(" +").append(list.size() - var2);
       }
 
       return var1.toString();
    }
 
-   private static String label(MinecraftClient var0) {
-      if (var0.field_1724 != null && var0.field_1687 != null && var0.field_1687.method_27983() == World.field_25179) {
-         DonutGoliaths.Goliath var1 = DonutGoliaths.at(var0.field_1724.method_23317(), var0.field_1724.method_23321());
+   private static String label(MinecraftClient minecraftClient) {
+      if (minecraftClient.player != null && minecraftClient.world != null && minecraftClient.world.getRegistryKey() == World.OVERWORLD) {
+         DonutGoliaths.Goliath var1 = DonutGoliaths.at(minecraftClient.player.getX(), minecraftClient.player.getZ());
          return var1 == null ? "Off the map" : var1.label();
       } else {
          return "\u2014";
@@ -307,11 +307,11 @@ public final class MediaBaseFinderModule extends ClientModule implements HudOver
 
    @Override
    public boolean isHudOverlayEnabled() {
-      return this.isEnabled() && this.statusBox.get() && MinecraftClient.method_1551().field_1724 != null;
+      return this.isEnabled() && this.statusBox.get() && MinecraftClient.getInstance().player != null;
    }
 
    @Override
-   public void renderHudOverlay(ImDrawList var1, float var2, float var3) {
+   public void renderHudOverlay(ImDrawList imDrawList, float f, float g) {
       ArrayList var4 = new ArrayList();
       if (this.settle > 0) {
          var4.add(new HudPanel.Line("Checking\u2026", -19648));
@@ -331,11 +331,11 @@ public final class MediaBaseFinderModule extends ClientModule implements HudOver
       }
 
       String var8 = this.here.size() > 1 ? "MEDIA BASES ON YOUR GOLIATH" : "MEDIA BASE ON YOUR GOLIATH";
-      this.panel.card(var1, var8, "", -1, var4, "staff_list", var2, var3, 1.0F, 220.0F);
+      this.panel.card(imDrawList, var8, "", -1, var4, "staff_list", f, g, 1.0F, 220.0F);
    }
 
    @EventHandler
-   public void onRender2D(Render2DEvent var1) {
-      this.screenText.render(var1.graphics);
+   public void onRender2D(Render2DEvent render2DEvent) {
+      this.screenText.render(render2DEvent.graphics);
    }
 }

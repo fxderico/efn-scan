@@ -27,32 +27,34 @@ public record Lyrics(Lyrics.Status status, SyncedLyrics synced, List<String> pla
       this.sourceId = sourceId;
    }
 
-   public static Lyrics of(LrclibTrack var0) {
-      if (var0 == null) {
+   public static Lyrics of(LrclibTrack lrclibTrack) {
+      if (lrclibTrack == null) {
          return NOT_FOUND;
       } else {
-         SyncedLyrics var1 = SyncedLyrics.parse(var0.syncedLyrics());
-         List var2 = plainLines(var0.plainLyrics());
+         SyncedLyrics var1 = SyncedLyrics.parse(lrclibTrack.syncedLyrics());
+         List var2 = plainLines(lrclibTrack.plainLyrics());
          if (var2.isEmpty() && var1.isEmpty()) {
-            var2 = plainLines(var0.syncedLyrics());
+            var2 = plainLines(lrclibTrack.syncedLyrics());
          }
 
          if (!var1.isEmpty() && !var1.texts().isEmpty()) {
-            return new Lyrics(Lyrics.Status.SYNCED, var1, var2.isEmpty() ? var1.texts() : var2, var0.id());
+            return new Lyrics(Lyrics.Status.SYNCED, var1, var2.isEmpty() ? var1.texts() : var2, lrclibTrack.id());
          } else if (!var2.isEmpty()) {
-            return new Lyrics(Lyrics.Status.PLAIN, SyncedLyrics.EMPTY, var2, var0.id());
+            return new Lyrics(Lyrics.Status.PLAIN, SyncedLyrics.EMPTY, var2, lrclibTrack.id());
          } else {
-            return !var0.instrumental() && var1.size() <= 0 ? NOT_FOUND : new Lyrics(Lyrics.Status.INSTRUMENTAL, SyncedLyrics.EMPTY, List.of(), var0.id());
+            return !lrclibTrack.instrumental() && var1.size() <= 0
+               ? NOT_FOUND
+               : new Lyrics(Lyrics.Status.INSTRUMENTAL, SyncedLyrics.EMPTY, List.of(), lrclibTrack.id());
          }
       }
    }
 
-   static List<String> plainLines(String var0) {
-      if (var0 != null && !var0.isBlank()) {
+   static List<String> plainLines(String string) {
+      if (string != null && !string.isBlank()) {
          ArrayList var1 = new ArrayList();
          boolean var2 = false;
 
-         for (String var6 : var0.split("\r\n|\r|\n")) {
+         for (String var6 : string.split("\r\n|\r|\n")) {
             String var7 = var6.strip();
             if (var7.isEmpty()) {
                var2 = !var1.isEmpty();

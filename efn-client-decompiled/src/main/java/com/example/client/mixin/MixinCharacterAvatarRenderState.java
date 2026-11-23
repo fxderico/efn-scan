@@ -25,8 +25,8 @@ public abstract class MixinCharacterAvatarRenderState implements CharacterHolder
    }
 
    @Override
-   public void efn$setCharacter(WornCharacter var1) {
-      this.efn$character = var1;
+   public void efn$setCharacter(WornCharacter wornCharacter) {
+      this.efn$character = wornCharacter;
    }
 
    @Override
@@ -35,7 +35,7 @@ public abstract class MixinCharacterAvatarRenderState implements CharacterHolder
    }
 
    @Override
-   public void efn$setSeat(float var1) {
-      this.efn$seat = var1;
+   public void efn$setSeat(float f) {
+      this.efn$seat = f;
    }
 }

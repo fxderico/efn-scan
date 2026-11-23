@@ -34,34 +34,34 @@ final class Climber {
    private final List<BlockPos> toBreak = new ArrayList<>();
    private Breaker breaker;
 
-   Climber(BlockPos var1, Set<Long> var2) {
-      this(var1, var2, 2);
+   Climber(BlockPos blockPos, Set<Long> set) {
+      this(blockPos, set, 2);
    }
 
-   Climber(BlockPos var1, Set<Long> var2, int var3) {
-      this.x = var1.method_10263();
-      this.z = var1.method_10260();
-      this.baseY = var1.method_10264();
-      this.scaffold = var2;
-      this.height = var3;
+   Climber(BlockPos blockPos, Set<Long> set, int i) {
+      this.x = blockPos.getX();
+      this.z = blockPos.getZ();
+      this.baseY = blockPos.getY();
+      this.scaffold = set;
+      this.height = i;
    }
 
-   static BlockPos column(MinecraftClient var0) {
-      ClientPlayerEntity var1 = var0.field_1724;
-      if (var1 != null && var0.field_1687 != null && var1.method_24828()) {
-         int var2 = (int)Math.floor(var1.method_23318() + 0.01);
-         if (Math.abs(var1.method_23318() - var2) > 0.01) {
+   static BlockPos column(MinecraftClient minecraftClient) {
+      ClientPlayerEntity var1 = minecraftClient.player;
+      if (var1 != null && minecraftClient.world != null && var1.isOnGround()) {
+         int var2 = (int)Math.floor(var1.getY() + 0.01);
+         if (Math.abs(var1.getY() - var2) > 0.01) {
             return null;
          } else {
-            BlockPos var3 = BlockPos.method_49637(var1.method_23317(), var2, var1.method_23321());
-            if (groundUnder(var0, var3)) {
+            BlockPos var3 = BlockPos.ofFloored(var1.getX(), var2, var1.getZ());
+            if (groundUnder(minecraftClient, var3)) {
                return var3;
             } else {
-               double var4 = var1.method_17681() / 2.0 - 0.01;
+               double var4 = var1.getWidth() / 2.0 - 0.01;
 
                for (double[] var9 : new double[][]{{-var4, -var4}, {var4, -var4}, {-var4, var4}, {var4, var4}}) {
-                  BlockPos var10 = BlockPos.method_49637(var1.method_23317() + var9[0], var2, var1.method_23321() + var9[1]);
-                  if (groundUnder(var0, var10)) {
+                  BlockPos var10 = BlockPos.ofFloored(var1.getX() + var9[0], var2, var1.getZ() + var9[1]);
+                  if (groundUnder(minecraftClient, var10)) {
                      return var10;
                   }
                }
@@ -74,10 +74,10 @@ final class Climber {
       }
    }
 
-   static boolean hasRoom(MinecraftClient var0, BlockPos var1) {
+   static boolean hasRoom(MinecraftClient minecraftClient, BlockPos blockPos) {
       for (int var2 = 0; var2 <= 4; var2++) {
-         BlockPos var3 = var1.method_10086(var2);
-         if (!var0.field_1687.method_8320(var3).method_26220(var0.field_1687, var3).method_1110()) {
+         BlockPos var3 = blockPos.up(var2);
+         if (!minecraftClient.world.getBlockState(var3).getCollisionShape(minecraftClient.world, var3).isEmpty()) {
             return false;
          }
       }
@@ -85,86 +85,82 @@ final class Climber {
       return true;
    }
 
-   private static boolean groundUnder(MinecraftClient var0, BlockPos var1) {
-      BlockPos var2 = var1.method_10074();
-      VoxelShape var3 = var0.field_1687.method_8320(var2).method_26220(var0.field_1687, var2);
-      return !var3.method_1110() && var3.method_1105(Axis.field_11052) >= 0.99;
+   private static boolean groundUnder(MinecraftClient minecraftClient, BlockPos blockPos) {
+      BlockPos var2 = blockPos.down();
+      VoxelShape var3 = minecraftClient.world.getBlockState(var2).getCollisionShape(minecraftClient.world, var2);
+      return !var3.isEmpty() && var3.getMax(Axis.Y) >= 0.99;
    }
 
    BlockPos column() {
       return new BlockPos(this.x, this.baseY, this.z);
    }
 
-   static int leavesCount(ClientPlayerEntity var0) {
-      return Scaffold.count(var0);
+   static int leavesCount(ClientPlayerEntity clientPlayerEntity) {
+      return Scaffold.count(clientPlayerEntity);
    }
 
-   Climber.Result tick(MinecraftClient var1) {
-      ClientPlayerEntity var2 = var1.field_1724;
-      if (var2 == null || var1.field_1687 == null || var1.field_1761 == null) {
+   Climber.Result tick(MinecraftClient minecraftClient) {
+      ClientPlayerEntity var2 = minecraftClient.player;
+      if (var2 == null || minecraftClient.world == null || minecraftClient.interactionManager == null) {
          return Climber.Result.FAILED;
       } else if (this.breaker != null || this.placed >= this.height) {
-         return this.breakBelow(var1);
+         return this.breakBelow(minecraftClient);
       } else if (!Scaffold.has(var2)) {
          return Climber.Result.FAILED;
-      } else if (!Scaffold.hold(var1, var2)) {
+      } else if (!Scaffold.hold(minecraftClient, var2)) {
          return Climber.Result.RUNNING;
       } else {
          this.phaseTicks++;
          BlockPos var3 = new BlockPos(this.x, this.baseY + this.placed, this.z);
          switch (this.phase) {
             case 0:
-               double var13 = this.x + 0.5 - var2.method_23317();
-               double var14 = this.z + 0.5 - var2.method_23321();
+               double var13 = this.x + 0.5 - var2.getX();
+               double var14 = this.z + 0.5 - var2.getZ();
                boolean var12 = Math.abs(var13) < 0.12 && Math.abs(var14) < 0.12;
                if (var12) {
-                  var1.field_1690.field_1894.method_23481(false);
-                  Aim.turn(var1, var2.method_36454(), 90.0F, 22.0F);
-                  Vec3d var10 = var2.method_18798();
-                  if (this.phaseTicks >= 2 && var2.method_36455() > 88.0F && var10.field_1352 * var10.field_1352 + var10.field_1350 * var10.field_1350 < 4.0E-4
-                     )
-                   {
+                  minecraftClient.options.forwardKey.setPressed(false);
+                  Aim.turn(minecraftClient, var2.getYaw(), 90.0F, 22.0F);
+                  Vec3d var10 = var2.getVelocity();
+                  if (this.phaseTicks >= 2 && var2.getPitch() > 88.0F && var10.x * var10.x + var10.z * var10.z < 4.0E-4) {
                      this.next(1);
                   }
                } else {
-                  float var15 = Aim.turn(var1, (float)Math.toDegrees(Math.atan2(-var13, var14)), var2.method_36455(), 22.0F);
-                  var1.field_1690.field_1894.method_23481(var15 < 30.0F);
+                  float var15 = Aim.turn(minecraftClient, (float)Math.toDegrees(Math.atan2(-var13, var14)), var2.getPitch(), 22.0F);
+                  minecraftClient.options.forwardKey.setPressed(var15 < 30.0F);
                   if (this.phaseTicks > 40) {
-                     var1.field_1690.field_1894.method_23481(false);
+                     minecraftClient.options.forwardKey.setPressed(false);
                      return Climber.Result.FAILED;
                   }
                }
                break;
             case 1:
-               Aim.look(var1, var2.method_36454(), 90.0F);
-               if (var2.method_24828()) {
-                  var1.field_1690.field_1832.method_23481(Aim.clickable(var1, var3.method_10074()));
-                  var1.field_1690.field_1903.method_23481(true);
+               Aim.look(minecraftClient, var2.getYaw(), 90.0F);
+               if (var2.isOnGround()) {
+                  minecraftClient.options.sneakKey.setPressed(Aim.clickable(minecraftClient, var3.down()));
+                  minecraftClient.options.jumpKey.setPressed(true);
                   this.next(2);
                } else if (this.phaseTicks > 40) {
                   return Climber.Result.FAILED;
                }
                break;
             case 2:
-               Aim.look(var1, var2.method_36454(), 90.0F);
-               if (!var2.method_24828()) {
-                  var1.field_1690.field_1903.method_23481(false);
+               Aim.look(minecraftClient, var2.getYaw(), 90.0F);
+               if (!var2.isOnGround()) {
+                  minecraftClient.options.jumpKey.setPressed(false);
                }
 
-               if (var2.method_23318() >= var3.method_10264() + 1.02) {
-                  var1.field_1690.field_1903.method_23481(false);
-                  BlockHitResult var11 = new BlockHitResult(
-                     new Vec3d(this.x + 0.5, var3.method_10264(), this.z + 0.5), Direction.field_11036, var3.method_10074(), false
-                  );
-                  if (var1.field_1761.method_2896(var2, Hand.field_5808, var11).method_23665()) {
-                     var2.method_6104(Hand.field_5808);
-                     this.scaffold.add(var3.method_10063());
+               if (var2.getY() >= var3.getY() + 1.02) {
+                  minecraftClient.options.jumpKey.setPressed(false);
+                  BlockHitResult var11 = new BlockHitResult(new Vec3d(this.x + 0.5, var3.getY(), this.z + 0.5), Direction.UP, var3.down(), false);
+                  if (minecraftClient.interactionManager.interactBlock(var2, Hand.MAIN_HAND, var11).isAccepted()) {
+                     var2.swingHand(Hand.MAIN_HAND);
+                     this.scaffold.add(var3.asLong());
                   }
 
-                  var1.field_1690.field_1832.method_23481(false);
+                  minecraftClient.options.sneakKey.setPressed(false);
                   this.next(3);
-               } else if (var2.method_24828() && this.phaseTicks > 4 || this.phaseTicks > 40) {
-                  var1.field_1690.field_1903.method_23481(false);
+               } else if (var2.isOnGround() && this.phaseTicks > 4 || this.phaseTicks > 40) {
+                  minecraftClient.options.jumpKey.setPressed(false);
                   if (++this.tries > 3) {
                      return Climber.Result.FAILED;
                   }
@@ -173,33 +169,33 @@ final class Climber {
                }
                break;
             case 3:
-               Aim.look(var1, var2.method_36454(), 90.0F);
-               boolean var5 = Scaffold.block(var1.field_1687.method_8320(var3));
-               boolean var4 = Math.abs(this.x + 0.5 - var2.method_23317()) < 0.5 && Math.abs(this.z + 0.5 - var2.method_23321()) < 0.5;
-               if (var5 && var4 && var2.method_24828() && var2.method_23318() >= var3.method_10264() + 0.99) {
+               Aim.look(minecraftClient, var2.getYaw(), 90.0F);
+               boolean var5 = Scaffold.block(minecraftClient.world.getBlockState(var3));
+               boolean var4 = Math.abs(this.x + 0.5 - var2.getX()) < 0.5 && Math.abs(this.z + 0.5 - var2.getZ()) < 0.5;
+               if (var5 && var4 && var2.isOnGround() && var2.getY() >= var3.getY() + 0.99) {
                   this.placed++;
-                  SchematicBuilderModule.trace("climber base " + this.baseY + " placed " + this.placed + " at y " + var2.method_23318());
+                  SchematicBuilderModule.trace("climber base " + this.baseY + " placed " + this.placed + " at y " + var2.getY());
                   this.tries = 0;
                   if (this.placed >= this.height) {
                      for (int var7 = this.baseY + this.height - 2; var7 >= this.baseY - 2; var7--) {
                         BlockPos var8 = new BlockPos(this.x, var7, this.z);
-                        if (this.scaffold.contains(var8.method_10063()) && Scaffold.block(var1.field_1687.method_8320(var8))) {
+                        if (this.scaffold.contains(var8.asLong()) && Scaffold.block(minecraftClient.world.getBlockState(var8))) {
                            this.toBreak.add(var8);
-                        } else if (!var1.field_1687.method_8320(var8).method_26215()) {
+                        } else if (!minecraftClient.world.getBlockState(var8).isAir()) {
                            break;
                         }
                      }
 
-                     return this.breakBelow(var1);
+                     return this.breakBelow(minecraftClient);
                   }
 
                   this.next(0);
-               } else if (this.phaseTicks > 40 || var2.method_24828() && !var4 && this.phaseTicks > 4) {
+               } else if (this.phaseTicks > 40 || var2.isOnGround() && !var4 && this.phaseTicks > 4) {
                   SchematicBuilderModule.trace(
-                     "climber retry base " + this.baseY + " placed " + this.placed + " there " + var5 + " over " + var4 + " y " + var2.method_23318()
+                     "climber retry base " + this.baseY + " placed " + this.placed + " there " + var5 + " over " + var4 + " y " + var2.getY()
                   );
                   if (!var5) {
-                     this.scaffold.remove(var3.method_10063());
+                     this.scaffold.remove(var3.asLong());
                   }
 
                   if (!var4) {
@@ -221,13 +217,13 @@ final class Climber {
       }
    }
 
-   void release(MinecraftClient var1) {
-      var1.field_1690.field_1832.method_23481(false);
-      var1.field_1690.field_1903.method_23481(false);
-      var1.field_1690.field_1894.method_23481(false);
+   void release(MinecraftClient minecraftClient) {
+      minecraftClient.options.sneakKey.setPressed(false);
+      minecraftClient.options.jumpKey.setPressed(false);
+      minecraftClient.options.forwardKey.setPressed(false);
    }
 
-   private Climber.Result breakBelow(MinecraftClient var1) {
+   private Climber.Result breakBelow(MinecraftClient minecraftClient) {
       if (this.breaker == null) {
          if (this.toBreak.isEmpty()) {
             return Climber.Result.DONE;
@@ -237,11 +233,11 @@ final class Climber {
       }
 
       Breaker.Result var2;
-      if ((var2 = this.breaker.tick(var1)) == Breaker.Result.RUNNING) {
+      if ((var2 = this.breaker.tick(minecraftClient)) == Breaker.Result.RUNNING) {
          return Climber.Result.RUNNING;
       } else {
          if (var2 == Breaker.Result.DONE) {
-            this.scaffold.remove(this.breaker.pos().method_10063());
+            this.scaffold.remove(this.breaker.pos().asLong());
          }
 
          this.breaker = null;
@@ -249,8 +245,8 @@ final class Climber {
       }
    }
 
-   private void next(int var1) {
-      this.phase = var1;
+   private void next(int i) {
+      this.phase = i;
       this.phaseTicks = 0;
    }
 

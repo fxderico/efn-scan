@@ -17,18 +17,18 @@ public abstract class MixinEntityControlLocalPlayer {
    }
 
    @ModifyReturnValue(
-      method = {"method_3151"},
+      method = {"getMountJumpStrength"},
       at = {@At("RETURN")}
    )
-   private float efn$entityControlMaxJump(float var1) {
-      return EntityControlModule.maxJump() ? 1.0F : var1;
+   private float efn$entityControlMaxJump(float f) {
+      return EntityControlModule.maxJump() ? 1.0F : f;
    }
 
    @ModifyReturnValue(
-      method = {"method_45773"},
+      method = {"getJumpingMount"},
       at = {@At("RETURN")}
    )
-   private JumpingMount efn$boatFlyCancelJump(JumpingMount var1) {
-      return var1 != null && BoatFlyModule.cancelsMountJump((ClientPlayerEntity)this) ? null : var1;
+   private JumpingMount efn$boatFlyCancelJump(JumpingMount jumpingMount) {
+      return jumpingMount != null && BoatFlyModule.cancelsMountJump((ClientPlayerEntity)this) ? null : jumpingMount;
    }
 }

@@ -39,7 +39,7 @@ public final class ChunkOverlay {
    public ChunkOverlay() {
    }
 
-   public void draw(LongSet var1, int var2, float var3) {
+   public void draw(LongSet longSet, int i, float f) {
       long var4 = System.nanoTime();
       float var6 = this.lastNanos == 0L ? 0.0F : (float)(var4 - this.lastNanos) / 1.0E9F;
       this.lastNanos = var4;
@@ -48,24 +48,24 @@ public final class ChunkOverlay {
          this.pending.clear();
       }
 
-      this.collect(var1, var4);
-      this.step(var1, var6);
+      this.collect(longSet, var4);
+      this.step(longSet, var6);
       if (!this.shown.isEmpty()) {
-         int var7 = ColorHelper.method_61330(Math.min(255, ColorHelper.method_61320(var2) * 3 / 2), ColorHelper.method_61321(var2, 0.77F));
-         FoglessLines var8 = FoglessLines.forFrame(var3);
+         int var7 = ColorHelper.withAlpha(Math.min(255, ColorHelper.getAlpha(i) * 3 / 2), ColorHelper.scaleRgb(i, 0.77F));
+         FoglessLines var8 = FoglessLines.forFrame(f);
          this.done.clear();
          LongIterator var9 = this.shown.keySet().iterator();
 
          while (var9.hasNext()) {
             long var10 = var9.nextLong();
             if (this.done.add(var10)) {
-               this.drawGroup(var8, var1, var10, var2, var7);
+               this.drawGroup(var8, longSet, var10, i, var7);
             }
          }
       }
    }
 
-   public void drawTiles(LongSet var1, int var2, int var3, float var4) {
+   public void drawTiles(LongSet longSet, int i, int j, float f) {
       long var5 = System.nanoTime();
       float var7 = this.lastNanos == 0L ? 0.0F : (float)(var5 - this.lastNanos) / 1.0E9F;
       this.lastNanos = var5;
@@ -73,15 +73,15 @@ public final class ChunkOverlay {
          this.shown.clear();
       }
 
-      LongIterator var8 = var1.iterator();
+      LongIterator var8 = longSet.iterator();
 
       while (var8.hasNext()) {
          this.shown.putIfAbsent(var8.nextLong(), 0.0F);
       }
 
-      this.step(var1, var7);
+      this.step(longSet, var7);
       if (!this.shown.isEmpty()) {
-         FoglessLines var9 = FoglessLines.forFrame(var4);
+         FoglessLines var9 = FoglessLines.forFrame(f);
          ObjectIterator var10 = this.shown.long2FloatEntrySet().fastIterator();
 
          while (var10.hasNext()) {
@@ -89,71 +89,58 @@ public final class ChunkOverlay {
             float var12 = easeOut(var11.getFloatValue());
             if (!(var12 <= 0.001F)) {
                long var13 = var11.getLongKey();
-               int var15 = ChunkPos.method_8325(var13);
-               int var16 = ChunkPos.method_8332(var13);
-               if (!this.settled(var1, var13)) {
+               int var15 = ChunkPos.getPackedX(var13);
+               int var16 = ChunkPos.getPackedZ(var13);
+               if (!this.settled(longSet, var13)) {
                   double var17 = 8.0 * var12;
                   double var19 = (var15 << 4) + 8.0;
                   double var21 = (var16 << 4) + 8.0;
-                  tile(
-                     var9,
-                     var19 - var17,
-                     var21 - var17,
-                     var19 + var17,
-                     var21 + var17,
-                     2.0 * var12,
-                     true,
-                     true,
-                     true,
-                     true,
-                     fade(var2, var12),
-                     fade(var3, var12)
-                  );
+                  tile(var9, var19 - var17, var21 - var17, var19 + var17, var21 + var17, 2.0 * var12, true, true, true, true, fade(i, var12), fade(j, var12));
                } else {
                   double var29 = var15 << 4;
                   double var30 = var16 << 4;
                   double var31 = var29 + 16.0;
                   double var23 = var30 + 16.0;
-                  boolean var25 = !this.settled(var1, ChunkPos.method_8331(var15, var16 - 1));
-                  boolean var26 = !this.settled(var1, ChunkPos.method_8331(var15, var16 + 1));
-                  boolean var27 = !this.settled(var1, ChunkPos.method_8331(var15 - 1, var16));
-                  boolean var28 = !this.settled(var1, ChunkPos.method_8331(var15 + 1, var16));
-                  tile(var9, var29, var30, var31, var23, 2.0, var25, var26, var27, var28, var2, var3);
+                  boolean var25 = !this.settled(longSet, ChunkPos.toLong(var15, var16 - 1));
+                  boolean var26 = !this.settled(longSet, ChunkPos.toLong(var15, var16 + 1));
+                  boolean var27 = !this.settled(longSet, ChunkPos.toLong(var15 - 1, var16));
+                  boolean var28 = !this.settled(longSet, ChunkPos.toLong(var15 + 1, var16));
+                  tile(var9, var29, var30, var31, var23, 2.0, var25, var26, var27, var28, i, j);
                }
             }
          }
       }
    }
 
-   private boolean settled(LongSet var1, long var2) {
-      return this.shown.get(var2) >= 1.0F && var1.contains(var2);
+   private boolean settled(LongSet longSet, long l) {
+      return this.shown.get(l) >= 1.0F && longSet.contains(l);
    }
 
-   private void collect(LongSet var1, long var2) {
-      LongIterator var4 = var1.iterator();
+   private void collect(LongSet longSet, long l) {
+      LongIterator var4 = longSet.iterator();
 
       while (var4.hasNext()) {
          long var5 = var4.nextLong();
          if (!this.shown.containsKey(var5) && !this.pending.contains(var5)) {
             if (this.pending.isEmpty()) {
-               this.pendingSince = var2;
+               this.pendingSince = l;
             }
 
             this.pending.add(var5);
-            this.lastAdded = var2;
+            this.lastAdded = l;
          }
       }
 
       var4 = this.pending.iterator();
 
       while (var4.hasNext()) {
-         if (!var1.contains(var4.nextLong())) {
+         if (!longSet.contains(var4.nextLong())) {
             var4.remove();
          }
       }
 
       if (!this.pending.isEmpty()) {
-         if (!((float)(var2 - this.lastAdded) / 1.0E9F < 0.25F) || !((float)(var2 - this.pendingSince) / 1.0E9F < 1.0F)) {
+         if (!((float)(l - this.lastAdded) / 1.0E9F < 0.25F) || !((float)(l - this.pendingSince) / 1.0E9F < 1.0F)) {
             var4 = this.pending.iterator();
 
             while (var4.hasNext()) {
@@ -165,15 +152,15 @@ public final class ChunkOverlay {
       }
    }
 
-   private void step(LongSet var1, float var2) {
+   private void step(LongSet longSet, float f) {
       ObjectIterator var3 = this.shown.long2FloatEntrySet().fastIterator();
 
       while (var3.hasNext()) {
          Entry var4 = (Entry)var3.next();
-         if (var1.contains(var4.getLongKey())) {
-            var4.setValue(Math.min(1.0F, var4.getFloatValue() + var2 / 0.3F));
+         if (longSet.contains(var4.getLongKey())) {
+            var4.setValue(Math.min(1.0F, var4.getFloatValue() + f / 0.3F));
          } else {
-            float var5 = var4.getFloatValue() - var2 / 0.25F;
+            float var5 = var4.getFloatValue() - f / 0.25F;
             if (var5 <= 0.0F) {
                var3.remove();
             } else {
@@ -183,84 +170,73 @@ public final class ChunkOverlay {
       }
    }
 
-   private void drawGroup(FoglessLines var1, LongSet var2, long var3, int var5, int var6) {
-      float var7 = this.shown.get(var3);
-      boolean var8 = var2.contains(var3);
+   private void drawGroup(FoglessLines foglessLines, LongSet longSet, long l, int i, int j) {
+      float var7 = this.shown.get(l);
+      boolean var8 = longSet.contains(l);
       this.group.clear();
-      this.queue.enqueue(var3);
+      this.queue.enqueue(l);
       double var9 = 0.0;
       double var11 = 0.0;
 
       while (!this.queue.isEmpty()) {
          long var13 = this.queue.dequeueLong();
          this.group.add(var13);
-         int var15 = ChunkPos.method_8325(var13);
-         int var16 = ChunkPos.method_8332(var13);
+         int var15 = ChunkPos.getPackedX(var13);
+         int var16 = ChunkPos.getPackedZ(var13);
          var9 += (var15 << 4) + 8.0;
          var11 += (var16 << 4) + 8.0;
-         this.visit(var2, ChunkPos.method_8331(var15, var16 - 1), var7, var8);
-         this.visit(var2, ChunkPos.method_8331(var15, var16 + 1), var7, var8);
-         this.visit(var2, ChunkPos.method_8331(var15 - 1, var16), var7, var8);
-         this.visit(var2, ChunkPos.method_8331(var15 + 1, var16), var7, var8);
+         this.visit(longSet, ChunkPos.toLong(var15, var16 - 1), var7, var8);
+         this.visit(longSet, ChunkPos.toLong(var15, var16 + 1), var7, var8);
+         this.visit(longSet, ChunkPos.toLong(var15 - 1, var16), var7, var8);
+         this.visit(longSet, ChunkPos.toLong(var15 + 1, var16), var7, var8);
       }
 
       float var37 = easeOut(var7);
       if (!(var37 <= 0.001F)) {
          double var14 = var9 / this.group.size();
          double var38 = var11 / this.group.size();
-         int var18 = var37 >= 1.0F ? var5 : fade(var5, var37);
-         int var19 = var37 >= 1.0F ? var6 : fade(var6, var37);
+         int var18 = var37 >= 1.0F ? i : fade(i, var37);
+         int var19 = var37 >= 1.0F ? j : fade(j, var37);
 
          for (int var20 = 0; var20 < this.group.size(); var20++) {
             long var21 = this.group.getLong(var20);
-            int var23 = ChunkPos.method_8325(var21);
-            int var24 = ChunkPos.method_8332(var21);
+            int var23 = ChunkPos.getPackedX(var21);
+            int var24 = ChunkPos.getPackedZ(var21);
             double var25 = var14 + ((var23 << 4) - var14) * var37;
             double var27 = var38 + ((var24 << 4) - var38) * var37;
             double var29 = var25 + 16.0 * var37;
             double var31 = var27 + 16.0 * var37;
-            boolean var33 = !this.joined(var2, ChunkPos.method_8331(var23, var24 - 1), var7, var8);
-            boolean var34 = !this.joined(var2, ChunkPos.method_8331(var23, var24 + 1), var7, var8);
-            boolean var35 = !this.joined(var2, ChunkPos.method_8331(var23 - 1, var24), var7, var8);
-            boolean var36 = !this.joined(var2, ChunkPos.method_8331(var23 + 1, var24), var7, var8);
-            tile(var1, var25, var27, var29, var31, 2.0 * var37, var33, var34, var35, var36, var18, var19);
+            boolean var33 = !this.joined(longSet, ChunkPos.toLong(var23, var24 - 1), var7, var8);
+            boolean var34 = !this.joined(longSet, ChunkPos.toLong(var23, var24 + 1), var7, var8);
+            boolean var35 = !this.joined(longSet, ChunkPos.toLong(var23 - 1, var24), var7, var8);
+            boolean var36 = !this.joined(longSet, ChunkPos.toLong(var23 + 1, var24), var7, var8);
+            tile(foglessLines, var25, var27, var29, var31, 2.0 * var37, var33, var34, var35, var36, var18, var19);
          }
       }
    }
 
-   private void visit(LongSet var1, long var2, float var4, boolean var5) {
-      if (this.joined(var1, var2, var4, var5) && this.done.add(var2)) {
-         this.queue.enqueue(var2);
+   private void visit(LongSet longSet, long l, float f, boolean bl) {
+      if (this.joined(longSet, l, f, bl) && this.done.add(l)) {
+         this.queue.enqueue(l);
       }
    }
 
-   private boolean joined(LongSet var1, long var2, float var4, boolean var5) {
-      return this.shown.containsKey(var2) && this.shown.get(var2) == var4 && var1.contains(var2) == var5;
+   private boolean joined(LongSet longSet, long l, float f, boolean bl) {
+      return this.shown.containsKey(l) && this.shown.get(l) == f && longSet.contains(l) == bl;
    }
 
    private static void tile(
-      FoglessLines var0,
-      double var1,
-      double var3,
-      double var5,
-      double var7,
-      double var9,
-      boolean var11,
-      boolean var12,
-      boolean var13,
-      boolean var14,
-      int var15,
-      int var16
+      FoglessLines foglessLines, double d, double e, double f, double g, double h, boolean bl, boolean bl2, boolean bl3, boolean bl4, int i, int j
    ) {
-      double var17 = var11 && var13 ? var9 : 0.0;
-      double var19 = var11 && var14 ? var9 : 0.0;
-      double var21 = var12 && var14 ? var9 : 0.0;
-      double var23 = var12 && var13 ? var9 : 0.0;
+      double var17 = bl && bl3 ? h : 0.0;
+      double var19 = bl && bl4 ? h : 0.0;
+      double var21 = bl2 && bl4 ? h : 0.0;
+      double var23 = bl2 && bl3 ? h : 0.0;
       points = 0;
-      corner(var0, var1 + var17, var3 + var17, var17, 180.0, var16);
-      corner(var0, var5 - var19, var3 + var19, var19, 270.0, var16);
-      corner(var0, var5 - var21, var7 - var21, var21, 0.0, var16);
-      corner(var0, var1 + var23, var7 - var23, var23, 90.0, var16);
+      corner(foglessLines, d + var17, e + var17, var17, 180.0, j);
+      corner(foglessLines, f - var19, e + var19, var19, 270.0, j);
+      corner(foglessLines, f - var21, g - var21, var21, 0.0, j);
+      corner(foglessLines, d + var23, g - var23, var23, 90.0, j);
       WorldQuads var25 = WorldQuads.layer(true);
       double var26 = 63.0;
 
@@ -278,41 +254,41 @@ public final class ChunkOverlay {
             OUTLINE[var28 * 2 + 2],
             var26,
             OUTLINE[var28 * 2 + 3],
-            var15
+            i
          );
       }
 
-      if (var11) {
-         edge(var0, var1 + var17, var3, var5 - var19, var3, var16);
+      if (bl) {
+         edge(foglessLines, d + var17, e, f - var19, e, j);
       }
 
-      if (var12) {
-         edge(var0, var1 + var23, var7, var5 - var21, var7, var16);
+      if (bl2) {
+         edge(foglessLines, d + var23, g, f - var21, g, j);
       }
 
-      if (var13) {
-         edge(var0, var1, var3 + var17, var1, var7 - var23, var16);
+      if (bl3) {
+         edge(foglessLines, d, e + var17, d, g - var23, j);
       }
 
-      if (var14) {
-         edge(var0, var5, var3 + var19, var5, var7 - var21, var16);
+      if (bl4) {
+         edge(foglessLines, f, e + var19, f, g - var21, j);
       }
    }
 
-   private static void corner(FoglessLines var0, double var1, double var3, double var5, double var7, int var9) {
-      if (var5 <= 0.0) {
-         point(var1, var3);
+   private static void corner(FoglessLines foglessLines, double d, double e, double f, double g, int i) {
+      if (f <= 0.0) {
+         point(d, e);
       } else {
          double var10 = 0.0;
          double var12 = 0.0;
 
          for (int var14 = 0; var14 <= 4; var14++) {
-            double var15 = Math.toRadians(var7 + 90.0 * var14 / 4.0);
-            double var17 = var1 + Math.cos(var15) * var5;
-            double var19 = var3 + Math.sin(var15) * var5;
+            double var15 = Math.toRadians(g + 90.0 * var14 / 4.0);
+            double var17 = d + Math.cos(var15) * f;
+            double var19 = e + Math.sin(var15) * f;
             point(var17, var19);
             if (var14 > 0) {
-               var0.line(var10, 63.0, var12, var17, 63.0, var19, var9, 1.5F);
+               foglessLines.line(var10, 63.0, var12, var17, 63.0, var19, i, 1.5F);
             }
 
             var10 = var17;
@@ -321,22 +297,22 @@ public final class ChunkOverlay {
       }
    }
 
-   private static void point(double var0, double var2) {
-      OUTLINE[points * 2] = var0;
-      OUTLINE[points * 2 + 1] = var2;
+   private static void point(double d, double e) {
+      OUTLINE[points * 2] = d;
+      OUTLINE[points * 2 + 1] = e;
       points++;
    }
 
-   private static float easeOut(float var0) {
-      float var1 = 1.0F - var0;
+   private static float easeOut(float f) {
+      float var1 = 1.0F - f;
       return 1.0F - var1 * var1 * var1;
    }
 
-   private static int fade(int var0, float var1) {
-      return ColorHelper.method_61330(Math.round(ColorHelper.method_61320(var0) * var1), var0);
+   private static int fade(int i, float f) {
+      return ColorHelper.withAlpha(Math.round(ColorHelper.getAlpha(i) * f), i);
    }
 
-   private static void edge(FoglessLines var0, double var1, double var3, double var5, double var7, int var9) {
-      var0.line(var1, 63.0, var3, var5, 63.0, var7, var9, 1.5F);
+   private static void edge(FoglessLines foglessLines, double d, double e, double f, double g, int i) {
+      foglessLines.line(d, 63.0, e, f, 63.0, g, i, 1.5F);
    }
 }

@@ -23,26 +23,30 @@ public abstract class MixinPlayerRenderer {
    }
 
    @Inject(
-      method = {"method_62604"},
+      method = {"updateRenderState"},
       at = {@At("TAIL")}
    )
-   private void efn$injectSkin(PlayerLikeEntity var1, PlayerEntityRenderState var2, float var3, CallbackInfo var4) {
+   private void efn$injectSkin(PlayerLikeEntity playerLikeEntity, PlayerEntityRenderState playerEntityRenderState, float f, CallbackInfo callbackInfo) {
       SkinChangeModule var5 = ModuleRegistry.get(SkinChangeModule.class);
       if (var5 != null && var5.isEnabled()) {
-         var2.field_53520 = var5.skinFor(var2.field_53528, var2.field_53520);
+         playerEntityRenderState.skinTextures = var5.skinFor(playerEntityRenderState.id, playerEntityRenderState.skinTextures);
       }
    }
 
    @Inject(
-      method = {"method_4213"},
+      method = {"renderLabelIfPresent"},
       at = {@At("HEAD")},
       cancellable = true
    )
    private void efn$suppressVanillaNameTag(
-      PlayerEntityRenderState var1, MatrixStack var2, OrderedRenderCommandQueue var3, CameraRenderState var4, CallbackInfo var5
+      PlayerEntityRenderState playerEntityRenderState,
+      MatrixStack matrixStack,
+      OrderedRenderCommandQueue orderedRenderCommandQueue,
+      CameraRenderState cameraRenderState,
+      CallbackInfo callbackInfo
    ) {
       if (NametagsModule.hideVanillaNametags()) {
-         var5.cancel();
+         callbackInfo.cancel();
       }
    }
 }

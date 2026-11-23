@@ -65,105 +65,105 @@ public final class SwingAnimationModule extends ClientModule {
       if (CombatTarget.lastHit(3000L) != null) {
          return true;
       } else {
-         Entity var0 = MinecraftClient.method_1551().field_1692;
-         return (var0 instanceof PlayerEntity || var0 instanceof Monster) && var0.method_5805();
+         Entity var0 = MinecraftClient.getInstance().targetedEntity;
+         return (var0 instanceof PlayerEntity || var0 instanceof Monster) && var0.isAlive();
       }
    }
 
-   public boolean covers(boolean var1) {
-      return (var1 || this.offhand.get()) && this.styled;
+   public boolean covers(boolean bl) {
+      return (bl || this.offhand.get()) && this.styled;
    }
 
-   public int swingTicks(int var1) {
-      return !this.styled ? var1 : Math.max(1, Math.round(var1 / this.tempo.get()));
+   public int swingTicks(int i) {
+      return !this.styled ? i : Math.max(1, Math.round(i / this.tempo.get()));
    }
 
-   public void pose(MatrixStack var1, float var2, int var3) {
-      if (!(var2 <= 0.0F) && !(var2 >= 1.0F)) {
+   public void pose(MatrixStack matrixStack, float f, int i) {
+      if (!(f <= 0.0F) && !(f >= 1.0F)) {
          float var4 = this.intensity.get();
          switch (this.styleIndex) {
             case 1:
-               bolt(var1, var2, var3, var4);
+               bolt(matrixStack, f, i, var4);
                break;
             case 2:
-               sickle(var1, var2, var3, var4);
+               sickle(matrixStack, f, i, var4);
                break;
             case 3:
-               spin(var1, var2, var3, var4);
+               spin(matrixStack, f, i, var4);
                break;
             case 4:
-               doubleTap(var1, var2, var3, var4);
+               doubleTap(matrixStack, f, i, var4);
                break;
             case 5:
-               push(var1, var2, var3, var4);
+               push(matrixStack, f, i, var4);
                break;
             default:
-               khopesh(var1, var2, var3, var4);
+               khopesh(matrixStack, f, i, var4);
          }
       }
    }
 
-   private static void khopesh(MatrixStack var0, float var1, int var2, float var3) {
-      float var4 = crest(var1, 0.3F) * var3;
-      var0.method_46416(var2 * -0.3F * var4, 0.05F * MathHelper.method_15374(3.1415927F * var1) * var3, -0.1F * var4);
-      var0.method_22907(RotationAxis.field_40716.rotationDegrees(var2 * 64.0F * var4));
-      var0.method_22907(RotationAxis.field_40718.rotationDegrees(var2 * 48.0F * var4));
-      var0.method_22907(RotationAxis.field_40714.rotationDegrees(-14.0F * var4));
+   private static void khopesh(MatrixStack matrixStack, float f, int i, float g) {
+      float var4 = crest(f, 0.3F) * g;
+      matrixStack.translate(i * -0.3F * var4, 0.05F * MathHelper.sin(3.1415927F * f) * g, -0.1F * var4);
+      matrixStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(i * 64.0F * var4));
+      matrixStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(i * 48.0F * var4));
+      matrixStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(-14.0F * var4));
    }
 
-   private static void bolt(MatrixStack var0, float var1, int var2, float var3) {
-      float var4 = var1 < 0.28F ? MathHelper.method_15374(3.1415927F * var1 / 0.28F) * var3 : 0.0F;
-      float var5 = var1 <= 0.18F ? 0.0F : crest((var1 - 0.18F) / 0.82F, 0.28F) * var3;
-      var0.method_46416(var2 * -0.06F * var5, 0.16F * var4 - 0.1F * var5, 0.06F * var4 - 0.24F * var5);
-      var0.method_22907(RotationAxis.field_40714.rotationDegrees(30.0F * var4 - 105.0F * var5));
-      var0.method_22907(RotationAxis.field_40718.rotationDegrees(var2 * 10.0F * var5));
+   private static void bolt(MatrixStack matrixStack, float f, int i, float g) {
+      float var4 = f < 0.28F ? MathHelper.sin(3.1415927F * f / 0.28F) * g : 0.0F;
+      float var5 = f <= 0.18F ? 0.0F : crest((f - 0.18F) / 0.82F, 0.28F) * g;
+      matrixStack.translate(i * -0.06F * var5, 0.16F * var4 - 0.1F * var5, 0.06F * var4 - 0.24F * var5);
+      matrixStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(30.0F * var4 - 105.0F * var5));
+      matrixStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(i * 10.0F * var5));
    }
 
-   private static void sickle(MatrixStack var0, float var1, int var2, float var3) {
-      float var4 = crest(var1, 0.42F);
-      float var5 = var4 * var4 * var3;
+   private static void sickle(MatrixStack matrixStack, float f, int i, float g) {
+      float var4 = crest(f, 0.42F);
+      float var5 = var4 * var4 * g;
       float var6;
-      var0.method_46416(var2 * -0.1F * (var6 = var4 * var3), -0.24F * var6, -0.06F * var6);
-      var0.method_22907(RotationAxis.field_40718.rotationDegrees(var2 * -100.0F * var6));
-      var0.method_22907(RotationAxis.field_40716.rotationDegrees(var2 * 30.0F * var5));
-      var0.method_22907(RotationAxis.field_40714.rotationDegrees(-25.0F * var6));
+      matrixStack.translate(i * -0.1F * (var6 = var4 * g), -0.24F * var6, -0.06F * var6);
+      matrixStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(i * -100.0F * var6));
+      matrixStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(i * 30.0F * var5));
+      matrixStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(-25.0F * var6));
    }
 
-   private static void spin(MatrixStack var0, float var1, int var2, float var3) {
-      float var4 = 6.2831855F * var1;
-      float var5 = MathHelper.method_15362(var4);
-      float var6 = MathHelper.method_15374(var4);
-      float var7 = MathHelper.method_15374(3.1415927F * var1) * var3;
-      float var8 = 0.17F * var3;
-      var0.method_46416(var2 * var8 * 0.6F * (var5 - 1.0F), var8 * var6, -0.12F * var7);
-      var0.method_22907(RotationAxis.field_40718.rotationDegrees(var2 * 40.0F * var6 * var3));
-      var0.method_22907(RotationAxis.field_40714.rotationDegrees(-40.0F * var7));
+   private static void spin(MatrixStack matrixStack, float f, int i, float g) {
+      float var4 = 6.2831855F * f;
+      float var5 = MathHelper.cos(var4);
+      float var6 = MathHelper.sin(var4);
+      float var7 = MathHelper.sin(3.1415927F * f) * g;
+      float var8 = 0.17F * g;
+      matrixStack.translate(i * var8 * 0.6F * (var5 - 1.0F), var8 * var6, -0.12F * var7);
+      matrixStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(i * 40.0F * var6 * g));
+      matrixStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(-40.0F * var7));
    }
 
-   private static void doubleTap(MatrixStack var0, float var1, int var2, float var3) {
-      float var4 = MathHelper.method_15374(6.2831855F * var1);
-      float var5 = var4 * var4 * (var1 < 0.5F ? 1.0F : 0.65F) * var3;
-      var0.method_46416(var2 * -0.08F * var5, 0.06F * var5, -0.1F * var5);
-      var0.method_22907(RotationAxis.field_40716.rotationDegrees(var2 * 26.0F * var5));
-      var0.method_22907(RotationAxis.field_40714.rotationDegrees(-50.0F * var5));
-      var0.method_22907(RotationAxis.field_40718.rotationDegrees(var2 * -22.0F * var5));
+   private static void doubleTap(MatrixStack matrixStack, float f, int i, float g) {
+      float var4 = MathHelper.sin(6.2831855F * f);
+      float var5 = var4 * var4 * (f < 0.5F ? 1.0F : 0.65F) * g;
+      matrixStack.translate(i * -0.08F * var5, 0.06F * var5, -0.1F * var5);
+      matrixStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(i * 26.0F * var5));
+      matrixStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(-50.0F * var5));
+      matrixStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(i * -22.0F * var5));
    }
 
-   private static void push(MatrixStack var0, float var1, int var2, float var3) {
-      float var4 = (0.5F - 0.5F * MathHelper.method_15362(6.2831855F * var1)) * var3;
-      var0.method_46416(0.0F, -0.06F * var4, -0.1F * var4);
-      var0.method_22907(RotationAxis.field_40714.rotationDegrees(-24.0F * var4));
-      var0.method_22907(RotationAxis.field_40716.rotationDegrees(var2 * 10.0F * var4));
+   private static void push(MatrixStack matrixStack, float f, int i, float g) {
+      float var4 = (0.5F - 0.5F * MathHelper.cos(6.2831855F * f)) * g;
+      matrixStack.translate(0.0F, -0.06F * var4, -0.1F * var4);
+      matrixStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(-24.0F * var4));
+      matrixStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(i * 10.0F * var4));
    }
 
-   private static float crest(float var0, float var1) {
-      if (var0 <= 0.0F || var0 >= 1.0F) {
+   private static float crest(float f, float g) {
+      if (f <= 0.0F || f >= 1.0F) {
          return 0.0F;
-      } else if (var0 < var1) {
-         float var3 = 1.0F - var0 / var1;
+      } else if (f < g) {
+         float var3 = 1.0F - f / g;
          return 1.0F - var3 * var3 * var3;
       } else {
-         float var2 = (var0 - var1) / (1.0F - var1);
+         float var2 = (f - g) / (1.0F - g);
          return 1.0F - var2 * var2 * (3.0F - 2.0F * var2);
       }
    }

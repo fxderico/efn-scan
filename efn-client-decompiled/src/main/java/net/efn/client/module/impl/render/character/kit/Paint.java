@@ -10,62 +10,62 @@ public abstract class Paint {
    public Paint() {
    }
 
-   public abstract void apply(float var1, float var2, float var3, Sample var4);
+   public abstract void apply(float f, float g, float h, Sample sample);
 
-   public static Paint of(int var0) {
-      return new Paint.Solid(var0);
+   public static Paint of(int i) {
+      return new Paint.Solid(i);
    }
 
-   public static Paint gradient(int var0, float var1, float var2, float var3, int var4, float var5, float var6, float var7) {
-      return new Paint.Linear(var0, var1, var2, var3, var4, var5, var6, var7);
+   public static Paint gradient(int i, float f, float g, float h, int j, float k, float l, float m) {
+      return new Paint.Linear(i, f, g, h, j, k, l, m);
    }
 
-   public static Paint vertical(int var0, float var1, int var2, float var3) {
-      return new Paint.Linear(var0, 0.0F, var1, 0.0F, var2, 0.0F, var3, 0.0F);
+   public static Paint vertical(int i, float f, int j, float g) {
+      return new Paint.Linear(i, 0.0F, f, 0.0F, j, 0.0F, g, 0.0F);
    }
 
-   public static Paint radial(int var0, float var1, float var2, float var3, float var4, int var5) {
-      return new Paint.Radial(var0, var1, var2, var3, var4, var5);
+   public static Paint radial(int i, float f, float g, float h, float j, int k) {
+      return new Paint.Radial(i, f, g, h, j, k);
    }
 
-   public static Paint wood(int var0, int var1, float var2, float var3, float var4, float var5, float var6, float var7, float var8) {
-      return new Paint.Wood(var0, var1, var2, var3, var4, var5, var6, var7, var8);
+   public static Paint wood(int i, int j, float f, float g, float h, float k, float l, float m, float n) {
+      return new Paint.Wood(i, j, f, g, h, k, l, m, n);
    }
 
-   public static Paint field(Paint.Field var0) {
-      return new Paint.Custom(var0);
+   public static Paint field(Paint.Field field) {
+      return new Paint.Custom(field);
    }
 
-   public Paint noise(int var1, float var2, float var3) {
-      return new Paint.Blotch(this, var1, var2, var3);
+   public Paint noise(int i, float f, float g) {
+      return new Paint.Blotch(this, i, f, g);
    }
 
-   public Paint grain(float var1, float var2) {
-      return new Paint.Grain(this, var1, var2);
+   public Paint grain(float f, float g) {
+      return new Paint.Grain(this, f, g);
    }
 
-   public Paint band(int var1, float var2, float var3, float var4, float var5, float var6, float var7, float var8, float var9) {
-      return new Paint.Band(this, var1, var2, var3, var4, var5, var6, var7, var8, var9);
+   public Paint band(int i, float f, float g, float h, float j, float k, float l, float m, float n) {
+      return new Paint.Band(this, i, f, g, h, j, k, l, m, n);
    }
 
    public Paint glow() {
       return this.glow(1.0F);
    }
 
-   public Paint glow(float var1) {
-      return new Paint.Glow(this, var1);
+   public Paint glow(float f) {
+      return new Paint.Glow(this, f);
    }
 
-   public Paint flatLight(float var1) {
-      return new Paint.Shading(this, Math.max(0.0F, Math.min(1.0F, var1)), 0.0F / 0.0F);
+   public Paint flatLight(float f) {
+      return new Paint.Shading(this, Math.max(0.0F, Math.min(1.0F, f)), 0.0F / 0.0F);
    }
 
-   public Paint occlusion(float var1) {
-      return new Paint.Shading(this, 0.0F / 0.0F, Math.max(0.0F, Math.min(1.0F, var1)));
+   public Paint occlusion(float f) {
+      return new Paint.Shading(this, 0.0F / 0.0F, Math.max(0.0F, Math.min(1.0F, f)));
    }
 
-   static float smooth(float var0, float var1, float var2) {
-      float var3 = (var2 - var0) / (var1 - var0);
+   static float smooth(float f, float g, float h) {
+      float var3 = (h - f) / (g - f);
       var3 = var3 < 0.0F ? 0.0F : Math.min(var3, 1.0F);
       return var3 * var3 * (3.0F - 2.0F * var3);
    }
@@ -83,29 +83,29 @@ public abstract class Paint {
       private final float half;
       private final float soft;
 
-      Band(Paint var1, int var2, float var3, float var4, float var5, float var6, float var7, float var8, float var9, float var10) {
-         this.base = var1;
-         this.argb = var2;
-         this.px = var3;
-         this.py = var4;
-         this.pz = var5;
-         float var11 = (float)Math.sqrt(var6 * var6 + var7 * var7 + var8 * var8);
-         this.nx = var11 < 1.0E-6F ? 0.0F : var6 / var11;
-         this.ny = var11 < 1.0E-6F ? 1.0F : var7 / var11;
-         this.nz = var11 < 1.0E-6F ? 0.0F : var8 / var11;
-         this.half = var9;
-         this.soft = Math.max(0.001F, var10);
+      Band(Paint paint, int i, float f, float g, float h, float j, float k, float l, float m, float n) {
+         this.base = paint;
+         this.argb = i;
+         this.px = f;
+         this.py = g;
+         this.pz = h;
+         float var11 = (float)Math.sqrt(j * j + k * k + l * l);
+         this.nx = var11 < 1.0E-6F ? 0.0F : j / var11;
+         this.ny = var11 < 1.0E-6F ? 1.0F : k / var11;
+         this.nz = var11 < 1.0E-6F ? 0.0F : l / var11;
+         this.half = m;
+         this.soft = Math.max(0.001F, n);
       }
 
       @Override
-      public void apply(float var1, float var2, float var3, Sample var4) {
-         this.base.apply(var1, var2, var3, var4);
-         float var5 = Math.abs((var1 - this.px) * this.nx + (var2 - this.py) * this.ny + (var3 - this.pz) * this.nz);
+      public void apply(float f, float g, float h, Sample sample) {
+         this.base.apply(f, g, h, sample);
+         float var5 = Math.abs((f - this.px) * this.nx + (g - this.py) * this.ny + (h - this.pz) * this.nz);
          float var6 = 1.0F - smooth(this.half, this.half + this.soft, var5);
          if (var6 > 0.0F) {
-            float var7 = var4.glow;
-            var4.toward(this.argb, var6 * ((this.argb >>> 24) / 255.0F));
-            var4.glow = var7;
+            float var7 = sample.glow;
+            sample.toward(this.argb, var6 * ((this.argb >>> 24) / 255.0F));
+            sample.glow = var7;
          }
       }
    }
@@ -117,21 +117,21 @@ public abstract class Paint {
       private final float freq;
       private final float amount;
 
-      Blotch(Paint var1, int var2, float var3, float var4) {
-         this.base = var1;
-         this.other = var2;
-         this.freq = 1.0F / Math.max(0.01F, var3);
-         this.amount = var4;
+      Blotch(Paint paint, int i, float f, float g) {
+         this.base = paint;
+         this.other = i;
+         this.freq = 1.0F / Math.max(0.01F, f);
+         this.amount = g;
       }
 
       @Override
-      public void apply(float var1, float var2, float var3, Sample var4) {
-         this.base.apply(var1, var2, var3, var4);
-         float var5 = Noise.fbm(var1 * this.freq, var2 * this.freq, var3 * this.freq, 3) * 1.6F + 0.5F;
+      public void apply(float f, float g, float h, Sample sample) {
+         this.base.apply(f, g, h, sample);
+         float var5 = Noise.fbm(f * this.freq, g * this.freq, h * this.freq, 3) * 1.6F + 0.5F;
          float var6 = (var5 < 0.0F ? 0.0F : Math.min(var5, 1.0F)) * this.amount;
-         float var7 = var4.glow;
-         var4.toward(this.other, var6);
-         var4.glow = var7;
+         float var7 = sample.glow;
+         sample.toward(this.other, var6);
+         sample.glow = var7;
       }
    }
 
@@ -139,19 +139,19 @@ public abstract class Paint {
    private static final class Custom extends Paint {
       private final Paint.Field field;
 
-      Custom(Paint.Field var1) {
-         this.field = var1;
+      Custom(Paint.Field field) {
+         this.field = field;
       }
 
       @Override
-      public void apply(float var1, float var2, float var3, Sample var4) {
-         var4.set(this.field.argb(var1, var2, var3));
+      public void apply(float f, float g, float h, Sample sample) {
+         sample.set(this.field.argb(f, g, h));
       }
    }
 
    @Environment(EnvType.CLIENT)
    public interface Field {
-      int argb(float var1, float var2, float var3);
+      int argb(float f, float g, float h);
    }
 
    @Environment(EnvType.CLIENT)
@@ -159,15 +159,15 @@ public abstract class Paint {
       private final Paint base;
       private final float amount;
 
-      Glow(Paint var1, float var2) {
-         this.base = var1;
-         this.amount = var2;
+      Glow(Paint paint, float f) {
+         this.base = paint;
+         this.amount = f;
       }
 
       @Override
-      public void apply(float var1, float var2, float var3, Sample var4) {
-         this.base.apply(var1, var2, var3, var4);
-         var4.glow = this.amount;
+      public void apply(float f, float g, float h, Sample sample) {
+         this.base.apply(f, g, h, sample);
+         sample.glow = this.amount;
       }
    }
 
@@ -177,19 +177,19 @@ public abstract class Paint {
       private final float freq;
       private final float amount;
 
-      Grain(Paint var1, float var2, float var3) {
-         this.base = var1;
-         this.freq = 1.0F / Math.max(0.01F, var2);
-         this.amount = var3;
+      Grain(Paint paint, float f, float g) {
+         this.base = paint;
+         this.freq = 1.0F / Math.max(0.01F, f);
+         this.amount = g;
       }
 
       @Override
-      public void apply(float var1, float var2, float var3, Sample var4) {
-         this.base.apply(var1, var2, var3, var4);
-         float var5 = 1.0F + Noise.fbm(var1 * this.freq, var2 * this.freq, var3 * this.freq, 2) * 2.0F * this.amount;
-         var4.r *= var5;
-         var4.g *= var5;
-         var4.b *= var5;
+      public void apply(float f, float g, float h, Sample sample) {
+         this.base.apply(f, g, h, sample);
+         float var5 = 1.0F + Noise.fbm(f * this.freq, g * this.freq, h * this.freq, 2) * 2.0F * this.amount;
+         sample.r *= var5;
+         sample.g *= var5;
+         sample.b *= var5;
       }
    }
 
@@ -205,25 +205,25 @@ public abstract class Paint {
       private final float dz;
       private final float inv;
 
-      Linear(int var1, float var2, float var3, float var4, int var5, float var6, float var7, float var8) {
-         this.from = var1;
-         this.to = var5;
-         this.ax = var2;
-         this.ay = var3;
-         this.az = var4;
-         this.dx = var6 - var2;
-         this.dy = var7 - var3;
-         this.dz = var8 - var4;
+      Linear(int i, float f, float g, float h, int j, float k, float l, float m) {
+         this.from = i;
+         this.to = j;
+         this.ax = f;
+         this.ay = g;
+         this.az = h;
+         this.dx = k - f;
+         this.dy = l - g;
+         this.dz = m - h;
          float var9 = this.dx * this.dx + this.dy * this.dy + this.dz * this.dz;
          this.inv = var9 < 1.0E-8F ? 0.0F : 1.0F / var9;
       }
 
       @Override
-      public void apply(float var1, float var2, float var3, Sample var4) {
-         float var5 = ((var1 - this.ax) * this.dx + (var2 - this.ay) * this.dy + (var3 - this.az) * this.dz) * this.inv;
+      public void apply(float f, float g, float h, Sample sample) {
+         float var5 = ((f - this.ax) * this.dx + (g - this.ay) * this.dy + (h - this.az) * this.dz) * this.inv;
          var5 = var5 < 0.0F ? 0.0F : Math.min(var5, 1.0F);
-         var4.set(this.from);
-         var4.toward(this.to, var5);
+         sample.set(this.from);
+         sample.toward(this.to, var5);
       }
    }
 
@@ -236,23 +236,23 @@ public abstract class Paint {
       private final float cz;
       private final float radius;
 
-      Radial(int var1, float var2, float var3, float var4, float var5, int var6) {
-         this.inner = var1;
-         this.outer = var6;
-         this.cx = var2;
-         this.cy = var3;
-         this.cz = var4;
-         this.radius = Math.max(1.0E-4F, var5);
+      Radial(int i, float f, float g, float h, float j, int k) {
+         this.inner = i;
+         this.outer = k;
+         this.cx = f;
+         this.cy = g;
+         this.cz = h;
+         this.radius = Math.max(1.0E-4F, j);
       }
 
       @Override
-      public void apply(float var1, float var2, float var3, Sample var4) {
-         float var5 = var1 - this.cx;
-         float var6 = var2 - this.cy;
-         float var7 = var3 - this.cz;
+      public void apply(float f, float g, float h, Sample sample) {
+         float var5 = f - this.cx;
+         float var6 = g - this.cy;
+         float var7 = h - this.cz;
          float var8 = (float)Math.sqrt(var5 * var5 + var6 * var6 + var7 * var7) / this.radius;
-         var4.set(this.inner);
-         var4.toward(this.outer, var8 < 0.0F ? 0.0F : Math.min(var8, 1.0F));
+         sample.set(this.inner);
+         sample.toward(this.outer, var8 < 0.0F ? 0.0F : Math.min(var8, 1.0F));
       }
    }
 
@@ -262,23 +262,23 @@ public abstract class Paint {
       private final float flat;
       private final float occlusion;
 
-      Shading(Paint var1, float var2, float var3) {
-         this.base = var1;
-         this.flat = var2;
-         this.occlusion = var3;
+      Shading(Paint paint, float f, float g) {
+         this.base = paint;
+         this.flat = f;
+         this.occlusion = g;
       }
 
       @Override
-      public void apply(float var1, float var2, float var3, Sample var4) {
-         this.base.apply(var1, var2, var3, var4);
+      public void apply(float f, float g, float h, Sample sample) {
+         this.base.apply(f, g, h, sample);
          if (this.flat == this.flat) {
-            var4.flat = this.flat;
-            var4.flatWeight = 1.0F;
+            sample.flat = this.flat;
+            sample.flatWeight = 1.0F;
          }
 
          if (this.occlusion == this.occlusion) {
-            var4.occlusion = this.occlusion;
-            var4.occlusionWeight = 1.0F;
+            sample.occlusion = this.occlusion;
+            sample.occlusionWeight = 1.0F;
          }
       }
    }
@@ -287,13 +287,13 @@ public abstract class Paint {
    private static final class Solid extends Paint {
       private final int argb;
 
-      Solid(int var1) {
-         this.argb = var1;
+      Solid(int i) {
+         this.argb = i;
       }
 
       @Override
-      public void apply(float var1, float var2, float var3, Sample var4) {
-         var4.set(this.argb);
+      public void apply(float f, float g, float h, Sample sample) {
+         sample.set(this.argb);
       }
    }
 
@@ -309,24 +309,24 @@ public abstract class Paint {
       private final float dz;
       private final float spacing;
 
-      Wood(int var1, int var2, float var3, float var4, float var5, float var6, float var7, float var8, float var9) {
-         this.light = var1;
-         this.dark = var2;
-         this.ax = var3;
-         this.ay = var4;
-         this.az = var5;
-         float var10 = (float)Math.sqrt(var6 * var6 + var7 * var7 + var8 * var8);
-         this.dx = var10 < 1.0E-6F ? 0.0F : var6 / var10;
-         this.dy = var10 < 1.0E-6F ? 1.0F : var7 / var10;
-         this.dz = var10 < 1.0E-6F ? 0.0F : var8 / var10;
-         this.spacing = Math.max(0.05F, var9);
+      Wood(int i, int j, float f, float g, float h, float k, float l, float m, float n) {
+         this.light = i;
+         this.dark = j;
+         this.ax = f;
+         this.ay = g;
+         this.az = h;
+         float var10 = (float)Math.sqrt(k * k + l * l + m * m);
+         this.dx = var10 < 1.0E-6F ? 0.0F : k / var10;
+         this.dy = var10 < 1.0E-6F ? 1.0F : l / var10;
+         this.dz = var10 < 1.0E-6F ? 0.0F : m / var10;
+         this.spacing = Math.max(0.05F, n);
       }
 
       @Override
-      public void apply(float var1, float var2, float var3, Sample var4) {
-         float var5 = var1 - this.ax;
-         float var6 = var2 - this.ay;
-         float var7 = var3 - this.az;
+      public void apply(float f, float g, float h, Sample sample) {
+         float var5 = f - this.ax;
+         float var6 = g - this.ay;
+         float var7 = h - this.az;
          float var8 = var5 * this.dx + var6 * this.dy + var7 * this.dz;
          float var9 = var5 - this.dx * var8;
          float var10 = var6 - this.dy * var8;
@@ -339,8 +339,8 @@ public abstract class Paint {
          float var17 = var16 - (float)Math.floor(var16);
          float var18 = smooth(0.7F, 0.85F, var17) * (1.0F - smooth(0.88F, 1.0F, var17));
          float var19 = 0.18F + var15 * 0.9F + var18 * 0.22F;
-         var4.set(this.light);
-         var4.toward(this.dark, var19 < 0.0F ? 0.0F : Math.min(var19, 1.0F));
+         sample.set(this.light);
+         sample.toward(this.dark, var19 < 0.0F ? 0.0F : Math.min(var19, 1.0F));
       }
    }
 }

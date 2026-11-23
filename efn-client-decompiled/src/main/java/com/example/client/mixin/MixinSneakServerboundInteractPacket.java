@@ -15,13 +15,13 @@ public abstract class MixinSneakServerboundInteractPacket {
    }
 
    @ModifyVariable(
-      method = {"<init>(IZLnet/minecraft/class_2824$class_5906;)V"},
+      method = {"<init>(IZLnet/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractTypeHandler;)V"},
       at = {@At("HEAD")},
       ordinal = 0,
       argsOnly = true
    )
-   private static boolean efn$packetSneak(boolean var0) {
-      if (var0) {
+   private static boolean efn$packetSneak(boolean bl) {
+      if (bl) {
          return true;
       } else {
          SneakModule var1 = SneakModule.active;

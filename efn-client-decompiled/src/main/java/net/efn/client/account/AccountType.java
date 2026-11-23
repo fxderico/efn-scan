@@ -11,8 +11,8 @@ public enum AccountType {
 
    private final String label;
 
-   private AccountType(String nullxx) {
-      this.label = nullxx;
+   private AccountType(String string2) {
+      this.label = string2;
    }
 
    public String label() {

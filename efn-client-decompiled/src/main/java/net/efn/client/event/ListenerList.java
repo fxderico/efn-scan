@@ -16,42 +16,42 @@ public final class ListenerList<E extends Event> {
    public ListenerList() {
    }
 
-   public synchronized void register(ListenerHandle<E> var1) {
-      if (var1.stage() == Stage.PRE) {
-         this.pre = this.preHandles.insert(this.pre, var1);
+   public synchronized void register(ListenerHandle<E> listenerHandle) {
+      if (listenerHandle.stage() == Stage.PRE) {
+         this.pre = this.preHandles.insert(this.pre, listenerHandle);
       } else {
-         this.post = this.postHandles.insert(this.post, var1);
+         this.post = this.postHandles.insert(this.post, listenerHandle);
       }
    }
 
-   public synchronized void unregister(ListenerHandle<E> var1) {
-      if (var1.stage() == Stage.PRE) {
-         this.pre = this.preHandles.remove(this.pre, var1);
+   public synchronized void unregister(ListenerHandle<E> listenerHandle) {
+      if (listenerHandle.stage() == Stage.PRE) {
+         this.pre = this.preHandles.remove(this.pre, listenerHandle);
       } else {
-         this.post = this.postHandles.remove(this.post, var1);
+         this.post = this.postHandles.remove(this.post, listenerHandle);
       }
    }
 
-   public void dispatchPre(E var1) {
+   public void dispatchPre(E event) {
       Consumer[] var2 = this.pre;
 
       for (int var3 = 0; var3 < var2.length; var3++) {
          try {
-            var2[var3].accept(var1);
+            var2[var3].accept(event);
          } catch (Exception var5) {
-            ListenerErrorReporter.report(this.handleOf(Stage.PRE, var2[var3]), var1, var5);
+            ListenerErrorReporter.report(this.handleOf(Stage.PRE, var2[var3]), event, var5);
          }
       }
    }
 
-   public void dispatchPost(E var1) {
+   public void dispatchPost(E event) {
       Consumer[] var2 = this.post;
 
       for (int var3 = 0; var3 < var2.length; var3++) {
          try {
-            var2[var3].accept(var1);
+            var2[var3].accept(event);
          } catch (Exception var5) {
-            ListenerErrorReporter.report(this.handleOf(Stage.POST, var2[var3]), var1, var5);
+            ListenerErrorReporter.report(this.handleOf(Stage.POST, var2[var3]), event, var5);
          }
       }
    }
@@ -64,9 +64,9 @@ public final class ListenerList<E extends Event> {
       return this.post;
    }
 
-   synchronized ListenerHandle<E> handleOf(Stage var1, Consumer<E> var2) {
-      ListenerHandle var3 = var1 == Stage.PRE ? this.preHandles.of(this.pre, var2) : this.postHandles.of(this.post, var2);
-      return var3 != null ? var3 : new ListenerHandle<>(null, var1, EventPriority.NORMAL, null, var2);
+   synchronized ListenerHandle<E> handleOf(Stage stage, Consumer<E> consumer) {
+      ListenerHandle var3 = stage == Stage.PRE ? this.preHandles.of(this.pre, consumer) : this.postHandles.of(this.post, consumer);
+      return var3 != null ? var3 : new ListenerHandle<>(null, stage, EventPriority.NORMAL, null, consumer);
    }
 
    private static <E extends Event> Consumer<E>[] none() {
@@ -80,9 +80,9 @@ public final class ListenerList<E extends Event> {
       private Handles() {
       }
 
-      Consumer<E>[] insert(Consumer<E>[] var1, ListenerHandle<E> var2) {
-         int var3 = var1.length;
-         int var4 = var2.priority().value;
+      Consumer<E>[] insert(Consumer<E>[] consumers, ListenerHandle<E> listenerHandle) {
+         int var3 = consumers.length;
+         int var4 = listenerHandle.priority().value;
          int var5 = 0;
          int var6 = var3;
 
@@ -100,19 +100,19 @@ public final class ListenerList<E extends Event> {
          }
 
          System.arraycopy(this.handles, var5, this.handles, var5 + 1, var3 - var5);
-         this.handles[var5] = var2;
+         this.handles[var5] = listenerHandle;
          Consumer[] var8 = new Consumer[var3 + 1];
-         System.arraycopy(var1, 0, var8, 0, var5);
-         var8[var5] = var2.callback();
-         System.arraycopy(var1, var5, var8, var5 + 1, var3 - var5);
+         System.arraycopy(consumers, 0, var8, 0, var5);
+         var8[var5] = listenerHandle.callback();
+         System.arraycopy(consumers, var5, var8, var5 + 1, var3 - var5);
          return var8;
       }
 
-      Consumer<E>[] remove(Consumer<E>[] var1, ListenerHandle<E> var2) {
-         int var3 = var1.length;
-         int var4 = this.indexOf(var1, var2);
+      Consumer<E>[] remove(Consumer<E>[] consumers, ListenerHandle<E> listenerHandle) {
+         int var3 = consumers.length;
+         int var4 = this.indexOf(consumers, listenerHandle);
          if (var4 < 0) {
-            return var1;
+            return consumers;
          } else {
             System.arraycopy(this.handles, var4 + 1, this.handles, var4, var3 - var4 - 1);
             this.handles[var3 - 1] = null;
@@ -120,18 +120,18 @@ public final class ListenerList<E extends Event> {
                return ListenerList.none();
             } else {
                Consumer[] var5 = new Consumer[var3 - 1];
-               System.arraycopy(var1, 0, var5, 0, var4);
-               System.arraycopy(var1, var4 + 1, var5, var4, var3 - var4 - 1);
+               System.arraycopy(consumers, 0, var5, 0, var4);
+               System.arraycopy(consumers, var4 + 1, var5, var4, var3 - var4 - 1);
                return var5;
             }
          }
       }
 
-      private int indexOf(Consumer<E>[] var1, ListenerHandle<E> var2) {
-         Consumer var3 = var2.callback();
+      private int indexOf(Consumer<E>[] consumers, ListenerHandle<E> listenerHandle) {
+         Consumer var3 = listenerHandle.callback();
 
-         for (int var4 = 0; var4 < var1.length; var4++) {
-            if (var1[var4] == var3 && this.handles[var4] == var2) {
+         for (int var4 = 0; var4 < consumers.length; var4++) {
+            if (consumers[var4] == var3 && this.handles[var4] == listenerHandle) {
                return var4;
             }
          }
@@ -139,9 +139,9 @@ public final class ListenerList<E extends Event> {
          return -1;
       }
 
-      ListenerHandle<E> of(Consumer<E>[] var1, Consumer<E> var2) {
-         for (int var3 = 0; var3 < var1.length; var3++) {
-            if (var1[var3] == var2) {
+      ListenerHandle<E> of(Consumer<E>[] consumers, Consumer<E> consumer) {
+         for (int var3 = 0; var3 < consumers.length; var3++) {
+            if (consumers[var3] == consumer) {
                return this.handles[var3];
             }
          }

@@ -15,42 +15,47 @@ import net.minecraft.util.Identifier;
 
 @Environment(EnvType.CLIENT)
 public final class CrownLayer extends FeatureRenderer<PlayerEntityRenderState, PlayerEntityModel> {
-   private static final Identifier TEXTURE = Identifier.method_60655("efn", "textures/cosmetic/headdress_base.png");
+   private static final Identifier TEXTURE = Identifier.of("efn", "textures/cosmetic/headdress_base.png");
    private static final float HEAD_CENTRE = -0.25F;
 
-   public CrownLayer(FeatureRendererContext<PlayerEntityRenderState, PlayerEntityModel> var1) {
-      super(var1);
+   public CrownLayer(FeatureRendererContext<PlayerEntityRenderState, PlayerEntityModel> featureRendererContext) {
+      super(featureRendererContext);
    }
 
-   public void method_4199(MatrixStack var1, OrderedRenderCommandQueue var2, int var3, PlayerEntityRenderState var4, float var5, float var6) {
+   public void method_4199(
+      MatrixStack matrixStack, OrderedRenderCommandQueue orderedRenderCommandQueue, int i, PlayerEntityRenderState playerEntityRenderState, float f, float g
+   ) {
       HeadCosmeticModule var7 = HeadCosmeticModule.worn;
-      if (var7 != null && !var4.field_53333 && var7.wears(var4)) {
-         boolean var8 = !var4.field_55309.method_7960() || !var4.field_53467.method_65606() || var4.field_55315 != null;
-         boolean var9 = !var4.field_53418.method_7960() && !var4.field_53418.method_57826(DataComponentTypes.field_54197);
+      if (var7 != null && !playerEntityRenderState.invisible && var7.wears(playerEntityRenderState)) {
+         boolean var8 = !playerEntityRenderState.equippedHeadStack.isEmpty()
+            || !playerEntityRenderState.headItemRenderState.isEmpty()
+            || playerEntityRenderState.wearingSkullType != null;
+         boolean var9 = !playerEntityRenderState.equippedChestStack.isEmpty()
+            && !playerEntityRenderState.equippedChestStack.contains(DataComponentTypes.GLIDER);
          CrownMesh var10 = var7.headMesh(var8);
          CrownMesh var11 = var7.bodyMesh(var9);
          CrownMesh.Look var12 = var7.look();
          float var13 = var7.scale();
-         RenderLayer var14 = RenderLayers.method_75994(TEXTURE);
-         PlayerEntityModel var15 = (PlayerEntityModel)this.method_17165();
-         var1.method_22903();
-         var15.method_63512().method_22703(var1);
-         var1.method_22903();
-         var15.method_2838().method_22703(var1);
+         RenderLayer var14 = RenderLayers.entityCutoutNoCull(TEXTURE);
+         PlayerEntityModel var15 = this.getContextModel();
+         matrixStack.push();
+         var15.getRootPart().applyTransform(matrixStack);
+         matrixStack.push();
+         var15.getHead().applyTransform(matrixStack);
          if (var13 != 1.0F) {
-            var1.method_46416(0.0F, -0.25F, 0.0F);
-            var1.method_22905(var13, var13, var13);
-            var1.method_46416(0.0F, 0.25F, 0.0F);
+            matrixStack.translate(0.0F, -0.25F, 0.0F);
+            matrixStack.scale(var13, var13, var13);
+            matrixStack.translate(0.0F, 0.25F, 0.0F);
          }
 
-         var2.method_73483(var1, var14, (var3x, var4x) -> var10.emit(var3x, var4x, var3, var12));
-         var1.method_22909();
+         orderedRenderCommandQueue.submitCustom(matrixStack, var14, (entry, vertexConsumer) -> var10.emit(entry, vertexConsumer, i, var12));
+         matrixStack.pop();
          if (!var11.isEmpty()) {
-            var15.field_3391.method_22703(var1);
-            var2.method_73483(var1, var14, (var3x, var4x) -> var11.emit(var3x, var4x, var3, var12));
+            var15.body.applyTransform(matrixStack);
+            orderedRenderCommandQueue.submitCustom(matrixStack, var14, (entry, vertexConsumer) -> var11.emit(entry, vertexConsumer, i, var12));
          }
 
-         var1.method_22909();
+         matrixStack.pop();
       }
    }
 }

@@ -16,16 +16,9 @@ import net.minecraft.item.ItemStack;
 
 @Environment(EnvType.CLIENT)
 final class ArmorStatus {
-   private static final EquipmentSlot[] ARMOR = new EquipmentSlot[]{
-      EquipmentSlot.field_6169, EquipmentSlot.field_6174, EquipmentSlot.field_6172, EquipmentSlot.field_6166
-   };
+   private static final EquipmentSlot[] ARMOR = new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
    private static final EquipmentSlot[] ARMOR_AND_HANDS = new EquipmentSlot[]{
-      EquipmentSlot.field_6169,
-      EquipmentSlot.field_6174,
-      EquipmentSlot.field_6172,
-      EquipmentSlot.field_6166,
-      EquipmentSlot.field_6173,
-      EquipmentSlot.field_6171
+      EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET, EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND
    };
    private static final float PAD = 6.0F;
    private static final float ICON = 18.0F;
@@ -67,91 +60,91 @@ final class ArmorStatus {
       return this.presence > 0.0F;
    }
 
-   void update(MinecraftClient var1, HudModule var2, boolean var3, boolean var4, float var5) {
-      this.clock += var5;
-      this.column = var2.armorColumn();
-      this.hands = var2.armorHands();
-      HudModule.ArmorWear var7 = var2.armorWear();
+   void update(MinecraftClient minecraftClient, HudModule hudModule, boolean bl, boolean bl2, float f) {
+      this.clock += f;
+      this.column = hudModule.armorColumn();
+      this.hands = hudModule.armorHands();
+      HudModule.ArmorWear var7 = hudModule.armorWear();
       this.gauge = var7 != HudModule.ArmorWear.PERCENT;
       this.percent = var7 != HudModule.ArmorWear.GAUGE;
-      ClientPlayerEntity var8 = var1.field_1724;
+      ClientPlayerEntity var8 = minecraftClient.player;
       boolean var9 = false;
       EquipmentSlot[] var10 = this.order();
 
       for (int var11 = 0; var11 < var10.length; var11++) {
-         ItemStack var12 = var8 == null ? ItemStack.field_8037 : var8.method_6118(var10[var11]);
-         if (!var12.method_7960()) {
+         ItemStack var12 = var8 == null ? ItemStack.EMPTY : var8.getEquippedStack(var10[var11]);
+         if (!var12.isEmpty()) {
             var9 = true;
          }
 
          float var14 = remaining(var12);
-         if (var12.method_7909() != this.seen[var11]) {
-            this.seen[var11] = var12.method_7909();
+         if (var12.getItem() != this.seen[var11]) {
+            this.seen[var11] = var12.getItem();
             this.wear[var11] = var14;
          } else {
-            this.wear[var11] = var14 < 0.0F ? var14 : HudGlyphs.approach(Math.max(0.0F, this.wear[var11]), var14, 10.0F, var5);
+            this.wear[var11] = var14 < 0.0F ? var14 : HudGlyphs.approach(Math.max(0.0F, this.wear[var11]), var14, 10.0F, f);
          }
       }
 
-      boolean var6 = var4 || var3 && var9;
-      this.presence = var4 ? 1.0F : Math.max(0.0F, Math.min(1.0F, this.presence + (var6 ? var5 : -var5) / 0.25F));
+      boolean var6 = bl2 || bl && var9;
+      this.presence = bl2 ? 1.0F : Math.max(0.0F, Math.min(1.0F, this.presence + (var6 ? f : -f) / 0.25F));
    }
 
    private EquipmentSlot[] order() {
       return this.hands ? ARMOR_AND_HANDS : ARMOR;
    }
 
-   private static float remaining(ItemStack var0) {
-      return !var0.method_7960() && var0.method_7963() && var0.method_7936() > 0
-         ? Math.max(0.0F, 1.0F - (float)var0.method_7919() / var0.method_7936())
+   private static float remaining(ItemStack itemStack) {
+      return !itemStack.isEmpty() && itemStack.isDamageable() && itemStack.getMaxDamage() > 0
+         ? Math.max(0.0F, 1.0F - (float)itemStack.getDamage() / itemStack.getMaxDamage())
          : -1.0F;
    }
 
-   float planWidth(float var1) {
+   float planWidth(float f) {
       if (!this.visible()) {
          return 1.0F;
       } else {
          int var3 = this.order().length;
-         float var4 = ItemIcons.pixels(18.0F * var1);
-         float var2 = this.percent ? (float)Math.ceil(percentWidth(var1)) : 0.0F;
+         float var4 = ItemIcons.pixels(18.0F * f);
+         float var2 = this.percent ? (float)Math.ceil(percentWidth(f)) : 0.0F;
          if (this.column) {
-            float var7 = (this.percent ? var2 : 0.0F) + (this.gauge ? 44.0F * var1 : 0.0F) + (this.percent && this.gauge ? 7.0F * var1 : 0.0F);
-            return Math.round(6.0F * var1 * 2.0F + var4 + 7.0F * var1 + var7);
+            float var7 = (this.percent ? var2 : 0.0F) + (this.gauge ? 44.0F * f : 0.0F) + (this.percent && this.gauge ? 7.0F * f : 0.0F);
+            return Math.round(6.0F * f * 2.0F + var4 + 7.0F * f + var7);
          } else {
             float var6 = Math.max(var4, var2);
-            return Math.round(6.0F * var1 * 2.0F + var3 * var6 + (var3 - 1) * 5.0F * var1 + (this.hands ? 11.0F * var1 - 5.0F * var1 : 0.0F));
+            return Math.round(6.0F * f * 2.0F + var3 * var6 + (var3 - 1) * 5.0F * f + (this.hands ? 11.0F * f - 5.0F * f : 0.0F));
          }
       }
    }
 
-   float planHeight(float var1) {
+   float planHeight(float f) {
       int var2 = this.order().length;
-      float var3 = ItemIcons.pixels(18.0F * var1);
+      float var3 = ItemIcons.pixels(18.0F * f);
       if (this.column) {
-         return Math.round(6.0F * var1 * 2.0F + var2 * var3 + (var2 - 1) * 4.0F * var1 + (this.hands ? 11.0F * var1 - 4.0F * var1 : 0.0F));
+         return Math.round(6.0F * f * 2.0F + var2 * var3 + (var2 - 1) * 4.0F * f + (this.hands ? 11.0F * f - 4.0F * f : 0.0F));
       } else {
-         float var4 = (this.gauge ? 3.0F * var1 + gaugeHeight(var1) : 0.0F) + (this.percent ? 2.0F * var1 + HudChrome.px(14.0F, var1) : 0.0F);
-         return Math.round(6.0F * var1 * 2.0F + var3 + var4);
+         float var4 = (this.gauge ? 3.0F * f + gaugeHeight(f) : 0.0F) + (this.percent ? 2.0F * f + HudChrome.px(14.0F, f) : 0.0F);
+         return Math.round(6.0F * f * 2.0F + var3 + var4);
       }
    }
 
-   private static float percentWidth(float var0) {
-      return HudChrome.tabularWidth(ImGuiManager.getInstance().hudLabelFont(), HudChrome.px(14.0F, var0), "100%");
+   private static float percentWidth(float f) {
+      return HudChrome.tabularWidth(ImGuiManager.getInstance().hudLabelFont(), HudChrome.px(14.0F, f), "100%");
    }
 
-   private static float gaugeHeight(float var0) {
-      return Math.max(2.0F, (float)Math.round(3.0F * var0));
+   private static float gaugeHeight(float f) {
+      return Math.max(2.0F, (float)Math.round(3.0F * f));
    }
 
-   void draw(ImDrawList var1, HudLayoutStore.HudElementState var2, float var3, float var4, float var5, boolean var6, MinecraftClient var7) {
-      float var8 = var5 * HudGlyphs.easeOutQuint(this.presence);
-      if (!(var8 <= 0.004F) && var7.field_1724 != null) {
-         float var9 = HudRenderer.scaleOf(var2);
-         float var10 = var2.width;
-         float var11 = var2.height;
-         Surface var12 = HudRenderer.hudSurface(var2);
+   void draw(ImDrawList imDrawList, HudLayoutStore.HudElementState hudElementState, float f, float g, float h, boolean bl, MinecraftClient minecraftClient) {
+      float var8 = h * HudGlyphs.easeOutQuint(this.presence);
+      if (!(var8 <= 0.004F) && minecraftClient.player != null) {
+         float var9 = HudRenderer.scaleOf(hudElementState);
+         float var10 = hudElementState.width;
+         float var11 = hudElementState.height;
+         Surface var12 = HudRenderer.hudSurface(hudElementState);
          boolean var13 = HudChrome.needsTextGuard(var12);
-         HudChrome.card(var1, var12, var3, var4, var10, var11, HudRenderer.hudRounding() * var9, var8, var6, var9);
+         HudChrome.card(imDrawList, var12, f, g, var10, var11, HudRenderer.hudRounding() * var9, var8, bl, var9);
          ImFont var14 = ImGuiManager.getInstance().hudLabelFont();
          int var15 = HudChrome.px(14.0F, var9);
          int var16 = (int)ItemIcons.pixels(18.0F * var9);
@@ -159,12 +152,12 @@ final class ArmorStatus {
          float var18 = this.percent ? (float)Math.ceil(percentWidth(var9)) : 0.0F;
          float var19 = Math.max((float)var16, var18);
          EquipmentSlot[] var20 = this.order();
-         float var21 = var3 + var17;
-         float var22 = var4 + var17;
+         float var21 = f + var17;
+         float var22 = g + var17;
 
          for (int var23 = 0; var23 < var20.length; var23++) {
             if (var23 == ARMOR.length) {
-               this.drawHandsRule(var1, var3, var4, var10, var11, var21, var22, var9, var8);
+               this.drawHandsRule(imDrawList, f, g, var10, var11, var21, var22, var9, var8);
                if (this.column) {
                   var22 += 7.0F * var9;
                } else {
@@ -174,148 +167,137 @@ final class ArmorStatus {
 
             ItemStack var24;
             ItemStack var25;
-            float var26 = (var25 = NoInvLeakModule.shownInHud(var24 = var7.field_1724.method_6118(var20[var23]), var20[var23])) == var24
+            float var26 = (var25 = NoInvLeakModule.shownInHud(var24 = minecraftClient.player.getEquippedStack(var20[var23]), var20[var23])) == var24
                ? this.wear[var23]
                : -1.0F;
             if (this.column) {
-               this.drawSideways(var1, var25, var26, var21, Math.round(var22), var16, var18, var14, var15, var9, var8, var13);
+               this.drawSideways(imDrawList, var25, var26, var21, Math.round(var22), var16, var18, var14, var15, var9, var8, var13);
                var22 += var16 + 4.0F * var9;
             } else {
-               this.drawStacked(var1, var25, var26, Math.round(var21), var22, var16, var19, var14, var15, var9, var8, var13);
+               this.drawStacked(imDrawList, var25, var26, Math.round(var21), var22, var16, var19, var14, var15, var9, var8, var13);
                var21 += var19 + 5.0F * var9;
             }
          }
       }
    }
 
-   private void drawHandsRule(ImDrawList var1, float var2, float var3, float var4, float var5, float var6, float var7, float var8, float var9) {
-      int var10 = HudGlyphs.ink(-15408912, var9 * 0.45F);
-      float var11 = Math.max(1.0F, (float)Math.round(var8));
+   private void drawHandsRule(ImDrawList imDrawList, float f, float g, float h, float i, float j, float k, float l, float m) {
+      int var10 = HudGlyphs.ink(-15408912, m * 0.45F);
+      float var11 = Math.max(1.0F, (float)Math.round(l));
       if (this.column) {
-         float var12 = Math.round(var7 + (11.0F * var8 - 4.0F * var8) * 0.5F - 4.0F * var8 * 0.5F);
-         HudGlyphs.register(var1, var2 + var4 * 0.15F, var2 + var4 * 0.85F, var12, var11, var10);
+         float var12 = Math.round(k + (11.0F * l - 4.0F * l) * 0.5F - 4.0F * l * 0.5F);
+         HudGlyphs.register(imDrawList, f + h * 0.15F, f + h * 0.85F, var12, var11, var10);
       } else {
-         float var14 = Math.round(var6 + (11.0F * var8 - 5.0F * var8) * 0.5F - 5.0F * var8 * 0.5F);
+         float var14 = Math.round(j + (11.0F * l - 5.0F * l) * 0.5F - 5.0F * l * 0.5F);
          int var13 = var10 & 16777215;
-         var1.addRectFilledMultiColor(var14, var3 + var5 * 0.18F, var14 + var11, var3 + var5 * 0.5F, var13, var13, var10, var10);
-         var1.addRectFilledMultiColor(var14, var3 + var5 * 0.5F, var14 + var11, var3 + var5 * 0.82F, var10, var10, var13, var13);
+         imDrawList.addRectFilledMultiColor(var14, g + i * 0.18F, var14 + var11, g + i * 0.5F, var13, var13, var10, var10);
+         imDrawList.addRectFilledMultiColor(var14, g + i * 0.5F, var14 + var11, g + i * 0.82F, var10, var10, var13, var13);
       }
    }
 
    private void drawStacked(
-      ImDrawList var1, ItemStack var2, float var3, float var4, float var5, int var6, float var7, ImFont var8, int var9, float var10, float var11, boolean var12
+      ImDrawList imDrawList, ItemStack itemStack, float f, float g, float h, int i, float j, ImFont imFont, int k, float l, float m, boolean bl
    ) {
-      float var13 = Math.round(var4 + (var7 - var6) * 0.5F);
-      this.drawIcon(var1, var2, var3, var13, var5, var6, var8, var9, var10, var11);
-      float var14 = var5 + var6;
+      float var13 = Math.round(g + (j - i) * 0.5F);
+      this.drawIcon(imDrawList, itemStack, f, var13, h, i, imFont, k, l, m);
+      float var14 = h + i;
       if (this.gauge) {
          float var17;
-         this.drawGauge(var1, var2, var3, var4, var17 = var14 + 3.0F * var10, var7, var10, var11);
-         var14 = var17 + gaugeHeight(var10);
+         this.drawGauge(imDrawList, itemStack, f, g, var17 = var14 + 3.0F * l, j, l, m);
+         var14 = var17 + gaugeHeight(l);
       }
 
-      if (this.percent && var3 >= 0.0F) {
-         String var15 = percentText(var3);
-         float var16 = HudChrome.tabularWidth(var8, var9, var15);
+      if (this.percent && f >= 0.0F) {
+         String var15 = percentText(f);
+         float var16 = HudChrome.tabularWidth(imFont, k, var15);
          HudChrome.tabular(
-            var1,
-            var8,
-            var9,
-            Math.round(var4 + (var7 - var16) * 0.5F),
-            Math.round(var14 + 2.0F * var10),
-            HudGlyphs.ink(HudGlyphs.vitality(var3), var11 * this.criticalPulse(var3)),
+            imDrawList,
+            imFont,
+            k,
+            Math.round(g + (j - var16) * 0.5F),
+            Math.round(var14 + 2.0F * l),
+            HudGlyphs.ink(HudGlyphs.vitality(f), m * this.criticalPulse(f)),
             var15,
-            var12
+            bl
          );
       }
    }
 
    private void drawSideways(
-      ImDrawList var1, ItemStack var2, float var3, float var4, float var5, int var6, float var7, ImFont var8, int var9, float var10, float var11, boolean var12
+      ImDrawList imDrawList, ItemStack itemStack, float f, float g, float h, int i, float j, ImFont imFont, int k, float l, float m, boolean bl
    ) {
-      this.drawIcon(var1, var2, var3, var4, var5, var6, var8, var9, var10, var11);
-      float var13 = var4 + var6 + 7.0F * var10;
-      float var14 = var5 + var6 * 0.5F;
+      this.drawIcon(imDrawList, itemStack, f, g, h, i, imFont, k, l, m);
+      float var13 = g + i + 7.0F * l;
+      float var14 = h + i * 0.5F;
       if (this.percent) {
-         if (var3 >= 0.0F) {
-            String var15 = percentText(var3);
-            float var16 = HudChrome.tabularWidth(var8, var9, var15);
+         if (f >= 0.0F) {
+            String var15 = percentText(f);
+            float var16 = HudChrome.tabularWidth(imFont, k, var15);
             HudChrome.tabular(
-               var1,
-               var8,
-               var9,
-               Math.round(var13 + var7 - var16),
-               Math.round(var14 - var9 * 0.5F),
-               HudGlyphs.ink(HudGlyphs.vitality(var3), var11 * this.criticalPulse(var3)),
+               imDrawList,
+               imFont,
+               k,
+               Math.round(var13 + j - var16),
+               Math.round(var14 - k * 0.5F),
+               HudGlyphs.ink(HudGlyphs.vitality(f), m * this.criticalPulse(f)),
                var15,
-               var12
+               bl
             );
          }
 
-         var13 += var7 + 7.0F * var10;
+         var13 += j + 7.0F * l;
       }
 
       if (this.gauge) {
-         this.drawGauge(var1, var2, var3, var13, Math.round(var14 - gaugeHeight(var10) * 0.5F), 44.0F * var10, var10, var11);
+         this.drawGauge(imDrawList, itemStack, f, var13, Math.round(var14 - gaugeHeight(l) * 0.5F), 44.0F * l, l, m);
       }
    }
 
-   private void drawIcon(ImDrawList var1, ItemStack var2, float var3, float var4, float var5, int var6, ImFont var7, int var8, float var9, float var10) {
-      if (var2.method_7960()) {
-         float var15 = Math.max(1.0F, (float)Math.round(2.0F * var9));
-         var1.addRect(
-            var4 + var15, var5 + var15, var4 + var6 - var15, var5 + var6 - var15, HudChrome.scaleAlpha(536870911, var10), Math.max(1.0F, 3.0F * var9), 0, 1.0F
-         );
-         var1.addCircleFilled(var4 + var6 * 0.5F, var5 + var6 * 0.5F, Math.max(1.0F, 1.2F * var9), HudChrome.scaleAlpha(536870911, var10), 8);
+   private void drawIcon(ImDrawList imDrawList, ItemStack itemStack, float f, float g, float h, int i, ImFont imFont, int j, float k, float l) {
+      if (itemStack.isEmpty()) {
+         float var15 = Math.max(1.0F, (float)Math.round(2.0F * k));
+         imDrawList.addRect(g + var15, h + var15, g + i - var15, h + i - var15, HudChrome.scaleAlpha(536870911, l), Math.max(1.0F, 3.0F * k), 0, 1.0F);
+         imDrawList.addCircleFilled(g + i * 0.5F, h + i * 0.5F, Math.max(1.0F, 1.2F * k), HudChrome.scaleAlpha(536870911, l), 8);
       } else {
-         if (var3 >= 0.0F && var3 < 0.12F) {
+         if (f >= 0.0F && f < 0.12F) {
             float var12 = 0.5F + 0.5F * (float)Math.sin(this.clock * 6.5F);
-            var1.addCircleFilled(var4 + var6 * 0.5F, var5 + var6 * 0.5F, var6 * 0.62F, HudGlyphs.ink(-2537681, var10 * (0.18F + 0.22F * var12)), 20);
+            imDrawList.addCircleFilled(g + i * 0.5F, h + i * 0.5F, i * 0.62F, HudGlyphs.ink(-2537681, l * (0.18F + 0.22F * var12)), 20);
          }
 
-         ItemIcons.draw(var1, var2, var4, var5, (float)var6, var10);
-         if (var2.method_7958()) {
-            HudGlyphs.sparkle(var1, var4 + var6 - 1.5F * var9, var5 + 1.5F * var9, 2.8F * var9, HudGlyphs.ink(-6621958, var10 * 0.9F));
+         ItemIcons.draw(imDrawList, itemStack, g, h, (float)i, l);
+         if (itemStack.hasGlint()) {
+            HudGlyphs.sparkle(imDrawList, g + i - 1.5F * k, h + 1.5F * k, 2.8F * k, HudGlyphs.ink(-6621958, l * 0.9F));
          }
 
          int var11;
-         if ((var11 = var2.method_7947()) > 1) {
+         if ((var11 = itemStack.getCount()) > 1) {
             String var14 = countText(var11);
-            float var13 = HudChrome.width(var7, var8, var14);
+            float var13 = HudChrome.width(imFont, j, var14);
             HudChrome.text(
-               var1,
-               var7,
-               var8,
-               Math.round(var4 + var6 - var13 + 2.0F * var9),
-               Math.round(var5 + var6 - var8 + 3.0F * var9),
-               HudChrome.scaleAlpha(-1, var10),
-               var14,
-               true
+               imDrawList, imFont, j, Math.round(g + i - var13 + 2.0F * k), Math.round(h + i - j + 3.0F * k), HudChrome.scaleAlpha(-1, l), var14, true
             );
          }
       }
    }
 
-   private void drawGauge(ImDrawList var1, ItemStack var2, float var3, float var4, float var5, float var6, float var7, float var8) {
-      float var9 = gaugeHeight(var7);
+   private void drawGauge(ImDrawList imDrawList, ItemStack itemStack, float f, float g, float h, float i, float j, float k) {
+      float var9 = gaugeHeight(j);
       float var10 = var9 * 0.5F;
-      var1.addRectFilled(var4, var5, var4 + var6, var5 + var9, HudChrome.scaleAlpha(452984831, var8), var10);
-      if (!var2.method_7960() && !(var3 < 0.0F)) {
-         float var11 = var6 * Math.max(0.0F, Math.min(1.0F, var3));
+      imDrawList.addRectFilled(g, h, g + i, h + var9, HudChrome.scaleAlpha(452984831, k), var10);
+      if (!itemStack.isEmpty() && !(f < 0.0F)) {
+         float var11 = i * Math.max(0.0F, Math.min(1.0F, f));
          if (!(var11 < 0.5F)) {
-            var1.addRectFilled(
-               var4, var5, var4 + var11, var5 + var9, HudGlyphs.ink(HudGlyphs.vitality(var3), var8 * this.criticalPulse(var3)), Math.min(var10, var11 * 0.5F)
-            );
+            imDrawList.addRectFilled(g, h, g + var11, h + var9, HudGlyphs.ink(HudGlyphs.vitality(f), k * this.criticalPulse(f)), Math.min(var10, var11 * 0.5F));
          }
       }
    }
 
-   private float criticalPulse(float var1) {
-      return var1 >= 0.12F ? 1.0F : 0.6F + 0.4F * (0.5F + 0.5F * (float)Math.sin(this.clock * 6.5F));
+   private float criticalPulse(float f) {
+      return f >= 0.12F ? 1.0F : 0.6F + 0.4F * (0.5F + 0.5F * (float)Math.sin(this.clock * 6.5F));
    }
 
-   private static String percentText(float var0) {
-      int var1 = Math.max(0, Math.min(100, Math.round(var0 * 100.0F)));
+   private static String percentText(float f) {
+      int var1 = Math.max(0, Math.min(100, Math.round(f * 100.0F)));
       String var2 = PERCENT[var1];
       if (var2 == null) {
          PERCENT[var1] = var2 = var1 + "%";
@@ -324,13 +306,13 @@ final class ArmorStatus {
       return var2;
    }
 
-   private static String countText(int var0) {
-      if (var0 >= COUNT.length) {
-         return Integer.toString(var0);
+   private static String countText(int i) {
+      if (i >= COUNT.length) {
+         return Integer.toString(i);
       } else {
-         String var1 = COUNT[var0];
+         String var1 = COUNT[i];
          if (var1 == null) {
-            COUNT[var0] = var1 = Integer.toString(var0);
+            COUNT[i] = var1 = Integer.toString(i);
          }
 
          return var1;

@@ -24,92 +24,81 @@ final class HudChrome {
    private HudChrome() {
    }
 
-   static void card(ImDrawList var0, Surface var1, float var2, float var3, float var4, float var5, float var6, float var7, boolean var8, float var9) {
-      if (!(var7 <= 0.001F)) {
-         if (var8) {
-            shadow(var0, var2, var3, var4, var5, var6, var7, var9);
+   static void card(ImDrawList imDrawList, Surface surface, float f, float g, float h, float i, float j, float k, boolean bl, float l) {
+      if (!(k <= 0.001F)) {
+         if (bl) {
+            shadow(imDrawList, f, g, h, i, j, k, l);
          }
 
-         var0.addRectFilled(var2, var3, var2 + var4, var3 + var5, scaleAlpha(GuiPalette.fill(var1), var7), var6);
-         SurfaceBackground.draw(var0, var1, var2, var3, var4, var5, var6, var7);
-         var0.addRect(var2, var3, var2 + var4, var3 + var5, scaleAlpha(402653183, var7), var6, 0, 1.0F);
+         imDrawList.addRectFilled(f, g, f + h, g + i, scaleAlpha(GuiPalette.fill(surface), k), j);
+         SurfaceBackground.draw(imDrawList, surface, f, g, h, i, j, k);
+         imDrawList.addRect(f, g, f + h, g + i, scaleAlpha(402653183, k), j, 0, 1.0F);
          int var10 = GuiPalette.accent();
-         float var11 = Math.max(1.5F, 1.5F * var9);
-         float var12 = Math.min(var4 * 0.5F, 56.0F * Math.max(1.0F, var9));
-         float var13 = var2 + Math.min(var6, var4 * 0.2F);
-         var0.addRectFilledMultiColor(
-            var13,
-            var3,
-            var13 + var12,
-            var3 + var11,
-            scaleAlpha(var10, var7 * 0.95F),
-            scaleAlpha(var10, 0.0F),
-            scaleAlpha(var10, 0.0F),
-            scaleAlpha(var10, var7 * 0.95F)
+         float var11 = Math.max(1.5F, 1.5F * l);
+         float var12 = Math.min(h * 0.5F, 56.0F * Math.max(1.0F, l));
+         float var13 = f + Math.min(j, h * 0.2F);
+         imDrawList.addRectFilledMultiColor(
+            var13, g, var13 + var12, g + var11, scaleAlpha(var10, k * 0.95F), scaleAlpha(var10, 0.0F), scaleAlpha(var10, 0.0F), scaleAlpha(var10, k * 0.95F)
          );
       }
    }
 
-   static void shadow(ImDrawList var0, float var1, float var2, float var3, float var4, float var5, float var6, float var7) {
-      float var8 = Math.max(1.0F, var7);
-      var0.addRectFilled(var1 - var8, var2 - 0.5F * var8, var1 + var3 + var8, var2 + var4 + 1.5F * var8, scaleAlpha(771751936, var6), var5 + var8);
-      var0.addRectFilled(
-         var1 - 2.0F * var8, var2 + 0.5F * var8, var1 + var3 + 2.0F * var8, var2 + var4 + 3.5F * var8, scaleAlpha(385875968, var6), var5 + 2.0F * var8
-      );
-      var0.addRectFilled(
-         var1 - 3.0F * var8, var2 + 1.5F * var8, var1 + var3 + 3.0F * var8, var2 + var4 + 6.0F * var8, scaleAlpha(201326592, var6), var5 + 3.0F * var8
-      );
+   static void shadow(ImDrawList imDrawList, float f, float g, float h, float i, float j, float k, float l) {
+      float var8 = Math.max(1.0F, l);
+      imDrawList.addRectFilled(f - var8, g - 0.5F * var8, f + h + var8, g + i + 1.5F * var8, scaleAlpha(771751936, k), j + var8);
+      imDrawList.addRectFilled(f - 2.0F * var8, g + 0.5F * var8, f + h + 2.0F * var8, g + i + 3.5F * var8, scaleAlpha(385875968, k), j + 2.0F * var8);
+      imDrawList.addRectFilled(f - 3.0F * var8, g + 1.5F * var8, f + h + 3.0F * var8, g + i + 6.0F * var8, scaleAlpha(201326592, k), j + 3.0F * var8);
    }
 
-   static void divider(ImDrawList var0, float var1, float var2, float var3, float var4) {
-      float var5 = Math.round(var1);
-      float var6 = Math.round(var2 - var3 * 0.5F);
-      var0.addRectFilled(var5, var6, var5 + 1.0F, var6 + Math.round(var3), scaleAlpha(536870911, var4));
+   static void divider(ImDrawList imDrawList, float f, float g, float h, float i) {
+      float var5 = Math.round(f);
+      float var6 = Math.round(g - h * 0.5F);
+      imDrawList.addRectFilled(var5, var6, var5 + 1.0F, var6 + Math.round(h), scaleAlpha(536870911, i));
    }
 
-   static boolean needsTextGuard(Surface var0) {
-      return var0 != null && (var0.opacity.get() < 0.55F || var0.isImage());
+   static boolean needsTextGuard(Surface surface) {
+      return surface != null && (surface.opacity.get() < 0.55F || surface.isImage());
    }
 
-   static int px(float var0, float var1) {
-      return Math.max(6, Math.round(var0 * var1));
+   static int px(float f, float g) {
+      return Math.max(6, Math.round(f * g));
    }
 
-   static float width(ImFont var0, int var1, String var2) {
-      return var0 != null && !var2.isEmpty() ? var0.calcTextSizeA(var1, 3.4028235E38F, 0.0F, var2).x : var2.length() * var1 * 0.55F;
+   static float width(ImFont imFont, int i, String string) {
+      return imFont != null && !string.isEmpty() ? imFont.calcTextSizeA(i, 3.4028235E38F, 0.0F, string).x : string.length() * i * 0.55F;
    }
 
-   static float ascent(ImFont var0, int var1) {
-      return var0 != null && !(var0.getFontSize() <= 0.0F) ? var0.getAscent() * var1 / var0.getFontSize() : var1 * 0.77F;
+   static float ascent(ImFont imFont, int i) {
+      return imFont != null && !(imFont.getFontSize() <= 0.0F) ? imFont.getAscent() * i / imFont.getFontSize() : i * 0.77F;
    }
 
-   static float baselineOffset(ImFont var0, int var1, ImFont var2, int var3) {
-      return Math.round(ascent(var0, var1) - ascent(var2, var3));
+   static float baselineOffset(ImFont imFont, int i, ImFont imFont2, int j) {
+      return Math.round(ascent(imFont, i) - ascent(imFont2, j));
    }
 
-   static void text(ImDrawList var0, ImFont var1, int var2, float var3, float var4, int var5, String var6, boolean var7) {
-      if (!var6.isEmpty() && (var5 >>> 24 & 0xFF) != 0) {
-         if (var7) {
-            raw(var0, var1, var2, var3 + 1.0F, var4 + 1.0F, scaleAlpha(-1946157056, (var5 >>> 24 & 0xFF) / 255.0F), var6);
+   static void text(ImDrawList imDrawList, ImFont imFont, int i, float f, float g, int j, String string, boolean bl) {
+      if (!string.isEmpty() && (j >>> 24 & 0xFF) != 0) {
+         if (bl) {
+            raw(imDrawList, imFont, i, f + 1.0F, g + 1.0F, scaleAlpha(-1946157056, (j >>> 24 & 0xFF) / 255.0F), string);
          }
 
-         raw(var0, var1, var2, var3, var4, var5, var6);
+         raw(imDrawList, imFont, i, f, g, j, string);
       }
    }
 
-   private static void raw(ImDrawList var0, ImFont var1, int var2, float var3, float var4, int var5, String var6) {
-      if (var1 != null) {
-         var0.addText(var1, var2, var3, var4, var5, var6);
+   private static void raw(ImDrawList imDrawList, ImFont imFont, int i, float f, float g, int j, String string) {
+      if (imFont != null) {
+         imDrawList.addText(imFont, i, f, g, j, string);
       } else {
-         var0.addText(var3, var4, var5, var6);
+         imDrawList.addText(f, g, j, string);
       }
    }
 
-   private static float digitCell(ImFont var0, int var1) {
-      if (var0 == null) {
-         return var1 * 0.6F;
+   private static float digitCell(ImFont imFont, int i) {
+      if (imFont == null) {
+         return i * 0.6F;
       } else {
-         long var2 = (long)System.identityHashCode(var0) << 16 ^ var1;
+         long var2 = (long)System.identityHashCode(imFont) << 16 ^ i;
          float var4 = DIGIT_CELLS.get(var2);
          if (!Float.isNaN(var4)) {
             return var4;
@@ -117,7 +106,7 @@ final class HudChrome {
             float var5 = 0.0F;
 
             for (char var6 = '0'; var6 <= '9'; var6++) {
-               var5 = Math.max(var5, advance(var0, var1, var6));
+               var5 = Math.max(var5, advance(imFont, i, var6));
             }
 
             if (DIGIT_CELLS.size() > 64) {
@@ -130,42 +119,42 @@ final class HudChrome {
       }
    }
 
-   private static float advance(ImFont var0, int var1, char var2) {
-      return var0.getCharAdvance(var2) * var1 / var0.getFontSize();
+   private static float advance(ImFont imFont, int i, char c) {
+      return imFont.getCharAdvance(c) * i / imFont.getFontSize();
    }
 
-   static float tabularWidth(ImFont var0, int var1, String var2) {
-      if (var0 == null) {
-         return width(null, var1, var2);
+   static float tabularWidth(ImFont imFont, int i, String string) {
+      if (imFont == null) {
+         return width(null, i, string);
       } else {
-         float var3 = digitCell(var0, var1);
+         float var3 = digitCell(imFont, i);
          float var4 = 0.0F;
 
-         for (int var5 = 0; var5 < var2.length(); var5++) {
-            char var6 = var2.charAt(var5);
-            var4 += Character.isDigit(var6) ? var3 : advance(var0, var1, var6);
+         for (int var5 = 0; var5 < string.length(); var5++) {
+            char var6 = string.charAt(var5);
+            var4 += Character.isDigit(var6) ? var3 : advance(imFont, i, var6);
          }
 
          return var4;
       }
    }
 
-   static void tabular(ImDrawList var0, ImFont var1, int var2, float var3, float var4, int var5, String var6, boolean var7) {
-      if (var1 == null) {
-         text(var0, null, var2, var3, var4, var5, var6, var7);
+   static void tabular(ImDrawList imDrawList, ImFont imFont, int i, float f, float g, int j, String string, boolean bl) {
+      if (imFont == null) {
+         text(imDrawList, null, i, f, g, j, string, bl);
       } else {
-         float var8 = digitCell(var1, var2);
-         float var9 = var3;
+         float var8 = digitCell(imFont, i);
+         float var9 = f;
 
-         for (int var10 = 0; var10 < var6.length(); var10++) {
-            char var11 = var6.charAt(var10);
-            float var12 = advance(var1, var2, var11);
+         for (int var10 = 0; var10 < string.length(); var10++) {
+            char var11 = string.charAt(var10);
+            float var12 = advance(imFont, i, var11);
             if (Character.isDigit(var11)) {
-               text(var0, var1, var2, var9 + (var8 - var12) * 0.5F, var4, var5, glyph(var11), var7);
+               text(imDrawList, imFont, i, var9 + (var8 - var12) * 0.5F, g, j, glyph(var11), bl);
                var9 += var8;
             } else {
                if (var11 != ' ') {
-                  text(var0, var1, var2, var9, var4, var5, glyph(var11), var7);
+                  text(imDrawList, imFont, i, var9, g, j, glyph(var11), bl);
                }
 
                var9 += var12;
@@ -174,14 +163,14 @@ final class HudChrome {
       }
    }
 
-   private static String glyph(char var0) {
-      return var0 < ASCII.length ? ASCII[var0] : String.valueOf(var0);
+   private static String glyph(char c) {
+      return c < ASCII.length ? ASCII[c] : String.valueOf(c);
    }
 
-   static int scaleAlpha(int var0, float var1) {
-      int var2 = var0 >>> 24 & 0xFF;
-      int var3 = Math.round(var2 * Math.max(0.0F, Math.min(1.0F, var1)));
-      return var0 & 16777215 | var3 << 24;
+   static int scaleAlpha(int i, float f) {
+      int var2 = i >>> 24 & 0xFF;
+      int var3 = Math.round(var2 * Math.max(0.0F, Math.min(1.0F, f)));
+      return i & 16777215 | var3 << 24;
    }
 
    static {

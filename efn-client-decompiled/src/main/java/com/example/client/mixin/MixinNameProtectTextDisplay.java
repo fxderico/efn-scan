@@ -21,18 +21,18 @@ public abstract class MixinNameProtectTextDisplay {
    }
 
    @ModifyExpressionValue(
-      method = {"method_48905"},
+      method = {"splitLines"},
       at = {@At(
          value = "FIELD",
          opcode = 180,
          ordinal = 0,
-         target = "Lnet/minecraft/class_8113$class_8123;field_42442:Lnet/minecraft/class_8113$class_8123$class_8125;"
+         target = "Lnet/minecraft/entity/decoration/DisplayEntity$TextDisplayEntity;textLines:Lnet/minecraft/entity/decoration/DisplayEntity$TextDisplayEntity$TextLines;"
       )}
    )
-   private TextLines efn$nameProtectRefresh(TextLines var1) {
+   private TextLines efn$nameProtectRefresh(TextLines textLines) {
       int var2 = NameProtectModule.generation();
       if (var2 == this.efn$nameProtectGeneration) {
-         return var1;
+         return textLines;
       } else {
          this.efn$nameProtectGeneration = var2;
          return null;
@@ -40,13 +40,13 @@ public abstract class MixinNameProtectTextDisplay {
    }
 
    @ModifyExpressionValue(
-      method = {"method_48905"},
+      method = {"splitLines"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_8113$class_8123$class_8230;comp_1334()Lnet/minecraft/class_2561;"
+         target = "Lnet/minecraft/entity/decoration/DisplayEntity$TextDisplayEntity$Data;text()Lnet/minecraft/text/Text;"
       )}
    )
-   private Text efn$nameProtectText(Text var1) {
-      return NameProtectModule.protect(var1);
+   private Text efn$nameProtectText(Text text) {
+      return NameProtectModule.protect(text);
    }
 }

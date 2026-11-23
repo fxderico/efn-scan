@@ -149,7 +149,7 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
 
    @Override
    protected void onDisable() {
-      ClientPlayerEntity var1 = MinecraftClient.method_1551().field_1724;
+      ClientPlayerEntity var1 = MinecraftClient.getInstance().player;
       if (var1 != null && !AutoEatModule.isEating() && !AutoInvTotemModule.wantsHotbar()) {
          this.restoreSlot(var1);
       }
@@ -159,23 +159,23 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
    }
 
    @EventHandler
-   public void onTick(TickEvent var1) {
-      MinecraftClient var5 = MinecraftClient.method_1551();
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var5 = MinecraftClient.getInstance();
       this.ageCounters();
-      ClientPlayerEntity var6 = var5.field_1724;
-      if (var6 != null && var5.field_1687 != null) {
-         LootGuard.update(var5.field_1687, var6);
+      ClientPlayerEntity var6 = var5.player;
+      if (var6 != null && var5.world != null) {
+         LootGuard.update(var5.world, var6);
       }
 
-      if (var6 != null && var5.field_1687 != null && var5.field_1761 != null && !var6.method_29504()) {
+      if (var6 != null && var5.world != null && var5.interactionManager != null && !var6.isDead()) {
          HurtClock.tick(var6);
-         this.forgetGone(var5.field_1687);
-         boolean var7 = var6.field_6012 <= this.steerUntil;
+         this.forgetGone(var5.world);
+         boolean var7 = var6.age <= this.steerUntil;
          this.tickMin = var7 ? this.steerMin : this.minDamage.get();
          this.tickSelf = var7 ? this.steerSelf : this.maxSelfDamage.get();
-         this.tickFloor = var6.field_6012 <= this.floorUntil ? this.floorY : -2147483648;
-         this.fullSpeed = var6.field_6012 <= this.fastUntil;
-         ItemStack var8 = var6.method_6047();
+         this.tickFloor = var6.age <= this.floorUntil ? this.floorY : -2147483648;
+         this.fullSpeed = var6.age <= this.fastUntil;
+         ItemStack var8 = var6.getMainHandStack();
          if (var8 != this.lastMain) {
             this.lastMain = var8;
             this.mainAge = 0;
@@ -185,15 +185,15 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
          boolean var10 = !this.requireHold.get() || Crystals.isKeyDown(var5, this.holdKey.value());
          AnchorAuraModule var11 = ModuleRegistry.get(AnchorAuraModule.class);
          boolean var4 = var11 != null && var11.isEnabled() && var9 == CrystalAuraModule.Look.SILENT;
-         if (MeleeAttacks.canAct(var5) && !var6.method_7325() && (var10 || var4)) {
+         if (MeleeAttacks.canAct(var5) && !var6.isSpectator() && (var10 || var4)) {
             if (!AutoInvTotemModule.wantsHotbar() && !AutoCityModule.mining() && !CombatMacroLock.heldByOther(this)) {
                if (this.ownSlot != -1 && !this.ownsSelection(var6)) {
                   this.forgetSlots();
                }
 
                ItemStack var2;
-               boolean var3 = !Crystals.isCombatItem(var2 = var6.method_6079()) && !var2.method_31574(Items.field_8301) && !var2.method_31574(Items.field_8281);
-               if (!MeleeAttacks.rightClickComing(var5) || !var3 && !var8.method_31574(Items.field_23141) && !var8.method_31574(Items.field_8801)) {
+               boolean var3 = !Crystals.isCombatItem(var2 = var6.getOffHandStack()) && !var2.isOf(Items.END_CRYSTAL) && !var2.isOf(Items.OBSIDIAN);
+               if (!MeleeAttacks.rightClickComing(var5) || !var3 && !var8.isOf(Items.RESPAWN_ANCHOR) && !var8.isOf(Items.GLOWSTONE)) {
                   if (!MeleeAttacks.actedThisTick(var6) && MeleeAttacks.handsFree(var5, var6) && (this.ownsSelection(var6) || mayTakeHand(var6, var4))) {
                      List var14 = Combo.enemies(var5, var6);
                      if (var14.isEmpty()) {
@@ -209,10 +209,10 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
                         }
 
                         int var16 = Crystals.confirmWindow(var5, var6);
-                        EndCrystalEntity var17 = this.lastHit(var5.field_1687, var16);
+                        EndCrystalEntity var17 = this.lastHit(var5.world, var16);
                         CrystalAuraModule.Fight var18 = new CrystalAuraModule.Fight(
                            var6,
-                           var5.field_1687,
+                           var5.world,
                            var14,
                            Combo.friends(var5, var6),
                            var16,
@@ -235,7 +235,7 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
                                  return;
                               }
 
-                              CrystalAuraModule.Plan var22 = this.planCrystal(var18, this.lastHit(var5.field_1687, var16), 1, this.stagedBreak(var18));
+                              CrystalAuraModule.Plan var22 = this.planCrystal(var18, this.lastHit(var5.world, var16), 1, this.stagedBreak(var18));
                               Rotation var23 = ServerRotation.sent();
                               this.turn(var22 != null && !var18.holds(var22) ? var18.lookAt(var22.aim()) : var23);
                            } else {
@@ -264,27 +264,27 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
       }
    }
 
-   public void steer(ClientPlayerEntity var1, float var2, float var3) {
-      this.steerMin = var2;
-      this.steerSelf = var3;
-      this.steerUntil = var1.field_6012 + 2;
+   public void steer(ClientPlayerEntity clientPlayerEntity, float f, float g) {
+      this.steerMin = f;
+      this.steerSelf = g;
+      this.steerUntil = clientPlayerEntity.age + 2;
    }
 
-   public void buildEagerly(ClientPlayerEntity var1) {
-      this.eagerUntil = var1.field_6012 + 2;
+   public void buildEagerly(ClientPlayerEntity clientPlayerEntity) {
+      this.eagerUntil = clientPlayerEntity.age + 2;
    }
 
-   public void crystalsFrom(ClientPlayerEntity var1, int var2) {
-      this.floorY = var2;
-      this.floorUntil = var1.field_6012 + 2;
+   public void crystalsFrom(ClientPlayerEntity clientPlayerEntity, int i) {
+      this.floorY = i;
+      this.floorUntil = clientPlayerEntity.age + 2;
    }
 
-   public void fullSpeed(ClientPlayerEntity var1) {
-      this.fastUntil = var1.field_6012 + 2;
+   public void fullSpeed(ClientPlayerEntity clientPlayerEntity) {
+      this.fastUntil = clientPlayerEntity.age + 2;
    }
 
    @EventHandler
-   public void onRender3D(Render3DEvent var1) {
+   public void onRender3D(Render3DEvent render3DEvent) {
       if (this.render.get()) {
          this.view.draw();
       }
@@ -296,52 +296,52 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
    }
 
    @Override
-   public void renderHudOverlay(ImDrawList var1, float var2, float var3) {
-      this.view.label(var1, var2, var3);
+   public void renderHudOverlay(ImDrawList imDrawList, float f, float g) {
+      this.view.label(imDrawList, f, g);
    }
 
    @EventHandler
-   public void onAttack(PlayerAttackEntityEvent var1) {
-      Entity var3 = var1.target;
+   public void onAttack(PlayerAttackEntityEvent playerAttackEntityEvent) {
+      Entity var3 = playerAttackEntityEvent.target;
       EndCrystalEntity var2;
-      if (var3 instanceof EndCrystalEntity && (var2 = (EndCrystalEntity)var3).method_73183().method_8608()) {
+      if (var3 instanceof EndCrystalEntity && (var2 = (EndCrystalEntity)var3).getEntityWorld().isClient()) {
          this.markBreak(var2);
       }
    }
 
    @EventHandler
-   public void onPacketReceive(PacketReceiveEvent var1) {
-      ClientPlayerEntity var2 = MinecraftClient.method_1551().field_1724;
+   public void onPacketReceive(PacketReceiveEvent packetReceiveEvent) {
+      ClientPlayerEntity var2 = MinecraftClient.getInstance().player;
       if (var2 != null) {
-         if (var1.packet instanceof BundleS2CPacket var4) {
-            for (Packet var6 : var4.method_48324()) {
+         if (packetReceiveEvent.packet instanceof BundleS2CPacket var4) {
+            for (Packet var6 : var4.getPackets()) {
                this.note(var2, var6);
             }
          } else {
-            this.note(var2, var1.packet);
+            this.note(var2, packetReceiveEvent.packet);
          }
 
-         HurtClock.note(var2, var1.packet);
+         HurtClock.note(var2, packetReceiveEvent.packet);
       }
    }
 
-   private void note(ClientPlayerEntity var1, Packet<?> var2) {
+   private void note(ClientPlayerEntity clientPlayerEntity, Packet<?> packet) {
       EntitySpawnS2CPacket var3;
-      if (var2 instanceof EntitySpawnS2CPacket && (var3 = (EntitySpawnS2CPacket)var2).method_11169() == EntityType.field_6110) {
-         Crystals.noteSpawn(var1, BlockPos.method_49637(var3.method_11175(), var3.method_11174() - 1.0, var3.method_11176()));
+      if (packet instanceof EntitySpawnS2CPacket && (var3 = (EntitySpawnS2CPacket)packet).getEntityType() == EntityType.END_CRYSTAL) {
+         Crystals.noteSpawn(clientPlayerEntity, BlockPos.ofFloored(var3.getX(), var3.getY() - 1.0, var3.getZ()));
       }
    }
 
-   private static boolean mayTakeHand(ClientPlayerEntity var0, boolean var1) {
-      ItemStack var2 = var0.method_6047();
-      return var2.method_31574(Items.field_8301)
-         || var2.method_31574(Items.field_8281)
+   private static boolean mayTakeHand(ClientPlayerEntity clientPlayerEntity, boolean bl) {
+      ItemStack var2 = clientPlayerEntity.getMainHandStack();
+      return var2.isOf(Items.END_CRYSTAL)
+         || var2.isOf(Items.OBSIDIAN)
          || Crystals.isCombatItem(var2)
-         || var1 && (var2.method_31574(Items.field_23141) || var2.method_31574(Items.field_8801));
+         || bl && (var2.isOf(Items.RESPAWN_ANCHOR) || var2.isOf(Items.GLOWSTONE));
    }
 
-   private boolean ownsSelection(ClientPlayerEntity var1) {
-      return this.ownSlot != -1 && var1.method_31548().method_67532() == this.ownSlot;
+   private boolean ownsSelection(ClientPlayerEntity clientPlayerEntity) {
+      return this.ownSlot != -1 && clientPlayerEntity.getInventory().getSelectedSlot() == this.ownSlot;
    }
 
    private void engage() {
@@ -350,28 +350,34 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
       CombatMacroLock.tryAcquire(this);
    }
 
-   private void idle(MinecraftClient var1, ClientPlayerEntity var2) {
+   private void idle(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
       if (!this.engaged || ++this.idleTicks >= 10) {
-         this.disengage(var1, var2);
+         this.disengage(minecraftClient, clientPlayerEntity);
       }
    }
 
-   private void disengage(MinecraftClient var1, ClientPlayerEntity var2) {
+   private void disengage(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
       this.engaged = false;
       this.idleTicks = 0;
       CombatMacroLock.release(this);
-      if (var2 == null) {
+      if (clientPlayerEntity == null) {
          this.forgetSlots();
-      } else if (var1.field_1755 == null && !AutoEatModule.isEating() && !AutoInvTotemModule.wantsHotbar() && !MeleeAttacks.actedThisTick(var2)) {
-         this.restoreSlot(var2);
+      } else if (minecraftClient.currentScreen == null
+         && !AutoEatModule.isEating()
+         && !AutoInvTotemModule.wantsHotbar()
+         && !MeleeAttacks.actedThisTick(clientPlayerEntity)) {
+         this.restoreSlot(clientPlayerEntity);
       }
    }
 
-   private void restoreSlot(ClientPlayerEntity var1) {
+   private void restoreSlot(ClientPlayerEntity clientPlayerEntity) {
       if (this.ownSlot != -1) {
-         PlayerInventory var2 = var1.method_31548();
-         if (this.switchBack.get() && PlayerInventory.method_7380(this.savedSlot) && this.savedSlot != this.ownSlot && var2.method_67532() == this.ownSlot) {
-            var2.method_61496(this.savedSlot);
+         PlayerInventory var2 = clientPlayerEntity.getInventory();
+         if (this.switchBack.get()
+            && PlayerInventory.isValidHotbarIndex(this.savedSlot)
+            && this.savedSlot != this.ownSlot
+            && var2.getSelectedSlot() == this.ownSlot) {
+            var2.setSelectedSlot(this.savedSlot);
          }
 
          this.forgetSlots();
@@ -403,48 +409,43 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
       CombatMacroLock.release(this);
    }
 
-   private void forgetGone(ClientWorld var1) {
-      forgetGone(var1, this.breakAttempts.keySet());
-      forgetGone(var1, this.doomed.keySet());
+   private void forgetGone(ClientWorld clientWorld) {
+      forgetGone(clientWorld, this.breakAttempts.keySet());
+      forgetGone(clientWorld, this.doomed.keySet());
    }
 
-   private static void forgetGone(ClientWorld var0, IntSet var1) {
-      IntIterator var2 = var1.iterator();
+   private static void forgetGone(ClientWorld clientWorld, IntSet intSet) {
+      IntIterator var2 = intSet.iterator();
 
       while (var2.hasNext()) {
-         if (var0.method_8469(var2.nextInt()) == null) {
+         if (clientWorld.getEntityById(var2.nextInt()) == null) {
             var2.remove();
          }
       }
    }
 
-   private static boolean oneLook(Vec3d var0, Box var1, Vec3d var2, double var3) {
-      Vec3d var5 = var2.method_1020(var0).method_1029();
-      return var1.method_992(var0, var0.method_1019(var5.method_1021(var3))).isPresent();
+   private static boolean oneLook(Vec3d vec3d, Box box, Vec3d vec3d2, double d) {
+      Vec3d var5 = vec3d2.subtract(vec3d).normalize();
+      return box.raycast(vec3d, vec3d.add(var5.multiply(d))).isPresent();
    }
 
-   private boolean canHostSoon(CrystalAuraModule.Fight var1, BlockPos var2, Entity var3) {
-      BlockPos var4 = var2.method_10084();
-      if (!var1.level.method_22347(var4)) {
+   private boolean canHostSoon(CrystalAuraModule.Fight fight, BlockPos blockPos, Entity entity) {
+      BlockPos var4 = blockPos.up();
+      if (!fight.level.isAir(var4)) {
          return false;
       } else {
-         Box var5 = new Box(
-            var4.method_10263(), var4.method_10264(), var4.method_10260(), var4.method_10263() + 1.0, var4.method_10264() + 2.0, var4.method_10260() + 1.0
-         );
+         Box var5 = new Box(var4.getX(), var4.getY(), var4.getZ(), var4.getX() + 1.0, var4.getY() + 2.0, var4.getZ() + 1.0);
 
-         for (Entity var7 : var1.level.method_8335(var3, var5)) {
-            if (var7.method_5805()) {
+         for (Entity var7 : fight.level.getOtherEntities(entity, var5)) {
+            if (var7.isAlive()) {
                LivingEntity var9;
-               if (!(var7 instanceof LivingEntity) || !var1.enemies.contains(var9 = (LivingEntity)var7)) {
+               if (!(var7 instanceof LivingEntity) || !fight.enemies.contains(var9 = (LivingEntity)var7)) {
                   return false;
                }
 
-               Box var10 = var9.method_5829().method_997(Combo.lead(var9, var1.arriveLead));
-               boolean var11 = var10.field_1322 >= var5.field_1325;
-               boolean var8 = var10.field_1320 <= var5.field_1323
-                  || var10.field_1323 >= var5.field_1320
-                  || var10.field_1324 <= var5.field_1321
-                  || var10.field_1321 >= var5.field_1324;
+               Box var10 = var9.getBoundingBox().offset(Combo.lead(var9, fight.arriveLead));
+               boolean var11 = var10.minY >= var5.maxY;
+               boolean var8 = var10.maxX <= var5.minX || var10.minX >= var5.maxX || var10.maxZ <= var5.minZ || var10.minZ >= var5.maxZ;
                if (!var11 && !var8) {
                   return false;
                }
@@ -455,104 +456,106 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
       }
    }
 
-   private EndCrystalEntity lastHit(ClientWorld var1, int var2) {
-      if (this.pendingBreakId >= 0 && this.pendingBreakAge < var2) {
-         Entity var4 = var1.method_8469(this.pendingBreakId);
+   private EndCrystalEntity lastHit(ClientWorld clientWorld, int i) {
+      if (this.pendingBreakId >= 0 && this.pendingBreakAge < i) {
+         Entity var4 = clientWorld.getEntityById(this.pendingBreakId);
          EndCrystalEntity var3;
-         return var4 instanceof EndCrystalEntity && (var3 = (EndCrystalEntity)var4).method_5805() ? var3 : null;
+         return var4 instanceof EndCrystalEntity && (var3 = (EndCrystalEntity)var4).isAlive() ? var3 : null;
       } else {
          return null;
       }
    }
 
-   private Combo.Shot choose(MinecraftClient var1, CrystalAuraModule.Fight var2, EndCrystalEntity var3, boolean var4, AnchorAuraModule var5) {
+   private Combo.Shot choose(
+      MinecraftClient minecraftClient, CrystalAuraModule.Fight fight, EndCrystalEntity endCrystalEntity, boolean bl, AnchorAuraModule anchorAuraModule
+   ) {
       ArrayList var7 = new ArrayList();
       Combo.Shot var8 = null;
       float var9 = 0.0F;
-      if (var4) {
-         CrystalAuraModule.Plan var10 = this.stagedBreak(var2);
-         CrystalAuraModule.Plan var11 = this.planCrystal(var2, var3, 0, var10);
+      if (bl) {
+         CrystalAuraModule.Plan var10 = this.stagedBreak(fight);
+         CrystalAuraModule.Plan var11 = this.planCrystal(fight, endCrystalEntity, 0, var10);
          if (var11 != null) {
-            var8 = this.shot(var2, var11, false);
+            var8 = this.shot(fight, var11, false);
             if (this.due(var11, 0)) {
                var7.add(var8);
             }
          }
 
-         if (var5 != null && var10 != null) {
-            var9 = this.shot(var2, var10, true).value();
+         if (anchorAuraModule != null && var10 != null) {
+            var9 = this.shot(fight, var10, true).value();
          }
       }
 
-      if (var5 != null) {
-         var7.addAll(var5.shots(var1, var2.player, var2.enemies, var2.friends, var2.rtt, var9));
+      if (anchorAuraModule != null) {
+         var7.addAll(anchorAuraModule.shots(minecraftClient, fight.player, fight.enemies, fight.friends, fight.rtt, var9));
       }
 
       Combo.Shot var6;
       return (var6 = Combo.pick(var7)) != null ? var6 : var8;
    }
 
-   private void show(CrystalAuraModule.Fight var1, CrystalAuraModule.Plan var2) {
-      CrystalAuraModule.Side var3 = var1.side(var2.step());
-      boolean var4 = var2.step() == CrystalAuraModule.Step.OBSIDIAN;
-      Vec3d var5 = var2.step() == CrystalAuraModule.Step.BREAK ? var2.crystal().method_73189() : Crystals.explosionAt(var2.target());
+   private void show(CrystalAuraModule.Fight fight, CrystalAuraModule.Plan plan) {
+      CrystalAuraModule.Side var3 = fight.side(plan.step());
+      boolean var4 = plan.step() == CrystalAuraModule.Step.OBSIDIAN;
+      Vec3d var5 = plan.step() == CrystalAuraModule.Step.BREAK ? plan.crystal().getEntityPos() : Crystals.explosionAt(plan.target());
       float var6 = 0.0F;
 
       for (CrystalDamage.Victim var8 : var3.enemies) {
          var6 = Math.max(var6, var8.damage(var5, var4));
       }
 
-      BlockPos var9 = var2.step() == CrystalAuraModule.Step.BREAK ? var2.crystal().method_24515().method_10074() : var2.target();
+      BlockPos var9 = plan.step() == CrystalAuraModule.Step.BREAK ? plan.crystal().getBlockPos().down() : plan.target();
       this.view.show(new Box(var9), this.renderColor.argb(), var6, var3.self.damage(var5, var4));
    }
 
-   private CrystalAuraModule.Plan planCrystal(CrystalAuraModule.Fight var1, EndCrystalEntity var2, int var3, CrystalAuraModule.Plan var4) {
-      CrystalAuraModule.Plan var6 = this.planBreak(var1, false);
-      if (var6 != null && this.due(var6, var3)) {
+   private CrystalAuraModule.Plan planCrystal(CrystalAuraModule.Fight fight, EndCrystalEntity endCrystalEntity, int i, CrystalAuraModule.Plan plan) {
+      CrystalAuraModule.Plan var6 = this.planBreak(fight, false);
+      if (var6 != null && this.due(var6, i)) {
          return var6;
       } else {
-         boolean var5 = var6 != null || var4 != null || Crystals.anyPlacing(var1.player, var1.window);
-         CrystalAuraModule.Plan var8 = var5 ? null : this.planPlacement(var1, var2, var2 == null);
+         boolean var5 = var6 != null || plan != null || Crystals.anyPlacing(fight.player, fight.window);
+         CrystalAuraModule.Plan var8 = var5 ? null : this.planPlacement(fight, endCrystalEntity, endCrystalEntity == null);
          return var8 != null ? var8 : var6;
       }
    }
 
-   private CrystalAuraModule.Plan stagedBreak(CrystalAuraModule.Fight var1) {
-      return this.planBreak(var1, true);
+   private CrystalAuraModule.Plan stagedBreak(CrystalAuraModule.Fight fight) {
+      return this.planBreak(fight, true);
    }
 
-   private Combo.Shot shot(CrystalAuraModule.Fight var1, CrystalAuraModule.Plan var2, boolean var3) {
-      CrystalAuraModule.Step var5 = var2.step();
-      Vec3d var4 = var5 == CrystalAuraModule.Step.BREAK ? var2.crystal().method_73189() : Crystals.explosionAt(var2.target());
-      int var7 = var5 == CrystalAuraModule.Step.BREAK ? 0 : (var5 == CrystalAuraModule.Step.CRYSTAL ? var1.rtt : var1.rtt + 1);
+   private Combo.Shot shot(CrystalAuraModule.Fight fight, CrystalAuraModule.Plan plan, boolean bl) {
+      CrystalAuraModule.Step var5 = plan.step();
+      Vec3d var4 = var5 == CrystalAuraModule.Step.BREAK ? plan.crystal().getEntityPos() : Crystals.explosionAt(plan.target());
+      int var7 = var5 == CrystalAuraModule.Step.BREAK ? 0 : (var5 == CrystalAuraModule.Step.CRYSTAL ? fight.rtt : fight.rtt + 1);
       return new Combo.Shot(
-         Combo.Kind.valueOf(var5.name()), var2.aim(), var2.route(), this.score(var1, var5, var4, -1.0F / 0.0F, var3), kills(var1, var5, var4, var3), var7, var2
+         Combo.Kind.valueOf(var5.name()), plan.aim(), plan.route(), this.score(fight, var5, var4, -1.0F / 0.0F, bl), kills(fight, var5, var4, bl), var7, plan
       );
    }
 
-   private CrystalAuraModule.Plan planBreak(CrystalAuraModule.Fight var1, boolean var2) {
-      double var3 = var1.player.method_55755();
+   private CrystalAuraModule.Plan planBreak(CrystalAuraModule.Fight fight, boolean bl) {
+      double var3 = fight.player.getEntityInteractionRange();
       CrystalAuraModule.Plan var5 = null;
       float var6 = -1.0F / 0.0F;
-      Box var7 = var1.player.method_5829().method_1014(var3 + 2.0);
+      Box var7 = fight.player.getBoundingBox().expand(var3 + 2.0);
 
-      for (EndCrystalEntity var9 : var1.level.method_18467(EndCrystalEntity.class, var7)) {
+      for (EndCrystalEntity var9 : fight.level.getNonSpectatingEntities(EndCrystalEntity.class, var7)) {
          Vec3d var12;
-         if (var9.method_5805()
-            && this.breakAttempts.get(var9.method_5628()) < 3
-            && (var9.method_5628() != this.pendingBreakId || this.pendingBreakAge >= var1.window)
-            && (!this.doomed.containsKey(var9.method_5628()) || var1.player.field_6012 - this.doomed.get(var9.method_5628()) >= var1.window)
-            && !((var12 = var1.eye).method_1025(TargetingUtils.closestPoint(var12, var9.method_5829())) > var3 * var3)
-            && !(var9.method_23318() < this.tickFloor - 0.01)) {
-            Vec3d var13 = var9.method_73189();
+         if (var9.isAlive()
+            && this.breakAttempts.get(var9.getId()) < 3
+            && (var9.getId() != this.pendingBreakId || this.pendingBreakAge >= fight.window)
+            && (!this.doomed.containsKey(var9.getId()) || fight.player.age - this.doomed.get(var9.getId()) >= fight.window)
+            && !((var12 = fight.eye).squaredDistanceTo(TargetingUtils.closestPoint(var12, var9.getBoundingBox())) > var3 * var3)
+            && !(var9.getY() < this.tickFloor - 0.01)) {
+            Vec3d var13 = var9.getEntityPos();
             float var10;
             CrystalAuraModule.Plan var11;
             if ((!this.protectLoot.get() || !LootGuard.near(var13))
-               && !(this.bound(var1, CrystalAuraModule.Step.BREAK, var13) + var1.lookBonus <= var6)
-               && (var11 = this.breakLook(var1, var9)) != null
-               && var1.inView(var11)
-               && (var10 = this.score(var1, CrystalAuraModule.Step.BREAK, var13, var6 - var1.lookBonus, var2)) != -1.0F / 0.0F
-               && !((var10 = var10 + var1.lookCredit(var11)) <= var6)) {
+               && !(this.bound(fight, CrystalAuraModule.Step.BREAK, var13) + fight.lookBonus <= var6)
+               && (var11 = this.breakLook(fight, var9)) != null
+               && fight.inView(var11)
+               && (var10 = this.score(fight, CrystalAuraModule.Step.BREAK, var13, var6 - fight.lookBonus, bl)) != -1.0F / 0.0F
+               && !((var10 = var10 + fight.lookCredit(var11)) <= var6)) {
                var5 = var11;
                var6 = var10;
             }
@@ -562,46 +565,48 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
       if (var5 == null) {
          return null;
       } else {
-         int var14 = Crystals.weaponRoute(var1.player);
+         int var14 = Crystals.weaponRoute(fight.player);
          return var14 == -1 ? null : var5.withRoute(var14);
       }
    }
 
-   private CrystalAuraModule.Plan breakLook(CrystalAuraModule.Fight var1, EndCrystalEntity var2) {
-      if (var1.fixedLook != null) {
-         CrystalAuraModule.Plan var9 = new CrystalAuraModule.Plan(CrystalAuraModule.Step.BREAK, var2, null, null, var2.method_5829().method_1005(), -2);
-         return hitAlong(var1.player, var9, var1.eye, var1.fixedLook) != null ? var9 : null;
+   private CrystalAuraModule.Plan breakLook(CrystalAuraModule.Fight fight, EndCrystalEntity endCrystalEntity) {
+      if (fight.fixedLook != null) {
+         CrystalAuraModule.Plan var9 = new CrystalAuraModule.Plan(
+            CrystalAuraModule.Step.BREAK, endCrystalEntity, null, null, endCrystalEntity.getBoundingBox().getCenter(), -2
+         );
+         return hitAlong(fight.player, var9, fight.eye, fight.fixedLook) != null ? var9 : null;
       } else {
-         BlockPos var4 = var2.method_24515().method_10074();
+         BlockPos var4 = endCrystalEntity.getBlockPos().down();
          CrystalAuraModule.Plan var3;
-         if (Crystals.isBase(var1.level.method_8320(var4))
+         if (Crystals.isBase(fight.level.getBlockState(var4))
             && hitAlong(
-                  var1.player,
-                  var3 = new CrystalAuraModule.Plan(CrystalAuraModule.Step.BREAK, var2, var4, var4, aimOnTop(var1.level, var4), -2),
-                  var1.aimEye,
-                  var1.lookAt(var3.aim())
+                  fight.player,
+                  var3 = new CrystalAuraModule.Plan(CrystalAuraModule.Step.BREAK, endCrystalEntity, var4, var4, aimOnTop(fight.level, var4), -2),
+                  fight.aimEye,
+                  fight.lookAt(var3.aim())
                )
                != null) {
             return var3;
          } else {
-            Vec3d var5 = var1.towardLook(var2.method_5829().method_1011(0.1));
-            CrystalAuraModule.Plan var6 = new CrystalAuraModule.Plan(CrystalAuraModule.Step.BREAK, var2, null, null, var5, -2);
-            if (hitAlong(var1.player, var6, var1.aimEye, var1.lookAt(var5)) != null) {
+            Vec3d var5 = fight.towardLook(endCrystalEntity.getBoundingBox().contract(0.1));
+            CrystalAuraModule.Plan var6 = new CrystalAuraModule.Plan(CrystalAuraModule.Step.BREAK, endCrystalEntity, null, null, var5, -2);
+            if (hitAlong(fight.player, var6, fight.aimEye, fight.lookAt(var5)) != null) {
                return var6;
             } else {
-               Vec3d var7 = TargetingUtils.closestPoint(var1.aimEye, var2.method_5829().method_1011(0.1));
-               CrystalAuraModule.Plan var8 = new CrystalAuraModule.Plan(CrystalAuraModule.Step.BREAK, var2, null, null, var7, -2);
-               return hitAlong(var1.player, var8, var1.aimEye, var1.lookAt(var7)) != null ? var8 : null;
+               Vec3d var7 = TargetingUtils.closestPoint(fight.aimEye, endCrystalEntity.getBoundingBox().contract(0.1));
+               CrystalAuraModule.Plan var8 = new CrystalAuraModule.Plan(CrystalAuraModule.Step.BREAK, endCrystalEntity, null, null, var7, -2);
+               return hitAlong(fight.player, var8, fight.aimEye, fight.lookAt(var7)) != null ? var8 : null;
             }
          }
       }
    }
 
-   private CrystalAuraModule.Plan planPlacement(CrystalAuraModule.Fight var1, EndCrystalEntity var2, boolean var3) {
-      CrystalAuraModule.Plan var4 = this.planBase(var1, CrystalAuraModule.Step.CRYSTAL, var2);
-      if (this.autoObsidian.get() && var3) {
-         boolean var5 = var1.player.field_6012 <= this.eagerUntil;
-         float var6 = var4 == null ? 0.0F : this.enemyDamage(var1, var4);
+   private CrystalAuraModule.Plan planPlacement(CrystalAuraModule.Fight fight, EndCrystalEntity endCrystalEntity, boolean bl) {
+      CrystalAuraModule.Plan var4 = this.planBase(fight, CrystalAuraModule.Step.CRYSTAL, endCrystalEntity);
+      if (this.autoObsidian.get() && bl) {
+         boolean var5 = fight.player.age <= this.eagerUntil;
+         float var6 = var4 == null ? 0.0F : this.enemyDamage(fight, var4);
          if (var4 != null) {
             float var7 = var5 ? 11.0F : 8.0F;
             if (var6 >= var7) {
@@ -610,8 +615,8 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
          }
 
          CrystalAuraModule.Plan var12;
-         if ((var12 = this.planBase(var1, CrystalAuraModule.Step.OBSIDIAN, null)) != null && var4 != null) {
-            float var8 = this.enemyDamage(var1, var12);
+         if ((var12 = this.planBase(fight, CrystalAuraModule.Step.OBSIDIAN, null)) != null && var4 != null) {
+            float var8 = this.enemyDamage(fight, var12);
             float var9 = var5 ? 3.0F : 5.0F;
             boolean var10;
             if (var8 >= var6 + var9) {
@@ -630,33 +635,33 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
       }
    }
 
-   private float enemyDamage(CrystalAuraModule.Fight var1, CrystalAuraModule.Plan var2) {
-      Vec3d var3 = Crystals.explosionAt(var2.target());
+   private float enemyDamage(CrystalAuraModule.Fight fight, CrystalAuraModule.Plan plan) {
+      Vec3d var3 = Crystals.explosionAt(plan.target());
       float var4 = 0.0F;
 
-      for (CrystalDamage.Victim var6 : var1.side(var2.step()).enemies) {
-         var4 = Math.max(var4, var6.damage(var3, var2.step() == CrystalAuraModule.Step.OBSIDIAN));
+      for (CrystalDamage.Victim var6 : fight.side(plan.step()).enemies) {
+         var4 = Math.max(var4, var6.damage(var3, plan.step() == CrystalAuraModule.Step.OBSIDIAN));
       }
 
       return var4;
    }
 
-   private CrystalAuraModule.Plan planBase(CrystalAuraModule.Fight var1, CrystalAuraModule.Step var2, EndCrystalEntity var3) {
-      ClientPlayerEntity var6 = var1.player;
-      ClientWorld var7 = var1.level;
-      Item var8 = var2 == CrystalAuraModule.Step.CRYSTAL ? Items.field_8301 : Items.field_8281;
+   private CrystalAuraModule.Plan planBase(CrystalAuraModule.Fight fight, CrystalAuraModule.Step step, EndCrystalEntity endCrystalEntity) {
+      ClientPlayerEntity var6 = fight.player;
+      ClientWorld var7 = fight.level;
+      Item var8 = step == CrystalAuraModule.Step.CRYSTAL ? Items.END_CRYSTAL : Items.OBSIDIAN;
       BlockState var5;
-      if (Crystals.route(var6, var8, var5 = Blocks.field_10540.method_9564(), this.savedSlot) == -1) {
+      if (Crystals.route(var6, var8, var5 = Blocks.OBSIDIAN.getDefaultState(), this.savedSlot) == -1) {
          return null;
-      } else if (var2 == CrystalAuraModule.Step.OBSIDIAN && Crystals.route(var6, Items.field_8301, var5, this.savedSlot) == -1) {
+      } else if (step == CrystalAuraModule.Step.OBSIDIAN && Crystals.route(var6, Items.END_CRYSTAL, var5, this.savedSlot) == -1) {
          return null;
       } else {
-         double var9 = var1.placeReach;
-         double var11 = var6.method_55755() - 0.1;
-         Vec3d var13 = var1.eye;
-         BlockPos var14 = BlockPos.method_49638(var13);
-         int var15 = MathHelper.method_15384(var9);
-         float var16 = var2 == CrystalAuraModule.Step.CRYSTAL && var1.lookBonus > 0.0F ? 2.0F : 0.0F;
+         double var9 = fight.placeReach;
+         double var11 = var6.getEntityInteractionRange() - 0.1;
+         Vec3d var13 = fight.eye;
+         BlockPos var14 = BlockPos.ofFloored(var13);
+         int var15 = MathHelper.ceil(var9);
+         float var16 = step == CrystalAuraModule.Step.CRYSTAL && fight.lookBonus > 0.0F ? 2.0F : 0.0F;
          ArrayList var17 = new ArrayList();
          Mutable var18 = new Mutable();
          Mutable var19 = new Mutable();
@@ -664,26 +669,26 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
          for (int var20 = -var15; var20 <= var15; var20++) {
             for (int var21 = -var15; var21 <= var15; var21++) {
                for (int var22 = -var15; var22 <= var15; var22++) {
-                  var18.method_25504(var14, var20, var21, var22);
-                  if (var18.method_10264() + 1 >= this.tickFloor) {
-                     BlockState var25 = var7.method_8320(var18);
-                     if (var2 == CrystalAuraModule.Step.CRYSTAL ? Crystals.isBase(var25) : var25.method_45474()) {
-                        var19.method_25505(var18, Direction.field_11033);
-                        if ((var2 != CrystalAuraModule.Step.OBSIDIAN || var7.method_8320(var19).method_26206(var7, var19, Direction.field_11036))
+                  var18.set(var14, var20, var21, var22);
+                  if (var18.getY() + 1 >= this.tickFloor) {
+                     BlockState var25 = var7.getBlockState(var18);
+                     if (step == CrystalAuraModule.Step.CRYSTAL ? Crystals.isBase(var25) : var25.isReplaceable()) {
+                        var19.set(var18, Direction.DOWN);
+                        if ((step != CrystalAuraModule.Step.OBSIDIAN || var7.getBlockState(var19).isSideSolidFullSquare(var7, var19, Direction.UP))
                            && (
-                              var2 == CrystalAuraModule.Step.CRYSTAL
-                                 ? !Crystals.placing(var6, var18, var1.window)
-                                 : !var18.equals(this.pendingObsidian) || this.pendingObsidianAge >= var1.window
+                              step == CrystalAuraModule.Step.CRYSTAL
+                                 ? !Crystals.placing(var6, var18, fight.window)
+                                 : !var18.equals(this.pendingObsidian) || this.pendingObsidianAge >= fight.window
                            )) {
-                           BlockPos var26 = var18.method_10062();
-                           BlockPos var27 = var2 == CrystalAuraModule.Step.CRYSTAL ? var26 : var19.method_10062();
+                           BlockPos var26 = var18.toImmutable();
+                           BlockPos var27 = step == CrystalAuraModule.Step.CRYSTAL ? var26 : var19.toImmutable();
                            Vec3d var28 = aimOnTop(var7, var27);
                            float var23;
-                           if (!(var13.method_1025(var28) > var9 * var9)
-                              && !(var13.method_1025(TargetingUtils.closestPoint(var13, Crystals.boxOn(var26))) > var11 * var11)
+                           if (!(var13.squaredDistanceTo(var28) > var9 * var9)
+                              && !(var13.squaredDistanceTo(TargetingUtils.closestPoint(var13, Crystals.boxOn(var26))) > var11 * var11)
                               && (!this.protectLoot.get() || !LootGuard.near(Crystals.explosionAt(var26)))
-                              && (var23 = this.bound(var1, var2, Crystals.explosionAt(var26))) != -1.0F / 0.0F) {
-                              var17.add(new CrystalAuraModule.Candidate(new CrystalAuraModule.Plan(var2, null, var27, var26, var28, -2), var23));
+                              && (var23 = this.bound(fight, step, Crystals.explosionAt(var26))) != -1.0F / 0.0F) {
+                              var17.add(new CrystalAuraModule.Candidate(new CrystalAuraModule.Plan(step, null, var27, var26, var28, -2), var23));
                            }
                         }
                      }
@@ -698,17 +703,17 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
          Iterator var31 = var17.iterator();
 
          CrystalAuraModule.Candidate var4;
-         while (var31.hasNext() && !((var4 = (CrystalAuraModule.Candidate)var31.next()).bound() + var1.lookBonus + var16 <= var30)) {
+         while (var31.hasNext() && !((var4 = (CrystalAuraModule.Candidate)var31.next()).bound() + fight.lookBonus + var16 <= var30)) {
             CrystalAuraModule.Plan var24 = var4.plan();
-            float var34 = this.score(var1, var2, Crystals.explosionAt(var24.target()), var30 - var1.lookBonus - var16, false);
+            float var34 = this.score(fight, step, Crystals.explosionAt(var24.target()), var30 - fight.lookBonus - var16, false);
             CrystalAuraModule.Plan var32;
             if (var34 != -1.0F / 0.0F
-               && var7.method_8621().method_11952(var24.clicked())
-               && this.canHostSoon(var1, var24.target(), var2 == CrystalAuraModule.Step.CRYSTAL ? var3 : null)
-               && (var32 = this.reachable(var1, var24)) != null
-               && var1.inView(var32)) {
-               var34 += var1.lookCredit(var32);
-               if (var16 > 0.0F && oneLook(var1.aimEye, Crystals.boxOn(var32.target()), var32.aim(), var11)) {
+               && var7.getWorldBorder().contains(var24.clicked())
+               && this.canHostSoon(fight, var24.target(), step == CrystalAuraModule.Step.CRYSTAL ? endCrystalEntity : null)
+               && (var32 = this.reachable(fight, var24)) != null
+               && fight.inView(var32)) {
+               var34 += fight.lookCredit(var32);
+               if (var16 > 0.0F && oneLook(fight.aimEye, Crystals.boxOn(var32.target()), var32.aim(), var11)) {
                   var34 += var16;
                }
 
@@ -722,39 +727,39 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
          if (var29 == null) {
             return null;
          } else {
-            int var33 = Crystals.route(var6, var8, var7.method_8320(var29.clicked()), this.savedSlot);
+            int var33 = Crystals.route(var6, var8, var7.getBlockState(var29.clicked()), this.savedSlot);
             return var33 == -1 ? null : var29.withRoute(var33);
          }
       }
    }
 
-   private CrystalAuraModule.Plan reachable(CrystalAuraModule.Fight var1, CrystalAuraModule.Plan var2) {
-      if (var1.fixedLook == null) {
-         BlockPos var3 = var2.clicked();
-         double var4 = var2.aim().field_1351;
-         Vec3d var6 = var1.towardLook(
-            new Box(var3.method_10263() + 0.1, var4, var3.method_10260() + 0.1, var3.method_10263() + 1.0 - 0.1, var4, var3.method_10260() + 1.0 - 0.1)
-         );
-         CrystalAuraModule.Plan var7 = new CrystalAuraModule.Plan(var2.step(), null, var3, var2.target(), var6, var2.route());
-         if (var1.eye.method_1025(var6) <= var1.placeReach * var1.placeReach && hitAlong(var1.player, var7, var1.aimEye, var1.lookAt(var6)) != null) {
+   private CrystalAuraModule.Plan reachable(CrystalAuraModule.Fight fight, CrystalAuraModule.Plan plan) {
+      if (fight.fixedLook == null) {
+         BlockPos var3 = plan.clicked();
+         double var4 = plan.aim().y;
+         Vec3d var6 = fight.towardLook(new Box(var3.getX() + 0.1, var4, var3.getZ() + 0.1, var3.getX() + 1.0 - 0.1, var4, var3.getZ() + 1.0 - 0.1));
+         CrystalAuraModule.Plan var7 = new CrystalAuraModule.Plan(plan.step(), null, var3, plan.target(), var6, plan.route());
+         if (fight.eye.squaredDistanceTo(var6) <= fight.placeReach * fight.placeReach && hitAlong(fight.player, var7, fight.aimEye, fight.lookAt(var6)) != null
+            )
+          {
             return var7;
          }
       }
 
-      if (hitAlong(var1.player, var2, var1.aimEye, var1.lookAt(var2.aim())) != null) {
-         return var2;
-      } else if (var2.step() == CrystalAuraModule.Step.CRYSTAL && var1.fixedLook == null) {
-         Vec3d var8 = Vec3d.method_24953(var2.clicked());
+      if (hitAlong(fight.player, plan, fight.aimEye, fight.lookAt(plan.aim())) != null) {
+         return plan;
+      } else if (plan.step() == CrystalAuraModule.Step.CRYSTAL && fight.fixedLook == null) {
+         Vec3d var8 = Vec3d.ofCenter(plan.clicked());
 
-         for (Direction var5 : Type.field_11062) {
-            Vec3d var11 = var8.method_1031(var5.method_10148() * 0.4, 0.0, var5.method_10165() * 0.4);
+         for (Direction var5 : Type.HORIZONTAL) {
+            Vec3d var11 = var8.add(var5.getOffsetX() * 0.4, 0.0, var5.getOffsetZ() * 0.4);
             CrystalAuraModule.Plan var10;
-            if (!((var1.aimEye.field_1352 - var11.field_1352) * var5.method_10148() + (var1.aimEye.field_1350 - var11.field_1350) * var5.method_10165() <= 0.0)
+            if (!((fight.aimEye.x - var11.x) * var5.getOffsetX() + (fight.aimEye.z - var11.z) * var5.getOffsetZ() <= 0.0)
                && hitAlong(
-                     var1.player,
-                     var10 = new CrystalAuraModule.Plan(var2.step(), null, var2.clicked(), var2.target(), var11, var2.route()),
-                     var1.aimEye,
-                     var1.lookAt(var11)
+                     fight.player,
+                     var10 = new CrystalAuraModule.Plan(plan.step(), null, plan.clicked(), plan.target(), var11, plan.route()),
+                     fight.aimEye,
+                     fight.lookAt(var11)
                   )
                   != null) {
                return var10;
@@ -767,24 +772,26 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
       }
    }
 
-   private static Vec3d aimOnTop(ClientWorld var0, BlockPos var1) {
-      double var2 = var0.method_8320(var1).method_26218(var0, var1).method_1105(Axis.field_11052);
-      return new Vec3d(var1.method_10263() + 0.5, var1.method_10264() + var2 - 0.1, var1.method_10260() + 0.5);
+   private static Vec3d aimOnTop(ClientWorld clientWorld, BlockPos blockPos) {
+      double var2 = clientWorld.getBlockState(blockPos).getOutlineShape(clientWorld, blockPos).getMax(Axis.Y);
+      return new Vec3d(blockPos.getX() + 0.5, blockPos.getY() + var2 - 0.1, blockPos.getZ() + 0.5);
    }
 
-   private float need(LivingEntity var1, boolean var2, boolean var3) {
-      float var4 = !var3 && (!this.facePlace.get() || !facePlaced(var1)) ? this.tickMin : Math.min(2.0F, this.tickMin);
-      return var2 ? var4 * 0.6F : var4;
+   private float need(LivingEntity livingEntity, boolean bl, boolean bl2) {
+      float var4 = !bl2 && (!this.facePlace.get() || !facePlaced(livingEntity)) ? this.tickMin : Math.min(2.0F, this.tickMin);
+      return bl ? var4 * 0.6F : var4;
    }
 
-   private static boolean facePlaced(LivingEntity var0) {
-      return CrystalDamage.health(var0) <= 10.0F || Combo.inHole(var0) || armorLow(var0);
+   private static boolean facePlaced(LivingEntity livingEntity) {
+      return CrystalDamage.health(livingEntity) <= 10.0F || Combo.inHole(livingEntity) || armorLow(livingEntity);
    }
 
-   private static boolean armorLow(LivingEntity var0) {
-      for (EquipmentSlot var2 : EquipmentSlot.field_54086) {
+   private static boolean armorLow(LivingEntity livingEntity) {
+      for (EquipmentSlot var2 : EquipmentSlot.VALUES) {
          ItemStack var3;
-         if (var2.method_46643() && (var3 = var0.method_6118(var2)).method_7963() && var3.method_7936() - var3.method_7919() <= var3.method_7936() * 0.1F) {
+         if (var2.isArmorSlot()
+            && (var3 = livingEntity.getEquippedStack(var2)).isDamageable()
+            && var3.getMaxDamage() - var3.getDamage() <= var3.getMaxDamage() * 0.1F) {
             return true;
          }
       }
@@ -792,13 +799,13 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
       return false;
    }
 
-   private float bound(CrystalAuraModule.Fight var1, CrystalAuraModule.Step var2, Vec3d var3) {
+   private float bound(CrystalAuraModule.Fight fight, CrystalAuraModule.Step step, Vec3d vec3d) {
       float var4 = -1.0F / 0.0F;
 
-      for (CrystalDamage.Victim var6 : var1.side(var2).enemies) {
+      for (CrystalDamage.Victim var6 : fight.side(step).enemies) {
          LivingEntity var7 = var6.entity();
-         float var8 = var6.upperBound(var3);
-         if (Combo.kills(var8, var7) || !(var8 < this.need(var7, var2 == CrystalAuraModule.Step.BREAK, var1.forced))) {
+         float var8 = var6.upperBound(vec3d);
+         if (Combo.kills(var8, var7) || !(var8 < this.need(var7, step == CrystalAuraModule.Step.BREAK, fight.forced))) {
             var4 = Math.max(var4, Combo.value(var8, var7));
          }
       }
@@ -806,13 +813,13 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
       return var4;
    }
 
-   private float score(CrystalAuraModule.Fight var1, CrystalAuraModule.Step var2, Vec3d var3, float var4, boolean var5) {
-      CrystalAuraModule.Side var6 = var1.side(var2);
-      boolean var7 = var2 == CrystalAuraModule.Step.OBSIDIAN;
-      float var8 = var6.self.damage(var3, var7);
-      if (!(var8 > this.tickSelf) && !CrystalDamage.endangers(var1.player, var8)) {
+   private float score(CrystalAuraModule.Fight fight, CrystalAuraModule.Step step, Vec3d vec3d, float f, boolean bl) {
+      CrystalAuraModule.Side var6 = fight.side(step);
+      boolean var7 = step == CrystalAuraModule.Step.OBSIDIAN;
+      float var8 = var6.self.damage(vec3d, var7);
+      if (!(var8 > this.tickSelf) && !CrystalDamage.endangers(fight.player, var8)) {
          for (CrystalDamage.Victim var10 : var6.friends) {
-            float var11 = var10.damage(var3, var7);
+            float var11 = var10.damage(vec3d, var7);
             if (var11 > this.tickSelf || CrystalDamage.endangers((PlayerEntity)var10.entity(), var11)) {
                return -1.0F / 0.0F;
             }
@@ -822,21 +829,21 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
 
          for (CrystalDamage.Victim var16 : var6.enemies) {
             LivingEntity var12 = var16.entity();
-            float var13 = effective(var1, var16, var2, var3, var5);
-            if (Combo.kills(var13, var12) || !(var13 < this.need(var12, var2 == CrystalAuraModule.Step.BREAK, var1.forced))) {
+            float var13 = effective(fight, var16, step, vec3d, bl);
+            if (Combo.kills(var13, var12) || !(var13 < this.need(var12, step == CrystalAuraModule.Step.BREAK, fight.forced))) {
                var14 = Math.max(var14, Combo.value(var13, var12) - 0.5F * var8);
             }
          }
 
-         return var14 > var4 ? var14 : -1.0F / 0.0F;
+         return var14 > f ? var14 : -1.0F / 0.0F;
       } else {
          return -1.0F / 0.0F;
       }
    }
 
-   private static boolean kills(CrystalAuraModule.Fight var0, CrystalAuraModule.Step var1, Vec3d var2, boolean var3) {
-      for (CrystalDamage.Victim var5 : var0.side(var1).enemies) {
-         if (Combo.kills(effective(var0, var5, var1, var2, var3), var5.entity())) {
+   private static boolean kills(CrystalAuraModule.Fight fight, CrystalAuraModule.Step step, Vec3d vec3d, boolean bl) {
+      for (CrystalDamage.Victim var5 : fight.side(step).enemies) {
+         if (Combo.kills(effective(fight, var5, step, vec3d, bl), var5.entity())) {
             return true;
          }
       }
@@ -844,31 +851,33 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
       return false;
    }
 
-   private static float effective(CrystalAuraModule.Fight var0, CrystalDamage.Victim var1, CrystalAuraModule.Step var2, Vec3d var3, boolean var4) {
-      int var5 = var2 == CrystalAuraModule.Step.BREAK ? (var4 ? HurtClock.opensIn(var1.entity(), var0.rtt) : 0) : var0.rtt;
-      return HurtClock.effective(var1, var1.raw(var3, var2 == CrystalAuraModule.Step.OBSIDIAN), var5, var0.rtt);
+   private static float effective(CrystalAuraModule.Fight fight, CrystalDamage.Victim victim, CrystalAuraModule.Step step, Vec3d vec3d, boolean bl) {
+      int var5 = step == CrystalAuraModule.Step.BREAK ? (bl ? HurtClock.opensIn(victim.entity(), fight.rtt) : 0) : fight.rtt;
+      return HurtClock.effective(victim, victim.raw(vec3d, step == CrystalAuraModule.Step.OBSIDIAN), var5, fight.rtt);
    }
 
-   private static HitResult hitAlong(ClientPlayerEntity var0, CrystalAuraModule.Plan var1, Vec3d var2, Rotation var3) {
-      if (var3 == null) {
+   private static HitResult hitAlong(ClientPlayerEntity clientPlayerEntity, CrystalAuraModule.Plan plan, Vec3d vec3d, Rotation rotation) {
+      if (rotation == null) {
          return null;
       } else {
-         Vec3d var4 = Vec3d.method_1030(var3.pitch(), var3.yaw());
-         if (var1.step() == CrystalAuraModule.Step.BREAK) {
-            Box var8 = var1.crystal().method_5829();
-            if (var8.method_1006(var2)) {
-               return new EntityHitResult(var1.crystal(), var2);
+         Vec3d var4 = Vec3d.fromPolar(rotation.pitch(), rotation.yaw());
+         if (plan.step() == CrystalAuraModule.Step.BREAK) {
+            Box var8 = plan.crystal().getBoundingBox();
+            if (var8.contains(vec3d)) {
+               return new EntityHitResult(plan.crystal(), vec3d);
             } else {
-               Vec3d var9 = (Vec3d)var8.method_992(var2, var2.method_1019(var4.method_1021(var0.method_55755()))).orElse(null);
-               return var9 != null && MeleeAttacks.lineIsClear(var0, var2, var9) ? new EntityHitResult(var1.crystal(), var9) : null;
+               Vec3d var9 = var8.raycast(vec3d, vec3d.add(var4.multiply(clientPlayerEntity.getEntityInteractionRange()))).orElse(null);
+               return var9 != null && MeleeAttacks.lineIsClear(clientPlayerEntity, vec3d, var9) ? new EntityHitResult(plan.crystal(), var9) : null;
             }
          } else {
-            ClientWorld var5 = (ClientWorld)var0.method_73183();
-            BlockState var6 = var5.method_8320(var1.clicked());
-            BlockHitResult var7 = var6.method_26218(var5, var1.clicked())
-               .method_1092(var2, var2.method_1019(var4.method_1021(var0.method_55754())), var1.clicked());
-            if (var7 != null && MeleeAttacks.lineIsClear(var0, var2, var7.method_17784())) {
-               return var1.step() == CrystalAuraModule.Step.OBSIDIAN && !var1.target().equals(Crystals.placedObsidian(var5, var0, var7, var6)) ? null : var7;
+            ClientWorld var5 = (ClientWorld)clientPlayerEntity.getEntityWorld();
+            BlockState var6 = var5.getBlockState(plan.clicked());
+            BlockHitResult var7 = var6.getOutlineShape(var5, plan.clicked())
+               .raycast(vec3d, vec3d.add(var4.multiply(clientPlayerEntity.getBlockInteractionRange())), plan.clicked());
+            if (var7 != null && MeleeAttacks.lineIsClear(clientPlayerEntity, vec3d, var7.getPos())) {
+               return plan.step() == CrystalAuraModule.Step.OBSIDIAN && !plan.target().equals(Crystals.placedObsidian(var5, clientPlayerEntity, var7, var6))
+                  ? null
+                  : var7;
             } else {
                return null;
             }
@@ -877,69 +886,81 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
    }
 
    private boolean perform(
-      MinecraftClient var1, ClientPlayerEntity var2, CrystalAuraModule.Fight var3, CrystalAuraModule.Plan var4, CrystalAuraModule.Look var5
+      MinecraftClient minecraftClient,
+      ClientPlayerEntity clientPlayerEntity,
+      CrystalAuraModule.Fight fight,
+      CrystalAuraModule.Plan plan,
+      CrystalAuraModule.Look look
    ) {
-      Vec3d var8 = var2.method_33571();
+      Vec3d var8 = clientPlayerEntity.getEyePos();
       Rotation var9 = ServerRotation.sent();
-      Rotation var10 = var5 == CrystalAuraModule.Look.SILENT ? var9 : RotationUtils.entityRotation(var2);
-      HitResult var7 = var9 == null ? null : hitAlong(var2, var4, var8, var9);
-      if (var7 != null && var10 != var9 && hitAlong(var2, var4, var8, var10) == null) {
+      Rotation var10 = look == CrystalAuraModule.Look.SILENT ? var9 : RotationUtils.entityRotation(clientPlayerEntity);
+      HitResult var7 = var9 == null ? null : hitAlong(clientPlayerEntity, plan, var8, var9);
+      if (var7 != null && var10 != var9 && hitAlong(clientPlayerEntity, plan, var8, var10) == null) {
          var7 = null;
       }
 
-      if (var4.route() != -2) {
-         this.select(var2, var4.route());
+      if (plan.route() != -2) {
+         this.select(clientPlayerEntity, plan.route());
       }
 
       boolean var6 = var7 != null
-         && this.due(var4, 0)
-         && (var4.step() == CrystalAuraModule.Step.BREAK ? this.strike(var1, var2, var3, var4.crystal()) : this.place(var1, var2, var4, (BlockHitResult)var7));
+         && this.due(plan, 0)
+         && (
+            plan.step() == CrystalAuraModule.Step.BREAK
+               ? this.strike(minecraftClient, clientPlayerEntity, fight, plan.crystal())
+               : this.place(minecraftClient, clientPlayerEntity, plan, (BlockHitResult)var7)
+         );
       if (var6) {
-         MeleeAttacks.claimTick(var1);
-      } else if (var5 == CrystalAuraModule.Look.SILENT) {
-         this.turn(var7 != null ? var9 : var3.lookAt(var4.aim()));
+         MeleeAttacks.claimTick(minecraftClient);
+      } else if (look == CrystalAuraModule.Look.SILENT) {
+         this.turn(var7 != null ? var9 : fight.lookAt(plan.aim()));
       }
 
       return var6;
    }
 
-   private boolean fire(MinecraftClient var1, ClientPlayerEntity var2, CrystalAuraModule.Fight var3, AnchorAuraModule var4, Combo.Shot var5) {
-      if (var5.route() != -2) {
-         this.select(var2, var5.route());
+   private boolean fire(
+      MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, CrystalAuraModule.Fight fight, AnchorAuraModule anchorAuraModule, Combo.Shot shot
+   ) {
+      if (shot.route() != -2) {
+         this.select(clientPlayerEntity, shot.route());
       }
 
-      if (!var4.ready(var1, var2, var5)) {
-         this.turn(var3.lookAt(var5.aim()));
+      if (!anchorAuraModule.ready(minecraftClient, clientPlayerEntity, shot)) {
+         this.turn(fight.lookAt(shot.aim()));
          return false;
       } else {
-         var4.fire(var1, var2, var5);
+         anchorAuraModule.fire(minecraftClient, clientPlayerEntity, shot);
          return true;
       }
    }
 
-   private boolean strike(MinecraftClient var1, ClientPlayerEntity var2, CrystalAuraModule.Fight var3, EndCrystalEntity var4) {
-      if (this.mainAge < 2 && !Crystals.enchantsAddDamage(var2.method_6047()) && !Crystals.dealsDamage(var2, ItemStack.field_8037)) {
+   private boolean strike(
+      MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, CrystalAuraModule.Fight fight, EndCrystalEntity endCrystalEntity
+   ) {
+      if (this.mainAge < 2 && !Crystals.enchantsAddDamage(clientPlayerEntity.getMainHandStack()) && !Crystals.dealsDamage(clientPlayerEntity, ItemStack.EMPTY)) {
          return false;
-      } else if (!Crystals.strike(var1, var2, var4)) {
+      } else if (!Crystals.strike(minecraftClient, clientPlayerEntity, endCrystalEntity)) {
          return false;
       } else {
-         this.markBreak(var4);
-         this.breakAttempts.addTo(var4.method_5628(), 1);
+         this.markBreak(endCrystalEntity);
+         this.breakAttempts.addTo(endCrystalEntity.getId(), 1);
          this.ticksSinceBreak = 0;
          this.breakGap = this.humanize.get() && !this.fullSpeed ? Crystals.humanGap() : 0;
 
-         for (CrystalDamage.Victim var6 : var3.side(CrystalAuraModule.Step.BREAK).enemies) {
-            float var7 = var6.raw(var4.method_73189(), false);
+         for (CrystalDamage.Victim var6 : fight.side(CrystalAuraModule.Step.BREAK).enemies) {
+            float var7 = var6.raw(endCrystalEntity.getEntityPos(), false);
             if (var7 > 0.0F) {
-               HurtClock.shot(var2, var6.entity(), var7, var4.method_5628(), var3.rtt);
+               HurtClock.shot(clientPlayerEntity, var6.entity(), var7, endCrystalEntity.getId(), fight.rtt);
             }
          }
 
-         Box var8 = var4.method_5829().method_1014(12.0);
+         Box var8 = endCrystalEntity.getBoundingBox().expand(12.0);
 
-         for (EndCrystalEntity var10 : var3.level.method_18467(EndCrystalEntity.class, var8)) {
-            if (var10 != var4 && var10.method_5858(var4) <= 144.0) {
-               this.doomed.put(var10.method_5628(), var2.field_6012);
+         for (EndCrystalEntity var10 : fight.level.getNonSpectatingEntities(EndCrystalEntity.class, var8)) {
+            if (var10 != endCrystalEntity && var10.squaredDistanceTo(endCrystalEntity) <= 144.0) {
+               this.doomed.put(var10.getId(), clientPlayerEntity.age);
             }
          }
 
@@ -947,14 +968,14 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
       }
    }
 
-   private boolean place(MinecraftClient var1, ClientPlayerEntity var2, CrystalAuraModule.Plan var3, BlockHitResult var4) {
-      if (!Crystals.rightClick(var1, var2, var4)) {
+   private boolean place(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, CrystalAuraModule.Plan plan, BlockHitResult blockHitResult) {
+      if (!Crystals.rightClick(minecraftClient, clientPlayerEntity, blockHitResult)) {
          return false;
       } else {
-         if (var3.step() == CrystalAuraModule.Step.CRYSTAL) {
-            Crystals.notePlace(var2, var3.target());
+         if (plan.step() == CrystalAuraModule.Step.CRYSTAL) {
+            Crystals.notePlace(clientPlayerEntity, plan.target());
          } else {
-            this.pendingObsidian = var3.target();
+            this.pendingObsidian = plan.target();
             this.pendingObsidianAge = 0;
          }
 
@@ -964,34 +985,36 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
       }
    }
 
-   private void turn(Rotation var1) {
-      ServerRotation.request(var1, this.fullSpeed ? this.turnSpeed.max() : this.turnSpeed.get());
+   private void turn(Rotation rotation) {
+      ServerRotation.request(rotation, this.fullSpeed ? this.turnSpeed.max() : this.turnSpeed.get());
    }
 
-   private static boolean sameLook(Rotation var0, Rotation var1) {
-      return var0 != null && Math.abs(RotationUtils.yawDelta(var0.yaw(), var1.yaw())) <= 2.0F && Math.abs(var0.pitch() - var1.pitch()) <= 2.0F;
+   private static boolean sameLook(Rotation rotation, Rotation rotation2) {
+      return rotation != null
+         && Math.abs(RotationUtils.yawDelta(rotation.yaw(), rotation2.yaw())) <= 2.0F
+         && Math.abs(rotation.pitch() - rotation2.pitch()) <= 2.0F;
    }
 
-   private boolean due(CrystalAuraModule.Plan var1, int var2) {
-      return var1.step() == CrystalAuraModule.Step.BREAK
-         ? this.ticksSinceBreak + var2 > Math.max(this.breakDelay.getInt(), this.breakGap - 1)
-         : this.ticksSincePlace + var2 > Math.max(this.placeDelay.getInt(), this.placeGap - 1);
+   private boolean due(CrystalAuraModule.Plan plan, int i) {
+      return plan.step() == CrystalAuraModule.Step.BREAK
+         ? this.ticksSinceBreak + i > Math.max(this.breakDelay.getInt(), this.breakGap - 1)
+         : this.ticksSincePlace + i > Math.max(this.placeDelay.getInt(), this.placeGap - 1);
    }
 
-   private void select(ClientPlayerEntity var1, int var2) {
-      PlayerInventory var3 = var1.method_31548();
+   private void select(ClientPlayerEntity clientPlayerEntity, int i) {
+      PlayerInventory var3 = clientPlayerEntity.getInventory();
       if (this.savedSlot == -1) {
-         this.savedSlot = var3.method_67532();
+         this.savedSlot = var3.getSelectedSlot();
       }
 
-      var3.method_61496(var2);
-      this.ownSlot = var2;
-      this.lastMain = var1.method_6047();
+      var3.setSelectedSlot(i);
+      this.ownSlot = i;
+      this.lastMain = clientPlayerEntity.getMainHandStack();
       this.mainAge = 0;
    }
 
-   private void markBreak(EndCrystalEntity var1) {
-      this.pendingBreakId = var1.method_5628();
+   private void markBreak(EndCrystalEntity endCrystalEntity) {
+      this.pendingBreakId = endCrystalEntity.getId();
       this.pendingBreakAge = 0;
    }
 
@@ -1029,36 +1052,36 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
       private CrystalAuraModule.Side placeSide;
 
       Fight(
-         ClientPlayerEntity nullx,
-         ClientWorld nullxx,
-         List<LivingEntity> nullxxx,
-         List<LivingEntity> nullxxxx,
-         int nullxxxxx,
-         int nullxxxxxx,
-         Rotation nullxxxxxxx,
-         float nullxxxxxxxx,
-         boolean nullxxxxxxxxx
+         ClientPlayerEntity clientPlayerEntity,
+         ClientWorld clientWorld,
+         List<LivingEntity> list,
+         List<LivingEntity> list2,
+         int i,
+         int j,
+         Rotation rotation,
+         float f,
+         boolean bl
       ) {
-         this.player = nullx;
-         this.level = nullxx;
-         this.eye = nullx.method_33571();
-         this.aimEye = nullxxxxxxx != null ? this.eye : this.eye.method_1019(nullx.method_18798());
-         this.enemies = nullxxx;
-         this.friends = nullxxxx;
-         this.window = nullxxxxx;
-         this.rtt = nullxxxxxx;
-         this.fixedLook = nullxxxxxxx;
+         this.player = clientPlayerEntity;
+         this.level = clientWorld;
+         this.eye = clientPlayerEntity.getEyePos();
+         this.aimEye = rotation != null ? this.eye : this.eye.add(clientPlayerEntity.getVelocity());
+         this.enemies = list;
+         this.friends = list2;
+         this.window = i;
+         this.rtt = j;
+         this.fixedLook = rotation;
          this.serverLook = ServerRotation.sent();
-         this.lookBonus = nullxxxxxxxx;
-         this.arriveLead = Math.min(nullxxxxxx, 5);
-         this.placeLead = Math.min(2 * nullxxxxxx, 5);
-         this.selfPlaceLead = Math.min(nullxxxxxx, 5);
-         this.forced = nullxxxxxxxxx;
-         this.placeReach = nullx.method_55754() - 0.1;
+         this.lookBonus = f;
+         this.arriveLead = Math.min(j, 5);
+         this.placeLead = Math.min(2 * j, 5);
+         this.selfPlaceLead = Math.min(j, 5);
+         this.forced = bl;
+         this.placeReach = clientPlayerEntity.getBlockInteractionRange() - 0.1;
       }
 
-      CrystalAuraModule.Side side(CrystalAuraModule.Step var1) {
-         if (var1 == CrystalAuraModule.Step.BREAK) {
+      CrystalAuraModule.Side side(CrystalAuraModule.Step step) {
+         if (step == CrystalAuraModule.Step.BREAK) {
             if (this.breakSide == null) {
                this.breakSide = new CrystalAuraModule.Side(this.player, this.enemies, this.friends, this.arriveLead, 0);
             }
@@ -1073,41 +1096,39 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
          }
       }
 
-      Rotation lookAt(Vec3d var1) {
-         return this.fixedLook != null ? this.fixedLook : RotationUtils.fromTo(this.aimEye, var1);
+      Rotation lookAt(Vec3d vec3d) {
+         return this.fixedLook != null ? this.fixedLook : RotationUtils.fromTo(this.aimEye, vec3d);
       }
 
-      boolean holds(CrystalAuraModule.Plan var1) {
-         return CrystalAuraModule.hitAlong(this.player, var1, this.eye, this.serverLook) != null;
+      boolean holds(CrystalAuraModule.Plan plan) {
+         return CrystalAuraModule.hitAlong(this.player, plan, this.eye, this.serverLook) != null;
       }
 
-      float lookCredit(CrystalAuraModule.Plan var1) {
-         return this.lookBonus > 0.0F && this.holds(var1) ? this.lookBonus : 0.0F;
+      float lookCredit(CrystalAuraModule.Plan plan) {
+         return this.lookBonus > 0.0F && this.holds(plan) ? this.lookBonus : 0.0F;
       }
 
-      boolean inView(CrystalAuraModule.Plan var1) {
+      boolean inView(CrystalAuraModule.Plan plan) {
          if (this.fixedLook == null && !(CrystalAuraModule.this.viewAngle.get() >= 180.0F)) {
-            float var2 = Math.abs(RotationUtils.yawDelta(this.player.method_36454(), RotationUtils.fromTo(this.aimEye, var1.aim()).yaw()));
-            return var2 <= CrystalAuraModule.this.viewAngle.get() || var2 <= CrystalAuraModule.this.viewAngle.get() + 20.0F && this.holds(var1);
+            float var2 = Math.abs(RotationUtils.yawDelta(this.player.getYaw(), RotationUtils.fromTo(this.aimEye, plan.aim()).yaw()));
+            return var2 <= CrystalAuraModule.this.viewAngle.get() || var2 <= CrystalAuraModule.this.viewAngle.get() + 20.0F && this.holds(plan);
          } else {
             return true;
          }
       }
 
-      Vec3d towardLook(Box var1) {
-         Rotation var4 = this.serverLook != null ? this.serverLook : RotationUtils.entityRotation((Entity)this.player);
-         Vec3d var5 = Vec3d.method_1030(var4.pitch(), var4.yaw());
-         Vec3d var6 = var1.method_1005();
-         boolean var7 = var1.method_17940() < 1.0E-6 && var5.field_1351 < -1.0E-6 && this.aimEye.field_1351 > var1.field_1322;
-         double var2 = var7 ? (var1.field_1322 - this.aimEye.field_1351) / var5.field_1351 : var6.method_1020(this.aimEye).method_1026(var5);
+      Vec3d towardLook(Box box) {
+         Rotation var4 = this.serverLook != null ? this.serverLook : RotationUtils.entityRotation(this.player);
+         Vec3d var5 = Vec3d.fromPolar(var4.pitch(), var4.yaw());
+         Vec3d var6 = box.getCenter();
+         boolean var7 = box.getLengthY() < 1.0E-6 && var5.y < -1.0E-6 && this.aimEye.y > box.minY;
+         double var2 = var7 ? (box.minY - this.aimEye.y) / var5.y : var6.subtract(this.aimEye).dotProduct(var5);
          if (var2 <= 0.0) {
             return var6;
          } else {
-            Vec3d var10 = this.aimEye.method_1019(var5.method_1021(var2));
+            Vec3d var10 = this.aimEye.add(var5.multiply(var2));
             return new Vec3d(
-               MathHelper.method_15350(var10.field_1352, var1.field_1323, var1.field_1320),
-               MathHelper.method_15350(var10.field_1351, var1.field_1322, var1.field_1325),
-               MathHelper.method_15350(var10.field_1350, var1.field_1321, var1.field_1324)
+               MathHelper.clamp(var10.x, box.minX, box.maxX), MathHelper.clamp(var10.y, box.minY, box.maxY), MathHelper.clamp(var10.z, box.minZ, box.maxZ)
             );
          }
       }
@@ -1124,8 +1145,8 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
 
    @Environment(EnvType.CLIENT)
    private record Plan(CrystalAuraModule.Step step, EndCrystalEntity crystal, BlockPos clicked, BlockPos target, Vec3d aim, int route) {
-      CrystalAuraModule.Plan withRoute(int var1) {
-         return new CrystalAuraModule.Plan(this.step, this.crystal, this.clicked, this.target, this.aim, var1);
+      CrystalAuraModule.Plan withRoute(int i) {
+         return new CrystalAuraModule.Plan(this.step, this.crystal, this.clicked, this.target, this.aim, i);
       }
    }
 
@@ -1135,16 +1156,16 @@ public final class CrystalAuraModule extends ClientModule implements HudOverlayP
       final List<CrystalDamage.Victim> friends = new ArrayList<>();
       final CrystalDamage.Victim self;
 
-      Side(ClientPlayerEntity var1, List<LivingEntity> var2, List<LivingEntity> var3, int var4, int var5) {
-         for (LivingEntity var7 : var2) {
-            this.enemies.add(new CrystalDamage.Victim(var7, Combo.lead(var7, var4)));
+      Side(ClientPlayerEntity clientPlayerEntity, List<LivingEntity> list, List<LivingEntity> list2, int i, int j) {
+         for (LivingEntity var7 : list) {
+            this.enemies.add(new CrystalDamage.Victim(var7, Combo.lead(var7, i)));
          }
 
-         for (LivingEntity var9 : var3) {
-            this.friends.add(new CrystalDamage.Victim(var9, Combo.lead(var9, var4)));
+         for (LivingEntity var9 : list2) {
+            this.friends.add(new CrystalDamage.Victim(var9, Combo.lead(var9, i)));
          }
 
-         this.self = new CrystalDamage.Victim(var1, Combo.lead(var1, var5));
+         this.self = new CrystalDamage.Victim(clientPlayerEntity, Combo.lead(clientPlayerEntity, j));
       }
    }
 

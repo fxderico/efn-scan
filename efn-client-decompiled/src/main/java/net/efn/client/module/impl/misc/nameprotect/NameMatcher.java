@@ -19,12 +19,12 @@ public final class NameMatcher {
    private final int mask;
    private final long lengths;
 
-   public NameMatcher(Map<String, String> var1) {
+   public NameMatcher(Map<String, String> map) {
       HashMap var2 = new HashMap();
-      ArrayList var3 = new ArrayList(var1.size());
-      ArrayList var4 = new ArrayList(var1.size());
+      ArrayList var3 = new ArrayList(map.size());
+      ArrayList var4 = new ArrayList(map.size());
 
-      for (Entry var6 : var1.entrySet()) {
+      for (Entry var6 : map.entrySet()) {
          String var7 = (String)var6.getKey();
          String var8 = (String)var6.getValue();
          if (var7 != null && !var7.isEmpty() && var7.length() <= 32 && var8 != null && var2.putIfAbsent(var7.toLowerCase(Locale.ROOT), var8) == null) {
@@ -62,49 +62,49 @@ public final class NameMatcher {
       return this.mapping.isEmpty();
    }
 
-   public boolean sameMapping(NameMatcher var1) {
-      return var1 != null && this.mapping.equals(var1.mapping);
+   public boolean sameMapping(NameMatcher nameMatcher) {
+      return nameMatcher != null && this.mapping.equals(nameMatcher.mapping);
    }
 
-   public static boolean isNameChar(char var0) {
-      return var0 >= 'a' && var0 <= 'z' || var0 >= 'A' && var0 <= 'Z' || var0 >= '0' && var0 <= '9' || var0 == '_';
+   public static boolean isNameChar(char c) {
+      return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '_';
    }
 
-   public static String nameCore(String var0) {
-      if (var0 == null) {
+   public static String nameCore(String string) {
+      if (string == null) {
          return null;
       } else {
-         int var2 = var0.length();
+         int var2 = string.length();
          int var1 = 0;
 
-         while (var1 < var2 && !isNameChar(var0.charAt(var1))) {
+         while (var1 < var2 && !isNameChar(string.charAt(var1))) {
             var1++;
          }
 
-         while (var2 > var1 && !isNameChar(var0.charAt(var2 - 1))) {
+         while (var2 > var1 && !isNameChar(string.charAt(var2 - 1))) {
             var2--;
          }
 
          if (var1 != var2 && var2 - var1 <= 32) {
             for (int var3 = var1; var3 < var2; var3++) {
-               if (!isNameChar(var0.charAt(var3))) {
+               if (!isNameChar(string.charAt(var3))) {
                   return null;
                }
             }
 
-            return var0.substring(var1, var2);
+            return string.substring(var1, var2);
          } else {
             return null;
          }
       }
    }
 
-   public String aliasAt(String var1, int var2, int var3) {
-      int var4 = var3 - var2;
+   public String aliasAt(String string, int i, int j) {
+      int var4 = j - i;
       if (var4 > 0 && var4 <= 32 && (this.lengths & 1L << var4) != 0L) {
          String var6;
-         for (int var5 = hash(var1, var2, var3) & this.mask; (var6 = this.names[var5]) != null; var5 = var5 + 1 & this.mask) {
-            if (var6.length() == var4 && var6.regionMatches(true, 0, var1, var2, var4)) {
+         for (int var5 = hash(string, i, j) & this.mask; (var6 = this.names[var5]) != null; var5 = var5 + 1 & this.mask) {
+            if (var6.length() == var4 && var6.regionMatches(true, 0, string, i, var4)) {
                return this.aliases[var5];
             }
          }
@@ -115,36 +115,36 @@ public final class NameMatcher {
       }
    }
 
-   public String replace(String var1) {
-      if (var1 != null && !var1.isEmpty() && !this.isEmpty()) {
-         List var2 = this.scan(var1, new int[]{0, var1.length()}, 1);
+   public String replace(String string) {
+      if (string != null && !string.isEmpty() && !this.isEmpty()) {
+         List var2 = this.scan(string, new int[]{0, string.length()}, 1);
          if (var2.isEmpty()) {
-            return var1;
+            return string;
          } else {
-            StringBuilder var3 = new StringBuilder(var1.length() + 16);
+            StringBuilder var3 = new StringBuilder(string.length() + 16);
             int var4 = 0;
 
             for (NameMatcher.Match var6 : var2) {
-               var3.append(var1, var4, var6.start()).append(var6.alias());
+               var3.append(string, var4, var6.start()).append(var6.alias());
                var4 = var6.end();
             }
 
-            return var3.append(var1, var4, var1.length()).toString();
+            return var3.append(string, var4, string.length()).toString();
          }
       } else {
-         return var1;
+         return string;
       }
    }
 
-   public boolean mentionsAny(String var1) {
-      return var1 != null && !var1.isEmpty() && !this.isEmpty() && !this.scan(var1, new int[]{0, var1.length()}, 1).isEmpty();
+   public boolean mentionsAny(String string) {
+      return string != null && !string.isEmpty() && !this.isEmpty() && !this.scan(string, new int[]{0, string.length()}, 1).isEmpty();
    }
 
-   public NameMatcher newNamesSince(NameMatcher var1) {
+   public NameMatcher newNamesSince(NameMatcher nameMatcher) {
       HashMap var2 = null;
 
       for (Entry var4 : this.mapping.entrySet()) {
-         if (var1 == null || !((String)var4.getValue()).equals(var1.mapping.get(var4.getKey()))) {
+         if (nameMatcher == null || !((String)var4.getValue()).equals(nameMatcher.mapping.get(var4.getKey()))) {
             if (var2 == null) {
                var2 = new HashMap();
             }
@@ -156,20 +156,20 @@ public final class NameMatcher {
       return var2 != null ? new NameMatcher(var2) : EMPTY;
    }
 
-   public List<NameMatcher.Match> scan(String var1, int[] var2, int var3) {
-      if (!this.isEmpty() && !var1.isEmpty()) {
+   public List<NameMatcher.Match> scan(String string, int[] is, int i) {
+      if (!this.isEmpty() && !string.isEmpty()) {
          List var4 = null;
-         int var5 = var1.length();
+         int var5 = string.length();
          int var6 = 0;
          int var7 = 0;
 
          while (var7 < var5) {
-            while (var6 < var3 - 1 && var2[var6 + 1] <= var7) {
+            while (var6 < i - 1 && is[var6 + 1] <= var7) {
                var6++;
             }
 
-            int var9 = var2[var6 + 1];
-            char var10 = var1.charAt(var7);
+            int var9 = is[var6 + 1];
+            char var10 = string.charAt(var7);
             if (var10 == 167) {
                var7 += var7 + 1 < var9 ? 2 : 1;
             } else if (!isNameChar(var10)) {
@@ -177,18 +177,18 @@ public final class NameMatcher {
             } else {
                int var8 = var7 + 1;
 
-               while (var8 < var5 && isNameChar(var1.charAt(var8))) {
+               while (var8 < var5 && isNameChar(string.charAt(var8))) {
                   var8++;
                }
 
-               String var11 = this.aliasAt(var1, var7, var8);
+               String var11 = this.aliasAt(string, var7, var8);
                if (var11 != null) {
-                  int var12 = bedrockPrefix(var1, var7);
-                  var4 = add(var4, var12, var8, var12 == var7 ? var11 : var1.substring(var12, var7).replace(".", "") + var11);
+                  int var12 = bedrockPrefix(string, var7);
+                  var4 = add(var4, var12, var8, var12 == var7 ? var11 : string.substring(var12, var7).replace(".", "") + var11);
                } else if (var9 < var8) {
-                  for (int var15 = var6 + 1; var15 < var3 && var2[var15] < var8; var15++) {
-                     int var13 = var2[var15];
-                     String var14 = this.aliasAt(var1, var13, var8);
+                  for (int var15 = var6 + 1; var15 < i && is[var15] < var8; var15++) {
+                     int var13 = is[var15];
+                     String var14 = this.aliasAt(string, var13, var8);
                      if (var14 != null) {
                         var4 = add(var4, var13, var8, var14);
                         break;
@@ -206,21 +206,21 @@ public final class NameMatcher {
       }
    }
 
-   private static int bedrockPrefix(String var0, int var1) {
-      int var2 = var1;
-      int var3 = var1;
+   private static int bedrockPrefix(String string, int i) {
+      int var2 = i;
+      int var3 = i;
 
       while (true) {
-         while (var2 >= 2 && var0.charAt(var2 - 2) == 167) {
+         while (var2 >= 2 && string.charAt(var2 - 2) == 167) {
             var2 -= 2;
          }
 
-         if (var2 < 1 || var0.charAt(var2 - 1) != '.') {
-            if (var3 == var1) {
-               return var1;
+         if (var2 < 1 || string.charAt(var2 - 1) != '.') {
+            if (var3 == i) {
+               return i;
             } else {
-               boolean var4 = var3 >= 1 && isNameChar(var0.charAt(var3 - 1)) && (var3 < 2 || var0.charAt(var3 - 2) != 167);
-               return var4 ? var1 : var3;
+               boolean var4 = var3 >= 1 && isNameChar(string.charAt(var3 - 1)) && (var3 < 2 || string.charAt(var3 - 2) != 167);
+               return var4 ? i : var3;
             }
          }
 
@@ -228,17 +228,17 @@ public final class NameMatcher {
       }
    }
 
-   private static List<NameMatcher.Match> add(List<NameMatcher.Match> var0, int var1, int var2, String var3) {
-      Object var4 = var0 != null ? var0 : new ArrayList(4);
-      var4.add(new NameMatcher.Match(var1, var2, var3));
+   private static List<NameMatcher.Match> add(List<NameMatcher.Match> list, int i, int j, String string) {
+      Object var4 = list != null ? list : new ArrayList(4);
+      var4.add(new NameMatcher.Match(i, j, string));
       return (List<NameMatcher.Match>)var4;
    }
 
-   private static int hash(String var0, int var1, int var2) {
+   private static int hash(String string, int i, int j) {
       int var3 = 0;
 
-      for (int var4 = var1; var4 < var2; var4++) {
-         char var5 = var0.charAt(var4);
+      for (int var4 = i; var4 < j; var4++) {
+         char var5 = string.charAt(var4);
          if (var5 >= 'A' && var5 <= 'Z') {
             var5 = (char)(var5 + ' ');
          }

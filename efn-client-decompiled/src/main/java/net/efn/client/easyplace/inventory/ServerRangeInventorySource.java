@@ -19,74 +19,74 @@ public final class ServerRangeInventorySource implements InventoryPickSource {
    private final MinecraftClient mc;
    private ServerRangeInventorySource.PendingPick pending;
 
-   public ServerRangeInventorySource(MinecraftClient var1) {
-      this.mc = var1;
+   public ServerRangeInventorySource(MinecraftClient minecraftClient) {
+      this.mc = minecraftClient;
    }
 
    @Override
-   public InventoryPickResult prepare(Item var1, long var2) {
-      return this.prepare(var1, var2, false);
+   public InventoryPickResult prepare(Item item, long l) {
+      return this.prepare(item, l, false);
    }
 
-   public InventoryPickResult prepare(Item var1, long var2, boolean var4) {
-      ClientPlayerEntity var5 = this.mc.field_1724;
-      if (var5 != null && this.mc.field_1761 != null) {
+   public InventoryPickResult prepare(Item item, long l, boolean bl) {
+      ClientPlayerEntity var5 = this.mc.player;
+      if (var5 != null && this.mc.interactionManager != null) {
          if (this.pending != null) {
-            if (this.pending.item == var1 && var2 - this.pending.startedTick <= 12L) {
+            if (this.pending.item == item && l - this.pending.startedTick <= 12L) {
                return this.pollPending();
             }
 
             this.pending = null;
          }
 
-         if (var5.method_6079().method_31574(var1)) {
-            return InventoryPickResult.ready(var1, Hand.field_5810, 40);
+         if (var5.getOffHandStack().isOf(item)) {
+            return InventoryPickResult.ready(item, Hand.OFF_HAND, 40);
          } else {
-            PlayerInventory var6 = var5.method_31548();
-            if (var5.method_6047().method_31574(var1)) {
-               return InventoryPickResult.ready(var1, Hand.field_5808, var6.method_67532());
+            PlayerInventory var6 = var5.getInventory();
+            if (var5.getMainHandStack().isOf(item)) {
+               return InventoryPickResult.ready(item, Hand.MAIN_HAND, var6.getSelectedSlot());
             } else {
-               int var7 = find(var6, var1);
+               int var7 = find(var6, item);
                if (var7 < 0) {
-                  return InventoryPickResult.missing(var1);
+                  return InventoryPickResult.missing(item);
                } else if (var7 < 9) {
-                  return InventoryPickResult.ready(var1, Hand.field_5808, var7);
-               } else if (var5.field_7512 != var5.field_7498) {
-                  return InventoryPickResult.missing(var1);
+                  return InventoryPickResult.ready(item, Hand.MAIN_HAND, var7);
+               } else if (var5.currentScreenHandler != var5.playerScreenHandler) {
+                  return InventoryPickResult.missing(item);
                } else {
                   int var8 = findHotbarDestination(var6);
-                  if (var4 ? InventoryCalm.settle(this.mc, var5) : InventoryCalm.idle(var5)) {
-                     this.mc.field_1761.method_2906(var5.field_7498.field_7763, var7, var8, SlotActionType.field_7791, var5);
-                     if (this.mc.field_1755 == null) {
-                        var5.field_3944.method_52787(new CloseHandledScreenC2SPacket(var5.field_7498.field_7763));
+                  if (bl ? InventoryCalm.settle(this.mc, var5) : InventoryCalm.idle(var5)) {
+                     this.mc.interactionManager.clickSlot(var5.playerScreenHandler.syncId, var7, var8, SlotActionType.SWAP, var5);
+                     if (this.mc.currentScreen == null) {
+                        var5.networkHandler.sendPacket(new CloseHandledScreenC2SPacket(var5.playerScreenHandler.syncId));
                      }
 
-                     this.pending = new ServerRangeInventorySource.PendingPick(var1, var8, var2);
-                     return InventoryPickResult.waiting(var1, var8);
+                     this.pending = new ServerRangeInventorySource.PendingPick(item, var8, l);
+                     return InventoryPickResult.waiting(item, var8);
                   } else {
-                     return InventoryPickResult.waiting(var1, var8);
+                     return InventoryPickResult.waiting(item, var8);
                   }
                }
             }
          }
       } else {
-         return InventoryPickResult.missing(var1);
+         return InventoryPickResult.missing(item);
       }
    }
 
    private InventoryPickResult pollPending() {
-      if (!this.mc.field_1724.method_31548().method_5438(this.pending.hotbarSlot).method_31574(this.pending.item)) {
+      if (!this.mc.player.getInventory().getStack(this.pending.hotbarSlot).isOf(this.pending.item)) {
          return InventoryPickResult.waiting(this.pending.item, this.pending.hotbarSlot);
       } else {
-         InventoryPickResult var1 = InventoryPickResult.ready(this.pending.item, Hand.field_5808, this.pending.hotbarSlot);
+         InventoryPickResult var1 = InventoryPickResult.ready(this.pending.item, Hand.MAIN_HAND, this.pending.hotbarSlot);
          this.pending = null;
          return var1;
       }
    }
 
-   private static int find(PlayerInventory var0, Item var1) {
+   private static int find(PlayerInventory playerInventory, Item item) {
       for (int var2 = 0; var2 <= 35; var2++) {
-         if (var0.method_5438(var2).method_31574(var1)) {
+         if (playerInventory.getStack(var2).isOf(item)) {
             return var2;
          }
       }
@@ -94,14 +94,14 @@ public final class ServerRangeInventorySource implements InventoryPickSource {
       return -1;
    }
 
-   private static int findHotbarDestination(PlayerInventory var0) {
+   private static int findHotbarDestination(PlayerInventory playerInventory) {
       for (int var1 = 0; var1 < 9; var1++) {
-         if (var0.method_5438(var1).method_7960()) {
+         if (playerInventory.getStack(var1).isEmpty()) {
             return var1;
          }
       }
 
-      return var0.method_67532();
+      return playerInventory.getSelectedSlot();
    }
 
    @Override

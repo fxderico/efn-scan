@@ -68,7 +68,7 @@ public final class DiscordPresenceModule extends ClientModule {
          this.card = new DiscordPresenceModule.Card("In Main Menu", GAME_STARTED, this.discordButton.get());
          this.link = new DiscordPresenceModule.Link(this.link);
          this.refresh();
-         this.on(TickEvent.TYPE, var1 -> this.refresh());
+         this.on(TickEvent.TYPE, tickEvent -> this.refresh());
          this.link.start();
       }
    }
@@ -83,20 +83,20 @@ public final class DiscordPresenceModule extends ClientModule {
    }
 
    private void refresh() {
-      MinecraftClient var4 = MinecraftClient.method_1551();
-      ClientPlayNetworkHandler var5 = var4.method_1562();
+      MinecraftClient var4 = MinecraftClient.getInstance();
+      ClientPlayNetworkHandler var5 = var4.getNetworkHandler();
       long var1;
       String var3;
       if (var5 != null) {
-         if (var5.method_48296() != this.session) {
-            this.session = var5.method_48296();
+         if (var5.getConnection() != this.session) {
+            this.session = var5.getConnection();
             this.joinedAt = System.currentTimeMillis() / 1000L;
          }
 
-         var3 = this.place(var4, var5.method_45734());
+         var3 = this.place(var4, var5.getServerInfo());
          var1 = this.joinedAt;
       } else {
-         if (this.session != null && this.session.method_10758() && this.session.method_10744() instanceof ClientConfigurationPacketListener) {
+         if (this.session != null && this.session.isOpen() && this.session.getPacketListener() instanceof ClientConfigurationPacketListener) {
             return;
          }
 
@@ -113,33 +113,33 @@ public final class DiscordPresenceModule extends ClientModule {
       }
    }
 
-   private String place(MinecraftClient var1, ServerInfo var2) {
-      if (var1.method_1542()) {
+   private String place(MinecraftClient minecraftClient, ServerInfo serverInfo) {
+      if (minecraftClient.isInSingleplayer()) {
          return "Singleplayer";
-      } else if (var2 == null) {
+      } else if (serverInfo == null) {
          return "Multiplayer";
-      } else if (var2.method_52811()) {
+      } else if (serverInfo.isRealm()) {
          return "Realms";
-      } else if (var2.method_2994()) {
+      } else if (serverInfo.isLocal()) {
          return "LAN World";
       } else {
-         return this.showServerIp.get() ? var2.field_3761 : "Multiplayer";
+         return this.showServerIp.get() ? serverInfo.address : "Multiplayer";
       }
    }
 
-   private static JsonObject activity(DiscordPresenceModule.Card var0) {
+   private static JsonObject activity(DiscordPresenceModule.Card card) {
       JsonObject var1 = new JsonObject();
       var1.addProperty("name", "EFN Client");
-      var1.addProperty("details", var0.details());
+      var1.addProperty("details", card.details());
       var1.addProperty("state", "efn.lol");
       JsonObject var2 = new JsonObject();
-      var2.addProperty("start", var0.startedAt());
+      var2.addProperty("start", card.startedAt());
       var1.add("timestamps", var2);
       JsonObject var3 = new JsonObject();
       var3.addProperty("large_image", "logo");
       var3.addProperty("large_text", "EFN Client");
       var1.add("assets", var3);
-      if (var0.discordButton()) {
+      if (card.discordButton()) {
          JsonObject var4 = new JsonObject();
          var4.addProperty("label", "Discord");
          var4.addProperty("url", "https://discord.com/invite/pxHtFp5b6h");
@@ -166,8 +166,8 @@ public final class DiscordPresenceModule extends ClientModule {
       private long retryMs = 5000L;
       private String lastProblem;
 
-      Link(DiscordPresenceModule.Link nullx) {
-         this.previous = nullx != null ? nullx.thread : null;
+      Link(DiscordPresenceModule.Link link) {
+         this.previous = link != null ? link.thread : null;
          this.thread.setDaemon(true);
       }
 
@@ -246,14 +246,14 @@ public final class DiscordPresenceModule extends ClientModule {
          }
       }
 
-      private void send(DiscordPresenceModule.Card var1) throws IOException {
+      private void send(DiscordPresenceModule.Card card) throws IOException {
          try {
-            this.ipc.setActivity(DiscordPresenceModule.activity(var1));
+            this.ipc.setActivity(DiscordPresenceModule.activity(card));
          } catch (DiscordIpc.RefusedException var3) {
             this.report("Discord refused the card", var3);
          }
 
-         this.sent = var1;
+         this.sent = card;
          this.sentAt = System.currentTimeMillis();
       }
 
@@ -272,12 +272,12 @@ public final class DiscordPresenceModule extends ClientModule {
          this.sent = null;
       }
 
-      private void pause(long var1) {
-         LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(var1));
+      private void pause(long l) {
+         LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(l));
       }
 
-      private void report(String var1, Exception var2) {
-         String var3 = var1 + " (" + var2 + ")";
+      private void report(String string, Exception exception) {
+         String var3 = string + " (" + exception + ")";
          if (!var3.equals(this.lastProblem)) {
             this.lastProblem = var3;
             DiscordPresenceModule.LOGGER.warn("[EFN] Discord Presence: {}", var3);

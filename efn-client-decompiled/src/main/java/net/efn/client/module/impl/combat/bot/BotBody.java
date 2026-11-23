@@ -13,7 +13,6 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
@@ -53,29 +52,29 @@ final class BotBody {
       this.target = null;
    }
 
-   void hold(PlayerEntity var1) {
-      this.target = var1;
+   void hold(PlayerEntity playerEntity) {
+      this.target = playerEntity;
    }
 
-   void stayGrounded(boolean var1) {
-      this.grounded = var1;
+   void stayGrounded(boolean bl) {
+      this.grounded = bl;
    }
 
-   void release(MinecraftClient var1) {
-      var1.field_1690.field_1894.method_23481(false);
-      var1.field_1690.field_1881.method_23481(false);
-      var1.field_1690.field_1913.method_23481(false);
-      var1.field_1690.field_1849.method_23481(false);
-      var1.field_1690.field_1903.method_23481(false);
-      var1.field_1690.field_1867.method_23481(false);
-      var1.field_1690.field_1904.method_23481(false);
+   void release(MinecraftClient minecraftClient) {
+      minecraftClient.options.forwardKey.setPressed(false);
+      minecraftClient.options.backKey.setPressed(false);
+      minecraftClient.options.leftKey.setPressed(false);
+      minecraftClient.options.rightKey.setPressed(false);
+      minecraftClient.options.jumpKey.setPressed(false);
+      minecraftClient.options.sprintKey.setPressed(false);
+      minecraftClient.options.useKey.setPressed(false);
    }
 
-   PlayerEntity pick(MinecraftClient var1, ClientPlayerEntity var2, double var3) {
-      return this.pick(var1, var2, var3, var3 + 8.0);
+   PlayerEntity pick(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, double d) {
+      return this.pick(minecraftClient, clientPlayerEntity, d, d + 8.0);
    }
 
-   PlayerEntity pick(MinecraftClient var1, ClientPlayerEntity var2, double var3, double var5) {
+   PlayerEntity pick(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, double d, double e) {
       this.tick++;
       if (this.tick >= this.sideUntil) {
          this.side = -this.side;
@@ -84,11 +83,11 @@ final class BotBody {
 
       if (this.target != null
          && (
-            !this.target.method_5805()
-               || this.target.method_31481()
-               || this.target.method_73183() != var2.method_73183()
-               || this.target.method_5739(var2) > var5
-               || !MeleeAttacks.isEnemy(var2, (Entity)this.target)
+            !this.target.isAlive()
+               || this.target.isRemoved()
+               || this.target.getEntityWorld() != clientPlayerEntity.getEntityWorld()
+               || this.target.distanceTo(clientPlayerEntity) > e
+               || !MeleeAttacks.isEnemy(clientPlayerEntity, this.target)
          )) {
          this.target = null;
       }
@@ -98,14 +97,14 @@ final class BotBody {
       } else {
          PlayerEntity var7 = null;
 
-         for (PlayerEntity var9 : var1.field_1687.method_18456()) {
+         for (PlayerEntity var9 : minecraftClient.world.getPlayers()) {
             double var10;
-            if (var9 != var2
-               && var9.method_5805()
-               && !var9.method_7325()
-               && MeleeAttacks.isEnemy(var2, var9)
-               && (var10 = var9.method_5739(var2)) <= var3
-               && (var7 == null || var10 < var7.method_5739(var2))) {
+            if (var9 != clientPlayerEntity
+               && var9.isAlive()
+               && !var9.isSpectator()
+               && MeleeAttacks.isEnemy(clientPlayerEntity, var9)
+               && (var10 = var9.distanceTo(clientPlayerEntity)) <= d
+               && (var7 == null || var10 < var7.distanceTo(clientPlayerEntity))) {
                var7 = var9;
             }
          }
@@ -123,145 +122,147 @@ final class BotBody {
       }
    }
 
-   void face(MinecraftClient var1, ClientPlayerEntity var2, PlayerEntity var3, float var4) {
-      Vec3d var5 = var2.method_33571();
-      Vec3d var6 = var3.method_73189().method_1023(var3.field_6014, var3.field_6036, var3.field_5969);
-      Box var7 = var3.method_5829().method_997(var6);
-      Box var8 = var7.method_35580(var7.method_17939() * 0.2, var7.method_17940() * 0.15, var7.method_17941() * 0.2);
+   void face(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity, float f) {
+      Vec3d var5 = clientPlayerEntity.getEyePos();
+      Vec3d var6 = playerEntity.getEntityPos().subtract(playerEntity.lastX, playerEntity.lastY, playerEntity.lastZ);
+      Box var7 = playerEntity.getBoundingBox().offset(var6);
+      Box var8 = var7.contract(var7.getLengthX() * 0.2, var7.getLengthY() * 0.15, var7.getLengthZ() * 0.2);
       Rotation var9 = RotationUtils.fromTo(var5, TargetingUtils.closestPoint(var5, var8));
-      float var10 = Math.abs(MathHelper.method_15393(var9.yaw() - var2.method_36454()));
-      Aim.turn(var1, var9.yaw(), var9.pitch(), (var10 > 40.0F ? 27.0F : 22.0F) * var4);
+      float var10 = Math.abs(MathHelper.wrapDegrees(var9.yaw() - clientPlayerEntity.getYaw()));
+      Aim.turn(minecraftClient, var9.yaw(), var9.pitch(), (var10 > 40.0F ? 27.0F : 22.0F) * f);
    }
 
-   void drive(MinecraftClient var1, ClientPlayerEntity var2, int var3, double var4, boolean var6, boolean var7) {
-      float var9 = var2.method_36454();
-      Vec3d var10 = Vec3d.method_1030(0.0F, var9);
-      if (var3 > 0 && safeStep(var2, var10)) {
-         var1.field_1690.field_1894.method_23481(true);
-         var1.field_1690.field_1867.method_23481(var6);
-         if (var2.field_5976 && var2.method_24828()) {
-            var7 = true;
+   void drive(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, int i, double d, boolean bl, boolean bl2) {
+      float var9 = clientPlayerEntity.getYaw();
+      Vec3d var10 = Vec3d.fromPolar(0.0F, var9);
+      if (i > 0 && safeStep(clientPlayerEntity, var10)) {
+         minecraftClient.options.forwardKey.setPressed(true);
+         minecraftClient.options.sprintKey.setPressed(bl);
+         if (clientPlayerEntity.horizontalCollision && clientPlayerEntity.isOnGround()) {
+            bl2 = true;
          }
-      } else if (var3 < 0 && safeStep(var2, var10.method_1021(-1.0))) {
-         var1.field_1690.field_1881.method_23481(true);
+      } else if (i < 0 && safeStep(clientPlayerEntity, var10.multiply(-1.0))) {
+         minecraftClient.options.backKey.setPressed(true);
       }
 
-      if (var7 && !this.grounded && var2.method_24828() && !var2.method_5799()) {
-         var1.field_1690.field_1903.method_23481(true);
+      if (bl2 && !this.grounded && clientPlayerEntity.isOnGround() && !clientPlayerEntity.isTouchingWater()) {
+         minecraftClient.options.jumpKey.setPressed(true);
       }
 
-      this.sideCarry = this.sideCarry + Math.max(0.0, Math.min(1.0, var4));
+      this.sideCarry = this.sideCarry + Math.max(0.0, Math.min(1.0, d));
       if (!(this.sideCarry < 1.0)) {
          this.sideCarry--;
-         Vec3d var11 = Vec3d.method_1030(0.0F, var9 - 90.0F);
-         Vec3d var8 = this.side > 0 ? var11 : var11.method_1021(-1.0);
-         if (!safeStep(var2, var8)) {
+         Vec3d var11 = Vec3d.fromPolar(0.0F, var9 - 90.0F);
+         Vec3d var8 = this.side > 0 ? var11 : var11.multiply(-1.0);
+         if (!safeStep(clientPlayerEntity, var8)) {
             this.side = -this.side;
-            if (!safeStep(var2, var8.method_1021(-1.0))) {
+            if (!safeStep(clientPlayerEntity, var8.multiply(-1.0))) {
                return;
             }
          }
 
-         (this.side > 0 ? var1.field_1690.field_1913 : var1.field_1690.field_1849).method_23481(true);
+         (this.side > 0 ? minecraftClient.options.leftKey : minecraftClient.options.rightKey).setPressed(true);
       }
    }
 
-   void keepDistance(MinecraftClient var1, ClientPlayerEntity var2, PlayerEntity var3, double var4, double var6, double var8, boolean var10) {
-      double var11 = Math.hypot(var3.method_23317() - var2.method_23317(), var3.method_23321() - var2.method_23321());
-      int var13 = var11 > var6 + 0.25 ? 1 : (var11 < var4 ? -1 : 0);
-      this.drive(var1, var2, var13, var10 && var11 <= var8 + 1.0 ? 1.0 : 0.0, var11 > var8, false);
+   void keepDistance(
+      MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity, double d, double e, double f, boolean bl
+   ) {
+      double var11 = Math.hypot(playerEntity.getX() - clientPlayerEntity.getX(), playerEntity.getZ() - clientPlayerEntity.getZ());
+      int var13 = var11 > e + 0.25 ? 1 : (var11 < d ? -1 : 0);
+      this.drive(minecraftClient, clientPlayerEntity, var13, bl && var11 <= f + 1.0 ? 1.0 : 0.0, var11 > f, false);
    }
 
-   void flee(MinecraftClient var1, ClientPlayerEntity var2, PlayerEntity var3) {
-      float var4 = RotationUtils.fromTo(var3.method_33571(), var2.method_33571()).yaw();
-      Aim.turn(var1, var4, 5.0F, 27.0F);
-      this.drive(var1, var2, 1, 0.0, true, false);
+   void flee(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity) {
+      float var4 = RotationUtils.fromTo(playerEntity.getEyePos(), clientPlayerEntity.getEyePos()).yaw();
+      Aim.turn(minecraftClient, var4, 5.0F, 27.0F);
+      this.drive(minecraftClient, clientPlayerEntity, 1, 0.0, true, false);
    }
 
-   void away(MinecraftClient var1, ClientPlayerEntity var2, Vec3d var3) {
-      Vec3d var4 = var2.method_73189().method_1020(var3).method_18805(1.0, 0.0, 1.0);
-      if (var4.method_1027() < 1.0E-6) {
-         var4 = Vec3d.method_1030(0.0F, var2.method_36454()).method_1021(-1.0);
+   void away(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, Vec3d vec3d) {
+      Vec3d var4 = clientPlayerEntity.getEntityPos().subtract(vec3d).multiply(1.0, 0.0, 1.0);
+      if (var4.lengthSquared() < 1.0E-6) {
+         var4 = Vec3d.fromPolar(0.0F, clientPlayerEntity.getYaw()).multiply(-1.0);
       }
 
-      this.go(var1, var2, var4);
+      this.go(minecraftClient, clientPlayerEntity, var4);
    }
 
-   boolean toward(MinecraftClient var1, ClientPlayerEntity var2, Vec3d var3) {
-      Vec3d var4 = var3.method_1020(var2.method_73189()).method_18805(1.0, 0.0, 1.0);
-      if (var4.method_1027() < 0.09) {
+   boolean toward(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, Vec3d vec3d) {
+      Vec3d var4 = vec3d.subtract(clientPlayerEntity.getEntityPos()).multiply(1.0, 0.0, 1.0);
+      if (var4.lengthSquared() < 0.09) {
          return true;
       } else {
-         this.go(var1, var2, var4);
-         if (!this.grounded && var2.field_5976 && var2.method_24828()) {
-            var1.field_1690.field_1903.method_23481(true);
+         this.go(minecraftClient, clientPlayerEntity, var4);
+         if (!this.grounded && clientPlayerEntity.horizontalCollision && clientPlayerEntity.isOnGround()) {
+            minecraftClient.options.jumpKey.setPressed(true);
          }
 
          return false;
       }
    }
 
-   void dropToward(MinecraftClient var1, ClientPlayerEntity var2, Vec3d var3) {
-      Vec3d var4 = var3.method_1020(var2.method_73189()).method_18805(1.0, 0.0, 1.0);
-      if (!(var4.method_1027() < 0.09) && safeStep(var2, var4.method_1029(), 16)) {
-         keys(var1, var2, var4);
+   void dropToward(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, Vec3d vec3d) {
+      Vec3d var4 = vec3d.subtract(clientPlayerEntity.getEntityPos()).multiply(1.0, 0.0, 1.0);
+      if (!(var4.lengthSquared() < 0.09) && safeStep(clientPlayerEntity, var4.normalize(), 16)) {
+         keys(minecraftClient, clientPlayerEntity, var4);
       }
    }
 
-   private void go(MinecraftClient var1, ClientPlayerEntity var2, Vec3d var3) {
-      if (safeStep(var2, var3.method_1029())) {
-         keys(var1, var2, var3);
+   private void go(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, Vec3d vec3d) {
+      if (safeStep(clientPlayerEntity, vec3d.normalize())) {
+         keys(minecraftClient, clientPlayerEntity, vec3d);
       }
    }
 
-   private static void keys(MinecraftClient var0, ClientPlayerEntity var1, Vec3d var2) {
-      float var3 = (float)Math.toDegrees(Math.atan2(-var2.field_1352, var2.field_1350));
-      float var4 = MathHelper.method_15393(var3 - var1.method_36454());
+   private static void keys(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, Vec3d vec3d) {
+      float var3 = (float)Math.toDegrees(Math.atan2(-vec3d.x, vec3d.z));
+      float var4 = MathHelper.wrapDegrees(var3 - clientPlayerEntity.getYaw());
       float var5 = Math.abs(var4);
       if (var5 <= 67.5F) {
-         var0.field_1690.field_1894.method_23481(true);
+         minecraftClient.options.forwardKey.setPressed(true);
       }
 
       if (var5 >= 112.5F) {
-         var0.field_1690.field_1881.method_23481(true);
+         minecraftClient.options.backKey.setPressed(true);
       }
 
       if (var4 <= -22.5F && var4 >= -157.5F) {
-         var0.field_1690.field_1913.method_23481(true);
+         minecraftClient.options.leftKey.setPressed(true);
       }
 
       if (var4 >= 22.5F && var4 <= 157.5F) {
-         var0.field_1690.field_1849.method_23481(true);
+         minecraftClient.options.rightKey.setPressed(true);
       }
    }
 
-   void backOff(MinecraftClient var1, ClientPlayerEntity var2) {
-      this.drive(var1, var2, -1, 0.0, false, false);
+   void backOff(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      this.drive(minecraftClient, clientPlayerEntity, -1, 0.0, false, false);
    }
 
-   boolean use(MinecraftClient var1, ClientPlayerEntity var2, Predicate<ItemStack> var3) {
-      int var4 = hotbarSlot(var2, var3);
+   boolean use(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, Predicate<ItemStack> predicate) {
+      int var4 = hotbarSlot(clientPlayerEntity, predicate);
       if (var4 < 0) {
          return false;
       } else {
-         PlayerInventory var5 = var2.method_31548();
-         if (var5.method_67532() != var4) {
-            var5.method_61496(var4);
+         PlayerInventory var5 = clientPlayerEntity.getInventory();
+         if (var5.getSelectedSlot() != var4) {
+            var5.setSelectedSlot(var4);
             return true;
          } else {
-            var1.field_1690.field_1904.method_23481(true);
+            minecraftClient.options.useKey.setPressed(true);
             return true;
          }
       }
    }
 
-   static int hotbarSlot(ClientPlayerEntity var0, Predicate<ItemStack> var1) {
-      PlayerInventory var2 = var0.method_31548();
-      if (var1.test(var2.method_5438(var2.method_67532()))) {
-         return var2.method_67532();
+   static int hotbarSlot(ClientPlayerEntity clientPlayerEntity, Predicate<ItemStack> predicate) {
+      PlayerInventory var2 = clientPlayerEntity.getInventory();
+      if (predicate.test(var2.getStack(var2.getSelectedSlot()))) {
+         return var2.getSelectedSlot();
       } else {
          for (int var3 = 0; var3 < 9; var3++) {
-            if (var1.test(var2.method_5438(var3))) {
+            if (predicate.test(var2.getStack(var3))) {
                return var3;
             }
          }
@@ -270,27 +271,27 @@ final class BotBody {
       }
    }
 
-   static boolean safeStep(ClientPlayerEntity var0, Vec3d var1) {
-      return safeStep(var0, var1, 3);
+   static boolean safeStep(ClientPlayerEntity clientPlayerEntity, Vec3d vec3d) {
+      return safeStep(clientPlayerEntity, vec3d, 3);
    }
 
-   private static boolean safeStep(ClientPlayerEntity var0, Vec3d var1, int var2) {
-      World var3 = var0.method_73183();
-      BlockPos var4 = BlockPos.method_49637(var0.method_23317() + var1.field_1352 * 0.8, var0.method_23318() + 0.1, var0.method_23321() + var1.field_1350 * 0.8);
+   private static boolean safeStep(ClientPlayerEntity clientPlayerEntity, Vec3d vec3d, int i) {
+      World var3 = clientPlayerEntity.getEntityWorld();
+      BlockPos var4 = BlockPos.ofFloored(clientPlayerEntity.getX() + vec3d.x * 0.8, clientPlayerEntity.getY() + 0.1, clientPlayerEntity.getZ() + vec3d.z * 0.8);
 
-      for (int var5 = 0; var5 <= var2; var5++) {
-         BlockPos var6 = var4.method_10087(var5);
-         BlockState var7 = var3.method_8320(var6);
-         if (var7.method_27852(Blocks.field_10164)
-            || var7.method_26164(BlockTags.field_21952)
-            || var7.method_27852(Blocks.field_10029)
-            || var7.method_27852(Blocks.field_16999)
-            || var7.method_27852(Blocks.field_10343)
-            || var5 <= 1 && var7.method_27852(Blocks.field_10092)) {
+      for (int var5 = 0; var5 <= i; var5++) {
+         BlockPos var6 = var4.down(var5);
+         BlockState var7 = var3.getBlockState(var6);
+         if (var7.isOf(Blocks.LAVA)
+            || var7.isIn(BlockTags.FIRE)
+            || var7.isOf(Blocks.CACTUS)
+            || var7.isOf(Blocks.SWEET_BERRY_BUSH)
+            || var7.isOf(Blocks.COBWEB)
+            || var5 <= 1 && var7.isOf(Blocks.MAGMA_BLOCK)) {
             return false;
          }
 
-         if (!var7.method_26220(var3, var6).method_1110()) {
+         if (!var7.getCollisionShape(var3, var6).isEmpty()) {
             return true;
          }
       }

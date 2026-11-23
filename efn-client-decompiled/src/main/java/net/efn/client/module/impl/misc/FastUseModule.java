@@ -31,11 +31,11 @@ public final class FastUseModule extends ClientModule {
    @EventHandler(
       priority = EventPriority.LOWEST
    )
-   public void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientPlayerEntity var3 = var2.field_1724;
-      if (var3 != null && var2.field_1755 == null && var2.field_1690.field_1904.method_1434()) {
-         if (!var3.method_6115() && this.covers(var3)) {
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientPlayerEntity var3 = var2.player;
+      if (var3 != null && var2.currentScreen == null && var2.options.useKey.isPressed()) {
+         if (!var3.isUsingItem() && this.covers(var3)) {
             AccessorCombatMinecraft var4 = (AccessorCombatMinecraft)var2;
             int var5 = var4.efn$rightClickDelay();
             if (!ServerRotation.pending() && !MeleeAttacks.actedThisTick(var3)) {
@@ -44,25 +44,25 @@ public final class FastUseModule extends ClientModule {
                }
             } else {
                var4.efn$setRightClickDelay(Math.max(var5, 2));
-               KeyBinding var6 = var2.field_1690.field_1904;
+               KeyBinding var6 = var2.options.useKey;
 
-               while (var6.method_1436()) {
+               while (var6.wasPressed()) {
                }
             }
          }
       }
    }
 
-   private boolean covers(ClientPlayerEntity var1) {
-      ItemStack var2 = var1.method_6047();
-      if (var2.method_7960()) {
-         var2 = var1.method_6079();
+   private boolean covers(ClientPlayerEntity clientPlayerEntity) {
+      ItemStack var2 = clientPlayerEntity.getMainHandStack();
+      if (var2.isEmpty()) {
+         var2 = clientPlayerEntity.getOffHandStack();
       }
 
-      if (var2.method_7960()) {
+      if (var2.isEmpty()) {
          return false;
       } else {
-         return var2.method_7909() instanceof BlockItem ? this.blocks.get() : this.items.get();
+         return var2.getItem() instanceof BlockItem ? this.blocks.get() : this.items.get();
       }
    }
 }

@@ -30,28 +30,28 @@ public final class CharacterBake {
    private CharacterBake() {
    }
 
-   public static CharacterBake.Result bake(byte[] var0, CharacterBake.Options var1, ImageDecoder var2) throws IOException {
-      GltfFile var4 = GltfFile.read(var0);
+   public static CharacterBake.Result bake(byte[] bs, CharacterBake.Options options, ImageDecoder imageDecoder) throws IOException {
+      GltfFile var4 = GltfFile.read(bs);
       PosedMesh var5 = PosedMesh.pose(var4, Map.of());
-      Skeleton var6 = Skeleton.find(var5, var1.bones);
+      Skeleton var6 = Skeleton.find(var5, options.bones);
       Map var7 = var6.armTurns();
       if (!var7.isEmpty()) {
          var5 = PosedMesh.pose(var4, var7);
-         var6 = Skeleton.find(var5, var1.bones);
+         var6 = Skeleton.find(var5, options.bones);
       }
 
-      var5.normalise(var1.height, var6.facesBack);
+      var5.normalise(options.height, var6.facesBack);
       var5.cluster(150000);
-      CharacterBake.Cut var3 = var6.found() ? skeletonCut(var5, var6, var1) : ShapeCut.cut(var5);
+      CharacterBake.Cut var3 = var6.found() ? skeletonCut(var5, var6, options) : ShapeCut.cut(var5);
       if (var3 == null) {
          var3 = still(var5);
       }
 
       List var9 = split(var5, var3.part());
       reduce(var5, var9);
-      TextureAtlas var10 = TextureAtlas.pack(var4, uvBounds(var5, var9), var2);
+      TextureAtlas var10 = TextureAtlas.pack(var4, uvBounds(var5, var9), imageDecoder);
       ByteArrayOutputStream var11 = new ByteArrayOutputStream();
-      write(new DataOutputStream(var11), var5, var3, var9, var10, var1);
+      write(new DataOutputStream(var11), var5, var3, var9, var10, options);
       ArrayList var12 = new ArrayList();
       if (has(var9, 0)) {
          var12.add("head");
@@ -68,10 +68,10 @@ public final class CharacterBake {
       return new CharacterBake.Result(var11.toByteArray(), var12);
    }
 
-   public static String describe(byte[] var0, CharacterBake.Options var1) throws IOException {
-      GltfFile var2 = GltfFile.read(var0);
+   public static String describe(byte[] bs, CharacterBake.Options options) throws IOException {
+      GltfFile var2 = GltfFile.read(bs);
       PosedMesh var3 = PosedMesh.pose(var2, Map.of());
-      Skeleton var4 = Skeleton.find(var3, var1.bones);
+      Skeleton var4 = Skeleton.find(var3, options.bones);
       StringBuilder var5 = new StringBuilder(
          String.format(Locale.ROOT, "%d vertices, %d triangles, %d bones%n", var3.vertices, var3.triangles, var3.joints.size())
       );
@@ -89,37 +89,37 @@ public final class CharacterBake {
       return var5.toString();
    }
 
-   private static CharacterBake.Cut still(PosedMesh var0) {
+   private static CharacterBake.Cut still(PosedMesh posedMesh) {
       float[][] var1 = new float[6][];
       var1[1] = new float[]{0.0F, 24.0F, 0.0F};
-      return new CharacterBake.Cut(new int[var0.vertices], var1, new float[6][], new float[6][], new float[6][]);
+      return new CharacterBake.Cut(new int[posedMesh.vertices], var1, new float[6][], new float[6][], new float[6][]);
    }
 
-   private static CharacterBake.Cut skeletonCut(PosedMesh var0, Skeleton var1, CharacterBake.Options var2) {
-      int[] var3 = var1.groups();
-      boolean var4 = var1.thigh[0] >= 0 && var1.thigh[1] >= 0;
-      float var5 = var2.floor;
-      if (var5 < 0.0F && var1.shin[0] >= 0 && var1.shin[1] >= 0) {
-         var5 = Math.min(var0.joint(var1.shin[0])[1], var0.joint(var1.shin[1])[1]);
+   private static CharacterBake.Cut skeletonCut(PosedMesh posedMesh, Skeleton skeleton, CharacterBake.Options options) {
+      int[] var3 = skeleton.groups();
+      boolean var4 = skeleton.thigh[0] >= 0 && skeleton.thigh[1] >= 0;
+      float var5 = options.floor;
+      if (var5 < 0.0F && skeleton.shin[0] >= 0 && skeleton.shin[1] >= 0) {
+         var5 = Math.min(posedMesh.joint(skeleton.shin[0])[1], posedMesh.joint(skeleton.shin[1])[1]);
       }
 
-      boolean var6 = !var2.headMaterials.isEmpty() && var1.head >= 0;
-      int[] var7 = new int[var0.vertices];
+      boolean var6 = !options.headMaterials.isEmpty() && skeleton.head >= 0;
+      int[] var7 = new int[posedMesh.vertices];
       float[] var8 = new float[6];
 
-      for (int var9 = 0; var9 < var0.vertices; var9++) {
-         float var11 = var0.pos[var9 * 3];
-         float var12 = var0.pos[var9 * 3 + 1];
-         if (var6 && var2.headMaterials.contains(var0.file.materialName(var0.material[var9]))) {
-            var7[var9] = var12 < var2.neck ? 1 : 0;
+      for (int var9 = 0; var9 < posedMesh.vertices; var9++) {
+         float var11 = posedMesh.pos[var9 * 3];
+         float var12 = posedMesh.pos[var9 * 3 + 1];
+         if (var6 && options.headMaterials.contains(posedMesh.file.materialName(posedMesh.material[var9]))) {
+            var7[var9] = var12 < options.neck ? 1 : 0;
          } else {
             Arrays.fill(var8, 0.0F);
 
             for (int var13 = 0; var13 < 4; var13++) {
-               int var14 = var0.influence[var9 * 4 + var13];
+               int var14 = posedMesh.influence[var9 * 4 + var13];
                if (var14 >= 0) {
                   int var15 = var3[var14];
-                  var8[var15] += var0.weight[var9 * 4 + var13];
+                  var8[var15] += posedMesh.weight[var9 * 4 + var13];
                }
             }
 
@@ -132,8 +132,8 @@ public final class CharacterBake {
             }
 
             boolean var10 = var23 == 1 || var23 == 4 || var23 == 5;
-            if (var4 && var10 && var2.hip > 0.0F) {
-               var23 = var12 >= var2.hip ? 1 : (var11 < 0.0F ? 4 : 5);
+            if (var4 && var10 && options.hip > 0.0F) {
+               var23 = var12 >= options.hip ? 1 : (var11 < 0.0F ? 4 : 5);
             } else if (var4 && var23 == 1 && var12 < var5) {
                var23 = var11 < 0.0F ? 4 : 5;
             }
@@ -147,28 +147,28 @@ public final class CharacterBake {
       float[][] var21 = new float[6][];
       float[][] var22 = new float[6][];
       var19[1] = new float[]{0.0F, 24.0F, 0.0F};
-      if (var1.head >= 0) {
-         var19[0] = var0.joint(var1.head);
+      if (skeleton.head >= 0) {
+         var19[0] = posedMesh.joint(skeleton.head);
       }
 
       for (int var24 = 0; var24 < 2; var24++) {
          int var27 = var24 == 0 ? 2 : 3;
          int var26 = var24 == 0 ? 4 : 5;
-         if (var1.upperArm[var24] >= 0) {
-            var19[var27] = var0.joint(var1.upperArm[var24]);
-            int var17 = var1.hand[var24] >= 0 ? var1.hand[var24] : var1.forearm[var24];
-            float[] var18 = var20[var27] = var17 >= 0 ? var0.joint(var17) : var19[var27];
-            if (var1.forearm[var24] >= 0) {
-               var21[var27] = var0.joint(var1.forearm[var24]);
-               var22[var27] = bend(var0, var1.forearm[var24], var1.upperArm[var24]);
+         if (skeleton.upperArm[var24] >= 0) {
+            var19[var27] = posedMesh.joint(skeleton.upperArm[var24]);
+            int var17 = skeleton.hand[var24] >= 0 ? skeleton.hand[var24] : skeleton.forearm[var24];
+            float[] var18 = var20[var27] = var17 >= 0 ? posedMesh.joint(var17) : var19[var27];
+            if (skeleton.forearm[var24] >= 0) {
+               var21[var27] = posedMesh.joint(skeleton.forearm[var24]);
+               var22[var27] = bend(posedMesh, skeleton.forearm[var24], skeleton.upperArm[var24]);
             }
          }
 
-         if (var1.thigh[var24] >= 0) {
-            var19[var26] = var0.joint(var1.thigh[var24]);
-            if (var1.shin[var24] >= 0) {
-               var21[var26] = var0.joint(var1.shin[var24]);
-               var22[var26] = bend(var0, var1.shin[var24], var1.thigh[var24]);
+         if (skeleton.thigh[var24] >= 0) {
+            var19[var26] = posedMesh.joint(skeleton.thigh[var24]);
+            if (skeleton.shin[var24] >= 0) {
+               var21[var26] = posedMesh.joint(skeleton.shin[var24]);
+               var22[var26] = bend(posedMesh, skeleton.shin[var24], skeleton.thigh[var24]);
             }
          }
       }
@@ -176,21 +176,21 @@ public final class CharacterBake {
       return new CharacterBake.Cut(var7, var19, var20, var21, var22);
    }
 
-   static int owner(int[] var0, int var1, int var2, int var3) {
-      return var0[var2] == var0[var3] ? var0[var2] : var0[var1];
+   static int owner(int[] is, int i, int j, int k) {
+      return is[j] == is[k] ? is[j] : is[i];
    }
 
-   private static List<CharacterBake.Piece> split(PosedMesh var0, int[] var1) {
+   private static List<CharacterBake.Piece> split(PosedMesh posedMesh, int[] is) {
       CharacterBake.Piece[][] var2 = new CharacterBake.Piece[6][2];
 
-      for (int var3 = 0; var3 < var0.triangles; var3++) {
-         int var5 = var0.tris[var3 * 3];
-         int var6 = var0.tris[var3 * 3 + 1];
-         int var7 = var0.tris[var3 * 3 + 2];
-         if (!(Mat4.area(var0.pos, var5, var6, var7) < 1.0E-9F)) {
-            int var8 = owner(var1, var5, var6, var7);
+      for (int var3 = 0; var3 < posedMesh.triangles; var3++) {
+         int var5 = posedMesh.tris[var3 * 3];
+         int var6 = posedMesh.tris[var3 * 3 + 1];
+         int var7 = posedMesh.tris[var3 * 3 + 2];
+         if (!(Mat4.area(posedMesh.pos, var5, var6, var7) < 1.0E-9F)) {
+            int var8 = owner(is, var5, var6, var7);
             int var4;
-            CharacterBake.Piece var9 = var2[var8][var4 = var0.file.translucent(var0.material[var5]) ? 1 : 0];
+            CharacterBake.Piece var9 = var2[var8][var4 = posedMesh.file.translucent(posedMesh.material[var5]) ? 1 : 0];
             if (var9 == null) {
                CharacterBake.Piece var10 = new CharacterBake.Piece(var8, var4);
                var2[var8][var4] = var10;
@@ -198,7 +198,7 @@ public final class CharacterBake {
             }
 
             var9.source.add(var3);
-            if (var4 == 1 && var0.file.doubleSided(var0.material[var5])) {
+            if (var4 == 1 && posedMesh.file.doubleSided(posedMesh.material[var5])) {
                var9.source.add(~var3);
             }
          }
@@ -220,14 +220,14 @@ public final class CharacterBake {
       return var12;
    }
 
-   private static void reduce(PosedMesh var0, List<CharacterBake.Piece> var1) {
+   private static void reduce(PosedMesh posedMesh, List<CharacterBake.Piece> list) {
       double var2 = 0.0;
 
-      for (CharacterBake.Piece var5 : var1) {
+      for (CharacterBake.Piece var5 : list) {
          var2 += var5.source.size() * (var5.bone == 0 ? 2.0 : 1.0);
       }
 
-      for (CharacterBake.Piece var11 : var1) {
+      for (CharacterBake.Piece var11 : list) {
          int[] var6 = new int[BUDGETS.length];
 
          for (int var7 = 0; var7 < BUDGETS.length; var7++) {
@@ -236,24 +236,24 @@ public final class CharacterBake {
          }
 
          boolean var12 = var6[BUDGETS.length - 1] < var11.source.size();
-         var11.levels = new MeshReducer(var0, var11.source, var12).reduce(var6);
+         var11.levels = new MeshReducer(posedMesh, var11.source, var12).reduce(var6);
       }
    }
 
-   private static Map<Integer, float[]> uvBounds(PosedMesh var0, List<CharacterBake.Piece> var1) {
+   private static Map<Integer, float[]> uvBounds(PosedMesh posedMesh, List<CharacterBake.Piece> list) {
       LinkedHashMap var2 = new LinkedHashMap();
 
-      for (CharacterBake.Piece var4 : var1) {
+      for (CharacterBake.Piece var4 : list) {
          for (int var6 : var4.source) {
             int var7 = var6 < 0 ? ~var6 : var6;
 
             for (int var8 = 0; var8 < 3; var8++) {
-               int var9 = var0.tris[var7 * 3 + var8];
-               float[] var10 = var2.computeIfAbsent(var0.material[var9], var0x -> new float[]{1.0E9F, 1.0E9F, -1.0E9F, -1.0E9F});
-               var10[0] = Math.min(var10[0], var0.uv[var9 * 2]);
-               var10[1] = Math.min(var10[1], var0.uv[var9 * 2 + 1]);
-               var10[2] = Math.max(var10[2], var0.uv[var9 * 2]);
-               var10[3] = Math.max(var10[3], var0.uv[var9 * 2 + 1]);
+               int var9 = posedMesh.tris[var7 * 3 + var8];
+               float[] var10 = var2.computeIfAbsent(posedMesh.material[var9], integer -> new float[]{1.0E9F, 1.0E9F, -1.0E9F, -1.0E9F});
+               var10[0] = Math.min(var10[0], posedMesh.uv[var9 * 2]);
+               var10[1] = Math.min(var10[1], posedMesh.uv[var9 * 2 + 1]);
+               var10[2] = Math.max(var10[2], posedMesh.uv[var9 * 2]);
+               var10[3] = Math.max(var10[3], posedMesh.uv[var9 * 2 + 1]);
             }
          }
       }
@@ -261,9 +261,9 @@ public final class CharacterBake {
       return var2;
    }
 
-   private static boolean has(List<CharacterBake.Piece> var0, int var1) {
-      for (CharacterBake.Piece var3 : var0) {
-         if (var3.bone == var1) {
+   private static boolean has(List<CharacterBake.Piece> list, int i) {
+      for (CharacterBake.Piece var3 : list) {
+         if (var3.bone == i) {
             return true;
          }
       }
@@ -271,9 +271,9 @@ public final class CharacterBake {
       return false;
    }
 
-   private static CharacterBake.Piece find(List<CharacterBake.Piece> var0, int var1, int var2) {
-      for (CharacterBake.Piece var4 : var0) {
-         if (var4.bone == var1 && var4.layer == var2) {
+   private static CharacterBake.Piece find(List<CharacterBake.Piece> list, int i, int j) {
+      for (CharacterBake.Piece var4 : list) {
+         if (var4.bone == i && var4.layer == j) {
             return var4;
          }
       }
@@ -282,85 +282,90 @@ public final class CharacterBake {
    }
 
    private static void write(
-      DataOutputStream var0, PosedMesh var1, CharacterBake.Cut var2, List<CharacterBake.Piece> var3, TextureAtlas var4, CharacterBake.Options var5
+      DataOutputStream dataOutputStream,
+      PosedMesh posedMesh,
+      CharacterBake.Cut cut,
+      List<CharacterBake.Piece> list,
+      TextureAtlas textureAtlas,
+      CharacterBake.Options options
    ) throws IOException {
-      float[][] var7 = var2.pivot();
-      float[][] var8 = var2.grip();
-      float[][] var9 = var2.bendAt();
-      float[][] var10 = var2.bendWeights();
-      float[] var11 = var1.bounds();
+      float[][] var7 = cut.pivot();
+      float[][] var8 = cut.grip();
+      float[][] var9 = cut.bendAt();
+      float[][] var10 = cut.bendWeights();
+      float[] var11 = posedMesh.bounds();
       float var12 = var7[4] != null && var7[5] != null ? (var7[4][1] + var7[5][1]) * 0.5F : 12.0F;
-      var0.writeInt(1095648072);
-      var0.writeInt(3);
-      var0.writeFloat(var11[1]);
-      var0.writeFloat(var11[4]);
-      var0.writeFloat(var12);
-      var0.writeFloat(var5.flat);
-      var0.writeBoolean(true);
-      var0.writeBoolean(var1.colored);
-      var0.writeInt(BUDGETS.length);
+      dataOutputStream.writeInt(1095648072);
+      dataOutputStream.writeInt(3);
+      dataOutputStream.writeFloat(var11[1]);
+      dataOutputStream.writeFloat(var11[4]);
+      dataOutputStream.writeFloat(var12);
+      dataOutputStream.writeFloat(options.flat);
+      dataOutputStream.writeBoolean(true);
+      dataOutputStream.writeBoolean(posedMesh.colored);
+      dataOutputStream.writeInt(BUDGETS.length);
       int var13 = 0;
 
       for (int var6 = 0; var6 < 6; var6++) {
-         if (has(var3, var6)) {
+         if (has(list, var6)) {
             var13++;
          }
       }
 
-      var0.writeInt(var13);
+      dataOutputStream.writeInt(var13);
 
       for (int var22 = 0; var22 < 6; var22++) {
-         if (has(var3, var22)) {
-            var0.writeByte(var22);
+         if (has(list, var22)) {
+            dataOutputStream.writeByte(var22);
 
             for (float var19 : var7[var22]) {
-               var0.writeFloat(var19);
+               dataOutputStream.writeFloat(var19);
             }
 
             for (float var33 : var8[var22] != null ? var8[var22] : var7[var22]) {
-               var0.writeFloat(var33);
+               dataOutputStream.writeFloat(var33);
             }
 
             float[] var15;
-            for (float var34 : var15 = bounds(var1, var3, var22)) {
-               var0.writeFloat(var34);
+            for (float var34 : var15 = bounds(posedMesh, list, var22)) {
+               dataOutputStream.writeFloat(var34);
             }
 
             boolean var26 = var22 == 2 || var22 == 3;
             boolean var14 = var22 == 4 || var22 == 5;
-            var0.writeFloat(var26 ? 0.6F : (var14 ? 0.55F : 1.0F));
-            var0.writeFloat(var26 ? 40.0F : (var14 ? 30.0F : 0.0F));
-            var0.writeBoolean(var9[var22] != null);
+            dataOutputStream.writeFloat(var26 ? 0.6F : (var14 ? 0.55F : 1.0F));
+            dataOutputStream.writeFloat(var26 ? 40.0F : (var14 ? 30.0F : 0.0F));
+            dataOutputStream.writeBoolean(var9[var22] != null);
             if (var9[var22] != null) {
                for (float var21 : var9[var22]) {
-                  var0.writeFloat(var21);
+                  dataOutputStream.writeFloat(var21);
                }
             }
 
             for (int var32 = 0; var32 < BUDGETS.length; var32++) {
                for (int var36 = 0; var36 < 2; var36++) {
-                  writeLevel(var0, var1, var4, find(var3, var22, var36), var32, var15, var10[var22], var9[var22] != null);
+                  writeLevel(dataOutputStream, posedMesh, textureAtlas, find(list, var22, var36), var32, var15, var10[var22], var9[var22] != null);
                }
             }
          }
       }
 
-      byte[] var23 = var4.packed();
-      var0.writeInt(var4.width);
-      var0.writeInt(var4.height);
-      var0.writeInt(var23.length);
-      var0.write(var23);
-      var0.flush();
+      byte[] var23 = textureAtlas.packed();
+      dataOutputStream.writeInt(textureAtlas.width);
+      dataOutputStream.writeInt(textureAtlas.height);
+      dataOutputStream.writeInt(var23.length);
+      dataOutputStream.write(var23);
+      dataOutputStream.flush();
    }
 
-   private static float[] bend(PosedMesh var0, int var1, int var2) {
-      float[] var3 = var0.joint(var1);
-      float[] var4 = var0.below(var1);
-      float[] var5 = var0.below(var2);
+   private static float[] bend(PosedMesh posedMesh, int i, int j) {
+      float[] var3 = posedMesh.joint(i);
+      float[] var4 = posedMesh.below(i);
+      float[] var5 = posedMesh.below(j);
 
-      for (int var6 = 0; var6 < var0.vertices; var6++) {
+      for (int var6 = 0; var6 < posedMesh.vertices; var6++) {
          if (!(var5[var6] >= 0.5F)) {
-            float var7 = Math.max(0.0F, Math.min(1.0F, var3[1] - var0.pos[var6 * 3 + 1] + 0.5F));
+            float var7 = Math.max(0.0F, Math.min(1.0F, var3[1] - posedMesh.pos[var6 * 3 + 1] + 0.5F));
             var4[var6] = var7 * var7 * (3.0F - 2.0F * var7);
          }
       }
@@ -368,20 +373,20 @@ public final class CharacterBake {
       return var4;
    }
 
-   private static float[] bounds(PosedMesh var0, List<CharacterBake.Piece> var1, int var2) {
+   private static float[] bounds(PosedMesh posedMesh, List<CharacterBake.Piece> list, int i) {
       float[] var3 = new float[]{1.0E9F, 1.0E9F, 1.0E9F, -1.0E9F, -1.0E9F, -1.0E9F};
 
-      for (CharacterBake.Piece var5 : var1) {
-         if (var5.bone == var2) {
+      for (CharacterBake.Piece var5 : list) {
+         if (var5.bone == i) {
             for (int var7 : var5.source) {
                int var8 = var7 < 0 ? ~var7 : var7;
 
                for (int var9 = 0; var9 < 3; var9++) {
-                  int var10 = var0.tris[var8 * 3 + var9];
+                  int var10 = posedMesh.tris[var8 * 3 + var9];
 
                   for (int var11 = 0; var11 < 3; var11++) {
-                     var3[var11] = Math.min(var3[var11], var0.pos[var10 * 3 + var11]);
-                     var3[var11 + 3] = Math.max(var3[var11 + 3], var0.pos[var10 * 3 + var11]);
+                     var3[var11] = Math.min(var3[var11], posedMesh.pos[var10 * 3 + var11]);
+                     var3[var11 + 3] = Math.max(var3[var11 + 3], posedMesh.pos[var10 * 3 + var11]);
                   }
                }
             }
@@ -398,13 +403,13 @@ public final class CharacterBake {
    }
 
    private static void writeLevel(
-      DataOutputStream var0, PosedMesh var1, TextureAtlas var2, CharacterBake.Piece var3, int var4, float[] var5, float[] var6, boolean var7
+      DataOutputStream dataOutputStream, PosedMesh posedMesh, TextureAtlas textureAtlas, CharacterBake.Piece piece, int i, float[] fs, float[] gs, boolean bl
    ) throws IOException {
-      if (var3 == null) {
-         var0.writeInt(0);
-         var0.writeInt(0);
+      if (piece == null) {
+         dataOutputStream.writeInt(0);
+         dataOutputStream.writeInt(0);
       } else {
-         int[] var9 = var3.levels[var4];
+         int[] var9 = piece.levels[i];
          HashMap var10 = new HashMap();
          ArrayList var11 = new ArrayList();
          int[] var12 = new int[var9.length];
@@ -420,14 +425,14 @@ public final class CharacterBake {
             var12[var13] = var14;
          }
 
-         var0.writeInt(var11.size());
+         dataOutputStream.writeInt(var11.size());
 
          for (int var26 : var11) {
             int var8 = var26 < 0 ? ~var26 : var26;
 
             for (int var15 = 0; var15 < 3; var15++) {
-               float var16 = (var1.pos[var8 * 3 + var15] - var5[var15]) / (var5[var15 + 3] - var5[var15]);
-               var0.writeChar(Math.round(Math.max(0.0F, Math.min(1.0F, var16)) * 65535.0F));
+               float var16 = (posedMesh.pos[var8 * 3 + var15] - fs[var15]) / (fs[var15 + 3] - fs[var15]);
+               dataOutputStream.writeChar(Math.round(Math.max(0.0F, Math.min(1.0F, var16)) * 65535.0F));
             }
          }
 
@@ -436,40 +441,40 @@ public final class CharacterBake {
             float var32 = var27 < 0 ? -1.0F : 1.0F;
 
             for (int var36 = 0; var36 < 3; var36++) {
-               var0.writeByte(Math.round(var1.nrm[var19 * 3 + var36] * var32 * 127.0F));
+               dataOutputStream.writeByte(Math.round(posedMesh.nrm[var19 * 3 + var36] * var32 * 127.0F));
             }
          }
 
          for (int var28 : var11) {
             int var20 = var28 < 0 ? ~var28 : var28;
-            float[] var33 = var2.map(var1.material[var20], var1.uv[var20 * 2], var1.uv[var20 * 2 + 1]);
-            var0.writeChar(Math.round(Math.max(0.0F, Math.min(1.0F, var33[0])) * 65535.0F));
-            var0.writeChar(Math.round(Math.max(0.0F, Math.min(1.0F, var33[1])) * 65535.0F));
+            float[] var33 = textureAtlas.map(posedMesh.material[var20], posedMesh.uv[var20 * 2], posedMesh.uv[var20 * 2 + 1]);
+            dataOutputStream.writeChar(Math.round(Math.max(0.0F, Math.min(1.0F, var33[0])) * 65535.0F));
+            dataOutputStream.writeChar(Math.round(Math.max(0.0F, Math.min(1.0F, var33[1])) * 65535.0F));
          }
 
-         if (var1.colored) {
+         if (posedMesh.colored) {
             for (int var29 : var11) {
-               int var34 = var1.color[var29 < 0 ? ~var29 : var29];
-               var0.writeByte(var34 >> 16);
-               var0.writeByte(var34 >> 8);
-               var0.writeByte(var34);
+               int var34 = posedMesh.color[var29 < 0 ? ~var29 : var29];
+               dataOutputStream.writeByte(var34 >> 16);
+               dataOutputStream.writeByte(var34 >> 8);
+               dataOutputStream.writeByte(var34);
             }
          }
 
-         if (var7) {
+         if (bl) {
             for (int var30 : var11) {
-               var0.writeByte(Math.round(Math.max(0.0F, Math.min(1.0F, var6[var30 < 0 ? ~var30 : var30])) * 255.0F));
+               dataOutputStream.writeByte(Math.round(Math.max(0.0F, Math.min(1.0F, gs[var30 < 0 ? ~var30 : var30])) * 255.0F));
             }
          }
 
-         var0.writeInt(var12.length / 3);
+         dataOutputStream.writeInt(var12.length / 3);
          boolean var31 = var11.size() > 65535;
 
          for (int var18 : var12) {
             if (var31) {
-               var0.writeInt(var18);
+               dataOutputStream.writeInt(var18);
             } else {
-               var0.writeChar(var18);
+               dataOutputStream.writeChar(var18);
             }
          }
       }
@@ -500,9 +505,9 @@ public final class CharacterBake {
       final List<Integer> source = new ArrayList<>();
       int[][] levels;
 
-      Piece(int var1, int var2) {
-         this.bone = var1;
-         this.layer = var2;
+      Piece(int i, int j) {
+         this.bone = i;
+         this.layer = j;
       }
    }
 

@@ -11,16 +11,16 @@ public final class NameFilter {
    private NameFilter() {
    }
 
-   public static String apply(String var0) {
-      if (var0 == null) {
+   public static String apply(String string) {
+      if (string == null) {
          return null;
       } else {
-         String var1 = filter.apply(var0);
-         return var1 != null ? var1 : var0;
+         String var1 = filter.apply(string);
+         return var1 != null ? var1 : string;
       }
    }
 
-   public static void set(UnaryOperator<String> var0) {
-      filter = var0 != null ? var0 : UnaryOperator.identity();
+   public static void set(UnaryOperator<String> unaryOperator) {
+      filter = unaryOperator != null ? unaryOperator : UnaryOperator.identity();
    }
 }

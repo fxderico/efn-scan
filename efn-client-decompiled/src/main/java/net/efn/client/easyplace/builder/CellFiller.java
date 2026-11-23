@@ -32,9 +32,9 @@ final class CellFiller {
    private int onAim;
    private int tries;
 
-   CellFiller(BlockPos var1, CellFiller.Kind var2) {
-      this.cell = var1;
-      this.kind = var2;
+   CellFiller(BlockPos blockPos, CellFiller.Kind kind) {
+      this.cell = blockPos;
+      this.kind = kind;
    }
 
    BlockPos cell() {
@@ -45,35 +45,35 @@ final class CellFiller {
       return this.kind;
    }
 
-   static boolean filled(MinecraftClient var0, BlockPos var1, CellFiller.Kind var2) {
-      BlockState var3 = var0.field_1687.method_8320(var1);
+   static boolean filled(MinecraftClient minecraftClient, BlockPos blockPos, CellFiller.Kind kind) {
+      BlockState var3 = minecraftClient.world.getBlockState(blockPos);
 
-      return switch (var2) {
+      return switch (kind) {
          case SUPPORT_LEAF -> Scaffold.block(var3);
-         case WATER_SOURCE -> var3.method_26227().method_15771() && var3.method_26227().method_15767(FluidTags.field_15517);
-         case WATERLOG -> var3.method_28498(Properties.field_12508) && var3.method_11654(Properties.field_12508);
-         case LAVA_SOURCE -> var3.method_26227().method_15771() && var3.method_26227().method_15767(FluidTags.field_15518);
+         case WATER_SOURCE -> var3.getFluidState().isStill() && var3.getFluidState().isIn(FluidTags.WATER);
+         case WATERLOG -> var3.contains(Properties.WATERLOGGED) && var3.get(Properties.WATERLOGGED);
+         case LAVA_SOURCE -> var3.getFluidState().isStill() && var3.getFluidState().isIn(FluidTags.LAVA);
          case REFILL -> false;
       };
    }
 
-   static boolean reachable(MinecraftClient var0, BlockPos var1, CellFiller.Kind var2) {
-      return aim(var0, var1, var2) != null;
+   static boolean reachable(MinecraftClient minecraftClient, BlockPos blockPos, CellFiller.Kind kind) {
+      return aim(minecraftClient, blockPos, kind) != null;
    }
 
-   CellFiller.Result tick(MinecraftClient var1) {
-      ClientPlayerEntity var2 = var1.field_1724;
-      if (var2 == null || var1.field_1687 == null || var1.field_1761 == null) {
+   CellFiller.Result tick(MinecraftClient minecraftClient) {
+      ClientPlayerEntity var2 = minecraftClient.player;
+      if (var2 == null || minecraftClient.world == null || minecraftClient.interactionManager == null) {
          return CellFiller.Result.FAILED;
-      } else if (filled(var1, this.cell, this.kind)) {
+      } else if (filled(minecraftClient, this.cell, this.kind)) {
          return CellFiller.Result.DONE;
       } else {
          this.phaseTicks++;
          switch (this.phase) {
             case 0:
                if (this.kind != CellFiller.Kind.SUPPORT_LEAF
-                  ? !Hands.hold(var1, var2, var1x -> var1x.method_31574(this.kind.item))
-                  : !Scaffold.hold(var1, var2)) {
+                  ? !Hands.hold(minecraftClient, var2, itemStack -> itemStack.isOf(this.kind.item))
+                  : !Scaffold.hold(minecraftClient, var2)) {
                   if (this.phaseTicks > 20) {
                      return CellFiller.Result.FAILED;
                   }
@@ -81,7 +81,7 @@ final class CellFiller {
                   return CellFiller.Result.RUNNING;
                }
 
-               this.shot = aim(var1, this.cell, this.kind);
+               this.shot = aim(minecraftClient, this.cell, this.kind);
                if (this.shot == null) {
                   return CellFiller.Result.FAILED;
                }
@@ -89,7 +89,7 @@ final class CellFiller {
                this.next(1);
                break;
             case 1:
-               Aim.turn(var1, this.shot.yaw(), this.shot.pitch(), 22.0F);
+               Aim.turn(minecraftClient, this.shot.yaw(), this.shot.pitch(), 22.0F);
                if (!Aim.looking(var2, this.shot.yaw(), this.shot.pitch())) {
                   this.onAim = 0;
                   if (this.phaseTicks > 30) {
@@ -104,16 +104,16 @@ final class CellFiller {
                }
 
                boolean var3 = this.kind == CellFiller.Kind.SUPPORT_LEAF
-                  ? var1.field_1761.method_2896(var2, Hand.field_5808, this.shot.hit()).method_23665()
-                  : var1.field_1761.method_2919(var2, Hand.field_5808).method_23665();
+                  ? minecraftClient.interactionManager.interactBlock(var2, Hand.MAIN_HAND, this.shot.hit()).isAccepted()
+                  : minecraftClient.interactionManager.interactItem(var2, Hand.MAIN_HAND).isAccepted();
                if (var3) {
-                  var2.method_6104(Hand.field_5808);
+                  var2.swingHand(Hand.MAIN_HAND);
                }
 
                this.next(2);
                break;
             case 2:
-               if (this.kind == CellFiller.Kind.REFILL && var2.method_6047().method_31574(Items.field_8705)) {
+               if (this.kind == CellFiller.Kind.REFILL && var2.getMainHandStack().isOf(Items.WATER_BUCKET)) {
                   return CellFiller.Result.DONE;
                }
 
@@ -133,29 +133,29 @@ final class CellFiller {
       }
    }
 
-   private void next(int var1) {
-      this.phase = var1;
+   private void next(int i) {
+      this.phase = i;
       this.phaseTicks = 0;
       this.onAim = 0;
    }
 
-   private static Aim.Shot aim(MinecraftClient var0, BlockPos var1, CellFiller.Kind var2) {
-      return switch (var2) {
-         case SUPPORT_LEAF -> Aim.against(var0, var1, null);
-         case WATER_SOURCE -> Aim.against(var0, var1, Fluids.field_15910);
-         case WATERLOG -> Aim.at(var0, var1);
-         case LAVA_SOURCE -> Aim.against(var0, var1, Fluids.field_15908);
-         case REFILL -> Aim.water(var0, var1);
+   private static Aim.Shot aim(MinecraftClient minecraftClient, BlockPos blockPos, CellFiller.Kind kind) {
+      return switch (kind) {
+         case SUPPORT_LEAF -> Aim.against(minecraftClient, blockPos, null);
+         case WATER_SOURCE -> Aim.against(minecraftClient, blockPos, Fluids.WATER);
+         case WATERLOG -> Aim.at(minecraftClient, blockPos);
+         case LAVA_SOURCE -> Aim.against(minecraftClient, blockPos, Fluids.LAVA);
+         case REFILL -> Aim.water(minecraftClient, blockPos);
       };
    }
 
-   static boolean endless(ClientWorld var0, BlockPos var1) {
-      if (var0.method_8320(var1).method_27852(Blocks.field_10382) && var0.method_8316(var1).method_15771()) {
+   static boolean endless(ClientWorld clientWorld, BlockPos blockPos) {
+      if (clientWorld.getBlockState(blockPos).isOf(Blocks.WATER) && clientWorld.getFluidState(blockPos).isStill()) {
          int var2 = 0;
 
-         for (Direction var4 : Type.field_11062) {
-            FluidState var5 = var0.method_8316(var1.method_10093(var4));
-            if (var5.method_15771() && var5.method_15767(FluidTags.field_15517)) {
+         for (Direction var4 : Type.HORIZONTAL) {
+            FluidState var5 = clientWorld.getFluidState(blockPos.offset(var4));
+            if (var5.isStill() && var5.isIn(FluidTags.WATER)) {
                var2++;
             }
          }
@@ -163,8 +163,8 @@ final class CellFiller {
          if (var2 < 2) {
             return false;
          } else {
-            BlockState var6 = var0.method_8320(var1.method_10074());
-            return var6.method_51367() || var6.method_26227().method_15771() && var6.method_26227().method_15767(FluidTags.field_15517);
+            BlockState var6 = clientWorld.getBlockState(blockPos.down());
+            return var6.isSolid() || var6.getFluidState().isStill() && var6.getFluidState().isIn(FluidTags.WATER);
          }
       } else {
          return false;
@@ -173,16 +173,16 @@ final class CellFiller {
 
    @Environment(EnvType.CLIENT)
    static enum Kind {
-      SUPPORT_LEAF(Items.field_17503),
-      WATER_SOURCE(Items.field_8705),
-      WATERLOG(Items.field_8705),
-      LAVA_SOURCE(Items.field_8187),
-      REFILL(Items.field_8550);
+      SUPPORT_LEAF(Items.OAK_LEAVES),
+      WATER_SOURCE(Items.WATER_BUCKET),
+      WATERLOG(Items.WATER_BUCKET),
+      LAVA_SOURCE(Items.LAVA_BUCKET),
+      REFILL(Items.BUCKET);
 
       final Item item;
 
-      private Kind(Item nullxx) {
-         this.item = nullxx;
+      private Kind(Item item) {
+         this.item = item;
       }
    }
 

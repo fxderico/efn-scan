@@ -10,18 +10,18 @@ import net.fabricmc.api.Environment;
 public final class BakedDesign extends CharacterDesign {
    private final BakedDesign.Source source;
 
-   public BakedDesign(String var1, String var2, BakedDesign.Source var3) {
-      super(var1, var2);
-      this.source = var3;
+   public BakedDesign(String string, String string2, BakedDesign.Source source) {
+      super(string, string2);
+      this.source = source;
    }
 
-   public static BakedDesign builtIn(String var0, String var1, String var2) {
-      return new BakedDesign(var0, var1, () -> {
-         InputStream var1x = BakedDesign.class.getResourceAsStream(var2);
-         if (var1x == null) {
-            throw new FileNotFoundException(var2);
+   public static BakedDesign builtIn(String string, String string2, String string3) {
+      return new BakedDesign(string, string2, () -> {
+         InputStream var1 = BakedDesign.class.getResourceAsStream(string3);
+         if (var1 == null) {
+            throw new FileNotFoundException(string3);
          } else {
-            return var1x;
+            return var1;
          }
       });
    }
@@ -31,7 +31,7 @@ public final class BakedDesign extends CharacterDesign {
    }
 
    @Override
-   protected void define(Rig var1) {
+   protected void define(Rig rig) {
       throw new UnsupportedOperationException(this.id() + " is baked and has no rig");
    }
 

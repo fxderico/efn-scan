@@ -5,7 +5,7 @@ import net.fabricmc.api.Environment;
 
 @Environment(EnvType.CLIENT)
 public final class ProfileException extends Exception {
-   public ProfileException(String var1) {
-      super(var1);
+   public ProfileException(String string) {
+      super(string);
    }
 }

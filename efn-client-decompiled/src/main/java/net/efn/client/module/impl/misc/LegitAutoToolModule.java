@@ -54,7 +54,7 @@ public final class LegitAutoToolModule extends ClientModule {
 
    @Override
    protected void onDisable() {
-      if (this.origin != -1 && MinecraftClient.method_1551().field_1724 != null) {
+      if (this.origin != -1 && MinecraftClient.getInstance().player != null) {
          this.select(this.origin);
       }
 
@@ -71,25 +71,25 @@ public final class LegitAutoToolModule extends ClientModule {
    }
 
    @EventHandler
-   public void onTick(TickEvent var1) {
-      MinecraftClient var4 = MinecraftClient.method_1551();
-      ClientPlayerEntity var5 = var4.field_1724;
-      if (var5 != null && var4.field_1687 != null) {
-         int var6 = var5.method_31548().method_67532();
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var4 = MinecraftClient.getInstance();
+      ClientPlayerEntity var5 = var4.player;
+      if (var5 != null && var4.world != null) {
+         int var6 = var5.getInventory().getSelectedSlot();
          if (this.origin != -1 && var6 != this.ourSlot) {
             this.origin = -1;
          }
 
-         BlockPos var7 = var4.field_1755 == null && var4.field_1690.field_1886.method_1434() ? aimedBlock(var4) : null;
-         BlockState var3 = var7 == null ? null : var4.field_1687.method_8320(var7);
-         if (var7 != null && !var3.method_26215()) {
+         BlockPos var7 = var4.currentScreen == null && var4.options.attackKey.isPressed() ? aimedBlock(var4) : null;
+         BlockState var3 = var7 == null ? null : var4.world.getBlockState(var7);
+         if (var7 != null && !var3.isAir()) {
             if (!var7.equals(this.target)) {
-               this.target = var7.method_10062();
+               this.target = var7.toImmutable();
                this.pending = -1;
                this.delay = 0;
             }
 
-            int var9 = shardSlot(var5.method_31548(), var3, var6);
+            int var9 = shardSlot(var5.getInventory(), var3, var6);
             int var2;
             if (this.drill.get() && (var2 = this.drillSlot(var4, var3, var7, var9)) != -1) {
                if (var2 != var6) {
@@ -126,21 +126,21 @@ public final class LegitAutoToolModule extends ClientModule {
       }
    }
 
-   private static BlockPos aimedBlock(MinecraftClient var0) {
-      HitResult var2 = var0.field_1765;
+   private static BlockPos aimedBlock(MinecraftClient minecraftClient) {
+      HitResult var2 = minecraftClient.crosshairTarget;
       BlockHitResult var1;
-      return var2 instanceof BlockHitResult && (var1 = (BlockHitResult)var2).method_17783() == Type.field_1332 ? var1.method_17777() : null;
+      return var2 instanceof BlockHitResult && (var1 = (BlockHitResult)var2).getType() == Type.BLOCK ? var1.getBlockPos() : null;
    }
 
-   private int drillSlot(MinecraftClient var1, BlockState var2, BlockPos var3, int var4) {
-      if (var4 != -1) {
-         return breakingDelta(var1, var4, var2, var3) >= 1.0F ? var4 : -1;
+   private int drillSlot(MinecraftClient minecraftClient, BlockState blockState, BlockPos blockPos, int i) {
+      if (i != -1) {
+         return breakingDelta(minecraftClient, i, blockState, blockPos) >= 1.0F ? i : -1;
       } else {
-         PlayerInventory var5 = var1.field_1724.method_31548();
+         PlayerInventory var5 = minecraftClient.player.getInventory();
 
          for (int var6 = 0; var6 < 9; var6++) {
-            ItemStack var7 = var5.method_5438(var6);
-            if (var7.method_31574(Items.field_22024) && !var7.method_63692() && breakingDelta(var1, var6, var2, var3) >= 1.0F) {
+            ItemStack var7 = var5.getStack(var6);
+            if (var7.isOf(Items.NETHERITE_PICKAXE) && !var7.willBreakNextUse() && breakingDelta(minecraftClient, var6, blockState, blockPos) >= 1.0F) {
                return var6;
             }
          }
@@ -149,31 +149,31 @@ public final class LegitAutoToolModule extends ClientModule {
       }
    }
 
-   private int bestSlot(MinecraftClient var1, BlockState var2, BlockPos var3, int var4, int var5) {
-      PlayerInventory var6 = var1.field_1724.method_31548();
-      ItemStack var7 = var6.method_5438(var4);
-      boolean var8 = var4 == this.ourSlot && this.origin != -1 && var7.method_63692();
-      int var9 = var4;
-      float var10 = var8 ? -1.0F : breakingDelta(var1, var4, var2, var3);
+   private int bestSlot(MinecraftClient minecraftClient, BlockState blockState, BlockPos blockPos, int i, int j) {
+      PlayerInventory var6 = minecraftClient.player.getInventory();
+      ItemStack var7 = var6.getStack(i);
+      boolean var8 = i == this.ourSlot && this.origin != -1 && var7.willBreakNextUse();
+      int var9 = i;
+      float var10 = var8 ? -1.0F : breakingDelta(minecraftClient, i, blockState, blockPos);
 
       for (int var11 = 0; var11 < 9; var11++) {
-         ItemStack var13 = var6.method_5438(var11);
+         ItemStack var13 = var6.getStack(var11);
          float var12;
-         if (var11 != var4 && !var13.method_7960() && !var13.method_63692() && (var12 = breakingDelta(var1, var11, var2, var3)) > var10) {
+         if (var11 != i && !var13.isEmpty() && !var13.willBreakNextUse() && (var12 = breakingDelta(minecraftClient, var11, blockState, blockPos)) > var10) {
             var10 = var12;
             var9 = var11;
          }
       }
 
-      return var5 != -1 && var6.method_5438(var9).method_31573(ItemTags.field_42614) ? var5 : var9;
+      return j != -1 && var6.getStack(var9).isIn(ItemTags.PICKAXES) ? j : var9;
    }
 
-   private static int shardSlot(PlayerInventory var0, BlockState var1, int var2) {
-      if (isShardFor(var0.method_5438(var2), var1)) {
-         return var2;
+   private static int shardSlot(PlayerInventory playerInventory, BlockState blockState, int i) {
+      if (isShardFor(playerInventory.getStack(i), blockState)) {
+         return i;
       } else {
          for (int var3 = 0; var3 < 9; var3++) {
-            if (var3 != var2 && isShardFor(var0.method_5438(var3), var1)) {
+            if (var3 != i && isShardFor(playerInventory.getStack(var3), blockState)) {
                return var3;
             }
          }
@@ -182,17 +182,17 @@ public final class LegitAutoToolModule extends ClientModule {
       }
    }
 
-   private static boolean isShardFor(ItemStack var0, BlockState var1) {
-      return !var0.method_63692() && var0.method_7951(var1) && isShardPickaxe(var0);
+   private static boolean isShardFor(ItemStack itemStack, BlockState blockState) {
+      return !itemStack.willBreakNextUse() && itemStack.isSuitableFor(blockState) && isShardPickaxe(itemStack);
    }
 
-   private static boolean isShardPickaxe(ItemStack var0) {
-      if (!var0.method_31573(ItemTags.field_42614)) {
+   private static boolean isShardPickaxe(ItemStack itemStack) {
+      if (!itemStack.isIn(ItemTags.PICKAXES)) {
          return false;
-      } else if (AntiVanishText.normalize(var0.method_7964().getString()).contains("shard pickaxe")) {
+      } else if (AntiVanishText.normalize(itemStack.getName().getString()).contains("shard pickaxe")) {
          return true;
       } else {
-         for (Text var2 : ((LoreComponent)var0.method_58695(DataComponentTypes.field_49632, LoreComponent.field_49340)).comp_2400()) {
+         for (Text var2 : itemStack.getOrDefault(DataComponentTypes.LORE, LoreComponent.DEFAULT).lines()) {
             if (AntiVanishText.normalize(var2.getString()).contains("breaks 9 blocks at once")) {
                return true;
             }
@@ -202,37 +202,37 @@ public final class LegitAutoToolModule extends ClientModule {
       }
    }
 
-   private static float breakingDelta(MinecraftClient var0, int var1, BlockState var2, BlockPos var3) {
-      float var4 = var2.method_26214(var0.field_1687, var3);
+   private static float breakingDelta(MinecraftClient minecraftClient, int i, BlockState blockState, BlockPos blockPos) {
+      float var4 = blockState.getHardness(minecraftClient.world, blockPos);
       if (var4 == -1.0F) {
          return 0.0F;
       } else {
-         ClientPlayerEntity var5 = var0.field_1724;
-         ItemStack var6 = var5.method_31548().method_5438(var1);
-         float var7 = var6.method_7924(var2);
+         ClientPlayerEntity var5 = minecraftClient.player;
+         ItemStack var6 = var5.getInventory().getStack(i);
+         float var7 = var6.getMiningSpeedMultiplier(blockState);
          if (var7 > 1.0F) {
             double[] var8 = new double[]{0.0};
-            var6.method_57354(EquipmentSlot.field_6173, (var1x, var2x) -> {
-               if (var1x == EntityAttributes.field_51581) {
-                  var8[0] += var2x.comp_2449();
+            var6.applyAttributeModifiers(EquipmentSlot.MAINHAND, (registryEntry, entityAttributeModifier) -> {
+               if (registryEntry == EntityAttributes.MINING_EFFICIENCY) {
+                  var8[0] += entityAttributeModifier.value();
                }
             });
             var7 += (float)var8[0];
          }
 
-         boolean var9 = !var2.method_29291() || var6.method_7951(var2);
+         boolean var9 = !blockState.isToolRequired() || var6.isSuitableFor(blockState);
          return withMiningModifiers(var5, var7) / var4 / (var9 ? 30 : 100);
       }
    }
 
-   private static float withMiningModifiers(ClientPlayerEntity var0, float var1) {
-      if (StatusEffectUtil.method_5576(var0)) {
-         var1 *= 1.0F + (StatusEffectUtil.method_5575(var0) + 1) * 0.2F;
+   private static float withMiningModifiers(ClientPlayerEntity clientPlayerEntity, float f) {
+      if (StatusEffectUtil.hasHaste(clientPlayerEntity)) {
+         f *= 1.0F + (StatusEffectUtil.getHasteAmplifier(clientPlayerEntity) + 1) * 0.2F;
       }
 
       StatusEffectInstance var2;
-      if ((var2 = var0.method_6112(StatusEffects.field_5901)) != null) {
-         var1 *= switch (var2.method_5578()) {
+      if ((var2 = clientPlayerEntity.getStatusEffect(StatusEffects.MINING_FATIGUE)) != null) {
+         f *= switch (var2.getAmplifier()) {
             case 0 -> 0.3F;
             case 1 -> 0.09F;
             case 2 -> 0.0027F;
@@ -240,26 +240,26 @@ public final class LegitAutoToolModule extends ClientModule {
          };
       }
 
-      var1 *= (float)var0.method_45325(EntityAttributes.field_49076);
-      if (var0.method_5777(FluidTags.field_15517)) {
-         var1 *= (float)var0.method_45325(EntityAttributes.field_51576);
+      f *= (float)clientPlayerEntity.getAttributeValue(EntityAttributes.BLOCK_BREAK_SPEED);
+      if (clientPlayerEntity.isSubmergedIn(FluidTags.WATER)) {
+         f *= (float)clientPlayerEntity.getAttributeValue(EntityAttributes.SUBMERGED_MINING_SPEED);
       }
 
-      if (!var0.method_24828()) {
-         var1 /= 5.0F;
+      if (!clientPlayerEntity.isOnGround()) {
+         f /= 5.0F;
       }
 
-      return var1;
+      return f;
    }
 
-   private void select(int var1) {
-      PlayerInventory var2 = MinecraftClient.method_1551().field_1724.method_31548();
+   private void select(int i) {
+      PlayerInventory var2 = MinecraftClient.getInstance().player.getInventory();
       if (this.origin == -1) {
-         this.origin = var2.method_67532();
+         this.origin = var2.getSelectedSlot();
       }
 
-      var2.method_61496(var1);
-      this.ourSlot = var1;
+      var2.setSelectedSlot(i);
+      this.ourSlot = i;
       this.returnDelay = this.switchDelay();
    }
 

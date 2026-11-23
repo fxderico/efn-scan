@@ -91,8 +91,8 @@ public final class AhSellModule extends ClientModule {
 
    @Override
    protected void onEnable() {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      if (var2.field_1724 != null && var2.method_1548() != null) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      if (var2.player != null && var2.getSession() != null) {
          ArrayList var3 = new ArrayList();
          String var4 = this.buildProducts(var3);
          if (var4 != null) {
@@ -112,10 +112,10 @@ public final class AhSellModule extends ClientModule {
                15000L
             );
             AhSellBot var1;
-            this.bot = var1 = new AhSellBot(this, this.worker, var3, !this.auto(), var5, var2.method_1548().method_1676());
-            this.worker.start(var1::run, var3x -> {
-               LOGGER.error("[EFN] AH Sell stopped", var3x);
-               this.info(ModuleChat.body().danger("Stopped").text(": " + var3x));
+            this.bot = var1 = new AhSellBot(this, this.worker, var3, !this.auto(), var5, var2.getSession().getUsername());
+            this.worker.start(var1::run, throwable -> {
+               LOGGER.error("[EFN] AH Sell stopped", throwable);
+               this.info(ModuleChat.body().danger("Stopped").text(": " + throwable));
                var2.execute(() -> {
                   if (this.bot == var1) {
                      this.setEnabled(false);
@@ -134,11 +134,11 @@ public final class AhSellModule extends ClientModule {
       AhSellBot var1 = this.bot;
       this.bot = null;
       this.worker.stop();
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientPlayerEntity var3 = var2.field_1724;
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientPlayerEntity var3 = var2.player;
       if (var1 != null && var3 != null) {
-         if (var3.field_7512 != var3.field_7498) {
-            var3.method_7346();
+         if (var3.currentScreenHandler != var3.playerScreenHandler) {
+            var3.closeHandledScreen();
          } else {
             Dialogs.close(var2);
          }
@@ -148,18 +148,18 @@ public final class AhSellModule extends ClientModule {
    }
 
    @EventHandler
-   public void onPacket(PacketReceiveNettyEvent var1) {
+   public void onPacket(PacketReceiveNettyEvent packetReceiveNettyEvent) {
       AhSellBot var4 = this.bot;
       if (var4 != null) {
-         Packet var3 = var1.packet;
+         Packet var3 = packetReceiveNettyEvent.packet;
          GameMessageS2CPacket var2;
-         if (var1.packet instanceof GameMessageS2CPacket && (var2 = (GameMessageS2CPacket)var3).comp_763() != null) {
-            var4.onChat(var2.comp_763().getString());
+         if (packetReceiveNettyEvent.packet instanceof GameMessageS2CPacket && (var2 = (GameMessageS2CPacket)var3).content() != null) {
+            var4.onChat(var2.content().getString());
          }
       }
    }
 
-   private String buildProducts(List<Product> var1) {
+   private String buildProducts(List<Product> list) {
       if (this.auto() && ServerText.parseMoney(this.undercut.get()) < 0L) {
          return "Undercut By must be a price like 100.";
       } else {
@@ -183,17 +183,15 @@ public final class AhSellModule extends ClientModule {
                }
 
                List var8 = ItemEnchants.supports(var5) ? Product.parseEnchants(this.enchants[var3].get()) : List.of();
-               var1.add(
-                  new Product(var5, var4, Product.searchText(var5), new ItemStack(var5).method_7964().getString(), var6, var8, false, 1, true, 1L, 1L, 0L)
-               );
+               list.add(new Product(var5, var4, Product.searchText(var5), new ItemStack(var5).getName().getString(), var6, var8, false, 1, true, 1L, 1L, 0L));
             }
          }
 
-         return var1.isEmpty() ? "Set at least one item." : null;
+         return list.isEmpty() ? "Set at least one item." : null;
       }
    }
 
-   private void info(ModuleChat.Body var1) {
-      ModuleChat.send(this, var1);
+   private void info(ModuleChat.Body body) {
+      ModuleChat.send(this, body);
    }
 }

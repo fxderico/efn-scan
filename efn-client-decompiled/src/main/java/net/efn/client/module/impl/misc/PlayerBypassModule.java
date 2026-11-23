@@ -7,7 +7,6 @@ import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongListIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap.Entry;
-import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
@@ -172,22 +171,22 @@ public final class PlayerBypassModule extends ClientModule {
       this.raw.clear();
    }
 
-   private void onChunkSpotted(int var1, int var2) {
-      this.spotted((var1 << 4) + 8, (var2 << 4) + 8, new ItemStack(Items.field_8575));
+   private void onChunkSpotted(int i, int j) {
+      this.spotted((i << 4) + 8, (j << 4) + 8, new ItemStack(Items.PLAYER_HEAD));
    }
 
-   private void spotted(int var1, int var2, ItemStack var3) {
-      MinecraftClient var5 = MinecraftClient.method_1551();
+   private void spotted(int i, int j, ItemStack itemStack) {
+      MinecraftClient var5 = MinecraftClient.getInstance();
       boolean var6 = this.showCoordinates.get();
-      if (!this.autoRtpRunner.baseSpotted(var1, var2, this.disconnect.get()) && this.notificationsOn()) {
-         ChallengeToast.addOrUpdate(var3, "Player Bypass", var6 ? Text.method_43470("at " + var1 + ", " + var2) : Text.method_43473(), this.sound.get());
+      if (!this.autoRtpRunner.baseSpotted(i, j, this.disconnect.get()) && this.notificationsOn()) {
+         ChallengeToast.addOrUpdate(itemStack, "Player Bypass", var6 ? Text.literal("at " + i + ", " + j) : Text.empty(), this.sound.get());
       }
 
       ClientPlayNetworkHandler var4;
-      if (this.disconnect.get() && (var4 = var5.method_1562()) != null && var4.method_48296().method_10758()) {
+      if (this.disconnect.get() && (var4 = var5.getNetworkHandler()) != null && var4.getConnection().isOpen()) {
          ModuleChat.send(this, ModuleChat.body().text("Auto Disconnect ").warn("triggered"));
          AutoReconnectModule.holdOff();
-         var4.method_48296().method_10747(Text.method_43470("[Player Bypass] Player detected" + (var6 ? " at " + var1 + ", " + var2 : "")));
+         var4.getConnection().disconnect(Text.literal("[Player Bypass] Player detected" + (var6 ? " at " + i + ", " + j : "")));
       }
    }
 
@@ -195,22 +194,22 @@ public final class PlayerBypassModule extends ClientModule {
       SimulationSignals.configure(true, 0, 0, true, 45);
    }
 
-   private static boolean netherOrEnd(World var0) {
-      RegistryKey var1 = var0.method_27983();
-      return var1.equals(World.field_25180)
-         || var1.equals(World.field_25181)
-         || var0.method_40134().method_40225(DimensionTypes.field_37667)
-         || var0.method_40134().method_40225(DimensionTypes.field_37668)
-         || !var0.method_8597().comp_642();
+   private static boolean netherOrEnd(World world) {
+      RegistryKey var1 = world.getRegistryKey();
+      return var1.equals(World.NETHER)
+         || var1.equals(World.END)
+         || world.getDimensionEntry().matchesKey(DimensionTypes.THE_NETHER)
+         || world.getDimensionEntry().matchesKey(DimensionTypes.THE_END)
+         || !world.getDimension().hasSkyLight();
    }
 
    private float threshold() {
       return 8.0F * (float)Math.pow(2.0, (5.0 - this.sensitivity.get()) / 2.5);
    }
 
-   private void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      if (var2.field_1687 != null && var2.field_1724 != null) {
+   private void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      if (var2.world != null && var2.player != null) {
          if (this.session != SimulationSignals.session()) {
             this.session = SimulationSignals.session();
             this.foundByDimension.clear();
@@ -218,31 +217,31 @@ public final class PlayerBypassModule extends ClientModule {
             this.shown.clear();
          }
 
-         this.found = this.foundByDimension.computeIfAbsent(var2.field_1687.method_27983(), var0 -> new LongLinkedOpenHashSet());
+         this.found = this.foundByDimension.computeIfAbsent(var2.world.getRegistryKey(), registryKey -> new LongLinkedOpenHashSet());
          this.configure();
          SimulationSignals.tick();
-         if (netherOrEnd(var2.field_1687)) {
+         if (netherOrEnd(var2.world)) {
             SimulationSignals.dropPins();
             this.shown.clear();
          } else {
             this.drainPins();
             if (++this.ticks % 5 == 0) {
-               this.collect(var2.field_1724);
+               this.collect(var2.player);
                this.alert();
-               this.refreshShown(var2.field_1724);
+               this.refreshShown(var2.player);
             }
          }
       }
    }
 
-   private void collect(ClientPlayerEntity var1) {
+   private void collect(ClientPlayerEntity clientPlayerEntity) {
       this.peaks.clear();
       this.field.clear();
       this.raw.clear();
       long var2 = SimulationSignals.now();
       int var4 = SimulationSignals.simulation();
-      int var5 = var1.method_24515().method_10263() >> 4;
-      int var6 = var1.method_24515().method_10260() >> 4;
+      int var5 = clientPlayerEntity.getBlockPos().getX() >> 4;
+      int var6 = clientPlayerEntity.getBlockPos().getZ() >> 4;
       int var7 = SimulationSignals.ringStart();
       int var8 = SimulationSignals.view();
       int var9 = 2 * var4 + 1;
@@ -255,19 +254,16 @@ public final class PlayerBypassModule extends ClientModule {
          }
       }
 
-      ObjectIterator var24 = SimulationSignals.chunks().long2ObjectEntrySet().iterator();
-
-      while (var24.hasNext()) {
-         Entry var26 = (Entry)var24.next();
+      for (Entry var26 : SimulationSignals.chunks().long2ObjectEntrySet()) {
          long var16 = var26.getLongKey();
-         int var18 = ChunkPos.method_8325(var16);
+         int var18 = ChunkPos.getPackedX(var16);
          int var15;
-         int var19 = SimulationSignals.distance(var18, var15 = ChunkPos.method_8332(var16), var5, var6);
+         int var19 = SimulationSignals.distance(var18, var15 = ChunkPos.getPackedZ(var16), var5, var6);
          float var14;
          if (var19 >= var7 && var19 <= var8 && !((var14 = ((SimulationSignals.ChunkSignal)var26.getValue()).score(var2)) < 0.5F)) {
             for (int var20 = -var4; var20 <= var4; var20++) {
                for (int var21 = -var4; var21 <= var4; var21++) {
-                  long var22 = ChunkPos.method_8331(var18 + var20, var15 + var21);
+                  long var22 = ChunkPos.toLong(var18 + var20, var15 + var21);
                   this.field.addTo(var22, var14 * var10[(var20 + var4) * var9 + var21 + var4]);
                   this.raw.addTo(var22, var14);
                }
@@ -281,12 +277,12 @@ public final class PlayerBypassModule extends ClientModule {
          long var27 = var25.next();
          this.field.remove(var27);
          this.raw.remove(var27);
-         int var30 = ChunkPos.method_8325(var27);
-         int var32 = ChunkPos.method_8332(var27);
+         int var30 = ChunkPos.getPackedX(var27);
+         int var32 = ChunkPos.getPackedZ(var27);
 
          for (int var17 = -1; var17 <= 1; var17++) {
             for (int var34 = -1; var34 <= 1; var34++) {
-               long var35 = ChunkPos.method_8331(var30 + var17, var32 + var34);
+               long var35 = ChunkPos.toLong(var30 + var17, var32 + var34);
                if (this.field.containsKey(var35)) {
                   this.field.put(var35, this.field.get(var35) * 0.5F);
                   this.raw.put(var35, this.raw.get(var35) * 0.5F);
@@ -296,10 +292,8 @@ public final class PlayerBypassModule extends ClientModule {
       }
 
       float var28 = this.threshold();
-      ObjectIterator var29 = this.field.long2FloatEntrySet().iterator();
 
-      while (var29.hasNext()) {
-         it.unimi.dsi.fastutil.longs.Long2FloatMap.Entry var31 = (it.unimi.dsi.fastutil.longs.Long2FloatMap.Entry)var29.next();
+      for (it.unimi.dsi.fastutil.longs.Long2FloatMap.Entry var31 : this.field.long2FloatEntrySet()) {
          long var33 = var31.getLongKey();
          if (!(this.raw.get(var33) < var28) && this.isPeak(var33, var31.getFloatValue(), var4)) {
             this.peaks.add(var33);
@@ -307,16 +301,15 @@ public final class PlayerBypassModule extends ClientModule {
       }
    }
 
-   private boolean isPeak(long var1, float var3, int var4) {
-      int var5 = ChunkPos.method_8325(var1);
-      int var6 = ChunkPos.method_8332(var1);
+   private boolean isPeak(long l, float f, int i) {
+      int var5 = ChunkPos.getPackedX(l);
+      int var6 = ChunkPos.getPackedZ(l);
 
-      for (int var7 = -var4; var7 <= var4; var7++) {
-         for (int var8 = -var4; var8 <= var4; var8++) {
+      for (int var7 = -i; var7 <= i; var7++) {
+         for (int var8 = -i; var8 <= i; var8++) {
             long var9;
             float var11;
-            if ((var7 != 0 || var8 != 0)
-               && ((var11 = this.field.get(var9 = ChunkPos.method_8331(var5 + var7, var6 + var8))) > var3 || var11 == var3 && var9 < var1)) {
+            if ((var7 != 0 || var8 != 0) && ((var11 = this.field.get(var9 = ChunkPos.toLong(var5 + var7, var6 + var8))) > f || var11 == f && var9 < l)) {
                return false;
             }
          }
@@ -329,12 +322,12 @@ public final class PlayerBypassModule extends ClientModule {
       SimulationSignals.Pin var1;
       while ((var1 = SimulationSignals.pollPin()) != null) {
          BlockPos var2 = var1.pos();
-         long var3 = ChunkPos.method_8331(var2.method_10263() >> 4, var2.method_10260() >> 4);
+         long var3 = ChunkPos.toLong(var2.getX() >> 4, var2.getZ() >> 4);
          LOGGER.info("[Player Bypass] {}", var1.detail());
          if (!this.near(var3, 1)) {
             this.remember(var3);
             ModuleChat.send(this, var1.detail());
-            this.spotted(var2.method_10263(), var2.method_10260(), GlintHeadRenderer.stack());
+            this.spotted(var2.getX(), var2.getZ(), GlintHeadRenderer.stack());
          }
       }
    }
@@ -348,22 +341,20 @@ public final class PlayerBypassModule extends ClientModule {
          long var5 = var4.next();
          if (!this.near(var5, var3)) {
             this.remember(var5);
-            int var7 = (ChunkPos.method_8325(var5) << 4) + 8;
-            int var8 = (ChunkPos.method_8332(var5) << 4) + 8;
+            int var7 = (ChunkPos.getPackedX(var5) << 4) + 8;
+            int var8 = (ChunkPos.getPackedZ(var5) << 4) + 8;
             this.report(var5, var7, var8, var1);
             this.spotted(var7, var8, GlintHeadRenderer.stack());
          }
       }
    }
 
-   private boolean near(long var1, int var3) {
+   private boolean near(long l, int i) {
       LongListIterator var4 = this.found.iterator();
 
       while (var4.hasNext()) {
          long var5 = var4.next();
-         if (SimulationSignals.distance(ChunkPos.method_8325(var5), ChunkPos.method_8332(var5), ChunkPos.method_8325(var1), ChunkPos.method_8332(var1)) <= var3
-            )
-          {
+         if (SimulationSignals.distance(ChunkPos.getPackedX(var5), ChunkPos.getPackedZ(var5), ChunkPos.getPackedX(l), ChunkPos.getPackedZ(l)) <= i) {
             return true;
          }
       }
@@ -371,56 +362,54 @@ public final class PlayerBypassModule extends ClientModule {
       return false;
    }
 
-   private void remember(long var1) {
-      this.found.add(var1);
+   private void remember(long l) {
+      this.found.add(l);
 
       while (this.found.size() > 256) {
          this.found.removeFirstLong();
       }
    }
 
-   private void refreshShown(ClientPlayerEntity var1) {
+   private void refreshShown(ClientPlayerEntity clientPlayerEntity) {
       this.shown.clear();
-      int var2 = var1.method_24515().method_10263() >> 4;
-      int var3 = var1.method_24515().method_10260() >> 4;
+      int var2 = clientPlayerEntity.getBlockPos().getX() >> 4;
+      int var3 = clientPlayerEntity.getBlockPos().getZ() >> 4;
       int var4 = SimulationSignals.view() + SimulationSignals.simulation() + 2;
       LongListIterator var5 = this.found.iterator();
 
       while (var5.hasNext()) {
          long var6 = var5.next();
-         if (SimulationSignals.distance(ChunkPos.method_8325(var6), ChunkPos.method_8332(var6), var2, var3) <= var4) {
+         if (SimulationSignals.distance(ChunkPos.getPackedX(var6), ChunkPos.getPackedZ(var6), var2, var3) <= var4) {
             this.shown.add(var6);
          }
       }
    }
 
-   private void report(long var1, int var3, int var4, long var5) {
+   private void report(long l, int i, int j, long m) {
       int var7 = SimulationSignals.simulation();
-      int var8 = ChunkPos.method_8325(var1);
-      int var9 = ChunkPos.method_8332(var1);
+      int var8 = ChunkPos.getPackedX(l);
+      int var9 = ChunkPos.getPackedZ(l);
       ArrayList var10 = new ArrayList();
-      ObjectIterator var11 = SimulationSignals.chunks().long2ObjectEntrySet().iterator();
 
-      while (var11.hasNext()) {
-         Entry var12 = (Entry)var11.next();
+      for (Entry var12 : SimulationSignals.chunks().long2ObjectEntrySet()) {
          long var13 = var12.getLongKey();
-         if (SimulationSignals.distance(ChunkPos.method_8325(var13), ChunkPos.method_8332(var13), var8, var9) <= var7
-            && !(((SimulationSignals.ChunkSignal)var12.getValue()).score(var5) < 0.5F)) {
+         if (SimulationSignals.distance(ChunkPos.getPackedX(var13), ChunkPos.getPackedZ(var13), var8, var9) <= var7
+            && !(((SimulationSignals.ChunkSignal)var12.getValue()).score(m) < 0.5F)) {
             var10.add(var12);
          }
       }
 
       var10.sort(
-         (var2, var3x) -> Float.compare(
-            ((SimulationSignals.ChunkSignal)var3x.getValue()).score(var5), ((SimulationSignals.ChunkSignal)var2.getValue()).score(var5)
+         (entry, entry2) -> Float.compare(
+            ((SimulationSignals.ChunkSignal)entry2.getValue()).score(m), ((SimulationSignals.ChunkSignal)entry.getValue()).score(m)
          )
       );
       ArrayList var21 = new ArrayList();
       var21.add(
          "Found "
-            + var3
+            + i
             + ", "
-            + var4
+            + j
             + " from "
             + var10.size()
             + " chunks (sim "
@@ -445,10 +434,10 @@ public final class PlayerBypassModule extends ClientModule {
 
          var21.add(
             " chunk "
-               + ((ChunkPos.method_8325(var14) << 4) + 8)
+               + ((ChunkPos.getPackedX(var14) << 4) + 8)
                + ", "
-               + ((ChunkPos.method_8332(var14) << 4) + 8)
-               + String.format(Locale.ROOT, " score %.1f: ", var24.score(var5))
+               + ((ChunkPos.getPackedZ(var14) << 4) + 8)
+               + String.format(Locale.ROOT, " score %.1f: ", var24.score(m))
                + var16
          );
 
@@ -464,15 +453,15 @@ public final class PlayerBypassModule extends ClientModule {
    }
 
    @EventHandler
-   public void onRender3D(Render3DEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      if (var2.field_1687 != null && var2.field_1724 != null) {
+   public void onRender3D(Render3DEvent render3DEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      if (var2.world != null && var2.player != null) {
          LongOpenHashSet var3 = new LongOpenHashSet();
          LongOpenHashSet var4 = new LongOpenHashSet();
          Long2ObjectMap var5 = PlayerBypassLightTracker.snapshots();
          if (!var5.isEmpty()) {
-            int var6 = var2.field_1724.method_24515().method_10263() >> 4;
-            int var7 = var2.field_1724.method_24515().method_10260() >> 4;
+            int var6 = var2.player.getBlockPos().getX() >> 4;
+            int var7 = var2.player.getBlockPos().getZ() >> 4;
             if (PerformanceModule.optimizationsEnabled()) {
                this.visibleChunks
                   .update(
@@ -482,13 +471,11 @@ public final class PlayerBypassModule extends ClientModule {
                var4.addAll(this.visibleChunks.suspects());
             } else {
                this.visibleChunks.invalidate();
-               ObjectIterator var8 = var5.long2ObjectEntrySet().iterator();
 
-               while (var8.hasNext()) {
-                  Entry var9 = (Entry)var8.next();
+               for (Entry var9 : var5.long2ObjectEntrySet()) {
                   long var10 = var9.getLongKey();
-                  if (Math.abs(ChunkPos.method_8325(var10) - var6) <= 16
-                     && Math.abs(ChunkPos.method_8332(var10) - var7) <= 16
+                  if (Math.abs(ChunkPos.getPackedX(var10) - var6) <= 16
+                     && Math.abs(ChunkPos.getPackedZ(var10) - var7) <= 16
                      && PlayerBypassLightTracker.isFlagged(var10, (ChunkLightSnapshot)var9.getValue())) {
                      (PlayerBypassLightTracker.isSuspect(var10) ? var4 : var3).add(var10);
                   }
@@ -497,7 +484,7 @@ public final class PlayerBypassModule extends ClientModule {
          }
 
          LongOpenHashSet var12 = new LongOpenHashSet();
-         if (!netherOrEnd(var2.field_1687)) {
+         if (!netherOrEnd(var2.world)) {
             LongIterator var13 = this.shown.iterator();
 
             while (var13.hasNext()) {
@@ -509,49 +496,49 @@ public final class PlayerBypassModule extends ClientModule {
          }
 
          if (!var3.isEmpty() || !var4.isEmpty() || !var12.isEmpty()) {
-            FoglessLines var14 = FoglessLines.forFrame(var1.partialTick);
-            double var16 = var2.field_1687.method_31607();
-            double var17 = var2.field_1687.method_31600() + 1;
+            FoglessLines var14 = FoglessLines.forFrame(render3DEvent.partialTick);
+            double var16 = var2.world.getBottomY();
+            double var17 = var2.world.getTopYInclusive() + 1;
             this.mark(var14, var4, -5766, var16, var17);
             this.mark(var14, var12, -11205, var16, var17);
             this.mark(var14, var3, -2516480, var16, var17);
             if (this.tracers.get()) {
-               this.chunkAreas.drawTracers(var3, 64.0, ColorHelper.method_61334(-2516480));
-               this.chunkAreas.drawTracers(var4, 64.0, ColorHelper.method_61334(-5766));
-               this.chunkAreas.drawTracers(var12, 64.0, ColorHelper.method_61334(-11205));
+               this.chunkAreas.drawTracers(var3, 64.0, ColorHelper.fullAlpha(-2516480));
+               this.chunkAreas.drawTracers(var4, 64.0, ColorHelper.fullAlpha(-5766));
+               this.chunkAreas.drawTracers(var12, 64.0, ColorHelper.fullAlpha(-11205));
             }
          }
       }
    }
 
-   private void mark(FoglessLines var1, LongOpenHashSet var2, int var3, double var4, double var6) {
-      if (!var2.isEmpty()) {
+   private void mark(FoglessLines foglessLines, LongOpenHashSet longOpenHashSet, int i, double d, double e) {
+      if (!longOpenHashSet.isEmpty()) {
          float var8 = Math.max(10, Math.min(255, this.opacity.getInt())) / 255.0F;
-         DrawStyle var9 = DrawStyle.method_75539(ColorHelper.method_61330(Math.round(34.0F * var8), var3));
-         int var10 = ColorHelper.method_61330(Math.round(255.0F * var8), var3);
-         LongIterator var11 = var2.iterator();
+         DrawStyle var9 = DrawStyle.filled(ColorHelper.withAlpha(Math.round(34.0F * var8), i));
+         int var10 = ColorHelper.withAlpha(Math.round(255.0F * var8), i);
+         LongIterator var11 = longOpenHashSet.iterator();
 
          while (var11.hasNext()) {
             long var12 = var11.next();
-            double var14 = ChunkPos.method_8325(var12) << 4;
-            double var16 = ChunkPos.method_8332(var12) << 4;
+            double var14 = ChunkPos.getPackedX(var12) << 4;
+            double var16 = ChunkPos.getPackedZ(var12) << 4;
             double var18 = var14 + 16.0;
             double var20 = var16 + 16.0;
-            GizmoDrawing.method_75541(new Box(var14, var4, var16, var18, var6, var20), var9).method_75533();
-            column(var1, var14, var16, var18, var20, var4, var6, var10);
+            GizmoDrawing.box(new Box(var14, d, var16, var18, e, var20), var9).ignoreOcclusion();
+            column(foglessLines, var14, var16, var18, var20, d, e, var10);
          }
       }
    }
 
-   private static void column(FoglessLines var0, double var1, double var3, double var5, double var7, double var9, double var11, int var13) {
-      double[][] var14 = new double[][]{{var1, var3}, {var5, var3}, {var5, var7}, {var1, var7}};
+   private static void column(FoglessLines foglessLines, double d, double e, double f, double g, double h, double i, int j) {
+      double[][] var14 = new double[][]{{d, e}, {f, e}, {f, g}, {d, g}};
 
       for (int var15 = 0; var15 < var14.length; var15++) {
          double[] var16 = var14[var15];
          double[] var17 = var14[(var15 + 1) % var14.length];
-         var0.line(new Vec3d(var16[0], var9, var16[1]), new Vec3d(var16[0], var11, var16[1]), var13, 2.0F);
-         var0.line(new Vec3d(var16[0], var9, var16[1]), new Vec3d(var17[0], var9, var17[1]), var13, 2.0F);
-         var0.line(new Vec3d(var16[0], var11, var16[1]), new Vec3d(var17[0], var11, var17[1]), var13, 2.0F);
+         foglessLines.line(new Vec3d(var16[0], h, var16[1]), new Vec3d(var16[0], i, var16[1]), j, 2.0F);
+         foglessLines.line(new Vec3d(var16[0], h, var16[1]), new Vec3d(var17[0], h, var17[1]), j, 2.0F);
+         foglessLines.line(new Vec3d(var16[0], i, var16[1]), new Vec3d(var17[0], i, var17[1]), j, 2.0F);
       }
    }
 }

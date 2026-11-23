@@ -34,7 +34,7 @@ import net.minecraft.util.math.Vec3d;
 public final class SwordBotModule extends ClientModule {
    private static final String PATIENT = "Patient";
    private static final String AGGRESSIVE = "Aggressive";
-   private static final Predicate<ItemStack> GAPPLE = var0 -> var0.method_31574(Items.field_8463) || var0.method_31574(Items.field_8367);
+   private static final Predicate<ItemStack> GAPPLE = itemStack -> itemStack.isOf(Items.GOLDEN_APPLE) || itemStack.isOf(Items.ENCHANTED_GOLDEN_APPLE);
    private static final double HIT_RANGE = 3.0;
    private static final double CHASE_RANGE = 6.0;
    private static final int RESET_WINDOW = 3;
@@ -45,7 +45,7 @@ public final class SwordBotModule extends ClientModule {
    private final BooleanSetting crits = this.addSetting("crits", new BooleanSetting("Jump Crits", true));
    private final BooleanSetting jumpReset = this.addSetting("jump-reset", new BooleanSetting("Jump Reset", true));
    private final NumberSetting eatBelow = this.addSetting("eat-below", new NumberSetting("Gapple Below HP", 10.0F, 0.0F, 20.0F).step(1.0F));
-   private final MinecraftClient mc = MinecraftClient.method_1551();
+   private final MinecraftClient mc = MinecraftClient.getInstance();
    private final BotBody body = new BotBody();
    private PlayerEntity fought;
    private double closing;
@@ -73,7 +73,7 @@ public final class SwordBotModule extends ClientModule {
       this.body.forget();
       this.newFight(null);
       this.eating = false;
-      this.on(TickEvent.TYPE, Stage.PRE, var1 -> this.tick());
+      this.on(TickEvent.TYPE, Stage.PRE, tickEvent -> this.tick());
    }
 
    @Override
@@ -83,8 +83,8 @@ public final class SwordBotModule extends ClientModule {
       CombatMacroLock.release(this);
    }
 
-   private void newFight(PlayerEntity var1) {
-      this.fought = var1;
+   private void newFight(PlayerEntity playerEntity) {
+      this.fought = playerEntity;
       this.closing = 0.0;
       this.lastTheirReach = 0.0 / 0.0;
       this.jitter = randomJitter();
@@ -94,14 +94,14 @@ public final class SwordBotModule extends ClientModule {
    }
 
    private void tick() {
-      ClientPlayerEntity var8 = this.mc.field_1724;
+      ClientPlayerEntity var8 = this.mc.player;
       this.body.release(this.mc);
-      if (var8 != null && this.mc.field_1687 != null && MeleeAttacks.canAct(this.mc) && !var8.method_29504()) {
+      if (var8 != null && this.mc.world != null && MeleeAttacks.canAct(this.mc) && !var8.isDead()) {
          PlayerEntity var9 = this.body.pick(this.mc, var8, this.range.get());
          int var10 = this.body.tick();
          if (var9 != this.fought) {
             if (var9 != null) {
-               ModuleChat.send(this, ModuleChat.body().text("Fighting ").name(var9.method_5477().getString()).text("."));
+               ModuleChat.send(this, ModuleChat.body().text("Fighting ").name(var9.getName().getString()).text("."));
             } else if (this.fought != null) {
                ModuleChat.send(this, ModuleChat.body().text("No enemy in range, waiting."));
             }
@@ -111,18 +111,18 @@ public final class SwordBotModule extends ClientModule {
 
          if (var9 != null) {
             this.body.face(this.mc, var8, var9, this.turnSpeed.get());
-            boolean var7 = var8.method_6032() <= this.eatBelow.get() && var8.method_6067() < 4.0F;
-            if ((var7 || this.eating && var8.method_6115()) && this.body.use(this.mc, var8, GAPPLE)) {
+            boolean var7 = var8.getHealth() <= this.eatBelow.get() && var8.getAbsorptionAmount() < 4.0F;
+            if ((var7 || this.eating && var8.isUsingItem()) && this.body.use(this.mc, var8, GAPPLE)) {
                this.eating = true;
                this.body.backOff(this.mc, var8);
             } else {
                this.eating = false;
-               if (!var8.method_6115()) {
+               if (!var8.isUsingItem()) {
                   holdWeapon(var8);
-                  Vec3d var12 = var8.method_33571();
-                  double var13 = var12.method_1022(TargetingUtils.closestPoint(var12, var9.method_5829()));
-                  Vec3d var15 = var9.method_33571();
-                  double var16 = var15.method_1022(TargetingUtils.closestPoint(var15, var8.method_5829()));
+                  Vec3d var12 = var8.getEyePos();
+                  double var13 = var12.distanceTo(TargetingUtils.closestPoint(var12, var9.getBoundingBox()));
+                  Vec3d var15 = var9.getEyePos();
+                  double var16 = var15.distanceTo(TargetingUtils.closestPoint(var15, var8.getBoundingBox()));
                   if (!Double.isNaN(this.lastTheirReach)) {
                      this.closing = this.closing * 0.5 + (this.lastTheirReach - var16) * 0.5;
                   }
@@ -131,16 +131,16 @@ public final class SwordBotModule extends ClientModule {
                   int var18 = MeleeAttacks.ticksToFull(var8);
                   float var19 = MeleeAttacks.charge(var8);
                   double var20 = facingAngle(var9, var8);
-                  Vec3d var22 = new Vec3d(var9.method_23317() - var8.method_23317(), 0.0, var9.method_23321() - var8.method_23321()).method_1029();
-                  Vec3d var23 = var9.method_73189().method_1023(var9.field_6014, var9.field_6036, var9.field_5969);
-                  double var24 = var23.field_1352 * var22.field_1352 + var23.field_1350 * var22.field_1350;
-                  boolean var26 = var9.field_6235 > 1;
-                  boolean var27 = var9.method_6039();
+                  Vec3d var22 = new Vec3d(var9.getX() - var8.getX(), 0.0, var9.getZ() - var8.getZ()).normalize();
+                  Vec3d var23 = var9.getEntityPos().subtract(var9.lastX, var9.lastY, var9.lastZ);
+                  double var24 = var23.x * var22.x + var23.z * var22.z;
+                  boolean var26 = var9.hurtTime > 1;
+                  boolean var27 = var9.isBlocking();
                   boolean var28 = var16 <= 3.15 && var20 <= 40.0;
                   boolean var29 = var13 <= 3.0;
                   double var30 = 3.35
-                     + 0.12 * MathHelper.method_15340(Math.round(ping(var8) / 50.0F), 0, 3)
-                     + 2.5 * MathHelper.method_15350(this.closing, 0.0, 0.35)
+                     + 0.12 * MathHelper.clamp(Math.round(ping(var8) / 50.0F), 0, 3)
+                     + 2.5 * MathHelper.clamp(this.closing, 0.0, 0.35)
                      - (this.style.is("Aggressive") ? 0.2 : 0.0);
                   double var5 = var18 <= 0 ? 2.9 : (var18 <= 2 ? 3.08 + 0.1 * (var18 - 1) + this.jitter : Math.max(var30 + this.jitter, 2.9 + 0.26 * var18));
                   if (var20 < 8.0 && var16 < 4.2) {
@@ -148,17 +148,17 @@ public final class SwordBotModule extends ClientModule {
                   }
 
                   double var3 = this.strafe.get() ? 1.0 : 0.0;
-                  if (var8.field_6235 > this.lastHurt && var8.field_6235 >= 8) {
+                  if (var8.hurtTime > this.lastHurt && var8.hurtTime >= 8) {
                      this.resetUntil = var10 + 3;
                   }
 
-                  this.lastHurt = var8.field_6235;
+                  this.lastHurt = var8.hurtTime;
                   if (this.tapTicks > 0) {
                      this.tapTicks--;
                      this.body.drive(this.mc, var8, this.tapBack ? -1 : 0, var3 * (this.tapBack ? 0.8 : 1.0), false, false);
-                  } else if ((!(var13 > 6.0) || !(var13 > var5 + 1.0)) && !(Math.abs(var9.method_23318() - var8.method_23318()) > 2.5)) {
+                  } else if ((!(var13 > 6.0) || !(var13 > var5 + 1.0)) && !(Math.abs(var9.getY() - var8.getY()) > 2.5)) {
                      if (this.critJump) {
-                        if (var8.method_24828()) {
+                        if (var8.isOnGround()) {
                            if (++this.landedTicks >= 2) {
                               this.critJump = false;
                            }
@@ -167,7 +167,7 @@ public final class SwordBotModule extends ClientModule {
                         }
 
                         if (this.critJump) {
-                           boolean var38 = var18 <= 1 && var8.method_18798().field_1351 < 0.1;
+                           boolean var38 = var18 <= 1 && var8.getVelocity().y < 0.1;
                            this.body.drive(this.mc, var8, var38 ? 0 : 1, var38 ? var3 * 0.35 : 0.0, !var38, false);
                            if (var18 <= 0 && var29 && !var26) {
                               InputControl.dropSprint();
@@ -178,7 +178,7 @@ public final class SwordBotModule extends ClientModule {
                         }
                      }
 
-                     if (this.crits.get() && var8.method_24828() && !var8.method_5799() && !var28 && this.critWindow(var18, var13, var20, var24)) {
+                     if (this.crits.get() && var8.isOnGround() && !var8.isTouchingWater() && !var28 && this.critWindow(var18, var13, var20, var24)) {
                         this.critJump = true;
                         this.landedTicks = 0;
                         this.body.drive(this.mc, var8, 1, 0.0, true, true);
@@ -202,7 +202,7 @@ public final class SwordBotModule extends ClientModule {
                         }
 
                         boolean var34 = var28 && var29 && var19 >= 0.6F && !var26 && !var27;
-                        boolean var1 = this.jumpReset.get() && var10 < this.resetUntil && var8.method_24828() && !var8.method_5799();
+                        boolean var1 = this.jumpReset.get() && var10 < this.resetUntil && var8.isOnGround() && !var8.isTouchingWater();
                         if (var1) {
                            this.body.drive(this.mc, var8, 1, 0.0, true, true);
                         } else if (var18 <= 2 && !var34 && this.strafe.get() && !var27) {
@@ -230,32 +230,32 @@ public final class SwordBotModule extends ClientModule {
       }
    }
 
-   private boolean critWindow(int var1, double var2, double var4, double var6) {
-      if (var1 >= 7 && var1 <= 10 && var2 >= 2.3 && var2 <= 5.0) {
+   private boolean critWindow(int i, double d, double e, double f) {
+      if (i >= 7 && i <= 10 && d >= 2.3 && d <= 5.0) {
          return true;
       } else {
-         return var1 >= 3 && var1 <= 10 && !(var2 < 2.3) && !(var2 > 4.2) ? var4 >= 100.0 && var6 > 0.05 || this.style.is("Aggressive") && var4 > 60.0 : false;
+         return i >= 3 && i <= 10 && !(d < 2.3) && !(d > 4.2) ? e >= 100.0 && f > 0.05 || this.style.is("Aggressive") && e > 60.0 : false;
       }
    }
 
-   private void strike(ClientPlayerEntity var1, PlayerEntity var2, float var3, boolean var4) {
-      if (!CombatMacroLock.heldByOther(this) && !MeleeAttacks.actedThisTick(var1) && this.mc.field_1771 <= 0) {
-         if (!(MeleeAttacks.charge(var1) < var3) && MeleeAttacks.isMeleeWeapon(var1.method_6047())) {
-            if (!var4 || MeleeAttacks.airborne(var1) && !(var1.method_18798().field_1351 >= 0.0)) {
+   private void strike(ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity, float f, boolean bl) {
+      if (!CombatMacroLock.heldByOther(this) && !MeleeAttacks.actedThisTick(clientPlayerEntity) && this.mc.attackCooldown <= 0) {
+         if (!(MeleeAttacks.charge(clientPlayerEntity) < f) && MeleeAttacks.isMeleeWeapon(clientPlayerEntity.getMainHandStack())) {
+            if (!bl || MeleeAttacks.airborne(clientPlayerEntity) && !(clientPlayerEntity.getVelocity().y >= 0.0)) {
                Rotation var6 = ServerRotation.sent();
                if (var6 != null) {
-                  Vec3d var7 = var1.method_33571();
-                  double var8 = Math.min(3.0, var1.method_55755());
-                  Box var10 = var2.method_5829();
-                  Vec3d var5 = var10.method_1006(var7)
+                  Vec3d var7 = clientPlayerEntity.getEyePos();
+                  double var8 = Math.min(3.0, clientPlayerEntity.getEntityInteractionRange());
+                  Box var10 = playerEntity.getBoundingBox();
+                  Vec3d var5 = var10.contains(var7)
                      ? var7
-                     : (Vec3d)var10.method_992(var7, var7.method_1019(Vec3d.method_1030(var6.pitch(), var6.yaw()).method_1021(var8))).orElse(null);
-                  if (var5 != null && MeleeAttacks.lineIsClear(var1, var7, var5)) {
-                     if (MeleeAttacks.attack(this.mc, new EntityHitResult(var2, var5))) {
+                     : var10.raycast(var7, var7.add(Vec3d.fromPolar(var6.pitch(), var6.yaw()).multiply(var8))).orElse(null);
+                  if (var5 != null && MeleeAttacks.lineIsClear(clientPlayerEntity, var7, var5)) {
+                     if (MeleeAttacks.attack(this.mc, new EntityHitResult(playerEntity, var5))) {
                         MeleeAttacks.claimTick(this.mc);
                         this.jitter = randomJitter();
                         this.tapTicks = 1;
-                        boolean var12 = this.tapBack = var1.method_33571().method_1022(TargetingUtils.closestPoint(var7, var10)) < 2.3;
+                        boolean var12 = this.tapBack = clientPlayerEntity.getEyePos().distanceTo(TargetingUtils.closestPoint(var7, var10)) < 2.3;
                         if (this.tapBack) {
                            this.tapTicks = 2;
                         }
@@ -269,29 +269,29 @@ public final class SwordBotModule extends ClientModule {
       }
    }
 
-   private static double facingAngle(PlayerEntity var0, ClientPlayerEntity var1) {
-      Vec3d var2 = Vec3d.method_1030(var0.method_36455(), var0.method_5791());
-      Vec3d var3 = var1.method_73189().method_1031(0.0, 1.1, 0.0).method_1020(var0.method_33571()).method_1029();
-      return Math.toDegrees(Math.acos(MathHelper.method_15350(var2.method_1026(var3), -1.0, 1.0)));
+   private static double facingAngle(PlayerEntity playerEntity, ClientPlayerEntity clientPlayerEntity) {
+      Vec3d var2 = Vec3d.fromPolar(playerEntity.getPitch(), playerEntity.getHeadYaw());
+      Vec3d var3 = clientPlayerEntity.getEntityPos().add(0.0, 1.1, 0.0).subtract(playerEntity.getEyePos()).normalize();
+      return Math.toDegrees(Math.acos(MathHelper.clamp(var2.dotProduct(var3), -1.0, 1.0)));
    }
 
-   private static int ping(ClientPlayerEntity var0) {
-      PlayerListEntry var1 = var0.field_3944.method_2871(var0.method_5667());
-      return var1 == null ? 0 : Math.max(0, var1.method_2959());
+   private static int ping(ClientPlayerEntity clientPlayerEntity) {
+      PlayerListEntry var1 = clientPlayerEntity.networkHandler.getPlayerListEntry(clientPlayerEntity.getUuid());
+      return var1 == null ? 0 : Math.max(0, var1.getLatency());
    }
 
    private static double randomJitter() {
       return ThreadLocalRandom.current().nextDouble(-0.06, 0.06);
    }
 
-   private static void holdWeapon(ClientPlayerEntity var0) {
-      PlayerInventory var1 = var0.method_31548();
-      if (!MeleeAttacks.isMeleeWeapon(var0.method_6047())) {
+   private static void holdWeapon(ClientPlayerEntity clientPlayerEntity) {
+      PlayerInventory var1 = clientPlayerEntity.getInventory();
+      if (!MeleeAttacks.isMeleeWeapon(clientPlayerEntity.getMainHandStack())) {
          int var2 = -1;
          double var3 = 0.0;
 
          for (int var5 = 0; var5 < 9; var5++) {
-            ItemStack var6 = var1.method_5438(var5);
+            ItemStack var6 = var1.getStack(var5);
             if (MeleeAttacks.isMeleeWeapon(var6)) {
                double var7 = MeleeAttacks.attackDamage(var6);
                if (var2 < 0 || var7 > var3) {
@@ -302,7 +302,7 @@ public final class SwordBotModule extends ClientModule {
          }
 
          if (var2 >= 0) {
-            var1.method_61496(var2);
+            var1.setSelectedSlot(var2);
          }
       }
    }

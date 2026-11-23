@@ -58,9 +58,9 @@ public final class SpotifyWindow {
       }
    }
 
-   public static void tap(SpotifyWindow.MediaKey var0) {
-      send(var0.virtualKey, 1);
-      send(var0.virtualKey, 3);
+   public static void tap(SpotifyWindow.MediaKey mediaKey) {
+      send(mediaKey.virtualKey, 1);
+      send(mediaKey.virtualKey, 3);
    }
 
    private HWND find() {
@@ -78,13 +78,13 @@ public final class SpotifyWindow {
       return var3;
    }
 
-   private boolean consider(HWND var1, Pointer var2) {
-      if (!this.isSpotify(this.processOf(var1))) {
+   private boolean consider(HWND hWND, Pointer pointer) {
+      if (!this.isSpotify(this.processOf(hWND))) {
          return true;
       } else {
-         String var3 = this.text(var1);
+         String var3 = this.text(hWND);
          if (!var3.isEmpty() && !var3.equals("Default IME") && !var3.equals("MSCTFIME UI") && !var3.startsWith("GDI+ Window")) {
-            String var4 = this.className(var1);
+            String var4 = this.className(hWND);
             int var5 = 1;
             if (var4.equals("Chrome_WidgetWin_0")) {
                var5 += 4;
@@ -98,13 +98,13 @@ public final class SpotifyWindow {
                var5++;
             }
 
-            if (User32.INSTANCE.IsWindowVisible(var1)) {
+            if (User32.INSTANCE.IsWindowVisible(hWND)) {
                var5++;
             }
 
             if (var5 > this.bestScore) {
                this.bestScore = var5;
-               this.best = var1;
+               this.best = hWND;
             }
 
             return true;
@@ -114,28 +114,28 @@ public final class SpotifyWindow {
       }
    }
 
-   private int processOf(HWND var1) {
-      User32.INSTANCE.GetWindowThreadProcessId(var1, this.pidOut);
+   private int processOf(HWND hWND) {
+      User32.INSTANCE.GetWindowThreadProcessId(hWND, this.pidOut);
       return this.pidOut.getValue();
    }
 
-   private boolean isSpotify(int var1) {
-      if (var1 <= 0) {
+   private boolean isSpotify(int i) {
+      if (i <= 0) {
          return false;
       } else {
-         Boolean var2 = this.spotifyPids.get(var1);
+         Boolean var2 = this.spotifyPids.get(i);
          if (var2 != null) {
             return var2;
          } else {
-            boolean var3 = "spotify.exe".equals(this.imageName(var1));
-            this.spotifyPids.put(var1, var3);
+            boolean var3 = "spotify.exe".equals(this.imageName(i));
+            this.spotifyPids.put(i, var3);
             return var3;
          }
       }
    }
 
-   private String imageName(int var1) {
-      HANDLE var2 = Kernel32.INSTANCE.OpenProcess(4096, false, var1);
+   private String imageName(int i) {
+      HANDLE var2 = Kernel32.INSTANCE.OpenProcess(4096, false, i);
       if (var2 == null) {
          return "";
       } else {
@@ -158,23 +158,23 @@ public final class SpotifyWindow {
       }
    }
 
-   private String text(HWND var1) {
-      int var2 = User32.INSTANCE.GetWindowText(var1, this.textBuffer, this.textBuffer.length);
+   private String text(HWND hWND) {
+      int var2 = User32.INSTANCE.GetWindowText(hWND, this.textBuffer, this.textBuffer.length);
       return var2 <= 0 ? "" : new String(this.textBuffer, 0, Math.min(var2, this.textBuffer.length));
    }
 
-   private String className(HWND var1) {
-      int var2 = User32.INSTANCE.GetClassName(var1, this.classBuffer, this.classBuffer.length);
+   private String className(HWND hWND) {
+      int var2 = User32.INSTANCE.GetClassName(hWND, this.classBuffer, this.classBuffer.length);
       return var2 <= 0 ? "" : new String(this.classBuffer, 0, Math.min(var2, this.classBuffer.length));
    }
 
-   private static void send(int var0, int var1) {
+   private static void send(int i, int j) {
       INPUT var2 = new INPUT();
       var2.type = new DWORD(1L);
       var2.input.setType("ki");
-      var2.input.ki.wVk = new WORD(var0);
+      var2.input.ki.wVk = new WORD(i);
       var2.input.ki.wScan = new WORD(0L);
-      var2.input.ki.dwFlags = new DWORD(var1);
+      var2.input.ki.dwFlags = new DWORD(j);
       var2.input.ki.time = new DWORD(0L);
       User32.INSTANCE.SendInput(new DWORD(1L), new INPUT[]{var2}, var2.size());
    }
@@ -187,8 +187,8 @@ public final class SpotifyWindow {
 
       final int virtualKey;
 
-      private MediaKey(int nullxx) {
-         this.virtualKey = nullxx;
+      private MediaKey(int j) {
+         this.virtualKey = j;
       }
    }
 }

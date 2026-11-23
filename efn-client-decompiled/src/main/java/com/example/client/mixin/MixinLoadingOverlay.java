@@ -15,26 +15,26 @@ public abstract class MixinLoadingOverlay {
    }
 
    @ModifyArg(
-      method = {"method_25394"},
+      method = {"render"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_332;method_25294(IIIII)V"
+         target = "Lnet/minecraft/client/gui/DrawContext;fill(IIIII)V"
       )},
       index = 4
    )
-   private int efn$backgroundFill(int var1) {
-      return LoadingScreens.backgroundColor(var1);
+   private int efn$backgroundFill(int i) {
+      return LoadingScreens.backgroundColor(i);
    }
 
    @ModifyArg(
-      method = {"method_25394"},
+      method = {"render"},
       at = {@At(
          value = "INVOKE",
          target = "Lcom/mojang/blaze3d/systems/CommandEncoder;clearColorTexture(Lcom/mojang/blaze3d/textures/GpuTexture;I)V"
       )},
       index = 1
    )
-   private int efn$backgroundClear(int var1) {
-      return LoadingScreens.backgroundColor(var1);
+   private int efn$backgroundClear(int i) {
+      return LoadingScreens.backgroundColor(i);
    }
 }

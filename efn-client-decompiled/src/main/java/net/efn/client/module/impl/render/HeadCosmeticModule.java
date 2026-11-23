@@ -33,13 +33,13 @@ abstract class HeadCosmeticModule extends ClientModule {
    private WeakReference<ClientWorld> friendLevel = new WeakReference<>(null);
    private long friendsCheckedAt;
 
-   HeadCosmeticModule(String var1, String var2, String var3) {
-      super(var1, var2, var3, ModuleCategory.VISUALS);
+   HeadCosmeticModule(String string, String string2, String string3) {
+      super(string, string2, string3, ModuleCategory.VISUALS);
    }
 
-   abstract CrownMesh headMesh(boolean var1);
+   abstract CrownMesh headMesh(boolean bl);
 
-   abstract CrownMesh bodyMesh(boolean var1);
+   abstract CrownMesh bodyMesh(boolean bl);
 
    abstract float scale();
 
@@ -77,22 +77,22 @@ abstract class HeadCosmeticModule extends ClientModule {
       this.friendLevel = new WeakReference<>(null);
    }
 
-   final boolean wears(PlayerEntityRenderState var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientPlayerEntity var3 = var2.field_1724;
-      if (var3 != null && var2.field_1687 != null) {
-         return var1.field_53528 == var3.method_5628()
-            ? !var2.field_1690.method_31044().method_31034() || var2.field_1755 != null || FreecamModule.active != null
-            : this.onFriends() && this.isFriend(var2, var1.field_53528);
+   final boolean wears(PlayerEntityRenderState playerEntityRenderState) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientPlayerEntity var3 = var2.player;
+      if (var3 != null && var2.world != null) {
+         return playerEntityRenderState.id == var3.getId()
+            ? !var2.options.getPerspective().isFirstPerson() || var2.currentScreen != null || FreecamModule.active != null
+            : this.onFriends() && this.isFriend(var2, playerEntityRenderState.id);
       } else {
          return false;
       }
    }
 
-   private boolean isFriend(MinecraftClient var1, int var2) {
+   private boolean isFriend(MinecraftClient minecraftClient, int i) {
       long var3 = System.nanoTime();
-      if (this.friendLevel.get() != var1.field_1687) {
-         this.friendLevel = new WeakReference<>(var1.field_1687);
+      if (this.friendLevel.get() != minecraftClient.world) {
+         this.friendLevel = new WeakReference<>(minecraftClient.world);
          this.friendCache.clear();
       }
 
@@ -101,17 +101,17 @@ abstract class HeadCosmeticModule extends ClientModule {
          this.friendsCheckedAt = var3;
       }
 
-      if (this.friendCache.containsKey(var2)) {
-         return this.friendCache.get(var2);
+      if (this.friendCache.containsKey(i)) {
+         return this.friendCache.get(i);
       } else {
          boolean var6;
-         if (var1.field_1687.method_8469(var2) instanceof PlayerEntity var7) {
-            var6 = FriendStore.getInstance().isFriend(var7.method_7334().name());
+         if (minecraftClient.world.getEntityById(i) instanceof PlayerEntity var7) {
+            var6 = FriendStore.getInstance().isFriend(var7.getGameProfile().name());
          } else {
             var6 = false;
          }
 
-         this.friendCache.put(var2, var6);
+         this.friendCache.put(i, var6);
          return var6;
       }
    }
@@ -125,27 +125,27 @@ abstract class HeadCosmeticModule extends ClientModule {
          float var4 = (float)(var1 - EPOCH) / 1.0E9F;
          float var5 = var4 % 3.6F / 3.6F;
          float var6 = (var5 * 2.0F - 1.0F) * 3.1415927F * 1.25F;
-         float var7 = MathHelper.method_15374(var5 * 3.1415927F);
+         float var7 = MathHelper.sin(var5 * 3.1415927F);
          float var8 = this.glints() ? 0.6F * var7 * var7 : 0.0F;
-         float var9 = 0.9F + 0.1F * MathHelper.method_15374(var4 * 2.2F);
-         this.look = var3 = new CrownMesh.Look(this.palette(), this.glows(), MathHelper.method_15362(var6), MathHelper.method_15374(var6), var8, var9);
+         float var9 = 0.9F + 0.1F * MathHelper.sin(var4 * 2.2F);
+         this.look = var3 = new CrownMesh.Look(this.palette(), this.glows(), MathHelper.cos(var6), MathHelper.sin(var6), var8, var9);
          this.lookAt = var1;
          return var3;
       }
    }
 
-   static int metal(int var0) {
-      return shade(var0, 0.55F, 0.96F);
+   static int metal(int i) {
+      return shade(i, 0.55F, 0.96F);
    }
 
-   static int gem(int var0) {
-      return shade(var0, 1.15F, 1.0F);
+   static int gem(int i) {
+      return shade(i, 1.15F, 1.0F);
    }
 
-   static int shade(int var0, float var1, float var2) {
-      int var3 = var0 >> 16 & 0xFF;
-      int var4 = var0 >> 8 & 0xFF;
-      int var5 = var0 & 0xFF;
+   static int shade(int i, float f, float g) {
+      int var3 = i >> 16 & 0xFF;
+      int var4 = i >> 8 & 0xFF;
+      int var5 = i & 0xFF;
       int var6 = Math.max(var3, Math.max(var4, var5));
       int var7 = var6 - Math.min(var3, Math.min(var4, var5));
       float var8 = 0.0F;
@@ -157,6 +157,6 @@ abstract class HeadCosmeticModule extends ClientModule {
       }
 
       float var9 = var6 == 0 ? 0.0F : (float)var7 / var6;
-      return MathHelper.method_60599(var8, Math.min(1.0F, var9 * var1), Math.min(1.0F, var2), 255);
+      return MathHelper.hsvToArgb(var8, Math.min(1.0F, var9 * f), Math.min(1.0F, g), 255);
    }
 }

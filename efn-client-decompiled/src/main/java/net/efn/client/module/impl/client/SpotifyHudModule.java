@@ -166,7 +166,7 @@ public final class SpotifyHudModule extends ClientModule {
    @Override
    protected void onDisable() {
       ThemeTint.pink(0.0F);
-      PinkWater.reset(MinecraftClient.method_1551());
+      PinkWater.reset(MinecraftClient.getInstance());
       Object var2 = this.publishLock;
       SpotifyHudModule.Poller var1;
       synchronized (var2) {
@@ -181,12 +181,12 @@ public final class SpotifyHudModule extends ClientModule {
       }
    }
 
-   private void publish(SpotifyHudModule.Poller var1, NowPlaying var2, SpotifyHudModule.TrackLyrics var3) {
+   private void publish(SpotifyHudModule.Poller poller, NowPlaying nowPlaying, SpotifyHudModule.TrackLyrics trackLyrics) {
       Object var4 = this.publishLock;
       synchronized (var4) {
-         if (var1 == this.poller) {
-            this.nowPlaying = var2;
-            this.lyrics = var3;
+         if (poller == this.poller) {
+            this.nowPlaying = nowPlaying;
+            this.lyrics = trackLyrics;
          }
       }
    }
@@ -200,10 +200,10 @@ public final class SpotifyHudModule extends ClientModule {
       return var0 != null && var0.isEnabled() ? var0 : null;
    }
 
-   public static void hudButton(SpotifyWindow.MediaKey var0) {
+   public static void hudButton(SpotifyWindow.MediaKey mediaKey) {
       SpotifyHudModule var1 = active();
       if (var1 != null) {
-         var1.press(var0);
+         var1.press(mediaKey);
       }
    }
 
@@ -221,18 +221,18 @@ public final class SpotifyHudModule extends ClientModule {
       return this.nowPlaying;
    }
 
-   public Lyrics lyricsFor(NowPlaying var1) {
+   public Lyrics lyricsFor(NowPlaying nowPlaying) {
       SpotifyHudModule.TrackLyrics var2 = this.lyrics;
       SpotifyHudModule.Poller var3 = this.poller;
-      if (var2 != null && var3 != null && this.wantsLyrics(var1)) {
-         return var2.title().equals(var1.title()) && var2.artist().equals(var1.artist()) ? var3.lyricsService.lookup(var2.query()) : null;
+      if (var2 != null && var3 != null && this.wantsLyrics(nowPlaying)) {
+         return var2.title().equals(nowPlaying.title()) && var2.artist().equals(nowPlaying.artist()) ? var3.lyricsService.lookup(var2.query()) : null;
       } else {
          return null;
       }
    }
 
-   public boolean wantsLyrics(NowPlaying var1) {
-      return this.showLyrics.get() && var1 != null && var1.lyricsEligible();
+   public boolean wantsLyrics(NowPlaying nowPlaying) {
+      return this.showLyrics.get() && nowPlaying != null && nowPlaying.lyricsEligible();
    }
 
    public boolean showArtist() {
@@ -390,13 +390,13 @@ public final class SpotifyHudModule extends ClientModule {
       return this.highlightColor.argb();
    }
 
-   private void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
+   private void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
       float var3 = ThemeTint.pink();
       boolean var4 = this.peepPlaying();
       ThemeTint.pink(var4 ? var3 + 0.016666668F : var3 - 0.033333335F);
       PinkWater.tick(var2, var4, this.pinkWaterDesign());
-      boolean var5 = this.mediaKeys.get() && var2.field_1755 == null && var2.method_1569() && var2.field_1724 != null;
+      boolean var5 = this.mediaKeys.get() && var2.currentScreen == null && var2.isWindowFocused() && var2.player != null;
 
       for (int var6 = 0; var6 < this.keys.length; var6++) {
          boolean var7 = isDown(var2, this.keys[var6].value());
@@ -408,13 +408,13 @@ public final class SpotifyHudModule extends ClientModule {
       }
    }
 
-   private void press(SpotifyWindow.MediaKey var1) {
+   private void press(SpotifyWindow.MediaKey mediaKey) {
       long var2 = System.currentTimeMillis();
       SpotifyHudModule.Poller var4 = this.poller;
       if (var4 != null && var2 - this.lastKeyAt >= 200L) {
          this.lastKeyAt = var2;
-         if (var4.press(var1)) {
-            if (var1 == SpotifyWindow.MediaKey.PLAY_PAUSE) {
+         if (var4.press(mediaKey)) {
+            if (mediaKey == SpotifyWindow.MediaKey.PLAY_PAUSE) {
                Object var5 = this.publishLock;
                synchronized (var5) {
                   if (this.poller == var4) {
@@ -426,13 +426,13 @@ public final class SpotifyHudModule extends ClientModule {
       }
    }
 
-   private static boolean isDown(MinecraftClient var0, int var1) {
-      if (!ModuleKeybinds.isBindable(var1)) {
+   private static boolean isDown(MinecraftClient minecraftClient, int i) {
+      if (!ModuleKeybinds.isBindable(i)) {
          return false;
       } else {
-         return var1 >= 1000
-            ? GLFW.glfwGetMouseButton(var0.method_22683().method_4490(), var1 - 1000) == 1
-            : EfnKeyPolling.isKeyDown(var0.method_22683(), var1);
+         return i >= 1000
+            ? GLFW.glfwGetMouseButton(minecraftClient.getWindow().getHandle(), i - 1000) == 1
+            : EfnKeyPolling.isKeyDown(minecraftClient.getWindow(), i);
       }
    }
 
@@ -478,8 +478,8 @@ public final class SpotifyHudModule extends ClientModule {
 
       Poller() {
          this.lyricsService.setOnline(SpotifyHudModule.this.lyricsOnline.get());
-         this.executor = new ScheduledThreadPoolExecutor(1, var0 -> {
-            Thread var1 = new Thread(var0, "EFN-Spotify");
+         this.executor = new ScheduledThreadPoolExecutor(1, runnable -> {
+            Thread var1 = new Thread(runnable, "EFN-Spotify");
             var1.setDaemon(true);
             return var1;
          });
@@ -507,9 +507,9 @@ public final class SpotifyHudModule extends ClientModule {
          }
       }
 
-      boolean press(SpotifyWindow.MediaKey var1) {
+      boolean press(SpotifyWindow.MediaKey mediaKey) {
          try {
-            this.executor.execute(() -> this.control(var1));
+            this.executor.execute(() -> this.control(mediaKey));
             this.executor.schedule(this::poll, 250L, TimeUnit.MILLISECONDS);
             return true;
          } catch (RejectedExecutionException var3) {
@@ -539,7 +539,7 @@ public final class SpotifyHudModule extends ClientModule {
                   SpotifyHudModule.this.publish(this, var1, this.lyricsFor(var1));
                }
             } catch (RuntimeException | LinkageError var4) {
-               SpotifyHudModule.LOGGER.debug("[EFN] Spotify HUD poll failed", var4);
+               SpotifyHudModule.LOGGER.debug("[EFN] Spotify HUD poll failed", (Throwable)var4);
             }
          }
       }
@@ -575,21 +575,21 @@ public final class SpotifyHudModule extends ClientModule {
          }
       }
 
-      private AlbumArt artFor(MediaSession.Snapshot var1) {
+      private AlbumArt artFor(MediaSession.Snapshot snapshot) {
          if (!SpotifyHudModule.this.showAlbumArt.get()) {
             this.art = null;
             this.artDecoded = false;
             return null;
          } else {
-            if (!this.artDecoded || var1.thumbnailVersion() != this.artVersion) {
+            if (!this.artDecoded || snapshot.thumbnailVersion() != this.artVersion) {
                this.artDecoded = true;
-               this.artVersion = var1.thumbnailVersion();
+               this.artVersion = snapshot.thumbnailVersion();
                this.art = null;
-               if (var1.hasThumbnail()) {
+               if (snapshot.hasThumbnail()) {
                   try {
-                     this.art = AlbumArt.decode(var1.thumbnail(), 256);
+                     this.art = AlbumArt.decode(snapshot.thumbnail(), 256);
                   } catch (RuntimeException | LinkageError var3) {
-                     SpotifyHudModule.LOGGER.debug("[EFN] Spotify HUD: album art could not be decoded", var3);
+                     SpotifyHudModule.LOGGER.debug("[EFN] Spotify HUD: album art could not be decoded", (Throwable)var3);
                   }
                }
             }
@@ -632,21 +632,21 @@ public final class SpotifyHudModule extends ClientModule {
          }
       }
 
-      private void windowFailed(LinkageError var1) {
-         SpotifyHudModule.LOGGER.warn("[EFN] Spotify HUD: Win32 access unavailable ({})", var1.toString());
+      private void windowFailed(LinkageError linkageError) {
+         SpotifyHudModule.LOGGER.warn("[EFN] Spotify HUD: Win32 access unavailable ({})", linkageError.toString());
          this.window = null;
          this.windowFailed = true;
       }
 
-      private SpotifyHudModule.TrackLyrics lyricsFor(NowPlaying var1) {
-         if (!SpotifyHudModule.this.wantsLyrics(var1)) {
+      private SpotifyHudModule.TrackLyrics lyricsFor(NowPlaying nowPlaying) {
+         if (!SpotifyHudModule.this.wantsLyrics(nowPlaying)) {
             this.lyricsCandidate = null;
             this.lyricsCandidatePolls = 0;
             this.lyricsQuery = null;
             this.published = null;
             return null;
          } else {
-            LyricsQuery var2 = new LyricsQuery(var1.title(), var1.artist(), var1.album(), 0).withDurationMillis(var1.durationMs());
+            LyricsQuery var2 = new LyricsQuery(nowPlaying.title(), nowPlaying.artist(), nowPlaying.album(), 0).withDurationMillis(nowPlaying.durationMs());
             if (var2.equals(this.lyricsCandidate)) {
                this.lyricsCandidatePolls++;
             } else {
@@ -658,12 +658,12 @@ public final class SpotifyHudModule extends ClientModule {
                this.lyricsQuery = this.lyricsCandidate;
             }
 
-            if (this.lyricsQuery != null && this.lyricsQuery.title().equals(var1.title()) && this.lyricsQuery.artist().equals(var1.artist())) {
+            if (this.lyricsQuery != null && this.lyricsQuery.title().equals(nowPlaying.title()) && this.lyricsQuery.artist().equals(nowPlaying.artist())) {
                if (this.published == null
                   || !this.published.query().equals(this.lyricsQuery)
-                  || !this.published.title().equals(var1.title())
-                  || !this.published.artist().equals(var1.artist())) {
-                  this.published = new SpotifyHudModule.TrackLyrics(var1.title(), var1.artist(), this.lyricsQuery);
+                  || !this.published.title().equals(nowPlaying.title())
+                  || !this.published.artist().equals(nowPlaying.artist())) {
+                  this.published = new SpotifyHudModule.TrackLyrics(nowPlaying.title(), nowPlaying.artist(), this.lyricsQuery);
                }
 
                return this.published;
@@ -673,10 +673,10 @@ public final class SpotifyHudModule extends ClientModule {
          }
       }
 
-      private void control(SpotifyWindow.MediaKey var1) {
+      private void control(SpotifyWindow.MediaKey mediaKey) {
          if (SpotifyHudModule.this.poller == this) {
             if (this.media != null && SpotifyHudModule.this.nowPlaying.source() == NowPlaying.Source.SESSION) {
-               if (switch (var1) {
+               if (switch (mediaKey) {
                   case PLAY_PAUSE -> this.media.togglePlayPause();
                   case NEXT -> this.media.skipNext();
                   case PREVIOUS -> this.media.skipPrevious();
@@ -689,21 +689,21 @@ public final class SpotifyHudModule extends ClientModule {
 
             if (Platform.isWindows()) {
                try {
-                  SpotifyWindow.tap(var1);
+                  SpotifyWindow.tap(mediaKey);
                } catch (RuntimeException | LinkageError var3) {
-                  SpotifyHudModule.LOGGER.debug("[EFN] Spotify HUD media key failed", var3);
+                  SpotifyHudModule.LOGGER.debug("[EFN] Spotify HUD media key failed", (Throwable)var3);
                }
             }
          }
       }
 
-      private void logError(String var1) {
-         if (var1 != null) {
+      private void logError(String string) {
+         if (string != null) {
             long var2 = System.currentTimeMillis();
-            if (!Objects.equals(var1, this.lastError) || var2 - this.lastErrorLoggedAt >= 60000L) {
-               this.lastError = var1;
+            if (!Objects.equals(string, this.lastError) || var2 - this.lastErrorLoggedAt >= 60000L) {
+               this.lastError = string;
                this.lastErrorLoggedAt = var2;
-               SpotifyHudModule.LOGGER.debug("[EFN] Spotify HUD media session: {}", var1);
+               SpotifyHudModule.LOGGER.debug("[EFN] Spotify HUD media session: {}", string);
             }
          }
       }

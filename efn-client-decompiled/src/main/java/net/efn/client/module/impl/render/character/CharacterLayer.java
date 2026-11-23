@@ -13,22 +13,26 @@ import net.minecraft.util.Arm;
 
 @Environment(EnvType.CLIENT)
 public final class CharacterLayer extends FeatureRenderer<PlayerEntityRenderState, PlayerEntityModel> {
-   public CharacterLayer(FeatureRendererContext<PlayerEntityRenderState, PlayerEntityModel> var1) {
-      super(var1);
+   public CharacterLayer(FeatureRendererContext<PlayerEntityRenderState, PlayerEntityModel> featureRendererContext) {
+      super(featureRendererContext);
    }
 
-   public void method_4199(MatrixStack var1, OrderedRenderCommandQueue var2, int var3, PlayerEntityRenderState var4, float var5, float var6) {
-      WornCharacter var7 = CharacterModule.worn(var4);
-      if (var7 != null && (!var4.field_53333 || !var4.field_53461)) {
-         CharacterRenderer.submit(var7, (PlayerEntityModel)this.method_17165(), var1, var2, var3, var4);
+   public void method_4199(
+      MatrixStack matrixStack, OrderedRenderCommandQueue orderedRenderCommandQueue, int i, PlayerEntityRenderState playerEntityRenderState, float f, float g
+   ) {
+      WornCharacter var7 = CharacterModule.worn(playerEntityRenderState);
+      if (var7 != null && (!playerEntityRenderState.invisible || !playerEntityRenderState.invisibleToPlayer)) {
+         CharacterRenderer.submit(var7, this.getContextModel(), matrixStack, orderedRenderCommandQueue, i, playerEntityRenderState);
       }
    }
 
-   public static boolean firstPersonHand(PlayerEntityModel var0, MatrixStack var1, OrderedRenderCommandQueue var2, int var3, ModelPart var4) {
-      return CharacterRenderer.firstPersonHand(var0, var1, var2, var3, var4);
+   public static boolean firstPersonHand(
+      PlayerEntityModel playerEntityModel, MatrixStack matrixStack, OrderedRenderCommandQueue orderedRenderCommandQueue, int i, ModelPart modelPart
+   ) {
+      return CharacterRenderer.firstPersonHand(playerEntityModel, matrixStack, orderedRenderCommandQueue, i, modelPart);
    }
 
-   public static boolean translateToHand(PlayerEntityModel var0, PlayerEntityRenderState var1, Arm var2, MatrixStack var3) {
-      return CharacterRenderer.translateToHand(var0, var1, var2, var3);
+   public static boolean translateToHand(PlayerEntityModel playerEntityModel, PlayerEntityRenderState playerEntityRenderState, Arm arm, MatrixStack matrixStack) {
+      return CharacterRenderer.translateToHand(playerEntityModel, playerEntityRenderState, arm, matrixStack);
    }
 }

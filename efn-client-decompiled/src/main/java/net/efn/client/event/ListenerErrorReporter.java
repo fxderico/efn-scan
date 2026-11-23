@@ -14,9 +14,9 @@ final class ListenerErrorReporter {
    private ListenerErrorReporter() {
    }
 
-   static synchronized void report(ListenerHandle<?> var0, Event var1, Exception var2) {
-      int var4 = failureCounts.merge(var0, 1, Integer::sum);
-      String var3 = var0.owner() == null ? "<static>" : var0.owner().getClass().getName();
+   static synchronized void report(ListenerHandle<?> listenerHandle, Event event, Exception exception) {
+      int var4 = failureCounts.merge(listenerHandle, 1, Integer::sum);
+      String var3 = listenerHandle.owner() == null ? "<static>" : listenerHandle.owner().getClass().getName();
       if (var4 <= 4) {
          System.err
             .println(
@@ -25,16 +25,18 @@ final class ListenerErrorReporter {
                   + "): owner="
                   + var3
                   + " event="
-                  + var1.getClass().getSimpleName()
+                  + event.getClass().getSimpleName()
                   + " stage="
-                  + var0.stage()
+                  + listenerHandle.stage()
                   + " priority="
-                  + var0.priority()
+                  + listenerHandle.priority()
             );
-         var2.printStackTrace();
+         exception.printStackTrace();
       } else if (var4 % 256 == 0) {
          System.err
-            .println("[EfnEventBus] Listener still failing (" + var4 + " total): owner=" + var3 + " event=" + var1.getClass().getSimpleName() + ": " + var2);
+            .println(
+               "[EfnEventBus] Listener still failing (" + var4 + " total): owner=" + var3 + " event=" + event.getClass().getSimpleName() + ": " + exception
+            );
       }
    }
 }

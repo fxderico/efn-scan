@@ -17,15 +17,15 @@ public final class PacketReceiveEvent extends Event implements Runnable {
    private PacketReceiveEvent() {
    }
 
-   public static void dispatchAsync(Packet<?> var0) {
-      dispatchAsync(var0, null);
+   public static void dispatchAsync(Packet<?> packet) {
+      dispatchAsync(packet, null);
    }
 
-   public static void dispatchAsync(Packet<?> var0, BooleanSupplier var1) {
+   public static void dispatchAsync(Packet<?> packet, BooleanSupplier booleanSupplier) {
       if (TYPE.hasListeners()) {
          PacketReceiveEvent var2 = TYPE.pool.acquire();
-         var2.packet = var0;
-         var2.connectionActive = var1;
+         var2.packet = packet;
+         var2.connectionActive = booleanSupplier;
          if (!EventBus.INSTANCE.postAsync(var2)) {
             var2.release();
          }

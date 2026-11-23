@@ -17,13 +17,13 @@ public abstract class MixinAutoCityMinecraft {
    }
 
    @Inject(
-      method = {"method_1590"},
+      method = {"handleBlockBreaking"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$autoCityContinueAttack(boolean var1, CallbackInfo var2) {
+   private void efn$autoCityContinueAttack(boolean bl, CallbackInfo callbackInfo) {
       if (AutoCityModule.mining() || CrystalBotModule.digging()) {
-         var2.cancel();
+         callbackInfo.cancel();
       }
    }
 }

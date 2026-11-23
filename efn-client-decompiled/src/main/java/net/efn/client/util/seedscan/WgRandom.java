@@ -11,31 +11,31 @@ final class WgRandom {
    WgRandom() {
    }
 
-   private WgRandom(long var1, long var3) {
-      this.lo = var1;
-      this.hi = var3;
+   private WgRandom(long l, long m) {
+      this.lo = l;
+      this.hi = m;
    }
 
    WgRandom copy() {
       return new WgRandom(this.lo, this.hi);
    }
 
-   boolean sameState(WgRandom var1) {
-      return this.lo == var1.lo && this.hi == var1.hi;
+   boolean sameState(WgRandom wgRandom) {
+      return this.lo == wgRandom.lo && this.hi == wgRandom.hi;
    }
 
    long stateHash() {
       return this.lo * 31L + this.hi;
    }
 
-   private static long mix(long var0) {
-      var0 = (var0 ^ var0 >>> 30) * -4658895280553007687L;
-      var0 = (var0 ^ var0 >>> 27) * -7723592293110705685L;
-      return var0 ^ var0 >>> 31;
+   private static long mix(long l) {
+      l = (l ^ l >>> 30) * -4658895280553007687L;
+      l = (l ^ l >>> 27) * -7723592293110705685L;
+      return l ^ l >>> 31;
    }
 
-   void setSeed(long var1) {
-      long var3 = var1 ^ 7640891576956012809L;
+   void setSeed(long l) {
+      long var3 = l ^ 7640891576956012809L;
       long var5 = var3 + -7046029254386353131L;
       this.lo = mix(var3);
       this.hi = mix(var5);
@@ -55,31 +55,31 @@ final class WgRandom {
       return var5;
    }
 
-   void skip(int var1) {
-      for (int var2 = 0; var2 < var1; var2++) {
+   void skip(int i) {
+      for (int var2 = 0; var2 < i; var2++) {
          this.step();
       }
    }
 
-   int next(int var1) {
-      return (int)(this.step() >>> 64 - var1);
+   int next(int i) {
+      return (int)(this.step() >>> 64 - i);
    }
 
-   int nextInt(int var1) {
-      if ((var1 & var1 - 1) == 0) {
-         return (int)((long)var1 * this.next(31) >> 31);
+   int nextInt(int i) {
+      if ((i & i - 1) == 0) {
+         return (int)((long)i * this.next(31) >> 31);
       } else {
          int var2;
          int var3;
-         while ((var3 = this.next(31)) - (var2 = var3 % var1) + (var1 - 1) < 0) {
+         while ((var3 = this.next(31)) - (var2 = var3 % i) + (i - 1) < 0) {
          }
 
          return var2;
       }
    }
 
-   int between(int var1, int var2) {
-      return this.nextInt(var2 - var1 + 1) + var1;
+   int between(int i, int j) {
+      return this.nextInt(j - i + 1) + i;
    }
 
    long nextLong() {
@@ -98,16 +98,16 @@ final class WgRandom {
       return (((long)var1 << 27) + var2) * 1.1102230246251565E-16;
    }
 
-   long setDecorationSeed(long var1, int var3, int var4) {
-      this.setSeed(var1);
+   long setDecorationSeed(long l, int i, int j) {
+      this.setSeed(l);
       long var5 = this.nextLong() | 1L;
       long var7 = this.nextLong() | 1L;
-      long var9 = var3 * var5 + var4 * var7 ^ var1;
+      long var9 = i * var5 + j * var7 ^ l;
       this.setSeed(var9);
       return var9;
    }
 
-   void setFeatureSeed(long var1, int var3, int var4) {
-      this.setSeed(var1 + var3 + 10000L * var4);
+   void setFeatureSeed(long l, int i, int j) {
+      this.setSeed(l + i + 10000L * j);
    }
 }

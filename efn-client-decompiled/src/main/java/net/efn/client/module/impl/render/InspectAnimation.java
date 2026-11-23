@@ -62,109 +62,109 @@ final class InspectAnimation {
    private InspectAnimation() {
    }
 
-   static InspectAnimation.Clip clip(String var0) {
-      return "Twirl".equals(var0) ? TWIRL_CLIP : CLASSIC_CLIP;
+   static InspectAnimation.Clip clip(String string) {
+      return "Twirl".equals(string) ? TWIRL_CLIP : CLASSIC_CLIP;
    }
 
-   static void place(MatrixStack var0, float[] var1, float var2, int var3, float var4, float var5, float var6) {
-      float var7 = 0.017453292F * var2;
-      float var8 = MathHelper.method_15393(var1[3]) * var7 * var3;
-      float var9 = MathHelper.method_15393(var1[4]) * var7;
-      float var10 = MathHelper.method_15393(var1[5]) * var7 * var3;
-      float var11 = MathHelper.method_15393(var1[6]) * var7 * var3;
-      float var12 = MathHelper.method_15393(var1[7]) * var7;
-      var0.method_46416(var1[0] * var2 * var3, var1[1] * var2, var1[2] * var2);
-      float var13 = 0.07F * var3;
-      var0.method_49278(new Quaternionf().rotateX(var9).rotateZ(var10).rotateY(var8), var13, -0.05F, -0.02F);
-      var0.method_49278(new Quaternionf().rotateX(var12), var4 * var3, var5, var6);
-      var0.method_49278(new Quaternionf().rotateAxis(var11, 0.0F, 0.94F, 0.342F), var13, -0.05F, -0.02F);
+   static void place(MatrixStack matrixStack, float[] fs, float f, int i, float g, float h, float j) {
+      float var7 = 0.017453292F * f;
+      float var8 = MathHelper.wrapDegrees(fs[3]) * var7 * i;
+      float var9 = MathHelper.wrapDegrees(fs[4]) * var7;
+      float var10 = MathHelper.wrapDegrees(fs[5]) * var7 * i;
+      float var11 = MathHelper.wrapDegrees(fs[6]) * var7 * i;
+      float var12 = MathHelper.wrapDegrees(fs[7]) * var7;
+      matrixStack.translate(fs[0] * f * i, fs[1] * f, fs[2] * f);
+      float var13 = 0.07F * i;
+      matrixStack.multiply(new Quaternionf().rotateX(var9).rotateZ(var10).rotateY(var8), var13, -0.05F, -0.02F);
+      matrixStack.multiply(new Quaternionf().rotateX(var12), g * i, h, j);
+      matrixStack.multiply(new Quaternionf().rotateAxis(var11, 0.0F, 0.94F, 0.342F), var13, -0.05F, -0.02F);
    }
 
-   static float[] sample(float[][] var0, float var1, float[] var2) {
-      var1 = MathHelper.method_15363(var1, 0.0F, 1.0F);
+   static float[] sample(float[][] fs, float f, float[] gs) {
+      f = MathHelper.clamp(f, 0.0F, 1.0F);
       int var3 = 0;
 
-      while (var3 < var0.length - 2 && var1 > var0[var3 + 1][0]) {
+      while (var3 < fs.length - 2 && f > fs[var3 + 1][0]) {
          var3++;
       }
 
-      float[] var4 = var0[var3 + 1];
-      float[] var5 = var0[var3];
+      float[] var4 = fs[var3 + 1];
+      float[] var5 = fs[var3];
       float var6 = var4[0] - var5[0];
-      float var7 = var6 <= 0.0F ? 1.0F : (var1 - var5[0]) / var6;
+      float var7 = var6 <= 0.0F ? 1.0F : (f - var5[0]) / var6;
 
       for (int var8 = 0; var8 < 16; var8++) {
-         var2[var8] = hermite(value(var5, var8), value(var4, var8), slope(var0, var3, var8) * var6, slope(var0, var3 + 1, var8) * var6, var7);
+         gs[var8] = hermite(value(var5, var8), value(var4, var8), slope(fs, var3, var8) * var6, slope(fs, var3 + 1, var8) * var6, var7);
       }
 
-      return var2;
+      return gs;
    }
 
-   static float[] sampleLoop(float[][] var0, float var1, float[] var2) {
-      var1 -= (float)Math.floor(var1);
-      int var4 = var0.length;
+   static float[] sampleLoop(float[][] fs, float f, float[] gs) {
+      f -= (float)Math.floor(f);
+      int var4 = fs.length;
       int var3 = 0;
 
-      while (var3 < var4 - 2 && var1 > var0[var3 + 1][0]) {
+      while (var3 < var4 - 2 && f > fs[var3 + 1][0]) {
          var3++;
       }
 
-      float[] var5 = var0[var3 + 1];
-      float[] var6 = var0[var3];
+      float[] var5 = fs[var3 + 1];
+      float[] var6 = fs[var3];
       float var7 = var5[0] - var6[0];
-      float var8 = var7 <= 0.0F ? 1.0F : (var1 - var6[0]) / var7;
+      float var8 = var7 <= 0.0F ? 1.0F : (f - var6[0]) / var7;
 
       for (int var9 = 0; var9 < 16; var9++) {
-         var2[var9] = hermite(value(var6, var9), value(var5, var9), loopSlope(var0, var3, var9) * var7, loopSlope(var0, var3 + 1, var9) * var7, var8);
+         gs[var9] = hermite(value(var6, var9), value(var5, var9), loopSlope(fs, var3, var9) * var7, loopSlope(fs, var3 + 1, var9) * var7, var8);
       }
 
-      return var2;
+      return gs;
    }
 
-   private static float loopSlope(float[][] var0, int var1, int var2) {
-      int var7 = var0.length;
-      float var8 = value(var0[var7 - 1], var2) - value(var0[0], var2);
+   private static float loopSlope(float[][] fs, int i, int j) {
+      int var7 = fs.length;
+      float var8 = value(fs[var7 - 1], j) - value(fs[0], j);
       float var5;
       float var6;
-      if (var1 == 0) {
-         var6 = var0[var7 - 2][0] - 1.0F;
-         var5 = value(var0[var7 - 2], var2) - var8;
+      if (i == 0) {
+         var6 = fs[var7 - 2][0] - 1.0F;
+         var5 = value(fs[var7 - 2], j) - var8;
       } else {
-         var6 = var0[var1 - 1][0];
-         var5 = value(var0[var1 - 1], var2);
+         var6 = fs[i - 1][0];
+         var5 = value(fs[i - 1], j);
       }
 
       float var3;
       float var4;
-      if (var1 == var7 - 1) {
-         var4 = var0[1][0] + 1.0F;
-         var3 = value(var0[1], var2) + var8;
+      if (i == var7 - 1) {
+         var4 = fs[1][0] + 1.0F;
+         var3 = value(fs[1], j) + var8;
       } else {
-         var4 = var0[var1 + 1][0];
-         var3 = value(var0[var1 + 1], var2);
+         var4 = fs[i + 1][0];
+         var3 = value(fs[i + 1], j);
       }
 
       return (var3 - var5) / (var4 - var6);
    }
 
-   private static float value(float[] var0, int var1) {
-      return var1 + 1 < var0.length ? var0[var1 + 1] : 0.0F;
+   private static float value(float[] fs, int i) {
+      return i + 1 < fs.length ? fs[i + 1] : 0.0F;
    }
 
-   private static float slope(float[][] var0, int var1, int var2) {
-      if (var1 != 0 && var1 != var0.length - 1) {
-         float[] var3 = var0[var1 - 1];
-         float[] var4 = var0[var1 + 1];
-         return (value(var4, var2) - value(var3, var2)) / (var4[0] - var3[0]);
+   private static float slope(float[][] fs, int i, int j) {
+      if (i != 0 && i != fs.length - 1) {
+         float[] var3 = fs[i - 1];
+         float[] var4 = fs[i + 1];
+         return (value(var4, j) - value(var3, j)) / (var4[0] - var3[0]);
       } else {
          return 0.0F;
       }
    }
 
-   private static float hermite(float var0, float var1, float var2, float var3, float var4) {
-      float var5 = var4 * var4;
-      float var6 = var5 * var4;
-      return (2.0F * var6 - 3.0F * var5 + 1.0F) * var0 + (var6 - 2.0F * var5 + var4) * var2 + (-2.0F * var6 + 3.0F * var5) * var1 + (var6 - var5) * var3;
+   private static float hermite(float f, float g, float h, float i, float j) {
+      float var5 = j * j;
+      float var6 = var5 * j;
+      return (2.0F * var6 - 3.0F * var5 + 1.0F) * f + (var6 - 2.0F * var5 + j) * h + (-2.0F * var6 + 3.0F * var5) * g + (var6 - var5) * i;
    }
 
    @Environment(EnvType.CLIENT)
@@ -175,38 +175,38 @@ final class InspectAnimation {
       final float loopExit;
       private final float[][] loop;
 
-      Clip(float[][] var1, float var2) {
-         this(var1, var2, 0.0F, 0.0F);
+      Clip(float[][] fs, float f) {
+         this(fs, f, 0.0F, 0.0F);
       }
 
-      Clip(float[][] var1, float var2, float var3, float var4) {
-         this.keys = var1;
-         this.seconds = var2;
-         this.loopEnter = var3;
-         this.loopExit = var4;
-         this.loop = var4 > var3 ? cut(var1, var3, var4) : null;
+      Clip(float[][] fs, float f, float g, float h) {
+         this.keys = fs;
+         this.seconds = f;
+         this.loopEnter = g;
+         this.loopExit = h;
+         this.loop = h > g ? cut(fs, g, h) : null;
       }
 
       boolean loops() {
          return this.loop != null;
       }
 
-      float[] sample(float var1, float[] var2) {
-         return this.loop != null && var1 > this.loopEnter && var1 < this.loopExit
-            ? InspectAnimation.sampleLoop(this.loop, (var1 - this.loopEnter) / (this.loopExit - this.loopEnter), var2)
-            : InspectAnimation.sample(this.keys, var1, var2);
+      float[] sample(float f, float[] fs) {
+         return this.loop != null && f > this.loopEnter && f < this.loopExit
+            ? InspectAnimation.sampleLoop(this.loop, (f - this.loopEnter) / (this.loopExit - this.loopEnter), fs)
+            : InspectAnimation.sample(this.keys, f, fs);
       }
 
-      private static float[][] cut(float[][] var0, float var1, float var2) {
+      private static float[][] cut(float[][] fs, float f, float g) {
          int var3 = -1;
          int var4 = -1;
 
-         for (int var5 = 0; var5 < var0.length; var5++) {
-            if (Math.abs(var0[var5][0] - var1) < 1.0E-4F) {
+         for (int var5 = 0; var5 < fs.length; var5++) {
+            if (Math.abs(fs[var5][0] - f) < 1.0E-4F) {
                var3 = var5;
             }
 
-            if (Math.abs(var0[var5][0] - var2) < 1.0E-4F) {
+            if (Math.abs(fs[var5][0] - g) < 1.0E-4F) {
                var4 = var5;
             }
          }
@@ -215,8 +215,8 @@ final class InspectAnimation {
             float[][] var7 = new float[var4 - var3 + 1][];
 
             for (int var6 = var3; var6 <= var4; var6++) {
-               var7[var6 - var3] = (float[])var0[var6].clone();
-               var7[var6 - var3][0] = (var0[var6][0] - var1) / (var2 - var1);
+               var7[var6 - var3] = (float[])fs[var6].clone();
+               var7[var6 - var3][0] = (fs[var6][0] - f) / (g - f);
             }
 
             return var7;

@@ -24,69 +24,43 @@ public final class WindowIcon {
    private WindowIcon() {
    }
 
-   public static void apply(long var0) {
+   public static void apply(long l) {
       int var2 = GLFW.glfwGetPlatform();
       if (var2 == 393217 || var2 == 393220) {
          ArrayList var3 = new ArrayList(SIZES.length);
 
-         try {
-            MemoryStack var4 = MemoryStack.stackPush();
+         try (MemoryStack var4 = MemoryStack.stackPush()) {
+            Buffer var5 = GLFWImage.malloc(SIZES.length, var4);
+            int var6 = 0;
 
-            label130: {
-               try {
-                  Buffer var5 = GLFWImage.malloc(SIZES.length, var4);
-                  int var6 = 0;
-
-                  for (int var10 : SIZES) {
-                     ByteBuffer var11 = load("/assets/efn/icons/icon_" + var10 + ".png", var4);
-                     if (var11 != null) {
-                        var3.add(var11);
-                        var5.position(var6++);
-                        var5.width(var10);
-                        var5.height(var10);
-                        var5.pixels(var11);
-                     }
-                  }
-
-                  if (var6 == 0) {
-                     break label130;
-                  }
-
-                  var5.position(0);
-                  var5.limit(var6);
-                  GLFW.glfwSetWindowIcon(var0, var5);
-               } catch (Throwable var17) {
-                  if (var4 != null) {
-                     try {
-                        var4.close();
-                     } catch (Throwable var16) {
-                        var17.addSuppressed(var16);
-                     }
-                  }
-
-                  throw var17;
+            for (int var10 : SIZES) {
+               ByteBuffer var11 = load("/assets/efn/icons/icon_" + var10 + ".png", var4);
+               if (var11 != null) {
+                  var3.add(var11);
+                  var5.position(var6++);
+                  var5.width(var10);
+                  var5.height(var10);
+                  var5.pixels(var11);
                }
+            }
 
-               if (var4 != null) {
-                  var4.close();
-               }
-
+            if (var6 == 0) {
                return;
             }
 
-            if (var4 != null) {
-               var4.close();
-            }
+            var5.position(0);
+            var5.limit(var6);
+            GLFW.glfwSetWindowIcon(l, var5);
          } finally {
             var3.forEach(STBImage::stbi_image_free);
          }
       }
    }
 
-   private static ByteBuffer load(String var0, MemoryStack var1) {
+   private static ByteBuffer load(String string, MemoryStack memoryStack) {
       try {
          ByteBuffer var15;
-         try (InputStream var2 = WindowIcon.class.getResourceAsStream(var0)) {
+         try (InputStream var2 = WindowIcon.class.getResourceAsStream(string)) {
             if (var2 == null) {
                return null;
             }
@@ -97,9 +71,9 @@ public final class WindowIcon {
             ByteBuffer var3;
             try {
                var5.put(var4).flip();
-               IntBuffer var6 = var1.mallocInt(1);
-               IntBuffer var7 = var1.mallocInt(1);
-               IntBuffer var8 = var1.mallocInt(1);
+               IntBuffer var6 = memoryStack.mallocInt(1);
+               IntBuffer var7 = memoryStack.mallocInt(1);
+               IntBuffer var8 = memoryStack.mallocInt(1);
                var3 = STBImage.stbi_load_from_memory(var5, var6, var7, var8, 4);
             } catch (Throwable var10) {
                MemoryUtil.memFree(var5);
@@ -112,7 +86,7 @@ public final class WindowIcon {
 
          return var15;
       } catch (RuntimeException | IOException var12) {
-         LOGGER.warn("[EFN+] Failed to load window icon {}", var0, var12);
+         LOGGER.warn("[EFN+] Failed to load window icon {}", string, var12);
          return null;
       }
    }

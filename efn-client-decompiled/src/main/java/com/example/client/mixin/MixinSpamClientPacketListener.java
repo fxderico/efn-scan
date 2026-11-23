@@ -18,34 +18,34 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin({ClientPlayNetworkHandler.class})
 public abstract class MixinSpamClientPacketListener {
    @Shadow
-   private ClientWorld field_3699;
+   private ClientWorld world;
 
    public MixinSpamClientPacketListener() {
    }
 
    @Inject(
-      method = {"method_11120"},
+      method = {"onGameJoin"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_2600;method_11074(Lnet/minecraft/class_2596;Lnet/minecraft/class_2547;Lnet/minecraft/class_11980;)V",
+         target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/network/PacketApplyBatcher;)V",
          shift = Shift.AFTER
       )}
    )
-   private void efn$spamRelogin(GameJoinS2CPacket var1, CallbackInfo var2) {
-      if (SpamModule.active != null && this.field_3699 != null) {
+   private void efn$spamRelogin(GameJoinS2CPacket gameJoinS2CPacket, CallbackInfo callbackInfo) {
+      if (SpamModule.active != null && this.world != null) {
          SpamModule.onGameLeft();
       }
    }
 
    @Inject(
-      method = {"method_52798"},
+      method = {"onEnterReconfiguration"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_2600;method_11074(Lnet/minecraft/class_2596;Lnet/minecraft/class_2547;Lnet/minecraft/class_11980;)V",
+         target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/network/PacketApplyBatcher;)V",
          shift = Shift.AFTER
       )}
    )
-   private void efn$spamReconfiguration(EnterReconfigurationS2CPacket var1, CallbackInfo var2) {
+   private void efn$spamReconfiguration(EnterReconfigurationS2CPacket enterReconfigurationS2CPacket, CallbackInfo callbackInfo) {
       if (SpamModule.active != null) {
          SpamModule.onGameLeft();
       }

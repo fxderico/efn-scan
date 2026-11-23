@@ -10,6 +10,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Environment(EnvType.CLIENT)
 @Mixin({DialogScreen.class})
 public interface AccessorOrderDialogScreen {
-   @Accessor("field_60761")
+   @Accessor("dialog")
    Dialog efn$dialog();
 }

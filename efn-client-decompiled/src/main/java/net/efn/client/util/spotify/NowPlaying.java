@@ -64,12 +64,12 @@ public record NowPlaying(
       this.art = art;
    }
 
-   public NowPlaying(NowPlaying.Status var1, String var2, String var3) {
-      this(var1, var2, var3, "", NowPlaying.Source.WINDOW, 0L, 0L, 0L, 1.0, null);
+   public NowPlaying(NowPlaying.Status status, String string, String string2) {
+      this(status, string, string2, "", NowPlaying.Source.WINDOW, 0L, 0L, 0L, 1.0, null);
    }
 
-   private static NowPlaying idle(NowPlaying.Status var0) {
-      return new NowPlaying(var0, "", "", "", NowPlaying.Source.NONE, 0L, 0L, 0L, 1.0, null);
+   private static NowPlaying idle(NowPlaying.Status status) {
+      return new NowPlaying(status, "", "", "", NowPlaying.Source.NONE, 0L, 0L, 0L, 1.0, null);
    }
 
    public boolean playing() {
@@ -98,17 +98,17 @@ public record NowPlaying(
       }
    }
 
-   public boolean sameTrack(NowPlaying var1) {
-      return var1 != null && this.title.equals(var1.title) && this.artist.equals(var1.artist) && this.album.equals(var1.album);
+   public boolean sameTrack(NowPlaying nowPlaying) {
+      return nowPlaying != null && this.title.equals(nowPlaying.title) && this.artist.equals(nowPlaying.artist) && this.album.equals(nowPlaying.album);
    }
 
-   public long positionAt(long var1) {
+   public long positionAt(long l) {
       if (!this.hasTimeline()) {
          return 0L;
       } else if (!this.playing()) {
          return this.positionMs;
       } else {
-         long var3 = this.positionMs + (long)(Math.max(0L, var1 - this.sampledAtMs) * this.rate);
+         long var3 = this.positionMs + (long)(Math.max(0L, l - this.sampledAtMs) * this.rate);
          return Math.min(var3, this.durationMs);
       }
    }
@@ -129,12 +129,12 @@ public record NowPlaying(
       };
    }
 
-   public static NowPlaying fromSession(MediaSession.Snapshot var0, AlbumArt var1, NowPlaying var2) {
-      NowPlaying.Status var3 = switch (var0.state()) {
+   public static NowPlaying fromSession(MediaSession.Snapshot snapshot, AlbumArt albumArt, NowPlaying nowPlaying) {
+      NowPlaying.Status var3 = switch (snapshot.state()) {
          case PLAYING -> NowPlaying.Status.PLAYING;
          case CLOSED -> NowPlaying.Status.NOT_RUNNING;
          case CHANGING -> {
-            if (var2 != null && var2.source == NowPlaying.Source.SESSION && var2.playing()) {
+            if (nowPlaying != null && nowPlaying.source == NowPlaying.Source.SESSION && nowPlaying.playing()) {
                yield NowPlaying.Status.PLAYING;
             } else {
                yield NowPlaying.Status.PAUSED;
@@ -146,30 +146,30 @@ public record NowPlaying(
          ? NOT_RUNNING
          : new NowPlaying(
             var3,
-            var0.title(),
-            var0.artist(),
-            var0.album(),
+            snapshot.title(),
+            snapshot.artist(),
+            snapshot.album(),
             NowPlaying.Source.SESSION,
-            var0.durationMs(),
-            var0.positionMs(),
-            var0.sampledAtMs(),
-            var0.rate(),
-            var1
+            snapshot.durationMs(),
+            snapshot.positionMs(),
+            snapshot.sampledAtMs(),
+            snapshot.rate(),
+            albumArt
          );
    }
 
-   public static NowPlaying fromWindowTitle(String var0, NowPlaying var1) {
-      if (var0 == null) {
+   public static NowPlaying fromWindowTitle(String string, NowPlaying nowPlaying) {
+      if (string == null) {
          return NOT_RUNNING;
       } else {
-         String var2 = var0.strip();
+         String var2 = string.strip();
          if (var2.isEmpty()) {
             return NOT_RUNNING;
          } else {
             int var3 = var2.indexOf(" - ");
             if (var3 < 0 && (var2.equals("Spotify") || var2.startsWith("Spotify "))) {
-               return var1 != null && var1.hasTrack()
-                  ? new NowPlaying(NowPlaying.Status.PAUSED, var1.title, var1.artist)
+               return nowPlaying != null && nowPlaying.hasTrack()
+                  ? new NowPlaying(NowPlaying.Status.PAUSED, nowPlaying.title, nowPlaying.artist)
                   : new NowPlaying(NowPlaying.Status.PAUSED, "", "");
             } else {
                return var3 > 0

@@ -103,27 +103,27 @@ public final class JesusModule extends ClientModule {
       this.swimmingTicks = 0;
    }
 
-   private void onPostTick(TickEvent var1) {
+   private void onPostTick(TickEvent tickEvent) {
       boolean var3 = this.inBubbleColumn;
       this.inBubbleColumn = false;
-      MinecraftClient var4 = MinecraftClient.method_1551();
-      ClientPlayerEntity var5 = var4.field_1724;
-      if (var5 != null && var4.field_1687 != null) {
-         if (!var5.method_20232()) {
-            if (!var5.method_5799() || this.waterShouldBeSolid(var5)) {
-               if (!var5.method_5771() || this.lavaShouldBeSolid(var5)) {
-                  Object var2 = var5.method_5765() ? var5.method_5854() : var5;
+      MinecraftClient var4 = MinecraftClient.getInstance();
+      ClientPlayerEntity var5 = var4.player;
+      if (var5 != null && var4.world != null) {
+         if (!var5.isInSwimmingPose()) {
+            if (!var5.isTouchingWater() || this.waterShouldBeSolid(var5)) {
+               if (!var5.isInLava() || this.lavaShouldBeSolid(var5)) {
+                  Object var2 = var5.hasVehicle() ? var5.getVehicle() : var5;
                   if (var2 != null) {
                      if (var3) {
-                        if (var4.field_1690.field_1903.method_1434() && var2.method_18798().field_1351 < 0.11) {
+                        if (var4.options.jumpKey.isPressed() && var2.getVelocity().y < 0.11) {
                            setVelocityY((Entity)var2, 0.11);
                         }
-                     } else if (!var2.method_5799() && !var2.method_5771()) {
-                        BlockState var6 = var4.field_1687.method_8320(var2.method_24515().method_10074());
-                        boolean var7 = (Boolean)var6.method_61767(Properties.field_12508, false);
+                     } else if (!var2.isTouchingWater() && !var2.isInLava()) {
+                        BlockState var6 = var4.world.getBlockState(var2.getBlockPos().down());
+                        boolean var7 = var6.get(Properties.WATERLOGGED, false);
                         if (this.ascending == 0) {
                            setVelocityY((Entity)var2, 0.11);
-                        } else if (this.ascending == 1 && (var6.method_27852(Blocks.field_10382) || var6.method_27852(Blocks.field_10164) || var7)) {
+                        } else if (this.ascending == 1 && (var6.isOf(Blocks.WATER) || var6.isOf(Blocks.LAVA) || var7)) {
                            setVelocityY((Entity)var2, 0.0);
                         }
 
@@ -139,46 +139,46 @@ public final class JesusModule extends ClientModule {
       }
    }
 
-   private static void setVelocityY(Entity var0, double var1) {
-      Vec3d var3 = var0.method_18798();
-      var0.method_18800(var3.field_1352, var1, var3.field_1350);
+   private static void setVelocityY(Entity entity, double d) {
+      Vec3d var3 = entity.getVelocity();
+      entity.setVelocity(var3.x, d, var3.z);
    }
 
-   private void captureMoveAliasing(PlayerMoveEvent var1) {
+   private void captureMoveAliasing(PlayerMoveEvent playerMoveEvent) {
       this.moveIsVelocity = false;
       if (this.ncpBypass.get()) {
-         ClientPlayerEntity var2 = MinecraftClient.method_1551().field_1724;
+         ClientPlayerEntity var2 = MinecraftClient.getInstance().player;
          if (var2 != null) {
-            Vec3d var3 = var2.method_18798();
-            this.moveIsVelocity = var3.field_1352 == var1.x && var3.field_1351 == var1.y && var3.field_1350 == var1.z;
+            Vec3d var3 = var2.getVelocity();
+            this.moveIsVelocity = var3.x == playerMoveEvent.x && var3.y == playerMoveEvent.y && var3.z == playerMoveEvent.z;
          }
       }
    }
 
-   private void onMove(PlayerMoveEvent var1) {
+   private void onMove(PlayerMoveEvent playerMoveEvent) {
       if (this.ncpBypass.get()) {
          boolean var3 = this.moveIsVelocity;
          this.moveIsVelocity = false;
-         MinecraftClient var4 = MinecraftClient.method_1551();
-         ClientPlayerEntity var5 = var4.field_1724;
-         if (var5 != null && var4.field_1687 != null) {
+         MinecraftClient var4 = MinecraftClient.getInstance();
+         ClientPlayerEntity var5 = var4.player;
+         if (var5 != null && var4.world != null) {
             int var6 = overLiquid(var5);
             boolean var7 = (var6 & 1) != 0 && this.waterShouldBeSolid(var5);
             boolean var2 = (var6 & 2) != 0 && this.lavaShouldBeSolid(var5);
             if (!var7 && !var2) {
                this.swimmingTicks = 0;
             } else if (++this.swimmingTicks < 15) {
-               if (var5.method_24828()) {
-                  applyStrafe(var4, var5, var1, isMoving(var5) ? 0.2873 : 0.0);
+               if (var5.isOnGround()) {
+                  applyStrafe(var4, var5, playerMoveEvent, isMoving(var5) ? 0.2873 : 0.0);
                   if (var3) {
-                     setVelocityXZ(var5, var1.x, var1.z);
+                     setVelocityXZ(var5, playerMoveEvent.x, playerMoveEvent.z);
                   }
                }
             } else {
                this.swimmingTicks = 0;
                if (this.slowDown.get()) {
-                  var1.x = 0.0;
-                  var1.z = 0.0;
+                  playerMoveEvent.x = 0.0;
+                  playerMoveEvent.z = 0.0;
                   if (var3) {
                      setVelocityXZ(var5, 0.0, 0.0);
                   }
@@ -186,32 +186,32 @@ public final class JesusModule extends ClientModule {
 
                setVelocityY(var5, 0.08);
                if (var3) {
-                  var1.y = 0.08;
+                  playerMoveEvent.y = 0.08;
                }
             }
          }
       }
    }
 
-   private static void setVelocityXZ(Entity var0, double var1, double var3) {
-      var0.method_18800(var1, var0.method_18798().field_1351, var3);
+   private static void setVelocityXZ(Entity entity, double d, double e) {
+      entity.setVelocity(d, entity.getVelocity().y, e);
    }
 
-   private void onPacketSend(PacketSendEvent var1) {
-      if (var1.packet instanceof PlayerMoveC2SPacket var4) {
+   private void onPacketSend(PacketSendEvent packetSendEvent) {
+      if (packetSendEvent.packet instanceof PlayerMoveC2SPacket var4) {
          if (this.ncpBypass.get()) {
-            MinecraftClient var5 = MinecraftClient.method_1551();
-            if (var5.method_18854()) {
-               ClientPlayerEntity var6 = var5.field_1724;
-               if (var6 != null && var5.field_1687 != null) {
-                  if (!var6.method_5799() || this.waterShouldBeSolid(var6)) {
-                     if (!var6.method_5771() || this.lavaShouldBeSolid(var6)) {
+            MinecraftClient var5 = MinecraftClient.getInstance();
+            if (var5.isOnThread()) {
+               ClientPlayerEntity var6 = var5.player;
+               if (var6 != null && var5.world != null) {
+                  if (!var6.isTouchingWater() || this.waterShouldBeSolid(var6)) {
+                     if (!var6.isInLava() || this.lavaShouldBeSolid(var6)) {
                         int var7 = overLiquid(var6);
                         boolean var2 = (var7 & 1) != 0 && this.waterShouldBeSolid(var6) || (var7 & 2) != 0 && this.lavaShouldBeSolid(var6);
-                        if (!var6.method_5799() && !var6.method_5771() && !(var6.field_6017 > 3.0) && var2) {
+                        if (!var6.isTouchingWater() && !var6.isInLava() && !(var6.fallDistance > 3.0) && var2) {
                            ((AccessorJesusServerboundMovePlayerPacket)var4).efn$jesusSetOnGround(false);
-                           if (var6.method_24828() && var4.method_36171()) {
-                              ((AccessorServerboundMovePlayerPacket)var4).efn$setY(var4.method_12268(0.0) - (0.02 + 1.0E-4 * this.swimmingTicks));
+                           if (var6.isOnGround() && var4.changesPosition()) {
+                              ((AccessorServerboundMovePlayerPacket)var4).efn$setY(var4.getY(0.0) - (0.02 + 1.0E-4 * this.swimmingTicks));
                            }
                         }
                      }
@@ -222,18 +222,18 @@ public final class JesusModule extends ClientModule {
       }
    }
 
-   private static boolean isMoving(ClientPlayerEntity var0) {
-      return var0.field_6250 != 0.0F || var0.field_6212 != 0.0F;
+   private static boolean isMoving(ClientPlayerEntity clientPlayerEntity) {
+      return clientPlayerEntity.forwardSpeed != 0.0F || clientPlayerEntity.sidewaysSpeed != 0.0F;
    }
 
-   private static void applyStrafe(MinecraftClient var0, ClientPlayerEntity var1, PlayerMoveEvent var2, double var3) {
-      Vec2f var5 = var1.field_3913.method_3128();
-      float var6 = Math.signum(var5.field_1342);
-      float var7 = Math.signum(var5.field_1343);
-      float var8 = var1.method_61415(var0.method_61966().method_60637(true));
+   private static void applyStrafe(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, PlayerMoveEvent playerMoveEvent, double d) {
+      Vec2f var5 = clientPlayerEntity.input.getMovementInput();
+      float var6 = Math.signum(var5.y);
+      float var7 = Math.signum(var5.x);
+      float var8 = clientPlayerEntity.getLerpedYaw(minecraftClient.getRenderTickCounter().getTickProgress(true));
       if (var6 == 0.0F && var7 == 0.0F) {
-         var2.x = 0.0;
-         var2.z = 0.0;
+         playerMoveEvent.x = 0.0;
+         playerMoveEvent.z = 0.0;
       } else {
          float var9 = 90.0F * var7;
          if (var6 != 0.0F) {
@@ -246,25 +246,25 @@ public final class JesusModule extends ClientModule {
          }
 
          double var10 = Math.toRadians(var8);
-         var2.x = -Math.sin(var10) * var3;
-         var2.z = Math.cos(var10) * var3;
+         playerMoveEvent.x = -Math.sin(var10) * d;
+         playerMoveEvent.z = Math.cos(var10) * d;
       }
    }
 
-   private static int overLiquid(ClientPlayerEntity var0) {
-      Entity var1 = var0.method_5854();
-      Box var2 = var1 != null ? var0.method_5829().method_991(var1.method_5829()) : var0.method_5829();
+   private static int overLiquid(ClientPlayerEntity clientPlayerEntity) {
+      Entity var1 = clientPlayerEntity.getVehicle();
+      Box var2 = var1 != null ? clientPlayerEntity.getBoundingBox().union(var1.getBoundingBox()) : clientPlayerEntity.getBoundingBox();
       boolean var3 = false;
       boolean var4 = false;
-      Iterator var5 = var0.method_73183().method_29546(var2.method_989(0.0, -0.01, 0.0)).iterator();
+      Iterator var5 = clientPlayerEntity.getEntityWorld().getStatesInBox(var2.offset(0.0, -0.01, 0.0)).iterator();
 
       while (var5.hasNext()) {
          BlockState var6 = (BlockState)var5.next();
-         if (var6.method_27852(Blocks.field_10382) || var6.method_26227().method_15772() == Fluids.field_15910) {
+         if (var6.isOf(Blocks.WATER) || var6.getFluidState().getFluid() == Fluids.WATER) {
             var3 = true;
-         } else if (var6.method_27852(Blocks.field_10164)) {
+         } else if (var6.isOf(Blocks.LAVA)) {
             var4 = true;
-         } else if (!var6.method_26215()) {
+         } else if (!var6.isAir()) {
             return 0;
          }
       }
@@ -272,82 +272,82 @@ public final class JesusModule extends ClientModule {
       return (var3 ? 1 : 0) | (var4 ? 2 : 0);
    }
 
-   private boolean waterShouldBeSolid(ClientPlayerEntity var1) {
-      if (var1.method_7325() || var1.method_31549().field_7479) {
+   private boolean waterShouldBeSolid(ClientPlayerEntity clientPlayerEntity) {
+      if (clientPlayerEntity.isSpectator() || clientPlayerEntity.getAbilities().flying) {
          return false;
-      } else if (var1.method_5854() instanceof AbstractBoatEntity) {
+      } else if (clientPlayerEntity.getVehicle() instanceof AbstractBoatEntity) {
          return false;
       } else if (FlyModule.active != null) {
          return false;
-      } else if (this.dipIfBurning.get() && var1.method_5809()) {
+      } else if (this.dipIfBurning.get() && clientPlayerEntity.isOnFire()) {
          return false;
-      } else if (this.dipOnSneakWater.get() && MinecraftClient.method_1551().field_1690.field_1832.method_1434()) {
+      } else if (this.dipOnSneakWater.get() && MinecraftClient.getInstance().options.sneakKey.isPressed()) {
          return false;
       } else {
-         return this.dipOnFallWater.get() && var1.field_6017 > this.dipFallHeightWater.getInt() ? false : this.waterMode.is("Solid");
+         return this.dipOnFallWater.get() && clientPlayerEntity.fallDistance > this.dipFallHeightWater.getInt() ? false : this.waterMode.is("Solid");
       }
    }
 
-   private boolean lavaShouldBeSolid(ClientPlayerEntity var1) {
-      if (var1.method_7325() || var1.method_31549().field_7479) {
+   private boolean lavaShouldBeSolid(ClientPlayerEntity clientPlayerEntity) {
+      if (clientPlayerEntity.isSpectator() || clientPlayerEntity.getAbilities().flying) {
          return false;
-      } else if (var1.method_5854() instanceof StriderEntity) {
+      } else if (clientPlayerEntity.getVehicle() instanceof StriderEntity) {
          return false;
-      } else if (this.isLavaDangerous(var1) && this.lavaMode.is("Solid")) {
+      } else if (this.isLavaDangerous(clientPlayerEntity) && this.lavaMode.is("Solid")) {
          return true;
-      } else if (this.dipOnSneakLava.get() && MinecraftClient.method_1551().field_1690.field_1832.method_1434()) {
+      } else if (this.dipOnSneakLava.get() && MinecraftClient.getInstance().options.sneakKey.isPressed()) {
          return false;
       } else {
-         return this.dipOnFallLava.get() && var1.field_6017 > this.dipFallHeightLava.getInt() ? false : this.lavaMode.is("Solid");
+         return this.dipOnFallLava.get() && clientPlayerEntity.fallDistance > this.dipFallHeightLava.getInt() ? false : this.lavaMode.is("Solid");
       }
    }
 
-   private boolean isLavaDangerous(ClientPlayerEntity var1) {
+   private boolean isLavaDangerous(ClientPlayerEntity clientPlayerEntity) {
       if (!this.dipIfFireResistant.get()) {
          return true;
       } else {
-         StatusEffectInstance var2 = var1.method_6112(StatusEffects.field_5918);
-         return var2 == null ? true : !(var2.method_5584() > 300.0 * var1.method_45325(EntityAttributes.field_51579));
+         StatusEffectInstance var2 = clientPlayerEntity.getStatusEffect(StatusEffects.FIRE_RESISTANCE);
+         return var2 == null ? true : !(var2.getDuration() > 300.0 * clientPlayerEntity.getAttributeValue(EntityAttributes.BURNING_TIME));
       }
    }
 
-   public boolean canWalkOnFluid(FluidState var1) {
-      ClientPlayerEntity var2 = MinecraftClient.method_1551().field_1724;
-      if (var2 != null && !var2.method_5681()) {
-         Fluid var3 = var1.method_15772();
-         return (var3 == Fluids.field_15910 || var3 == Fluids.field_15909) && this.waterShouldBeSolid(var2)
+   public boolean canWalkOnFluid(FluidState fluidState) {
+      ClientPlayerEntity var2 = MinecraftClient.getInstance().player;
+      if (var2 != null && !var2.isSwimming()) {
+         Fluid var3 = fluidState.getFluid();
+         return (var3 == Fluids.WATER || var3 == Fluids.FLOWING_WATER) && this.waterShouldBeSolid(var2)
             ? true
-            : (var3 == Fluids.field_15908 || var3 == Fluids.field_15907) && this.lavaShouldBeSolid(var2);
+            : (var3 == Fluids.LAVA || var3 == Fluids.FLOWING_LAVA) && this.lavaShouldBeSolid(var2);
       } else {
          return false;
       }
    }
 
-   public VoxelShape collisionShape(CollisionView var1, BlockState var2, BlockPos var3, VoxelShape var4) {
-      FluidState var5 = var2.method_26227();
-      if (var5.method_15769()) {
-         return var4;
+   public VoxelShape collisionShape(CollisionView collisionView, BlockState blockState, BlockPos blockPos, VoxelShape voxelShape) {
+      FluidState var5 = blockState.getFluidState();
+      if (var5.isEmpty()) {
+         return voxelShape;
       } else {
-         MinecraftClient var6 = MinecraftClient.method_1551();
-         if (var1 == var6.field_1687 && var6.method_18854()) {
-            ClientPlayerEntity var7 = var6.field_1724;
+         MinecraftClient var6 = MinecraftClient.getInstance();
+         if (collisionView == var6.world && var6.isOnThread()) {
+            ClientPlayerEntity var7 = var6.player;
             if (var7 == null) {
-               return var4;
-            } else if ((var2.method_27852(Blocks.field_10382) || var5.method_15772() == Fluids.field_15910)
-               && !var7.method_5799()
+               return voxelShape;
+            } else if ((blockState.isOf(Blocks.WATER) || var5.getFluid() == Fluids.WATER)
+               && !var7.isTouchingWater()
                && this.waterShouldBeSolid(var7)
-               && var3.method_10264() <= var7.method_23318() - 1.0) {
-               return VoxelShapes.method_1077();
+               && blockPos.getY() <= var7.getY() - 1.0) {
+               return VoxelShapes.fullCube();
             } else {
-               return !var2.method_27852(Blocks.field_10164)
-                     || var7.method_5771()
+               return !blockState.isOf(Blocks.LAVA)
+                     || var7.isInLava()
                      || !this.lavaShouldBeSolid(var7)
-                     || !this.isLavaDangerous(var7) && !(var3.method_10264() <= var7.method_23318() - 1.0)
-                  ? var4
-                  : VoxelShapes.method_1077();
+                     || !this.isLavaDangerous(var7) && !(blockPos.getY() <= var7.getY() - 1.0)
+                  ? voxelShape
+                  : VoxelShapes.fullCube();
             }
          } else {
-            return var4;
+            return voxelShape;
          }
       }
    }

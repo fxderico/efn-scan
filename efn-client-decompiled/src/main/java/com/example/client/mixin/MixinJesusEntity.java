@@ -18,25 +18,25 @@ public abstract class MixinJesusEntity {
    }
 
    @Inject(
-      method = {"method_5700"},
+      method = {"onBubbleColumnSurfaceCollision"},
       at = {@At("HEAD")}
    )
-   private void efn$jesusAboveBubbleColumn(CallbackInfo var1) {
+   private void efn$jesusAboveBubbleColumn(CallbackInfo callbackInfo) {
       this.efn$jesusMarkBubbleColumn();
    }
 
    @Inject(
-      method = {"method_5764"},
+      method = {"onBubbleColumnCollision"},
       at = {@At("HEAD")}
    )
-   private void efn$jesusInsideBubbleColumn(CallbackInfo var1) {
+   private void efn$jesusInsideBubbleColumn(CallbackInfo callbackInfo) {
       this.efn$jesusMarkBubbleColumn();
    }
 
    @Unique
    private void efn$jesusMarkBubbleColumn() {
       JesusModule var1 = JesusModule.active;
-      if (var1 != null && this == MinecraftClient.method_1551().field_1724) {
+      if (var1 != null && this == MinecraftClient.getInstance().player) {
          var1.markInBubbleColumn();
       }
    }

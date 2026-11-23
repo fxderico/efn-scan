@@ -26,17 +26,17 @@ public record WebhookEmbed(String title, String description, Integer color, Stri
       return var1;
    }
 
-   private static void addNestedUrl(JsonObject var0, String var1, String var2) {
-      if (var2 != null && !var2.isBlank()) {
+   private static void addNestedUrl(JsonObject jsonObject, String string, String string2) {
+      if (string2 != null && !string2.isBlank()) {
          JsonObject var3 = new JsonObject();
-         var3.addProperty("url", var2);
-         var0.add(var1, var3);
+         var3.addProperty("url", string2);
+         jsonObject.add(string, var3);
       }
    }
 
-   private static void add(JsonObject var0, String var1, String var2) {
-      if (var2 != null && !var2.isBlank()) {
-         var0.addProperty(var1, var2);
+   private static void add(JsonObject jsonObject, String string, String string2) {
+      if (string2 != null && !string2.isBlank()) {
+         jsonObject.addProperty(string, string2);
       }
    }
 }

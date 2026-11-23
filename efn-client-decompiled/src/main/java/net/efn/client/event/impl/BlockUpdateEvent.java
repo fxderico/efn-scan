@@ -18,11 +18,11 @@ public final class BlockUpdateEvent extends Event {
    private BlockUpdateEvent() {
    }
 
-   public static void dispatch(BlockPos var0, BlockState var1, BlockState var2) {
+   public static void dispatch(BlockPos blockPos, BlockState blockState, BlockState blockState2) {
       if (TYPE.hasPreListeners()) {
-         INSTANCE.pos = var0;
-         INSTANCE.oldState = var1;
-         INSTANCE.newState = var2;
+         INSTANCE.pos = blockPos;
+         INSTANCE.oldState = blockState;
+         INSTANCE.newState = blockState2;
          TYPE.dispatch(INSTANCE);
          INSTANCE.pos = null;
          INSTANCE.oldState = null;

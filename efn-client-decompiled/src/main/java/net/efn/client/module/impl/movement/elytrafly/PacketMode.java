@@ -16,18 +16,18 @@ import net.minecraft.util.math.Vec3d;
 
 @Environment(EnvType.CLIENT)
 public final class PacketMode extends ElytraFlightMode {
-   public PacketMode(ElytraFlyModule var1) {
-      super(var1);
+   public PacketMode(ElytraFlyModule elytraFlyModule) {
+      super(elytraFlyModule);
    }
 
    @Override
    public void onDeactivate() {
-      ClientPlayerEntity var1 = this.mc.field_1724;
+      ClientPlayerEntity var1 = this.mc.player;
       if (var1 != null) {
-         PlayerAbilities var2 = var1.method_31549();
-         var2.field_7479 = false;
-         if (!var2.field_7477 && !var1.method_7325()) {
-            var2.field_7478 = false;
+         PlayerAbilities var2 = var1.getAbilities();
+         var2.flying = false;
+         if (!var2.creativeMode && !var1.isSpectator()) {
+            var2.allowFlying = false;
          }
       }
    }
@@ -35,30 +35,28 @@ public final class PacketMode extends ElytraFlightMode {
    @Override
    public void onTick() {
       super.onTick();
-      ClientPlayerEntity var1 = this.mc.field_1724;
+      ClientPlayerEntity var1 = this.mc.player;
       if (var1 != null) {
-         if (var1.method_6118(EquipmentSlot.field_6174).method_7909() == Items.field_8833
-            && !(var1.field_6017 <= 0.2)
-            && !this.mc.field_1690.field_1832.method_1434()) {
-            var1.method_18799(Vec3d.field_1353);
-            var1.field_3944.method_52787(new ClientCommandC2SPacket(var1, Mode.field_12982));
-            var1.field_3944.method_52787(new OnGroundOnly(true, var1.field_5976));
+         if (var1.getEquippedStack(EquipmentSlot.CHEST).getItem() == Items.ELYTRA && !(var1.fallDistance <= 0.2) && !this.mc.options.sneakKey.isPressed()) {
+            var1.setVelocity(Vec3d.ZERO);
+            var1.networkHandler.sendPacket(new ClientCommandC2SPacket(var1, Mode.START_FALL_FLYING));
+            var1.networkHandler.sendPacket(new OnGroundOnly(true, var1.horizontalCollision));
          }
       }
    }
 
    @Override
-   public void onPacketSend(Packet<?> var1) {
-      if (var1 instanceof PlayerMoveC2SPacket) {
-         ClientPlayerEntity var2 = this.mc.field_1724;
-         var2.field_3944.method_52787(new ClientCommandC2SPacket(var2, Mode.field_12982));
+   public void onPacketSend(Packet<?> packet) {
+      if (packet instanceof PlayerMoveC2SPacket) {
+         ClientPlayerEntity var2 = this.mc.player;
+         var2.networkHandler.sendPacket(new ClientCommandC2SPacket(var2, Mode.START_FALL_FLYING));
       }
    }
 
    @Override
    public void onPlayerMove() {
-      PlayerAbilities var1 = this.mc.field_1724.method_31549();
-      var1.field_7479 = true;
-      var1.method_7248(this.elytraFly.horizontalSpeed.get() / 20.0F);
+      PlayerAbilities var1 = this.mc.player.getAbilities();
+      var1.flying = true;
+      var1.setFlySpeed(this.elytraFly.horizontalSpeed.get() / 20.0F);
    }
 }

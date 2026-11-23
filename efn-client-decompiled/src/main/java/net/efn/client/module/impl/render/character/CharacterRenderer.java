@@ -38,19 +38,26 @@ final class CharacterRenderer {
    private CharacterRenderer() {
    }
 
-   static void submit(WornCharacter var0, PlayerEntityModel var1, MatrixStack var2, OrderedRenderCommandQueue var3, int var4, PlayerEntityRenderState var5) {
-      CharacterModel var6 = var0.model;
+   static void submit(
+      WornCharacter wornCharacter,
+      PlayerEntityModel playerEntityModel,
+      MatrixStack matrixStack,
+      OrderedRenderCommandQueue orderedRenderCommandQueue,
+      int i,
+      PlayerEntityRenderState playerEntityRenderState
+   ) {
+      CharacterModel var6 = wornCharacter.model;
       PartMesh[] var7 = var6.parts;
-      boolean var8 = var5.field_53333;
-      int var9 = LivingEntityRenderer.method_23622(var5, 0.0F);
-      float[] var10 = pitches(var5, var6, var1);
-      float[] var11 = joints(var5, var6);
-      float var12 = var1.field_3398.field_3654;
-      float var13 = -var1.field_3398.field_3675;
-      float[] var14 = CharacterMotion.update(var5, var6, var1, var10);
-      var2.method_22903();
-      var1.method_63512().method_22703(var2);
-      lift(var2, var5, var6);
+      boolean var8 = playerEntityRenderState.invisible;
+      int var9 = LivingEntityRenderer.getOverlay(playerEntityRenderState, 0.0F);
+      float[] var10 = pitches(playerEntityRenderState, var6, playerEntityModel);
+      float[] var11 = joints(playerEntityRenderState, var6);
+      float var12 = playerEntityModel.head.pitch;
+      float var13 = -playerEntityModel.head.yaw;
+      float[] var14 = CharacterMotion.update(playerEntityRenderState, var6, playerEntityModel, var10);
+      matrixStack.push();
+      playerEntityModel.getRootPart().applyTransform(matrixStack);
+      lift(matrixStack, playerEntityRenderState, var6);
 
       for (int var15 = 0; var15 < var7.length; var15++) {
          PartMesh var16 = var7[var15];
@@ -68,36 +75,38 @@ final class CharacterRenderer {
                var21 = var11[var16.bone.ordinal()];
             }
 
-            var2.method_22903();
-            chain(var2, var1, var6, var15, var14, !var17, null, var10);
-            submitPart(var0, var16, var2, var3, var4, var9, var8, var17, var18, var19, var20, var21, var22);
-            var2.method_22909();
+            matrixStack.push();
+            chain(matrixStack, playerEntityModel, var6, var15, var14, !var17, null, var10);
+            submitPart(wornCharacter, var16, matrixStack, orderedRenderCommandQueue, i, var9, var8, var17, var18, var19, var20, var21, var22);
+            matrixStack.pop();
          }
       }
 
-      var2.method_22909();
+      matrixStack.pop();
    }
 
-   static boolean firstPersonHand(PlayerEntityModel var0, MatrixStack var1, OrderedRenderCommandQueue var2, int var3, ModelPart var4) {
+   static boolean firstPersonHand(
+      PlayerEntityModel playerEntityModel, MatrixStack matrixStack, OrderedRenderCommandQueue orderedRenderCommandQueue, int i, ModelPart modelPart
+   ) {
       WornCharacter var5 = CharacterModule.firstPerson();
       if (var5 == null) {
          return false;
       } else {
          CharacterModel var6 = var5.model;
-         Bone var7 = var4 == var0.field_3401 ? Bone.RIGHT_ARM : Bone.LEFT_ARM;
+         Bone var7 = modelPart == playerEntityModel.rightArm ? Bone.RIGHT_ARM : Bone.LEFT_ARM;
          PartMesh var8 = var6.part(var7);
          if (var8 != null && var8.base != null) {
-            var4.method_41923();
-            var4.field_3674 = var7 == Bone.RIGHT_ARM ? 0.1F : -0.1F;
+            modelPart.resetTransform();
+            modelPart.roll = var7 == Bone.RIGHT_ARM ? 0.1F : -0.1F;
             PartMesh[] var9 = var6.parts;
 
             for (int var10 = 0; var10 < var9.length; var10++) {
                PartMesh var11 = var9[var10];
                if (var11.bone == var7 && (var11.base != null || var11.outline != null || var11.decals != null)) {
-                  var1.method_22903();
-                  chain(var1, var0, var6, var10, null, true, var4, null);
-                  submitPart(var5, var11, var1, var2, var3, OverlayTexture.field_21444, false, false, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F);
-                  var1.method_22909();
+                  matrixStack.push();
+                  chain(matrixStack, playerEntityModel, var6, var10, null, true, modelPart, null);
+                  submitPart(var5, var11, matrixStack, orderedRenderCommandQueue, i, OverlayTexture.DEFAULT_UV, false, false, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F);
+                  matrixStack.pop();
                }
             }
 
@@ -109,172 +118,193 @@ final class CharacterRenderer {
    }
 
    private static void submitPart(
-      WornCharacter var0,
-      PartMesh var1,
-      MatrixStack var2,
-      OrderedRenderCommandQueue var3,
-      int var4,
-      int var5,
-      boolean var6,
-      boolean var7,
-      float var8,
-      float var9,
-      float var10,
-      float var11,
-      float var12
+      WornCharacter wornCharacter,
+      PartMesh partMesh,
+      MatrixStack matrixStack,
+      OrderedRenderCommandQueue orderedRenderCommandQueue,
+      int i,
+      int j,
+      boolean bl,
+      boolean bl2,
+      float f,
+      float g,
+      float h,
+      float k,
+      float l
    ) {
-      if (var6) {
-         if (var1.base != null) {
-            var3.method_73529(1)
-               .method_73483(var2, var0.ghost, (var9x, var10x) -> emit(var9x, var10x, var1.base, var4, var5, 38, var7, var8, var9, var10, var1, var11, var12));
+      if (bl) {
+         if (partMesh.base != null) {
+            orderedRenderCommandQueue.getBatchingQueue(1)
+               .submitCustom(
+                  matrixStack,
+                  wornCharacter.ghost,
+                  (entry, vertexConsumer) -> emit(entry, vertexConsumer, partMesh.base, i, j, 38, bl2, f, g, h, partMesh, k, l)
+               );
          }
       } else {
-         if (var1.base != null || var1.outline != null) {
-            var3.method_73483(var2, var0.solid, (var9x, var10x) -> {
-               if (var1.base != null) {
-                  emit(var9x, var10x, var1.base, var4, var5, 255, var7, var8, var9, var10, var1, var11, var12);
+         if (partMesh.base != null || partMesh.outline != null) {
+            orderedRenderCommandQueue.submitCustom(matrixStack, wornCharacter.solid, (entry, vertexConsumer) -> {
+               if (partMesh.base != null) {
+                  emit(entry, vertexConsumer, partMesh.base, i, j, 255, bl2, f, g, h, partMesh, k, l);
                }
 
-               if (var1.outline != null) {
-                  emit(var9x, var10x, var1.outline, var4, var5, 255, var7, var8, var9, var10, var1, var11, var12);
+               if (partMesh.outline != null) {
+                  emit(entry, vertexConsumer, partMesh.outline, i, j, 255, bl2, f, g, h, partMesh, k, l);
                }
             });
          }
 
-         if (var1.decals != null) {
-            var3.method_73529(1)
-               .method_73483(
-                  var2, var0.decal, (var9x, var10x) -> emit(var9x, var10x, var1.decals, var4, var5, 255, var7, var8, var9, var10, var1, var11, var12)
+         if (partMesh.decals != null) {
+            orderedRenderCommandQueue.getBatchingQueue(1)
+               .submitCustom(
+                  matrixStack,
+                  wornCharacter.decal,
+                  (entry, vertexConsumer) -> emit(entry, vertexConsumer, partMesh.decals, i, j, 255, bl2, f, g, h, partMesh, k, l)
                );
          }
       }
    }
 
-   static boolean translateToHand(PlayerEntityModel var0, PlayerEntityRenderState var1, Arm var2, MatrixStack var3) {
-      WornCharacter var5 = CharacterModule.worn(var1);
+   static boolean translateToHand(PlayerEntityModel playerEntityModel, PlayerEntityRenderState playerEntityRenderState, Arm arm, MatrixStack matrixStack) {
+      WornCharacter var5 = CharacterModule.worn(playerEntityRenderState);
       if (var5 == null) {
          return false;
       } else {
          CharacterModel var6 = var5.model;
-         Bone var7 = var2 == Arm.field_6183 ? Bone.RIGHT_ARM : Bone.LEFT_ARM;
+         Bone var7 = arm == Arm.RIGHT ? Bone.RIGHT_ARM : Bone.LEFT_ARM;
          PartMesh var8 = var6.part(var7);
          if (var8 == null) {
             return false;
          } else {
             float var9 = var6.scale;
-            ModelPart var10 = vanilla(var0, var7);
-            var0.method_63512().method_22703(var3);
-            lift(var3, var1, var6);
-            pivot(var3, var10, var8, var9, pitch(var1, var8, var10.field_3654));
-            float var4 = var8.jointed ? CharacterJoints.angle(var1, var7, walk(var1, var7) * weight(var1, var7)) : 0.0F;
+            ModelPart var10 = vanilla(playerEntityModel, var7);
+            playerEntityModel.getRootPart().applyTransform(matrixStack);
+            lift(matrixStack, playerEntityRenderState, var6);
+            pivot(matrixStack, var10, var8, var9, pitch(playerEntityRenderState, var8, var10.pitch));
+            float var4 = var8.jointed
+               ? CharacterJoints.angle(playerEntityRenderState, var7, walk(playerEntityRenderState, var7) * weight(playerEntityRenderState, var7))
+               : 0.0F;
             if (var4 != 0.0F) {
                float var12 = var8.jointY * var9 / 16.0F;
                float var13 = var8.jointZ * var9 / 16.0F;
-               var3.method_46416(0.0F, -var12, -var13);
-               var3.method_22907(ROTATION.rotationX(var4));
-               var3.method_46416(0.0F, var12, var13);
+               matrixStack.translate(0.0F, -var12, -var13);
+               matrixStack.multiply(ROTATION.rotationX(var4));
+               matrixStack.translate(0.0F, var12, var13);
             }
 
-            var3.method_46416((var8.gripX - var8.pivotX) * var9 / 16.0F, -(var8.gripY - var8.pivotY) * var9 / 16.0F, -(var8.gripZ - var8.pivotZ) * var9 / 16.0F);
-            var3.method_22905(var9, var9, var9);
-            var3.method_46416((var2 == Arm.field_6183 ? 1.0F : -1.0F) / 16.0F, -0.625F, 0.125F);
+            matrixStack.translate(
+               (var8.gripX - var8.pivotX) * var9 / 16.0F, -(var8.gripY - var8.pivotY) * var9 / 16.0F, -(var8.gripZ - var8.pivotZ) * var9 / 16.0F
+            );
+            matrixStack.scale(var9, var9, var9);
+            matrixStack.translate((arm == Arm.RIGHT ? 1.0F : -1.0F) / 16.0F, -0.625F, 0.125F);
             return true;
          }
       }
    }
 
-   private static float[] pitches(PlayerEntityRenderState var0, CharacterModel var1, PlayerEntityModel var2) {
+   private static float[] pitches(PlayerEntityRenderState playerEntityRenderState, CharacterModel characterModel, PlayerEntityModel playerEntityModel) {
       float[] var3 = PITCH;
 
       for (Bone var7 : BONES) {
-         float var8 = vanilla(var2, var7).field_3654;
-         PartMesh var9 = !var7.arm() && !var7.leg() ? null : var1.part(var7);
-         var3[var7.ordinal()] = var9 == null ? var8 : pitch(var0, var9, var8);
+         float var8 = vanilla(playerEntityModel, var7).pitch;
+         PartMesh var9 = !var7.arm() && !var7.leg() ? null : characterModel.part(var7);
+         var3[var7.ordinal()] = var9 == null ? var8 : pitch(playerEntityRenderState, var9, var8);
       }
 
       return var3;
    }
 
-   private static float pitch(PlayerEntityRenderState var0, PartMesh var1, float var2) {
-      float var3 = var1.swingPitch(var2, walk(var0, var1.bone), weight(var0, var1.bone));
-      if (var1.jointed && var1.bone.leg() && var0.field_53410 && !var0.field_53413) {
-         var3 -= 0.5F * (1.0F - var0.field_53403);
+   private static float pitch(PlayerEntityRenderState playerEntityRenderState, PartMesh partMesh, float f) {
+      float var3 = partMesh.swingPitch(f, walk(playerEntityRenderState, partMesh.bone), weight(playerEntityRenderState, partMesh.bone));
+      if (partMesh.jointed && partMesh.bone.leg() && playerEntityRenderState.isInSneakingPose && !playerEntityRenderState.hasVehicle) {
+         var3 -= 0.5F * (1.0F - playerEntityRenderState.leaningPitch);
       }
 
       return var3;
    }
 
-   private static float[] joints(PlayerEntityRenderState var0, CharacterModel var1) {
+   private static float[] joints(PlayerEntityRenderState playerEntityRenderState, CharacterModel characterModel) {
       float[] var2 = JOINT;
 
       for (Bone var6 : BONES) {
-         PartMesh var7 = !var6.arm() && !var6.leg() ? null : var1.part(var6);
-         var2[var6.ordinal()] = var7 != null && var7.jointed ? CharacterJoints.angle(var0, var6, walk(var0, var6) * weight(var0, var6)) : 0.0F;
+         PartMesh var7 = !var6.arm() && !var6.leg() ? null : characterModel.part(var6);
+         var2[var6.ordinal()] = var7 != null && var7.jointed
+            ? CharacterJoints.angle(playerEntityRenderState, var6, walk(playerEntityRenderState, var6) * weight(playerEntityRenderState, var6))
+            : 0.0F;
       }
 
       return var2;
    }
 
-   private static float look(float var0, float var1) {
-      float var2 = var1 * 0.017453292F;
-      return MathHelper.method_15363(var0, -var2, var2);
+   private static float look(float f, float g) {
+      float var2 = g * 0.017453292F;
+      return MathHelper.clamp(f, -var2, var2);
    }
 
-   private static float walk(PlayerEntityRenderState var0, Bone var1) {
-      float var2 = var0.field_53450 * 0.6662F;
-      float var3 = var0.field_53451 / var0.field_53405;
+   private static float walk(PlayerEntityRenderState playerEntityRenderState, Bone bone) {
+      float var2 = playerEntityRenderState.limbSwingAnimationProgress * 0.6662F;
+      float var3 = playerEntityRenderState.limbSwingAmplitude / playerEntityRenderState.limbAmplitudeInverse;
 
-      return switch (var1) {
-         case RIGHT_LEG -> MathHelper.method_15362(var2) * 1.4F * var3;
-         case LEFT_LEG -> MathHelper.method_15362(var2 + 3.1415927F) * 1.4F * var3;
-         case RIGHT_ARM -> MathHelper.method_15362(var2 + 3.1415927F) * var3;
-         case LEFT_ARM -> MathHelper.method_15362(var2) * var3;
+      return switch (bone) {
+         case RIGHT_LEG -> MathHelper.cos(var2) * 1.4F * var3;
+         case LEFT_LEG -> MathHelper.cos(var2 + 3.1415927F) * 1.4F * var3;
+         case RIGHT_ARM -> MathHelper.cos(var2 + 3.1415927F) * var3;
+         case LEFT_ARM -> MathHelper.cos(var2) * var3;
          default -> 0.0F;
       };
    }
 
-   private static float weight(PlayerEntityRenderState var0, Bone var1) {
-      if (var1.leg()) {
-         return var0.field_53413 ? 0.0F : 1.0F - var0.field_53403;
-      } else if (!var1.arm()) {
+   private static float weight(PlayerEntityRenderState playerEntityRenderState, Bone bone) {
+      if (bone.leg()) {
+         return playerEntityRenderState.hasVehicle ? 0.0F : 1.0F - playerEntityRenderState.leaningPitch;
+      } else if (!bone.arm()) {
          return 0.0F;
       } else {
-         ArmPose var3 = var1 == Bone.RIGHT_ARM ? var0.field_55304 : var0.field_55306;
-         ArmPose var2 = var1 == Bone.RIGHT_ARM ? var0.field_55306 : var0.field_55304;
-         if (var2.method_30156()) {
+         ArmPose var3 = bone == Bone.RIGHT_ARM ? playerEntityRenderState.rightArmPose : playerEntityRenderState.leftArmPose;
+         ArmPose var2 = bone == Bone.RIGHT_ARM ? playerEntityRenderState.leftArmPose : playerEntityRenderState.rightArmPose;
+         if (var2.isTwoHanded()) {
             return 0.0F;
          } else {
             float var5 = switch (var3) {
-               case field_3409 -> 1.0F;
-               case field_3410, field_3406, field_42877, field_63542 -> 0.5F;
+               case EMPTY -> 1.0F;
+               case ITEM, BLOCK, BRUSH, THROW_TRIDENT -> 0.5F;
                default -> 0.0F;
             };
-            return var0.field_53414 ? var5 : var5 * (1.0F - var0.field_53403);
+            return playerEntityRenderState.isUsingItem ? var5 : var5 * (1.0F - playerEntityRenderState.leaningPitch);
          }
       }
    }
 
-   private static void lift(MatrixStack var0, PlayerEntityRenderState var1, CharacterModel var2) {
-      if (var1.field_53413) {
-         float var3 = 12.0F - var2.scale * var2.hipY;
+   private static void lift(MatrixStack matrixStack, PlayerEntityRenderState playerEntityRenderState, CharacterModel characterModel) {
+      if (playerEntityRenderState.hasVehicle) {
+         float var3 = 12.0F - characterModel.scale * characterModel.hipY;
          if (var3 != 0.0F) {
-            var0.method_46416(0.0F, -var3 / 16.0F, 0.0F);
+            matrixStack.translate(0.0F, -var3 / 16.0F, 0.0F);
          }
       }
    }
 
-   private static void chain(MatrixStack var0, PlayerEntityModel var1, CharacterModel var2, int var3, float[] var4, boolean var5, ModelPart var6, float[] var7) {
-      PartMesh var8 = var2.parts[var3];
-      float var9 = var2.scale;
+   private static void chain(
+      MatrixStack matrixStack,
+      PlayerEntityModel playerEntityModel,
+      CharacterModel characterModel,
+      int i,
+      float[] fs,
+      boolean bl,
+      ModelPart modelPart,
+      float[] gs
+   ) {
+      PartMesh var8 = characterModel.parts[i];
+      float var9 = characterModel.scale;
       if (!var8.extra) {
-         if (var6 == null) {
-            ModelPart var12 = vanilla(var1, var8.bone);
-            pivot(var0, var12, var8, var9, var7 == null ? var12.field_3654 : var7[var8.bone.ordinal()]);
+         if (modelPart == null) {
+            ModelPart var12 = vanilla(playerEntityModel, var8.bone);
+            pivot(matrixStack, var12, var8, var9, gs == null ? var12.pitch : gs[var8.bone.ordinal()]);
          } else {
-            var0.method_46416(var6.field_3657 / 16.0F, var6.field_3656 / 16.0F, var6.field_3655 / 16.0F);
-            var0.method_22907(ROTATION.rotationZYX(var6.field_3674, var6.field_3675, var6.field_3654));
+            matrixStack.translate(modelPart.originX / 16.0F, modelPart.originY / 16.0F, modelPart.originZ / 16.0F);
+            matrixStack.multiply(ROTATION.rotationZYX(modelPart.roll, modelPart.yaw, modelPart.pitch));
             float var13 = var8.bone == Bone.RIGHT_ARM ? -1.0F : 1.0F;
-            var0.method_46416(
+            matrixStack.translate(
                (var13 - (var8.gripX - var8.pivotX) * var9) / 16.0F,
                (10.0F + (var8.gripY - var8.pivotY) * var9) / 16.0F,
                (-2.0F + (var8.gripZ - var8.pivotZ) * var9) / 16.0F
@@ -282,70 +312,70 @@ final class CharacterRenderer {
          }
 
          float var14 = var9 / 16.0F;
-         var0.method_22905(var14, -var14, -var14);
+         matrixStack.scale(var14, -var14, -var14);
       } else {
-         chain(var0, var1, var2, var8.parent, var4, true, var6, var7);
-         PartMesh var10 = var2.parts[var8.parent];
-         var0.method_46416(var8.pivotX - var10.pivotX, var8.pivotY - var10.pivotY, var8.pivotZ - var10.pivotZ);
-         if (var5 && var4 != null && var8.motionSlot >= 0) {
+         chain(matrixStack, playerEntityModel, characterModel, var8.parent, fs, true, modelPart, gs);
+         PartMesh var10 = characterModel.parts[var8.parent];
+         matrixStack.translate(var8.pivotX - var10.pivotX, var8.pivotY - var10.pivotY, var8.pivotZ - var10.pivotZ);
+         if (bl && fs != null && var8.motionSlot >= 0) {
             int var11 = var8.motionSlot * 3;
-            if (var4[var11] != 0.0F || var4[var11 + 1] != 0.0F || var4[var11 + 2] != 0.0F) {
-               var0.method_22907(ROTATION.rotationZYX(var4[var11 + 2], var4[var11 + 1], var4[var11]));
+            if (fs[var11] != 0.0F || fs[var11 + 1] != 0.0F || fs[var11 + 2] != 0.0F) {
+               matrixStack.multiply(ROTATION.rotationZYX(fs[var11 + 2], fs[var11 + 1], fs[var11]));
             }
          }
       }
    }
 
-   private static void pivot(MatrixStack var0, ModelPart var1, PartMesh var2, float var3, float var4) {
-      ModelTransform var5 = var1.method_41921();
-      var0.method_46416(
-         (var3 * var2.pivotX + (var1.field_3657 - var5.comp_2997()) * var3) / 16.0F,
-         (24.0F - var3 * var2.pivotY + (var1.field_3656 - var5.comp_2998()) * var3) / 16.0F,
-         (-var3 * var2.pivotZ + (var1.field_3655 - var5.comp_2999()) * var3) / 16.0F
+   private static void pivot(MatrixStack matrixStack, ModelPart modelPart, PartMesh partMesh, float f, float g) {
+      ModelTransform var5 = modelPart.getDefaultTransform();
+      matrixStack.translate(
+         (f * partMesh.pivotX + (modelPart.originX - var5.x()) * f) / 16.0F,
+         (24.0F - f * partMesh.pivotY + (modelPart.originY - var5.y()) * f) / 16.0F,
+         (-f * partMesh.pivotZ + (modelPart.originZ - var5.z()) * f) / 16.0F
       );
-      if (var4 != 0.0F || var1.field_3675 != 0.0F || var1.field_3674 != 0.0F) {
-         var0.method_22907(ROTATION.rotationZYX(var1.field_3674, var1.field_3675, var4));
+      if (g != 0.0F || modelPart.yaw != 0.0F || modelPart.roll != 0.0F) {
+         matrixStack.multiply(ROTATION.rotationZYX(modelPart.roll, modelPart.yaw, g));
       }
 
-      if (var1.field_37938 != 1.0F || var1.field_37939 != 1.0F || var1.field_37940 != 1.0F) {
-         var0.method_22905(var1.field_37938, var1.field_37939, var1.field_37940);
+      if (modelPart.xScale != 1.0F || modelPart.yScale != 1.0F || modelPart.zScale != 1.0F) {
+         matrixStack.scale(modelPart.xScale, modelPart.yScale, modelPart.zScale);
       }
    }
 
-   private static ModelPart vanilla(PlayerEntityModel var0, Bone var1) {
-      return switch (var1) {
-         case RIGHT_LEG -> var0.field_3392;
-         case LEFT_LEG -> var0.field_3397;
-         case RIGHT_ARM -> var0.field_3401;
-         case LEFT_ARM -> var0.field_27433;
-         case HEAD -> var0.field_3398;
-         case BODY -> var0.field_3391;
+   private static ModelPart vanilla(PlayerEntityModel playerEntityModel, Bone bone) {
+      return switch (bone) {
+         case RIGHT_LEG -> playerEntityModel.rightLeg;
+         case LEFT_LEG -> playerEntityModel.leftLeg;
+         case RIGHT_ARM -> playerEntityModel.rightArm;
+         case LEFT_ARM -> playerEntityModel.leftArm;
+         case HEAD -> playerEntityModel.head;
+         case BODY -> playerEntityModel.body;
       };
    }
 
    private static void emit(
-      Entry var0,
-      VertexConsumer var1,
-      Surface var2,
-      int var3,
-      int var4,
-      int var5,
-      boolean var6,
-      float var7,
-      float var8,
-      float var9,
-      PartMesh var10,
-      float var11,
-      float var12
+      Entry entry,
+      VertexConsumer vertexConsumer,
+      Surface surface,
+      int i,
+      int j,
+      int k,
+      boolean bl,
+      float f,
+      float g,
+      float h,
+      PartMesh partMesh,
+      float l,
+      float m
    ) {
-      int var14 = var2.vertexCount();
+      int var14 = surface.vertexCount();
       if (scratch.length < var14 * 6) {
          scratch = new float[Math.max(var14 * 6, scratch.length * 2)];
       }
 
       float[] var15 = scratch;
-      Matrix4f var16 = var0.method_23761();
-      Matrix3f var17 = var0.method_23762();
+      Matrix4f var16 = entry.getPositionMatrix();
+      Matrix3f var17 = entry.getNormalMatrix();
       float var18 = var16.m00();
       float var19 = var16.m10();
       float var20 = var16.m20();
@@ -367,21 +397,21 @@ final class CharacterRenderer {
       float var36 = var17.m02();
       float var37 = var17.m12();
       float var38 = var17.m22();
-      float[] var39 = var2.pos;
-      float[] var40 = var2.nrm;
-      float[] var41 = var6 ? var2.weight : null;
-      float[] var42 = var2.flat;
+      float[] var39 = surface.pos;
+      float[] var40 = surface.nrm;
+      float[] var41 = bl ? surface.weight : null;
+      float[] var42 = surface.flat;
       Lights var13 = var42 != null ? CharacterLighting.current() : null;
       if (var41 != null) {
-         LEVELS.update(var7, var8, var9);
+         LEVELS.update(f, g, h);
       }
 
-      float[] var44 = var11 == 0.0F && var12 == 0.0F ? null : var2.joint;
-      float var45 = var10.jointX;
-      float var46 = var10.jointY;
-      float var47 = var10.jointZ;
+      float[] var44 = l == 0.0F && m == 0.0F ? null : surface.joint;
+      float var45 = partMesh.jointX;
+      float var46 = partMesh.jointY;
+      float var47 = partMesh.jointZ;
       if (var44 != null) {
-         JOINT_LEVELS.update(var11, var12, 0.0F);
+         JOINT_LEVELS.update(l, m, 0.0F);
       }
 
       for (int var48 = 0; var48 < var14; var48++) {
@@ -448,24 +478,24 @@ final class CharacterRenderer {
          }
       }
 
-      int[] var63 = var2.quads;
-      int[] var65 = var2.color;
-      float[] var67 = var2.uv;
-      byte[] var68 = var2.glow;
+      int[] var63 = surface.quads;
+      int[] var65 = surface.color;
+      float[] var67 = surface.uv;
+      byte[] var68 = surface.glow;
 
       for (int var69 = 0; var69 < var63.length; var69++) {
          int var70 = var63[var69];
          int var71 = var70 * 6;
-         int var72 = var5 == 255 ? var65[var70] : var65[var70] & 16777215 | var5 << 24;
-         int var73 = var68 != null && var68[var70] != 0 ? 15728880 : var3;
-         var1.method_23919(
+         int var72 = k == 255 ? var65[var70] : var65[var70] & 16777215 | k << 24;
+         int var73 = var68 != null && var68[var70] != 0 ? 15728880 : i;
+         vertexConsumer.vertex(
             var15[var71],
             var15[var71 + 1],
             var15[var71 + 2],
             var72,
             var67[var70 * 2],
             var67[var70 * 2 + 1],
-            var4,
+            j,
             var73,
             var15[var71 + 3],
             var15[var71 + 4],

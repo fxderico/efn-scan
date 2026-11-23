@@ -48,9 +48,9 @@ public record LrclibTrack(
       return this.instrumental || this.hasSynced() || this.hasPlain();
    }
 
-   public static LrclibTrack fromJson(JsonElement var0) {
-      if (var0 != null && var0.isJsonObject()) {
-         JsonObject var1 = var0.getAsJsonObject();
+   public static LrclibTrack fromJson(JsonElement jsonElement) {
+      if (jsonElement != null && jsonElement.isJsonObject()) {
+         JsonObject var1 = jsonElement.getAsJsonObject();
          return new LrclibTrack(
             number(var1, "id", 0L),
             text(var1, "trackName"),
@@ -66,9 +66,9 @@ public record LrclibTrack(
       }
    }
 
-   public static List<LrclibTrack> listFromJson(JsonElement var0) {
-      if (var0 != null && var0.isJsonArray()) {
-         JsonArray var1 = var0.getAsJsonArray();
+   public static List<LrclibTrack> listFromJson(JsonElement jsonElement) {
+      if (jsonElement != null && jsonElement.isJsonArray()) {
+         JsonArray var1 = jsonElement.getAsJsonArray();
          ArrayList var2 = new ArrayList(var1.size());
 
          for (JsonElement var4 : var1) {
@@ -84,8 +84,8 @@ public record LrclibTrack(
       }
    }
 
-   public static JsonElement parse(String var0) {
-      return JsonParser.parseString(var0);
+   public static JsonElement parse(String string) {
+      return JsonParser.parseString(string);
    }
 
    public JsonObject toJson() {
@@ -101,38 +101,38 @@ public record LrclibTrack(
       return var1;
    }
 
-   private static String nonNull(String var0) {
-      return var0 == null ? "" : var0;
+   private static String nonNull(String string) {
+      return string == null ? "" : string;
    }
 
-   private static String text(JsonObject var0, String var1) {
-      JsonElement var3 = var0.get(var1);
+   private static String text(JsonObject jsonObject, String string) {
+      JsonElement var3 = jsonObject.get(string);
       JsonPrimitive var2;
       return var3 instanceof JsonPrimitive && (var2 = (JsonPrimitive)var3).isString() ? var2.getAsString() : "";
    }
 
-   private static long number(JsonObject var0, String var1, long var2) {
-      JsonElement var5 = var0.get(var1);
+   private static long number(JsonObject jsonObject, String string, long l) {
+      JsonElement var5 = jsonObject.get(string);
       JsonPrimitive var4;
       if (var5 instanceof JsonPrimitive && (var4 = (JsonPrimitive)var5).isNumber()) {
          try {
             return var4.getAsLong();
          } catch (NumberFormatException var7) {
-            return var2;
+            return l;
          }
       } else {
-         return var2;
+         return l;
       }
    }
 
-   private static double number(JsonObject var0, String var1, double var2) {
-      JsonElement var5 = var0.get(var1);
+   private static double number(JsonObject jsonObject, String string, double d) {
+      JsonElement var5 = jsonObject.get(string);
       JsonPrimitive var4;
-      return var5 instanceof JsonPrimitive && (var4 = (JsonPrimitive)var5).isNumber() ? var4.getAsDouble() : var2;
+      return var5 instanceof JsonPrimitive && (var4 = (JsonPrimitive)var5).isNumber() ? var4.getAsDouble() : d;
    }
 
-   private static boolean bool(JsonObject var0, String var1) {
-      JsonElement var3 = var0.get(var1);
+   private static boolean bool(JsonObject jsonObject, String string) {
+      JsonElement var3 = jsonObject.get(string);
       JsonPrimitive var2;
       return var3 instanceof JsonPrimitive && (var2 = (JsonPrimitive)var3).isBoolean() && var2.getAsBoolean();
    }

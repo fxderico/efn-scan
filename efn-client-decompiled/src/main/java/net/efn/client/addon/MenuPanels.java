@@ -11,8 +11,8 @@ public final class MenuPanels {
    private MenuPanels() {
    }
 
-   public static void registerAccounts(Supplier<? extends MenuPanels.Panel> var0) {
-      accounts = var0;
+   public static void registerAccounts(Supplier<? extends MenuPanels.Panel> supplier) {
+      accounts = supplier;
    }
 
    public static MenuPanels.Panel newAccountsPanel() {
@@ -26,8 +26,8 @@ public final class MenuPanels {
 
       boolean isOpen();
 
-      boolean keyPressed(int var1);
+      boolean keyPressed(int i);
 
-      void render(float var1, float var2, float var3, float var4);
+      void render(float f, float g, float h, float i);
    }
 }

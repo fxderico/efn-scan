@@ -18,29 +18,29 @@ final class OrdersNav {
    private OrdersNav() {
    }
 
-   static boolean openYourOrders(MacroWorker var0, Gui var1, Consumer<ModuleChat.Body> var2) {
-      var1.closeAll();
-      var0.sleep(150L);
-      var1.command("orders");
-      if (!var0.waitFor(OrdersNav::isOrdersRootNow, 10000L)) {
-         var2.accept(ModuleChat.body().warn("Could not open /orders."));
-         var1.closeAll();
+   static boolean openYourOrders(MacroWorker macroWorker, Gui gui, Consumer<ModuleChat.Body> consumer) {
+      gui.closeAll();
+      macroWorker.sleep(150L);
+      gui.command("orders");
+      if (!macroWorker.waitFor(OrdersNav::isOrdersRootNow, 10000L)) {
+         consumer.accept(ModuleChat.body().warn("Could not open /orders."));
+         gui.closeAll();
          return false;
       } else {
-         String var3 = var1.fingerprint();
-         var1.click(51, 0, SlotActionType.field_7790);
-         if (var0.waitFor(OrdersNav::isYourOrdersNow, 2500L)) {
+         String var3 = gui.fingerprint();
+         gui.click(51, 0, SlotActionType.PICKUP);
+         if (macroWorker.waitFor(OrdersNav::isYourOrdersNow, 2500L)) {
             return true;
          } else {
-            if (var1.waitChange(var3, 1000L)) {
-               var0.sleep(150L);
-               if (var0.call(Gui::containerOpenNow) && !var0.call(OrdersNav::isOrdersRootNow)) {
+            if (gui.waitChange(var3, 1000L)) {
+               macroWorker.sleep(150L);
+               if (macroWorker.call(Gui::containerOpenNow) && !macroWorker.call(OrdersNav::isOrdersRootNow)) {
                   return true;
                }
             }
 
-            var2.accept(ModuleChat.body().warn("Could not open Your Orders."));
-            var1.closeAll();
+            consumer.accept(ModuleChat.body().warn("Could not open Your Orders."));
+            gui.closeAll();
             return false;
          }
       }
@@ -50,7 +50,7 @@ final class OrdersNav {
       if (!Gui.containerOpenNow()) {
          return false;
       } else {
-         String var0 = ServerText.normalize(Gui.mc().field_1755.method_25440());
+         String var0 = ServerText.normalize(Gui.mc().currentScreen.getTitle());
          if (var0.startsWith("orders (page") || var0.equals("orders")) {
             return true;
          } else if (var0.contains("your orders") || var0.contains("auction")) {
@@ -65,16 +65,16 @@ final class OrdersNav {
       if (!Gui.containerOpenNow()) {
          return false;
       } else {
-         String var0 = ServerText.normalize(Gui.mc().field_1755.method_25440());
+         String var0 = ServerText.normalize(Gui.mc().currentScreen.getTitle());
          return var0.contains("your orders") || Gui.findNow(OrdersNav::isNewOrderPane, 45) >= 0;
       }
    }
 
-   static boolean isNewOrderPane(ItemStack var0) {
-      return var0.method_31574(Items.field_8871) && Gui.nameOf(var0).contains("new order");
+   static boolean isNewOrderPane(ItemStack itemStack) {
+      return itemStack.isOf(Items.GRAY_STAINED_GLASS_PANE) && Gui.nameOf(itemStack).contains("new order");
    }
 
-   static boolean isPane(ItemStack var0) {
-      return var0.method_7960() || Registries.field_41178.method_10221(var0.method_7909()).method_12832().contains("stained_glass_pane");
+   static boolean isPane(ItemStack itemStack) {
+      return itemStack.isEmpty() || Registries.ITEM.getId(itemStack.getItem()).getPath().contains("stained_glass_pane");
    }
 }

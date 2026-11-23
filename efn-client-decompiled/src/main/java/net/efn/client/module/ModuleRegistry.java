@@ -41,30 +41,30 @@ public final class ModuleRegistry {
       return var0;
    }
 
-   public static ClientModule byName(String var0) {
+   public static ClientModule byName(String string) {
       all();
-      return byName.get(var0);
+      return byName.get(string);
    }
 
-   public static ClientModule resolve(String var0) {
+   public static ClientModule resolve(String string) {
       all();
-      ClientModule var1 = byId.get(var0);
-      return var1 != null ? var1 : byName.get(var0);
+      ClientModule var1 = byId.get(string);
+      return var1 != null ? var1 : byName.get(string);
    }
 
-   public static <T extends ClientModule> T get(Class<T> var0) {
+   public static <T extends ClientModule> T get(Class<T> class_) {
       Reference2ReferenceOpenHashMap var1 = byClass;
       if (var1 == null) {
          all();
          var1 = byClass;
       }
 
-      return (T)var1.get(var0);
+      return (T)var1.get(class_);
    }
 
-   public static List<ClientModule> inCategory(ModuleCategory var0) {
+   public static List<ClientModule> inCategory(ModuleCategory moduleCategory) {
       all();
-      return category(var0);
+      return category(moduleCategory);
    }
 
    public static List<ClientModule> enabled() {
@@ -72,7 +72,7 @@ public final class ModuleRegistry {
       return enabled;
    }
 
-   public static <T> List<T> instancesOf(Class<T> var0) {
+   public static <T> List<T> instancesOf(Class<T> class_) {
       List var2 = all();
       ModuleRegistry.TypeIndex var3 = types;
       if (var3.source() != var2) {
@@ -80,17 +80,17 @@ public final class ModuleRegistry {
       }
 
       List var1;
-      if ((var1 = var3.lists().get(var0)) == null) {
+      if ((var1 = var3.lists().get(class_)) == null) {
          ArrayList var4 = new ArrayList();
 
          for (ClientModule var6 : var2) {
-            if (var0.isInstance(var6)) {
+            if (class_.isInstance(var6)) {
                var4.add(var6);
             }
          }
 
          var1 = List.copyOf(var4);
-         var3.lists().put(var0, var1);
+         var3.lists().put(class_, var1);
       }
 
       return var1;
@@ -101,53 +101,53 @@ public final class ModuleRegistry {
       return revision;
    }
 
-   public static synchronized boolean add(ClientModule var0) {
+   public static synchronized boolean add(ClientModule clientModule) {
       if (modules != null) {
-         if (!byId.containsKey(var0.id()) && !byName.containsKey(var0.name())) {
-            var0.captureDefaults();
-            byName.put(var0.name(), var0);
-            byId.put(var0.id(), var0);
-            if (!byClass.containsKey(var0.getClass())) {
+         if (!byId.containsKey(clientModule.id()) && !byName.containsKey(clientModule.name())) {
+            clientModule.captureDefaults();
+            byName.put(clientModule.name(), clientModule);
+            byId.put(clientModule.id(), clientModule);
+            if (!byClass.containsKey(clientModule.getClass())) {
                Reference2ReferenceOpenHashMap var3 = byClass.clone();
-               var3.put(var0.getClass(), var0);
+               var3.put(clientModule.getClass(), clientModule);
                byClass = var3;
             }
 
-            replaceCategory(var0.category(), alphabetical(category(var0.category()).with(var0)));
-            var0.registered = true;
-            if (var0.isEnabled()) {
-               enabled = enabled.with(var0);
+            replaceCategory(clientModule.category(), alphabetical(category(clientModule.category()).with(clientModule)));
+            clientModule.registered = true;
+            if (clientModule.isEnabled()) {
+               enabled = enabled.with(clientModule);
             }
 
-            publish(modules.with(var0));
+            publish(modules.with(clientModule));
             return true;
          } else {
             return false;
          }
       } else {
          for (ClientModule var2 : STAGED) {
-            if (var2.id().equals(var0.id()) || var2.name().equals(var0.name())) {
+            if (var2.id().equals(clientModule.id()) || var2.name().equals(clientModule.name())) {
                return false;
             }
          }
 
-         STAGED.add(var0);
+         STAGED.add(clientModule);
          return true;
       }
    }
 
-   public static synchronized void remove(ClientModule var0) {
+   public static synchronized void remove(ClientModule clientModule) {
       all();
-      if (byId.get(var0.id()) == var0) {
-         ModuleList var1 = modules.without(var0);
-         byName.remove(var0.name(), var0);
-         byId.remove(var0.id(), var0);
-         if (byClass.get(var0.getClass()) == var0) {
+      if (byId.get(clientModule.id()) == clientModule) {
+         ModuleList var1 = modules.without(clientModule);
+         byName.remove(clientModule.name(), clientModule);
+         byId.remove(clientModule.id(), clientModule);
+         if (byClass.get(clientModule.getClass()) == clientModule) {
             Reference2ReferenceOpenHashMap var2 = byClass.clone();
-            var2.remove(var0.getClass());
+            var2.remove(clientModule.getClass());
 
             for (ClientModule var4 : var1) {
-               if (var4.getClass() == var0.getClass()) {
+               if (var4.getClass() == clientModule.getClass()) {
                   var2.put(var4.getClass(), var4);
                   break;
                }
@@ -156,21 +156,21 @@ public final class ModuleRegistry {
             byClass = var2;
          }
 
-         replaceCategory(var0.category(), category(var0.category()).without(var0));
-         var0.registered = false;
-         enabled = enabled.without(var0);
+         replaceCategory(clientModule.category(), category(clientModule.category()).without(clientModule));
+         clientModule.registered = false;
+         enabled = enabled.without(clientModule);
          publish(var1);
       }
    }
 
-   static synchronized void switched(ClientModule var0) {
-      if (var0.registered) {
-         if (var0.isEnabled()) {
-            if (!enabled.containsIdentity(var0)) {
-               enabled = enabled.with(var0);
+   static synchronized void switched(ClientModule clientModule) {
+      if (clientModule.registered) {
+         if (clientModule.isEnabled()) {
+            if (!enabled.containsIdentity(clientModule)) {
+               enabled = enabled.with(clientModule);
             }
          } else {
-            enabled = enabled.without(var0);
+            enabled = enabled.without(clientModule);
          }
       }
    }
@@ -226,7 +226,7 @@ public final class ModuleRegistry {
             byName.put(var8.name(), var8);
             byId.put(var8.id(), var8);
             var11.putIfAbsent(var8.getClass(), var8);
-            var13.computeIfAbsent(var8.category(), var0x -> new ArrayList<>()).add(var8);
+            var13.computeIfAbsent(var8.category(), moduleCategory -> new ArrayList<>()).add(var8);
             var8.registered = true;
             if (var8.isEnabled()) {
                var14.add(var8);
@@ -234,7 +234,7 @@ public final class ModuleRegistry {
          }
 
          Reference2ReferenceOpenHashMap var16 = new Reference2ReferenceOpenHashMap();
-         var13.forEach((var1x, var2x) -> var16.put(var1x, alphabetical((List<ClientModule>)var2x)));
+         var13.forEach((moduleCategory, list) -> var16.put(moduleCategory, alphabetical((List<ClientModule>)list)));
          byClass = var11;
          byCategory = var16;
          enabled = ModuleList.of(var14);
@@ -242,29 +242,29 @@ public final class ModuleRegistry {
       }
    }
 
-   private static void publish(ModuleList var0) {
+   private static void publish(ModuleList moduleList) {
       revision++;
       ModuleRevision.changed();
-      modules = var0;
+      modules = moduleList;
    }
 
-   private static ModuleList alphabetical(List<ClientModule> var0) {
-      ArrayList var1 = new ArrayList(var0);
+   private static ModuleList alphabetical(List<ClientModule> list) {
+      ArrayList var1 = new ArrayList(list);
       var1.sort(ALPHABETICAL);
       return ModuleList.of(var1);
    }
 
-   private static ModuleList category(ModuleCategory var0) {
-      ModuleList var1 = (ModuleList)byCategory.get(var0);
+   private static ModuleList category(ModuleCategory moduleCategory) {
+      ModuleList var1 = byCategory.get(moduleCategory);
       return var1 != null ? var1 : ModuleList.EMPTY;
    }
 
-   private static void replaceCategory(ModuleCategory var0, ModuleList var1) {
+   private static void replaceCategory(ModuleCategory moduleCategory, ModuleList moduleList) {
       Reference2ReferenceOpenHashMap var2 = byCategory.clone();
-      if (var1.isEmpty()) {
-         var2.remove(var0);
+      if (moduleList.isEmpty()) {
+         var2.remove(moduleCategory);
       } else {
-         var2.put(var0, var1);
+         var2.put(moduleCategory, moduleList);
       }
 
       byCategory = var2;
@@ -272,8 +272,8 @@ public final class ModuleRegistry {
 
    @Environment(EnvType.CLIENT)
    private record TypeIndex(List<ClientModule> source, Map<Class<?>, List<?>> lists) {
-      TypeIndex(List<ClientModule> var1) {
-         this(var1, new ConcurrentHashMap<>());
+      TypeIndex(List<ClientModule> list) {
+         this(list, new ConcurrentHashMap<>());
       }
    }
 }

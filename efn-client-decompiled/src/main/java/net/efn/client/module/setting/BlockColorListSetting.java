@@ -35,7 +35,7 @@ public final class BlockColorListSetting extends Setting {
    private final List<String> defaultOrder;
    private final Map<String, BlockColorListSetting.BlockEntry> byId = new HashMap<>();
    private final ArrayList<BlockColorListSetting.BlockEntry> selection = new ArrayList<>();
-   private final ReferenceOpenHashSet<BlockColorListSetting.BlockEntry> selectionSet = new ReferenceOpenHashSet();
+   private final ReferenceOpenHashSet<BlockColorListSetting.BlockEntry> selectionSet = new ReferenceOpenHashSet<>();
    private final List<BlockColorListSetting.BlockEntry> selectionView = Collections.unmodifiableList(this.selection);
    private long selectionVersion = -1L;
    private Map<String, Integer> enabledLookup;
@@ -46,31 +46,31 @@ public final class BlockColorListSetting extends Setting {
    private long currentVersion = 0L;
    private static final String WALL_BANNER = "_wall_banner";
 
-   public BlockColorListSetting(String var1, List<BlockColorListSetting.BlockEntry> var2, float[] var3) {
-      super(var1);
-      this.entries = new ArrayList<>(var2);
-      List var4 = var2.stream().map(BlockColorListSetting::copyEntry).toList();
+   public BlockColorListSetting(String string, List<BlockColorListSetting.BlockEntry> list, float[] fs) {
+      super(string);
+      this.entries = new ArrayList<>(list);
+      List var4 = list.stream().map(BlockColorListSetting::copyEntry).toList();
       this.shipped = () -> var4;
-      this.defaultColor = var3;
-      this.shippedDefaultColor = copyColor(var3);
+      this.defaultColor = fs;
+      this.shippedDefaultColor = copyColor(fs);
       this.colorsHidden = false;
       this.defaultOrder = List.of();
       this.index();
       this.onChange(this::invalidateLookup);
    }
 
-   public BlockColorListSetting(String var1, Supplier<List<BlockColorListSetting.BlockEntry>> var2, float[] var3) {
-      this(var1, var2, var3, false, List.of());
+   public BlockColorListSetting(String string, Supplier<List<BlockColorListSetting.BlockEntry>> supplier, float[] fs) {
+      this(string, supplier, fs, false, List.of());
    }
 
-   private BlockColorListSetting(String var1, Supplier<List<BlockColorListSetting.BlockEntry>> var2, float[] var3, boolean var4, List<String> var5) {
-      super(var1);
-      this.entriesSupplier = var2;
-      this.shipped = var2;
-      this.defaultColor = var3;
-      this.shippedDefaultColor = copyColor(var3);
-      this.colorsHidden = var4;
-      this.defaultOrder = var5;
+   private BlockColorListSetting(String string, Supplier<List<BlockColorListSetting.BlockEntry>> supplier, float[] fs, boolean bl, List<String> list) {
+      super(string);
+      this.entriesSupplier = supplier;
+      this.shipped = supplier;
+      this.defaultColor = fs;
+      this.shippedDefaultColor = copyColor(fs);
+      this.colorsHidden = bl;
+      this.defaultOrder = list;
       this.onChange(this::invalidateLookup);
    }
 
@@ -113,9 +113,9 @@ public final class BlockColorListSetting extends Setting {
       return Collections.unmodifiableList(this.entriesInternal());
    }
 
-   public BlockColorListSetting.BlockEntry entry(String var1) {
+   public BlockColorListSetting.BlockEntry entry(String string) {
       this.entriesInternal();
-      return this.byId.get(var1);
+      return this.byId.get(string);
    }
 
    public float[] defaultColor() {
@@ -161,40 +161,40 @@ public final class BlockColorListSetting extends Setting {
       return this.selectionView;
    }
 
-   public boolean select(BlockColorListSetting.BlockEntry var1) {
+   public boolean select(BlockColorListSetting.BlockEntry blockEntry) {
       this.selected();
-      if (!this.addToSelection(var1)) {
+      if (!this.addToSelection(blockEntry)) {
          return false;
       } else {
-         var1.enabled().set(true);
+         blockEntry.enabled().set(true);
          this.notifyChanged();
          return true;
       }
    }
 
-   public boolean deselect(BlockColorListSetting.BlockEntry var1) {
+   public boolean deselect(BlockColorListSetting.BlockEntry blockEntry) {
       this.selected();
-      if (!this.selectionSet.remove(var1)) {
+      if (!this.selectionSet.remove(blockEntry)) {
          return false;
       } else {
          for (int var2 = 0; var2 < this.selection.size(); var2++) {
-            if (this.selection.get(var2) == var1) {
+            if (this.selection.get(var2) == blockEntry) {
                this.selection.remove(var2);
                break;
             }
          }
 
-         var1.enabled().set(false);
+         blockEntry.enabled().set(false);
          this.notifyChanged();
          return true;
       }
    }
 
-   public int selectAll(Iterable<BlockColorListSetting.BlockEntry> var1) {
+   public int selectAll(Iterable<BlockColorListSetting.BlockEntry> iterable) {
       this.selected();
       int var2 = 0;
 
-      for (BlockColorListSetting.BlockEntry var4 : var1) {
+      for (BlockColorListSetting.BlockEntry var4 : iterable) {
          if (this.addToSelection(var4)) {
             var4.enabled().set(true);
             var2++;
@@ -225,11 +225,11 @@ public final class BlockColorListSetting extends Setting {
       }
    }
 
-   private boolean addToSelection(BlockColorListSetting.BlockEntry var1) {
-      if (!this.selectionSet.add(var1)) {
+   private boolean addToSelection(BlockColorListSetting.BlockEntry blockEntry) {
+      if (!this.selectionSet.add(blockEntry)) {
          return false;
       } else {
-         this.selection.add(var1);
+         this.selection.add(blockEntry);
          return true;
       }
    }
@@ -279,19 +279,19 @@ public final class BlockColorListSetting extends Setting {
       this.lookupVersion = this.currentVersion;
    }
 
-   private BlockColorListSetting.BlockEntry colorSource(BlockColorListSetting.BlockEntry var1) {
-      String var2 = var1.id();
+   private BlockColorListSetting.BlockEntry colorSource(BlockColorListSetting.BlockEntry blockEntry) {
+      String var2 = blockEntry.id();
       if (!var2.endsWith("_wall_banner")) {
-         return var1;
+         return blockEntry;
       } else {
          BlockColorListSetting.BlockEntry var3 = this.byId.get(var2.substring(0, var2.length() - "_wall_banner".length()) + "_banner");
-         return var3 != null && var3.enabled().get() ? var3 : var1;
+         return var3 != null && var3.enabled().get() ? var3 : blockEntry;
       }
    }
 
-   private static Block resolveBlock(String var0) {
-      Identifier var1 = Identifier.method_12829(var0);
-      return var1 == null ? null : (Block)Registries.field_41175.method_17966(var1).orElse(null);
+   private static Block resolveBlock(String string) {
+      Identifier var1 = Identifier.tryParse(string);
+      return var1 == null ? null : Registries.BLOCK.getOptionalValue(var1).orElse(null);
    }
 
    private Map<String, Integer> tracerLookup() {
@@ -318,17 +318,17 @@ public final class BlockColorListSetting extends Setting {
       return this.tracerByBlock;
    }
 
-   public boolean isEnabled(Block var1) {
-      return this.blockLookup().containsKey(var1);
+   public boolean isEnabled(Block block) {
+      return this.blockLookup().containsKey(block);
    }
 
    public Set<Block> enabledBlocks() {
       return Collections.unmodifiableSet(this.blockLookup().keySet());
    }
 
-   public int colorArgb(Block var1) {
+   public int colorArgb(Block block) {
       Reference2IntOpenHashMap var2 = this.blockLookup();
-      return var2.containsKey(var1) ? var2.getInt(var1) : rgbaToArgb(this.defaultColor);
+      return var2.containsKey(block) ? var2.getInt(block) : rgbaToArgb(this.defaultColor);
    }
 
    public boolean hasAnyEnabled() {
@@ -339,9 +339,9 @@ public final class BlockColorListSetting extends Setting {
       return this.lookup().keySet();
    }
 
-   public int tracerColorArgb(Block var1) {
+   public int tracerColorArgb(Block block) {
       Reference2IntOpenHashMap var2 = this.tracerBlockLookup();
-      return var2.containsKey(var1) ? var2.getInt(var1) : 0;
+      return var2.containsKey(block) ? var2.getInt(block) : 0;
    }
 
    public boolean hasAnyTracerEnabled() {
@@ -368,20 +368,20 @@ public final class BlockColorListSetting extends Setting {
       return var1;
    }
 
-   private static JsonObject entryJson(BlockColorListSetting.BlockEntry var0) {
+   private static JsonObject entryJson(BlockColorListSetting.BlockEntry blockEntry) {
       JsonObject var1 = new JsonObject();
-      var1.addProperty("id", var0.id());
-      var1.addProperty("enabled", var0.enabled().get());
-      var1.add("color", colorJson(var0.color()));
-      var1.addProperty("tracerEnabled", var0.tracerEnabled().get());
-      var1.add("tracerColor", colorJson(var0.tracerColor()));
+      var1.addProperty("id", blockEntry.id());
+      var1.addProperty("enabled", blockEntry.enabled().get());
+      var1.add("color", colorJson(blockEntry.color()));
+      var1.addProperty("tracerEnabled", blockEntry.tracerEnabled().get());
+      var1.add("tracerColor", colorJson(blockEntry.tracerColor()));
       return var1;
    }
 
-   private static JsonArray colorJson(float[] var0) {
+   private static JsonArray colorJson(float[] fs) {
       JsonArray var1 = new JsonArray();
 
-      for (float var5 : var0) {
+      for (float var5 : fs) {
          var1.add(clamp01(var5));
       }
 
@@ -389,10 +389,10 @@ public final class BlockColorListSetting extends Setting {
    }
 
    @Override
-   public JsonElement compact(JsonElement var1) {
+   public JsonElement compact(JsonElement jsonElement) {
       JsonElement var2 = this.defaultJson();
-      if (var1 != null && var1.isJsonObject() && var2 != null && var2.isJsonObject()) {
-         JsonObject var3 = var1.getAsJsonObject();
+      if (jsonElement != null && jsonElement.isJsonObject() && var2 != null && var2.isJsonObject()) {
+         JsonObject var3 = jsonElement.getAsJsonObject();
          JsonObject var4 = var2.getAsJsonObject();
          if (!var3.has("changes") && var3.has("blocks") && var4.has("blocks")) {
             try {
@@ -436,21 +436,21 @@ public final class BlockColorListSetting extends Setting {
                var18.add("changes", var16);
                return var18;
             } catch (RuntimeException var15) {
-               return var1;
+               return jsonElement;
             }
          } else {
-            return var1;
+            return jsonElement;
          }
       } else {
-         return var1;
+         return jsonElement;
       }
    }
 
    @Override
-   protected void deserializeValue(JsonElement var1) {
-      if (var1 != null && var1.isJsonObject()) {
+   protected void deserializeValue(JsonElement jsonElement) {
+      if (jsonElement != null && jsonElement.isJsonObject()) {
          try {
-            JsonObject var2 = var1.getAsJsonObject();
+            JsonObject var2 = jsonElement.getAsJsonObject();
             if (var2.has("changes") && var2.get("changes").isJsonObject()) {
                this.applyChanges(var2);
             } else {
@@ -461,13 +461,13 @@ public final class BlockColorListSetting extends Setting {
       }
    }
 
-   private void applyFull(JsonObject var1) {
-      if (var1.has("defaultColor")) {
-         readColor(var1.getAsJsonArray("defaultColor"), this.defaultColor);
+   private void applyFull(JsonObject jsonObject) {
+      if (jsonObject.has("defaultColor")) {
+         readColor(jsonObject.getAsJsonArray("defaultColor"), this.defaultColor);
       }
 
-      if (var1.has("blocks")) {
-         JsonArray var2 = var1.getAsJsonArray("blocks");
+      if (jsonObject.has("blocks")) {
+         JsonArray var2 = jsonObject.getAsJsonArray("blocks");
          ArrayList var3 = new ArrayList<>(this.selected());
          this.selection.clear();
          this.selectionSet.clear();
@@ -506,18 +506,18 @@ public final class BlockColorListSetting extends Setting {
       }
    }
 
-   private void applyChanges(JsonObject var1) {
+   private void applyChanges(JsonObject jsonObject) {
       this.entriesInternal();
       JsonElement var2 = this.defaultJson();
       if (var2 != null && var2.isJsonObject()) {
          this.applyFull(var2.getAsJsonObject());
       }
 
-      if (var1.has("defaultColor")) {
-         readHex(var1.get("defaultColor").getAsString(), this.defaultColor);
+      if (jsonObject.has("defaultColor")) {
+         readHex(jsonObject.get("defaultColor").getAsString(), this.defaultColor);
       }
 
-      for (Entry var4 : var1.getAsJsonObject("changes").entrySet()) {
+      for (Entry var4 : jsonObject.getAsJsonObject("changes").entrySet()) {
          BlockColorListSetting.BlockEntry var7 = this.byId.get(fullId((String)var4.getKey()));
          if (var7 != null && ((JsonElement)var4.getValue()).isJsonPrimitive()) {
             String[] var8 = ((JsonElement)var4.getValue()).getAsString().split(" ");
@@ -548,66 +548,69 @@ public final class BlockColorListSetting extends Setting {
       }
    }
 
-   private static String[] fields(JsonObject var0) {
+   private static String[] fields(JsonObject jsonObject) {
       return new String[]{
-         flag(var0, "enabled"), String.valueOf(hexColor(var0.get("color"))), flag(var0, "tracerEnabled"), String.valueOf(hexColor(var0.get("tracerColor")))
+         flag(jsonObject, "enabled"),
+         String.valueOf(hexColor(jsonObject.get("color"))),
+         flag(jsonObject, "tracerEnabled"),
+         String.valueOf(hexColor(jsonObject.get("tracerColor")))
       };
    }
 
-   private static String flag(JsonObject var0, String var1) {
-      return var0.has(var1) && var0.get(var1).getAsBoolean() ? "1" : "0";
+   private static String flag(JsonObject jsonObject, String string) {
+      return jsonObject.has(string) && jsonObject.get(string).getAsBoolean() ? "1" : "0";
    }
 
-   static String hexColor(JsonElement var0) {
-      if (var0 != null && var0.isJsonArray()) {
+   static String hexColor(JsonElement jsonElement) {
+      if (jsonElement != null && jsonElement.isJsonArray()) {
          float[] var1 = new float[]{1.0F, 1.0F, 1.0F, 1.0F};
-         readColor(var0.getAsJsonArray(), var1);
+         readColor(jsonElement.getAsJsonArray(), var1);
          return ColorSetting.hex(rgbaToArgb(var1));
       } else {
          return null;
       }
    }
 
-   static void readHex(String var0, float[] var1) {
-      System.arraycopy(parseHex(var0), 0, var1, 0, 4);
+   static void readHex(String string, float[] fs) {
+      System.arraycopy(parseHex(string), 0, fs, 0, 4);
    }
 
-   static float[] parseHex(String var0) {
-      int var1 = (int)Long.parseLong(var0, 16);
+   static float[] parseHex(String string) {
+      int var1 = (int)Long.parseLong(string, 16);
       return new float[]{(var1 >> 16 & 0xFF) / 255.0F, (var1 >> 8 & 0xFF) / 255.0F, (var1 & 0xFF) / 255.0F, (var1 >>> 24) / 255.0F};
    }
 
-   static String shortId(String var0) {
-      return var0.startsWith("minecraft:") ? var0.substring("minecraft:".length()) : var0;
+   static String shortId(String string) {
+      return string.startsWith("minecraft:") ? string.substring("minecraft:".length()) : string;
    }
 
-   static String fullId(String var0) {
-      return var0.indexOf(58) < 0 ? "minecraft:" + var0 : var0;
+   static String fullId(String string) {
+      return string.indexOf(58) < 0 ? "minecraft:" + string : string;
    }
 
-   private static void readColor(JsonArray var0, float[] var1) {
-      for (int var2 = 0; var2 < Math.min(4, var0.size()); var2++) {
-         var1[var2] = clamp01(var0.get(var2).getAsFloat());
+   private static void readColor(JsonArray jsonArray, float[] fs) {
+      for (int var2 = 0; var2 < Math.min(4, jsonArray.size()); var2++) {
+         fs[var2] = clamp01(jsonArray.get(var2).getAsFloat());
       }
    }
 
    public static BlockColorListSetting createDefault() {
-      return new BlockColorListSetting("Block Colors", () -> buildEntries(var0 -> false), white());
+      return new BlockColorListSetting("Block Colors", () -> buildEntries(string -> false), white());
    }
 
-   public static BlockColorListSetting blockList(String var0, List<String> var1) {
-      Set var2 = Set.copyOf(var1);
-      return new BlockColorListSetting(var0, () -> buildEntries(var2::contains), white(), true, List.copyOf(var1));
+   public static BlockColorListSetting blockList(String string, List<String> list) {
+      Set var2 = Set.copyOf(list);
+      return new BlockColorListSetting(string, () -> buildEntries(var2::contains), white(), true, List.copyOf(list));
    }
 
-   private static List<BlockColorListSetting.BlockEntry> buildEntries(Predicate<String> var0) {
+   private static List<BlockColorListSetting.BlockEntry> buildEntries(Predicate<String> predicate) {
       ArrayList var1 = new ArrayList();
 
-      for (Block var3 : Registries.field_41175) {
+      for (Block var3 : Registries.BLOCK) {
          Identifier var4;
-         if (!var3.method_9564().method_26215() && (var4 = Registries.field_41175.method_10221(var3)) != null) {
+         if (!var3.getDefaultState().isAir() && (var4 = Registries.BLOCK.getId(var3)) != null) {
             String var5 = var4.toString();
-            var1.add(entry(var5, prettify(var4.method_12832()), "Blocks", var0.test(var5), 1.0F, 1.0F, 1.0F, 1.0F));
+            var1.add(entry(var5, prettify(var4.getPath()), "Blocks", predicate.test(var5), 1.0F, 1.0F, 1.0F, 1.0F));
          }
       }
 
@@ -621,10 +624,10 @@ public final class BlockColorListSetting extends Setting {
    private static List<BlockColorListSetting.BlockEntry> buildBlockEntityDebugEntries() {
       ArrayList var0 = new ArrayList();
 
-      for (Block var2 : Registries.field_41175) {
+      for (Block var2 : Registries.BLOCK) {
          Identifier var3;
-         if (!var2.method_9564().method_26215() && (var3 = Registries.field_41175.method_10221(var2)) != null) {
-            String var4 = var3.method_12832();
+         if (!var2.getDefaultState().isAir() && (var3 = Registries.BLOCK.getId(var2)) != null) {
+            String var4 = var3.getPath();
             int var5 = blockEntityDebugRgb(var4);
             boolean var6 = var5 != -1 || blockEntityDebugPicked(var4);
             var0.add(entry(var3.toString(), prettify(var4), "Blocks", var6, var5 == -1 ? 16777215 : var5, true));
@@ -634,13 +637,13 @@ public final class BlockColorListSetting extends Setting {
       return var0;
    }
 
-   private static int blockEntityDebugRgb(String var0) {
-      if (var0.endsWith("copper_chest")) {
+   private static int blockEntityDebugRgb(String string) {
+      if (string.endsWith("copper_chest")) {
          return 10246912;
-      } else if (var0.endsWith("shulker_box")) {
+      } else if (string.endsWith("shulker_box")) {
          return 8781982;
       } else {
-         return switch (var0) {
+         return switch (string) {
             case "chest" -> 10246912;
             case "trapped_chest" -> 13775410;
             case "ender_chest" -> 7667967;
@@ -665,9 +668,9 @@ public final class BlockColorListSetting extends Setting {
       }
    }
 
-   private static boolean blockEntityDebugPicked(String var0) {
-      if (!var0.contains("sign") && !var0.endsWith("_bed") && !var0.endsWith("_banner") && !var0.endsWith("_skull") && !var0.endsWith("_head")) {
-         return switch (var0) {
+   private static boolean blockEntityDebugPicked(String string) {
+      if (!string.contains("sign") && !string.endsWith("_bed") && !string.endsWith("_banner") && !string.endsWith("_skull") && !string.endsWith("_head")) {
+         return switch (string) {
             case "bell", "campfire", "soul_campfire", "jigsaw", "structure_block", "command_block", "chain_command_block", "repeating_command_block", "end_portal", "end_gateway", "sculk_sensor", "calibrated_sculk_sensor", "sculk_catalyst", "sculk_shrieker", "suspicious_sand", "suspicious_gravel", "trial_spawner", "vault", "chiseled_bookshelf", "daylight_detector" -> true;
             default -> false;
          };
@@ -676,8 +679,8 @@ public final class BlockColorListSetting extends Setting {
       }
    }
 
-   private static String prettify(String var0) {
-      String[] var1 = var0.split("_");
+   private static String prettify(String string) {
+      String[] var1 = string.split("_");
       StringBuilder var2 = new StringBuilder();
 
       for (int var3 = 0; var3 < var1.length; var3++) {
@@ -697,42 +700,42 @@ public final class BlockColorListSetting extends Setting {
       return new float[]{1.0F, 1.0F, 1.0F, 1.0F};
    }
 
-   private static BlockColorListSetting.BlockEntry entry(String var0, String var1, String var2, boolean var3, float var4, float var5, float var6, float var7) {
-      float[] var8 = new float[]{var4, var5, var6, var7};
-      return new BlockColorListSetting.BlockEntry(var0, var1, var2, new ImBoolean(var3), var8, new ImBoolean(false), copyColor(var8));
+   private static BlockColorListSetting.BlockEntry entry(String string, String string2, String string3, boolean bl, float f, float g, float h, float i) {
+      float[] var8 = new float[]{f, g, h, i};
+      return new BlockColorListSetting.BlockEntry(string, string2, string3, new ImBoolean(bl), var8, new ImBoolean(false), copyColor(var8));
    }
 
-   private static BlockColorListSetting.BlockEntry entry(String var0, String var1, String var2, boolean var3, int var4, boolean var5) {
-      float[] var6 = new float[]{(var4 >> 16 & 0xFF) / 255.0F, (var4 >> 8 & 0xFF) / 255.0F, (var4 & 0xFF) / 255.0F, 1.0F};
-      return new BlockColorListSetting.BlockEntry(var0, var1, var2, new ImBoolean(var3), var6, new ImBoolean(var5), copyColor(var6));
+   private static BlockColorListSetting.BlockEntry entry(String string, String string2, String string3, boolean bl, int i, boolean bl2) {
+      float[] var6 = new float[]{(i >> 16 & 0xFF) / 255.0F, (i >> 8 & 0xFF) / 255.0F, (i & 0xFF) / 255.0F, 1.0F};
+      return new BlockColorListSetting.BlockEntry(string, string2, string3, new ImBoolean(bl), var6, new ImBoolean(bl2), copyColor(var6));
    }
 
-   private static BlockColorListSetting.BlockEntry copyEntry(BlockColorListSetting.BlockEntry var0) {
+   private static BlockColorListSetting.BlockEntry copyEntry(BlockColorListSetting.BlockEntry blockEntry) {
       return new BlockColorListSetting.BlockEntry(
-         var0.id(),
-         var0.displayName(),
-         var0.category(),
-         new ImBoolean(var0.enabled().get()),
-         copyColor(var0.color()),
-         new ImBoolean(var0.tracerEnabled().get()),
-         copyColor(var0.tracerColor())
+         blockEntry.id(),
+         blockEntry.displayName(),
+         blockEntry.category(),
+         new ImBoolean(blockEntry.enabled().get()),
+         copyColor(blockEntry.color()),
+         new ImBoolean(blockEntry.tracerEnabled().get()),
+         copyColor(blockEntry.tracerColor())
       );
    }
 
-   private static float[] copyColor(float[] var0) {
-      return new float[]{var0[0], var0[1], var0[2], var0[3]};
+   private static float[] copyColor(float[] fs) {
+      return new float[]{fs[0], fs[1], fs[2], fs[3]};
    }
 
-   public static int rgbaToArgb(float[] var0) {
-      int var1 = Math.round(clamp01(var0[0]) * 255.0F);
-      int var2 = Math.round(clamp01(var0[1]) * 255.0F);
-      int var3 = Math.round(clamp01(var0[2]) * 255.0F);
-      int var4 = Math.round(clamp01(var0[3]) * 255.0F);
+   public static int rgbaToArgb(float[] fs) {
+      int var1 = Math.round(clamp01(fs[0]) * 255.0F);
+      int var2 = Math.round(clamp01(fs[1]) * 255.0F);
+      int var3 = Math.round(clamp01(fs[2]) * 255.0F);
+      int var4 = Math.round(clamp01(fs[3]) * 255.0F);
       return var4 << 24 | var1 << 16 | var2 << 8 | var3;
    }
 
-   private static float clamp01(float var0) {
-      return !Float.isNaN(var0) && !Float.isInfinite(var0) ? Math.max(0.0F, Math.min(1.0F, var0)) : 1.0F;
+   private static float clamp01(float f) {
+      return !Float.isNaN(f) && !Float.isInfinite(f) ? Math.max(0.0F, Math.min(1.0F, f)) : 1.0F;
    }
 
    @Environment(EnvType.CLIENT)

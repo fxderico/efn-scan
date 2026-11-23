@@ -8,5 +8,5 @@ import net.fabricmc.api.Environment;
 public interface HudOverlayProvider {
    boolean isHudOverlayEnabled();
 
-   void renderHudOverlay(ImDrawList var1, float var2, float var3);
+   void renderHudOverlay(ImDrawList imDrawList, float f, float g);
 }

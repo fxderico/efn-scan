@@ -9,6 +9,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Environment(EnvType.CLIENT)
 @Mixin({LevelLoadingScreen.class})
 public interface AccessorLevelLoadingScreen {
-   @Accessor("field_61632")
+   @Accessor("loadProgress")
    float efn$getProgress();
 }

@@ -52,7 +52,7 @@ public final class BoatFlyModule extends ClientModule {
       this.antiKicker.start(this.delay.getInt());
       active = this;
       EntityControlVehicleHook.refresh();
-      this.on(TickEvent.TYPE, Stage.PRE, var1x -> this.antiKicker.tick());
+      this.on(TickEvent.TYPE, Stage.PRE, tickEvent -> this.antiKicker.tick());
       this.on(PacketSendEvent.TYPE, this::onPacketSend);
       this.on(PacketReceiveNettyEvent.TYPE, this::onPacketReceive);
    }
@@ -64,19 +64,19 @@ public final class BoatFlyModule extends ClientModule {
       this.antiKicker.stop();
    }
 
-   private void onPacketSend(PacketSendEvent var1) {
+   private void onPacketSend(PacketSendEvent packetSendEvent) {
       if (this.antiKick.get()) {
-         Packet var3 = var1.packet;
+         Packet var3 = packetSendEvent.packet;
          VehicleMoveC2SPacket var2;
-         if (var1.packet instanceof VehicleMoveC2SPacket && this.antiKicker.onPacketSend(var2 = (VehicleMoveC2SPacket)var3, this.delay.getInt())) {
-            var1.setCancelled(true);
+         if (packetSendEvent.packet instanceof VehicleMoveC2SPacket && this.antiKicker.onPacketSend(var2 = (VehicleMoveC2SPacket)var3, this.delay.getInt())) {
+            packetSendEvent.setCancelled(true);
          }
       }
    }
 
-   private void onPacketReceive(PacketReceiveNettyEvent var1) {
-      if (this.cancelServerPackets.get() && var1.packet instanceof VehicleMoveS2CPacket) {
-         var1.setCancelled(true);
+   private void onPacketReceive(PacketReceiveNettyEvent packetReceiveNettyEvent) {
+      if (this.cancelServerPackets.get() && packetReceiveNettyEvent.packet instanceof VehicleMoveS2CPacket) {
+         packetReceiveNettyEvent.setCancelled(true);
       }
    }
 
@@ -89,20 +89,20 @@ public final class BoatFlyModule extends ClientModule {
    }
 
    public double verticalVelocity() {
-      MinecraftClient var1 = MinecraftClient.method_1551();
+      MinecraftClient var1 = MinecraftClient.getInstance();
       double var2 = 0.0;
-      if (EntityControlVehicleHook.isPhysicallyDown(var1.field_1690.field_1903)) {
+      if (EntityControlVehicleHook.isPhysicallyDown(var1.options.jumpKey)) {
          var2 += this.verticalSpeed.get() / 20.0;
       }
 
       double var4;
       double var5;
-      return EntityControlVehicleHook.isPhysicallyDown(var1.field_1690.field_1867)
+      return EntityControlVehicleHook.isPhysicallyDown(var1.options.sprintKey)
          ? (var4 = var2 - this.verticalSpeed.get() / 20.0)
          : (var5 = var2 - this.fallSpeed.get() / 20.0);
    }
 
-   public static boolean cancelsMountJump(ClientPlayerEntity var0) {
-      return active != null && var0.method_5854() instanceof JumpingMount;
+   public static boolean cancelsMountJump(ClientPlayerEntity clientPlayerEntity) {
+      return active != null && clientPlayerEntity.getVehicle() instanceof JumpingMount;
    }
 }

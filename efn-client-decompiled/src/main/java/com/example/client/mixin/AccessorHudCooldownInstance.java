@@ -7,12 +7,12 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Environment(EnvType.CLIENT)
 @Mixin(
-   targets = {"net/minecraft/class_1796$class_1797"}
+   targets = {"net/minecraft/entity/player/ItemCooldownManager$Entry"}
 )
 public interface AccessorHudCooldownInstance {
-   @Accessor("comp_3083")
+   @Accessor("startTick")
    int efn$hudStartTime();
 
-   @Accessor("comp_3084")
+   @Accessor("endTick")
    int efn$hudEndTime();
 }

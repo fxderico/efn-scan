@@ -9,9 +9,9 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Environment(EnvType.CLIENT)
 @Mixin({MinecraftClient.class})
 public interface AccessorCombatMinecraft {
-   @Accessor("field_1752")
+   @Accessor("itemUseCooldown")
    int efn$rightClickDelay();
 
-   @Accessor("field_1752")
-   void efn$setRightClickDelay(int var1);
+   @Accessor("itemUseCooldown")
+   void efn$setRightClickDelay(int i);
 }

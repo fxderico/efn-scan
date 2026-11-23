@@ -67,32 +67,32 @@ final class BuildOrder {
    private BuildOrder() {
    }
 
-   static boolean powerOrTnt(BlockState var0) {
-      Block var1 = var0.method_26204();
-      return var1 == Blocks.field_10002 || var1 instanceof RedstoneTorchBlock || var1 instanceof DaylightDetectorBlock || var1 instanceof TntBlock;
+   static boolean powerOrTnt(BlockState blockState) {
+      Block var1 = blockState.getBlock();
+      return var1 == Blocks.REDSTONE_BLOCK || var1 instanceof RedstoneTorchBlock || var1 instanceof DaylightDetectorBlock || var1 instanceof TntBlock;
    }
 
-   static boolean late(WorldSchematic var0, BlockPos var1, BlockState var2, boolean var3) {
-      return stage(var0, var1, var2, var3) > 0;
+   static boolean late(WorldSchematic worldSchematic, BlockPos blockPos, BlockState blockState, boolean bl) {
+      return stage(worldSchematic, blockPos, blockState, bl) > 0;
    }
 
-   static int stage(WorldSchematic var0, BlockPos var1, BlockState var2, boolean var3) {
-      int var4 = ownStage(var0, var1, var2, var3);
+   static int stage(WorldSchematic worldSchematic, BlockPos blockPos, BlockState blockState, boolean bl) {
+      int var4 = ownStage(worldSchematic, blockPos, blockState, bl);
       if (var4 != 0) {
          return var4;
       } else {
-         BlockPos var5 = hangsOn(var2, var1);
-         return var5 == null ? 0 : ownStage(var0, var5, var0.method_8320(var5), var3);
+         BlockPos var5 = hangsOn(blockState, blockPos);
+         return var5 == null ? 0 : ownStage(worldSchematic, var5, worldSchematic.getBlockState(var5), bl);
       }
    }
 
-   private static int ownStage(WorldSchematic var0, BlockPos var1, BlockState var2, boolean var3) {
-      if (powerOrTnt(var2) || pushedIntoTnt(var0, var1, var2) != null) {
+   private static int ownStage(WorldSchematic worldSchematic, BlockPos blockPos, BlockState blockState, boolean bl) {
+      if (powerOrTnt(blockState) || pushedIntoTnt(worldSchematic, blockPos, blockState) != null) {
          return 3;
-      } else if (!var3) {
+      } else if (!bl) {
          return 0;
       } else {
-         Block var4 = var2.method_26204();
+         Block var4 = blockState.getBlock();
          if (var4 instanceof PistonBlock) {
             return 1;
          } else {
@@ -101,18 +101,18 @@ final class BuildOrder {
       }
    }
 
-   static boolean pistonWouldFire(ClientWorld var0, BlockPos var1) {
-      return var0.method_49803(var1) || var0.method_49803(var1.method_10084());
+   static boolean pistonWouldFire(ClientWorld clientWorld, BlockPos blockPos) {
+      return clientWorld.isReceivingRedstonePower(blockPos) || clientWorld.isReceivingRedstonePower(blockPos.up());
    }
 
-   static BlockPos pushedIntoTnt(WorldSchematic var0, BlockPos var1, BlockState var2) {
-      if (!var2.method_26215() && !(var2.method_26204() instanceof TntBlock)) {
+   static BlockPos pushedIntoTnt(WorldSchematic worldSchematic, BlockPos blockPos, BlockState blockState) {
+      if (!blockState.isAir() && !(blockState.getBlock() instanceof TntBlock)) {
          for (Direction var6 : Direction.values()) {
-            BlockState var8 = var0.method_8320(var1.method_10093(var6.method_10153()));
+            BlockState var8 = worldSchematic.getBlockState(blockPos.offset(var6.getOpposite()));
             BlockPos var7;
-            if (var8.method_26204() instanceof PistonBlock
-               && var8.method_11654(Properties.field_12525) == var6
-               && var0.method_8320(var7 = var1.method_10093(var6)).method_26204() instanceof TntBlock) {
+            if (var8.getBlock() instanceof PistonBlock
+               && var8.get(Properties.FACING) == var6
+               && worldSchematic.getBlockState(var7 = blockPos.offset(var6)).getBlock() instanceof TntBlock) {
                return var7;
             }
          }
@@ -123,32 +123,32 @@ final class BuildOrder {
       }
    }
 
-   static BlockPos railBefore(ClientWorld var0, WorldSchematic var1, BlockPos var2, BlockState var3, Predicate<BlockPos> var4) {
-      List var5 = track(var1, var2);
-      int var6 = var5.indexOf(var2);
+   static BlockPos railBefore(ClientWorld clientWorld, WorldSchematic worldSchematic, BlockPos blockPos, BlockState blockState, Predicate<BlockPos> predicate) {
+      List var5 = track(worldSchematic, blockPos);
+      int var6 = var5.indexOf(blockPos);
       if (var6 <= 0) {
          return null;
       } else {
          BlockPos var7 = (BlockPos)var5.get(var6 - 1);
-         return !var4.test(var7) && !(var0.method_8320(var7).method_26204() instanceof AbstractRailBlock) ? var7 : null;
+         return !predicate.test(var7) && !(clientWorld.getBlockState(var7).getBlock() instanceof AbstractRailBlock) ? var7 : null;
       }
    }
 
-   static boolean railShapeOff(BlockState var0, BlockState var1) {
-      RailShape var2 = railShape(var1);
-      RailShape var3 = railShape(var0);
+   static boolean railShapeOff(BlockState blockState, BlockState blockState2) {
+      RailShape var2 = railShape(blockState2);
+      RailShape var3 = railShape(blockState);
       return var2 != null && var3 != null && var2 != var3;
    }
 
-   private static List<BlockPos> track(WorldSchematic var0, BlockPos var1) {
+   private static List<BlockPos> track(WorldSchematic worldSchematic, BlockPos blockPos) {
       HashSet var2 = new HashSet();
-      ArrayList var3 = new ArrayList<>(List.of(var1));
+      ArrayList var3 = new ArrayList<>(List.of(blockPos));
       BlockPos var4 = null;
 
       while (!var3.isEmpty() && var2.size() < 512) {
          BlockPos var5 = (BlockPos)var3.remove(var3.size() - 1);
          if (var2.add(var5)) {
-            List var6 = links(var0, var5);
+            List var6 = links(worldSchematic, var5);
             if (var6.size() < 2 && (var4 == null || before(var5, var4))) {
                var4 = var5;
             }
@@ -173,7 +173,7 @@ final class BuildOrder {
          var12.add(var7);
          BlockPos var8 = null;
 
-         for (BlockPos var10 : links(var0, var7)) {
+         for (BlockPos var10 : links(worldSchematic, var7)) {
             if (!var14.contains(var10) && (var8 == null || before(var10, var8))) {
                var8 = var10;
             }
@@ -185,27 +185,27 @@ final class BuildOrder {
       return var12;
    }
 
-   private static boolean before(BlockPos var0, BlockPos var1) {
-      if (var0.method_10264() != var1.method_10264()) {
-         return var0.method_10264() < var1.method_10264();
+   private static boolean before(BlockPos blockPos, BlockPos blockPos2) {
+      if (blockPos.getY() != blockPos2.getY()) {
+         return blockPos.getY() < blockPos2.getY();
       } else {
-         return var0.method_10263() != var1.method_10263() ? var0.method_10263() < var1.method_10263() : var0.method_10260() < var1.method_10260();
+         return blockPos.getX() != blockPos2.getX() ? blockPos.getX() < blockPos2.getX() : blockPos.getZ() < blockPos2.getZ();
       }
    }
 
-   private static List<BlockPos> links(WorldSchematic var0, BlockPos var1) {
+   private static List<BlockPos> links(WorldSchematic worldSchematic, BlockPos blockPos) {
       ArrayList var2 = new ArrayList(2);
-      RailShape var3 = railShape(var0.method_8320(var1));
+      RailShape var3 = railShape(worldSchematic.getBlockState(blockPos));
       if (var3 == null) {
          return var2;
       } else {
-         for (BlockPos var5 : ends(var1, var3)) {
-            BlockPos var6 = railAt(var0, var5);
+         for (BlockPos var5 : ends(blockPos, var3)) {
+            BlockPos var6 = railAt(worldSchematic, var5);
             if (var6 != null) {
-               RailShape var7 = railShape(var0.method_8320(var6));
+               RailShape var7 = railShape(worldSchematic.getBlockState(var6));
 
                for (BlockPos var9 : ends(var6, var7)) {
-                  if (var1.equals(railAt(var0, var9))) {
+                  if (blockPos.equals(railAt(worldSchematic, var9))) {
                      var2.add(var6);
                      break;
                   }
@@ -217,41 +217,40 @@ final class BuildOrder {
       }
    }
 
-   private static BlockPos railAt(WorldSchematic var0, BlockPos var1) {
-      if (railShape(var0.method_8320(var1)) != null) {
-         return var1;
+   private static BlockPos railAt(WorldSchematic worldSchematic, BlockPos blockPos) {
+      if (railShape(worldSchematic.getBlockState(blockPos)) != null) {
+         return blockPos;
       } else {
-         return railShape(var0.method_8320(var1.method_10074())) != null ? var1.method_10074() : null;
+         return railShape(worldSchematic.getBlockState(blockPos.down())) != null ? blockPos.down() : null;
       }
    }
 
-   private static List<BlockPos> ends(BlockPos var0, RailShape var1) {
-      return switch (var1) {
-         case field_12665 -> List.of(var0.method_10095(), var0.method_10072());
-         case field_12674 -> List.of(var0.method_10078(), var0.method_10067());
-         case field_12667 -> List.of(var0.method_10078().method_10084(), var0.method_10067());
-         case field_12666 -> List.of(var0.method_10067().method_10084(), var0.method_10078());
-         case field_12670 -> List.of(var0.method_10095().method_10084(), var0.method_10072());
-         case field_12668 -> List.of(var0.method_10072().method_10084(), var0.method_10095());
-         case field_12664 -> List.of(var0.method_10072(), var0.method_10078());
-         case field_12671 -> List.of(var0.method_10072(), var0.method_10067());
-         case field_12672 -> List.of(var0.method_10095(), var0.method_10067());
-         case field_12663 -> List.of(var0.method_10095(), var0.method_10078());
-         default -> throw new MatchException(null, null);
+   private static List<BlockPos> ends(BlockPos blockPos, RailShape railShape) {
+      return switch (railShape) {
+         case NORTH_SOUTH -> List.of(blockPos.north(), blockPos.south());
+         case EAST_WEST -> List.of(blockPos.east(), blockPos.west());
+         case ASCENDING_EAST -> List.of(blockPos.east().up(), blockPos.west());
+         case ASCENDING_WEST -> List.of(blockPos.west().up(), blockPos.east());
+         case ASCENDING_NORTH -> List.of(blockPos.north().up(), blockPos.south());
+         case ASCENDING_SOUTH -> List.of(blockPos.south().up(), blockPos.north());
+         case SOUTH_EAST -> List.of(blockPos.south(), blockPos.east());
+         case SOUTH_WEST -> List.of(blockPos.south(), blockPos.west());
+         case NORTH_WEST -> List.of(blockPos.north(), blockPos.west());
+         case NORTH_EAST -> List.of(blockPos.north(), blockPos.east());
       };
    }
 
-   private static RailShape railShape(BlockState var0) {
-      if (!(var0.method_26204() instanceof AbstractRailBlock var2)) {
+   private static RailShape railShape(BlockState blockState) {
+      if (!(blockState.getBlock() instanceof AbstractRailBlock var2)) {
          return null;
       } else {
-         Property var3 = var2.method_9474();
-         return var0.method_28498(var3) ? (RailShape)var0.method_11654(var3) : null;
+         Property var3 = var2.getShapeProperty();
+         return blockState.contains(var3) ? blockState.get(var3) : null;
       }
    }
 
-   static boolean lookOnly(BlockState var0) {
-      Block var1 = var0.method_26204();
+   static boolean lookOnly(BlockState blockState) {
+      Block var1 = blockState.getBlock();
       return var1 instanceof StairsBlock
          || var1 instanceof AbstractFurnaceBlock
          || var1 instanceof BarrelBlock
@@ -266,14 +265,14 @@ final class BuildOrder {
          || var1 instanceof AnvilBlock;
    }
 
-   static List<BlockState> turnedVariants(BlockState var0) {
+   static List<BlockState> turnedVariants(BlockState blockState) {
       ArrayList var1 = new ArrayList();
 
-      for (Property var3 : List.of(Properties.field_12525, Properties.field_12481, Properties.field_12496, Properties.field_12529)) {
-         if (var0.method_28498(var3)) {
-            for (Object var5 : var3.method_11898()) {
-               BlockState var6 = with(var0, var3, var5);
-               if (!var6.equals(var0)) {
+      for (Property var3 : List.of(Properties.FACING, Properties.HORIZONTAL_FACING, Properties.AXIS, Properties.HORIZONTAL_AXIS)) {
+         if (blockState.contains(var3)) {
+            for (Object var5 : var3.getValues()) {
+               BlockState var6 = with(blockState, var3, var5);
+               if (!var6.equals(blockState)) {
                   var1.add(var6);
                }
             }
@@ -283,20 +282,19 @@ final class BuildOrder {
       return var1;
    }
 
-   private static BlockState with(BlockState var0, Property var1, Object var2) {
-      return (BlockState)var0.method_11657(var1, (Comparable)var2);
+   private static BlockState with(BlockState blockState, Property property, Object object) {
+      return blockState.with(property, (Comparable)object);
    }
 
-   static BlockPos hangsOn(BlockState var0, BlockPos var1) {
-      Block var2 = var0.method_26204();
+   static BlockPos hangsOn(BlockState blockState, BlockPos blockPos) {
+      Block var2 = blockState.getBlock();
       if (var2 instanceof WallTorchBlock || var2 instanceof WallRedstoneTorchBlock || var2 instanceof WallSignBlock || var2 instanceof LadderBlock) {
-         return var1.method_10093(((Direction)var0.method_11654(Properties.field_12481)).method_10153());
+         return blockPos.offset(blockState.get(Properties.HORIZONTAL_FACING).getOpposite());
       } else if (var2 instanceof WallMountedBlock) {
-         return switch ((BlockFace)var0.method_11654(Properties.field_12555)) {
-            case field_12475 -> var1.method_10074();
-            case field_12473 -> var1.method_10084();
-            case field_12471 -> var1.method_10093(((Direction)var0.method_11654(Properties.field_12481)).method_10153());
-            default -> throw new MatchException(null, null);
+         return switch ((BlockFace)blockState.get(Properties.BLOCK_FACE)) {
+            case FLOOR -> blockPos.down();
+            case CEILING -> blockPos.up();
+            case WALL -> blockPos.offset(blockState.get(Properties.HORIZONTAL_FACING).getOpposite());
          };
       } else {
          return !(var2 instanceof RedstoneWireBlock)
@@ -306,78 +304,77 @@ final class BuildOrder {
                && !(var2 instanceof AbstractPressurePlateBlock)
                && !(var2 instanceof AbstractTorchBlock)
             ? null
-            : var1.method_10074();
+            : blockPos.down();
       }
    }
 
-   static List<BlockPos> supportCells(BlockState var0, BlockPos var1) {
-      Direction var2 = StateRules.lookFor(var0);
+   static List<BlockPos> supportCells(BlockState blockState, BlockPos blockPos) {
+      Direction var2 = StateRules.lookFor(blockState);
       if (var2 == null) {
-         var2 = StateRules.flatLookFor(var0);
+         var2 = StateRules.flatLookFor(blockState);
       }
 
       if (var2 != null) {
-         ArrayList var6 = new ArrayList<>(List.of(var1.method_10093(var2), var1.method_10074()));
+         ArrayList var6 = new ArrayList<>(List.of(blockPos.offset(var2), blockPos.down()));
 
-         for (Direction var5 : Type.field_11062) {
+         for (Direction var5 : Type.HORIZONTAL) {
             if (var5 != var2) {
-               var6.add(var1.method_10093(var5));
+               var6.add(blockPos.offset(var5));
             }
          }
 
-         if (var2 != Direction.field_11036) {
-            var6.add(var1.method_10084());
+         if (var2 != Direction.UP) {
+            var6.add(blockPos.up());
          }
 
          return var6;
       } else {
-         Block var3 = var0.method_26204();
+         Block var3 = blockState.getBlock();
          if (var3 instanceof HopperBlock) {
-            Direction var7 = (Direction)var0.method_11654(Properties.field_12545);
-            return var7 == Direction.field_11033 ? List.of(var1.method_10074(), var1.method_10084()) : List.of(var1.method_10093(var7));
-         } else if (hangsOn(var0, var1) != null) {
+            Direction var7 = blockState.get(Properties.HOPPER_FACING);
+            return var7 == Direction.DOWN ? List.of(blockPos.down(), blockPos.up()) : List.of(blockPos.offset(var7));
+         } else if (hangsOn(blockState, blockPos) != null) {
             return List.of();
-         } else if (var0.method_28498(Properties.field_12496)) {
-            Axis var4 = (Axis)var0.method_11654(Properties.field_12496);
-            return List.of(
-               var1.method_10093(Direction.method_10169(var4, AxisDirection.field_11060)),
-               var1.method_10093(Direction.method_10169(var4, AxisDirection.field_11056))
-            );
-         } else if (var0.method_28498(Properties.field_12485)) {
-            return var0.method_11654(Properties.field_12485) == SlabType.field_12679 ? List.of(var1.method_10084()) : List.of(var1.method_10074());
-         } else if (var0.method_28498(Properties.field_12518)) {
-            return var0.method_11654(Properties.field_12518) == BlockHalf.field_12619 ? List.of(var1.method_10084()) : List.of(var1.method_10074());
+         } else if (blockState.contains(Properties.AXIS)) {
+            Axis var4 = blockState.get(Properties.AXIS);
+            return List.of(blockPos.offset(Direction.from(var4, AxisDirection.NEGATIVE)), blockPos.offset(Direction.from(var4, AxisDirection.POSITIVE)));
+         } else if (blockState.contains(Properties.SLAB_TYPE)) {
+            return blockState.get(Properties.SLAB_TYPE) == SlabType.TOP ? List.of(blockPos.up()) : List.of(blockPos.down());
+         } else if (blockState.contains(Properties.BLOCK_HALF)) {
+            return blockState.get(Properties.BLOCK_HALF) == BlockHalf.TOP ? List.of(blockPos.up()) : List.of(blockPos.down());
          } else {
-            return List.of(var1.method_10074(), var1.method_10095(), var1.method_10072(), var1.method_10078(), var1.method_10067(), var1.method_10084());
+            return List.of(blockPos.down(), blockPos.north(), blockPos.south(), blockPos.east(), blockPos.west(), blockPos.up());
          }
       }
    }
 
-   static boolean waits(ClientWorld var0, WorldSchematic var1, BlockPos var2, BlockState var3, Predicate<BlockPos> var4, boolean var5) {
-      Block var6 = var3.method_26204();
-      BlockPos var7 = pushedIntoTnt(var1, var2, var3);
-      if (var7 != null && !(var0.method_8320(var7).method_26204() instanceof TntBlock)) {
+   static boolean waits(
+      ClientWorld clientWorld, WorldSchematic worldSchematic, BlockPos blockPos, BlockState blockState, Predicate<BlockPos> predicate, boolean bl
+   ) {
+      Block var6 = blockState.getBlock();
+      BlockPos var7 = pushedIntoTnt(worldSchematic, blockPos, blockState);
+      if (var7 != null && !(clientWorld.getBlockState(var7).getBlock() instanceof TntBlock)) {
          return true;
       } else if (var6 instanceof PistonBlock) {
-         return pistonWouldFire(var0, var2);
-      } else if (var6 instanceof AbstractRailBlock && railBefore(var0, var1, var2, var3, var4) != null) {
+         return pistonWouldFire(clientWorld, blockPos);
+      } else if (var6 instanceof AbstractRailBlock && railBefore(clientWorld, worldSchematic, blockPos, blockState, predicate) != null) {
          return true;
       } else if (var6 instanceof ObserverBlock) {
-         BlockPos var8 = var2.method_10093((Direction)var3.method_11654(Properties.field_12525));
-         BlockState var9 = var1.method_8320(var8);
-         if (BlockStateUtil.requiredItem(var9) == null || stage(var1, var8, var9, var5) > 2 || var4.test(var8)) {
+         BlockPos var8 = blockPos.offset(blockState.get(Properties.FACING));
+         BlockState var9 = worldSchematic.getBlockState(var8);
+         if (BlockStateUtil.requiredItem(var9) == null || stage(worldSchematic, var8, var9, bl) > 2 || predicate.test(var8)) {
             return false;
          } else {
-            return var9.method_26204() instanceof ObserverBlock && var8.method_10093((Direction)var9.method_11654(Properties.field_12525)).equals(var2)
+            return var9.getBlock() instanceof ObserverBlock && var8.offset(var9.get(Properties.FACING)).equals(blockPos)
                ? false
-               : !StateRules.placed(var0.method_8320(var8), var9);
+               : !StateRules.placed(clientWorld.getBlockState(var8), var9);
          }
       } else if (var6 instanceof FallingBlock) {
-         return FallingBlock.method_10128(var0.method_8320(var2.method_10074()));
-      } else if (!var3.method_28498(Properties.field_12508) && var3.method_26227().method_15771() && var3.method_26227().method_15767(FluidTags.field_15517)) {
-         return !var0.method_8316(var2).method_15771() || !var0.method_8316(var2).method_15767(FluidTags.field_15517);
+         return FallingBlock.canFallThrough(clientWorld.getBlockState(blockPos.down()));
+      } else if (!blockState.contains(Properties.WATERLOGGED) && blockState.getFluidState().isStill() && blockState.getFluidState().isIn(FluidTags.WATER)) {
+         return !clientWorld.getFluidState(blockPos).isStill() || !clientWorld.getFluidState(blockPos).isIn(FluidTags.WATER);
       } else {
-         return var6 instanceof TntBlock ? var0.method_49803(var2) : false;
+         return var6 instanceof TntBlock ? clientWorld.isReceivingRedstonePower(blockPos) : false;
       }
    }
 }

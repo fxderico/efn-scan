@@ -63,7 +63,7 @@ final class SniperBot {
    private static final int MAX_PAGES = 5;
    private static final long RESEARCH_MIN_MS = 2500L;
    private static final long MISS_NOTE_MS = 30000L;
-   private static final SniperBot.Hit CLOSED = new SniperBot.Hit(-1, ItemStack.field_8037, 0L, 0L, -1, "", "");
+   private static final SniperBot.Hit CLOSED = new SniperBot.Hit(-1, ItemStack.EMPTY, 0L, 0L, -1, "", "");
    private final ClientModule module;
    private final Consumer<SniperBot> stopper;
    private final MacroWorker worker;
@@ -114,54 +114,54 @@ final class SniperBot {
    private boolean sortWarned;
 
    SniperBot(
-      ClientModule var1,
-      Consumer<SniperBot> var2,
-      MacroWorker var3,
-      SnipeTarget var4,
-      long var5,
-      long var7,
-      long var9,
-      boolean var11,
-      int var12,
-      long var13,
-      String var15
+      ClientModule clientModule,
+      Consumer<SniperBot> consumer,
+      MacroWorker macroWorker,
+      SnipeTarget snipeTarget,
+      long l,
+      long m,
+      long n,
+      boolean bl,
+      int i,
+      long o,
+      String string
    ) {
-      this(var1, var2, var3, var4, var5, var7, var9, var11, var12, 0, var13, var15);
+      this(clientModule, consumer, macroWorker, snipeTarget, l, m, n, bl, i, 0, o, string);
    }
 
-   static SniperBot quota(ClientModule var0, Consumer<SniperBot> var1, MacroWorker var2, SnipeTarget var3, int var4, long var5, long var7) {
-      return new SniperBot(var0, var1, var2, var3, var5, 200L, var7, false, 0, Math.max(1, var4), 0L, "");
+   static SniperBot quota(ClientModule clientModule, Consumer<SniperBot> consumer, MacroWorker macroWorker, SnipeTarget snipeTarget, int i, long l, long m) {
+      return new SniperBot(clientModule, consumer, macroWorker, snipeTarget, l, 200L, m, false, 0, Math.max(1, i), 0L, "");
    }
 
    private SniperBot(
-      ClientModule var1,
-      Consumer<SniperBot> var2,
-      MacroWorker var3,
-      SnipeTarget var4,
-      long var5,
-      long var7,
-      long var9,
-      boolean var11,
-      int var12,
-      int var13,
-      long var14,
-      String var16
+      ClientModule clientModule,
+      Consumer<SniperBot> consumer,
+      MacroWorker macroWorker,
+      SnipeTarget snipeTarget,
+      long l,
+      long m,
+      long n,
+      boolean bl,
+      int i,
+      int j,
+      long o,
+      String string
    ) {
-      this.module = var1;
-      this.stopper = var2;
-      this.worker = var3;
-      this.gui = new Gui(var3);
-      this.target = var4;
-      this.refreshMs = var5;
-      this.settleMs = var7;
-      this.budget = var9;
-      this.requireConfirm = var11;
-      this.maxBuys = var12;
-      this.wantItems = var13;
-      SniperBot.Sort var17 = this.sort = var13 > 0 ? SniperBot.Sort.LOWEST : SniperBot.Sort.RECENT;
-      if (var14 > 0L) {
-         this.ah = new AuctionHouse(var1, var3, new AuctionHouse.Config(0L, 60000L, 20000L, 1, 1000, 0L, 3.0, 20.0, 36, 15000L), var16);
-         this.stock = new AuctionHouse.Stock(var4.product(var14), true);
+      this.module = clientModule;
+      this.stopper = consumer;
+      this.worker = macroWorker;
+      this.gui = new Gui(macroWorker);
+      this.target = snipeTarget;
+      this.refreshMs = l;
+      this.settleMs = m;
+      this.budget = n;
+      this.requireConfirm = bl;
+      this.maxBuys = i;
+      this.wantItems = j;
+      SniperBot.Sort var17 = this.sort = j > 0 ? SniperBot.Sort.LOWEST : SniperBot.Sort.RECENT;
+      if (o > 0L) {
+         this.ah = new AuctionHouse(clientModule, macroWorker, new AuctionHouse.Config(0L, 60000L, 20000L, 1, 1000, 0L, 3.0, 20.0, 36, 15000L), string);
+         this.stock = new AuctionHouse.Stock(snipeTarget.product(o), true);
          this.stocks = List.of(this.stock);
       } else {
          this.ah = null;
@@ -170,8 +170,8 @@ final class SniperBot {
       }
    }
 
-   private void say(ModuleChat.Body var1) {
-      ModuleChat.send(this.module, var1);
+   private void say(ModuleChat.Body body) {
+      ModuleChat.send(this.module, body);
    }
 
    boolean complete() {
@@ -218,7 +218,7 @@ final class SniperBot {
          this.worker.check();
 
          try {
-            if (!this.worker.call(() -> Gui.mc().field_1724 != null && Gui.mc().method_1562() != null)) {
+            if (!this.worker.call(() -> Gui.mc().player != null && Gui.mc().getNetworkHandler() != null)) {
                this.worker.sleep(2000L);
             } else {
                if (this.stock != null && this.unsold > 0) {
@@ -300,12 +300,12 @@ final class SniperBot {
       if (!this.worker.waitFor(SniperBot::auctionOpenNow, 10000L)) {
          String var5 = this.worker
             .call(
-               () -> Gui.mc().field_1755 == null
+               () -> Gui.mc().currentScreen == null
                   ? "no screen"
-                  : Gui.mc().field_1755.getClass().getSimpleName() + " '" + ServerText.normalize(Gui.mc().field_1755.method_25440()) + "'"
+                  : Gui.mc().currentScreen.getClass().getSimpleName() + " '" + ServerText.normalize(Gui.mc().currentScreen.getTitle()) + "'"
             );
          String var6 = this.noteAt >= var3 ? this.note : "";
-         LOGGER.info("[EFN] AH did not open for '/ah {}': {}, server said '{}'", new Object[]{this.target.search, var5, var6});
+         LOGGER.info("[EFN] AH did not open for '/ah {}': {}, server said '{}'", this.target.search, var5, var6);
          throw new AuctionHouse.Problem("The AH did not open" + (var6.isEmpty() ? "" : " (server: " + var6 + ")"));
       } else {
          this.worker.waitFor(() -> {
@@ -339,15 +339,15 @@ final class SniperBot {
    }
 
    private static int stateNow() {
-      ClientPlayerEntity var0 = Gui.mc().field_1724;
-      return var0 == null ? -1 : var0.field_7512.method_37421();
+      ClientPlayerEntity var0 = Gui.mc().player;
+      return var0 == null ? -1 : var0.currentScreenHandler.getRevision();
    }
 
    private static boolean auctionOpenNow() {
       if (!Gui.containerOpenNow()) {
          return false;
       } else {
-         String var0 = ServerText.normalize(Gui.mc().field_1755.method_25440());
+         String var0 = ServerText.normalize(Gui.mc().currentScreen.getTitle());
          return var0.contains("order") ? false : var0.contains("auction") || refreshSlot(Gui.containerNow()) >= 0;
       }
    }
@@ -387,7 +387,7 @@ final class SniperBot {
          }
 
          String var4 = this.gui.fingerprint();
-         this.gui.click(var2[0], 0, SlotActionType.field_7790);
+         this.gui.click(var2[0], 0, SlotActionType.PICKUP);
          if (var3 == SniperBot.Sort.UNKNOWN) {
             this.gui.waitChange(var4, 3000L);
          } else {
@@ -402,8 +402,8 @@ final class SniperBot {
    }
 
    private static SniperBot.Sort sortNow() {
-      ClientPlayerEntity var0 = Gui.mc().field_1724;
-      if (var0 != null && auctionOpenNow() && var0.field_7512.method_34255().method_7960()) {
+      ClientPlayerEntity var0 = Gui.mc().player;
+      if (var0 != null && auctionOpenNow() && var0.currentScreenHandler.getCursorStack().isEmpty()) {
          List var1 = Gui.containerNow();
          int var2 = filterSlot(var1);
          return var2 < 0 ? SniperBot.Sort.UNKNOWN : selectedSort((ItemStack)var1.get(var2));
@@ -412,33 +412,33 @@ final class SniperBot {
       }
    }
 
-   private static int filterSlot(List<ItemStack> var0) {
-      for (int var1 = 45; var1 < var0.size(); var1++) {
-         ItemStack var2 = (ItemStack)var0.get(var1);
-         if (!var2.method_7960() && (var2.method_31574(Items.field_8239) || Gui.nameOf(var2).contains("filter"))) {
+   private static int filterSlot(List<ItemStack> list) {
+      for (int var1 = 45; var1 < list.size(); var1++) {
+         ItemStack var2 = (ItemStack)list.get(var1);
+         if (!var2.isEmpty() && (var2.isOf(Items.HOPPER) || Gui.nameOf(var2).contains("filter"))) {
             return var1;
          }
       }
 
-      return var0.size() > 47 && !((ItemStack)var0.get(47)).method_7960() ? 47 : -1;
+      return list.size() > 47 && !((ItemStack)list.get(47)).isEmpty() ? 47 : -1;
    }
 
-   private static int refreshSlot(List<ItemStack> var0) {
-      for (int var1 = 45; var1 < var0.size(); var1++) {
-         ItemStack var2 = (ItemStack)var0.get(var1);
-         if (!var2.method_7960() && var2.method_31574(Items.field_8782)) {
+   private static int refreshSlot(List<ItemStack> list) {
+      for (int var1 = 45; var1 < list.size(); var1++) {
+         ItemStack var2 = (ItemStack)list.get(var1);
+         if (!var2.isEmpty() && var2.isOf(Items.ANVIL)) {
             return var1;
          }
       }
 
-      return var0.size() > 49 && ((ItemStack)var0.get(49)).method_31574(Items.field_8782) ? 49 : -1;
+      return list.size() > 49 && ((ItemStack)list.get(49)).isOf(Items.ANVIL) ? 49 : -1;
    }
 
-   static SniperBot.Sort selectedSort(ItemStack var0) {
+   static SniperBot.Sort selectedSort(ItemStack itemStack) {
       ArrayList var1 = new ArrayList();
       ArrayList var2 = new ArrayList();
 
-      for (Text var4 : ((LoreComponent)var0.method_58695(DataComponentTypes.field_49632, LoreComponent.field_49340)).comp_2400()) {
+      for (Text var4 : itemStack.getOrDefault(DataComponentTypes.LORE, LoreComponent.DEFAULT).lines()) {
          String var5 = ServerText.normalize(Dialogs.visibleText(var4));
          SniperBot.Sort var6 = var5.contains("recent")
             ? SniperBot.Sort.RECENT
@@ -494,29 +494,29 @@ final class SniperBot {
       }
    }
 
-   private static int color(Text var0) {
+   private static int color(Text text) {
       int[] var1 = new int[]{-1};
-      var0.method_27658((var1x, var2) -> {
-         if (var1[0] < 0 && !var2.isBlank() && !var2.trim().equals("\u2022") && !var2.trim().equals("\u25aa")) {
-            TextColor var3 = var1x.method_10973();
-            var1[0] = var3 == null ? 11141290 : var3.method_27716();
+      text.visit((style, string) -> {
+         if (var1[0] < 0 && !string.isBlank() && !string.trim().equals("\u2022") && !string.trim().equals("\u25aa")) {
+            TextColor var3 = style.getColor();
+            var1[0] = var3 == null ? 11141290 : var3.getRgb();
             return Optional.empty();
          } else {
             return Optional.empty();
          }
-      }, Style.field_24360);
+      }, Style.EMPTY);
       return var1[0];
    }
 
    private SniperBot.Hit pageTick() {
-      ClientPlayerEntity var1 = Gui.mc().field_1724;
+      ClientPlayerEntity var1 = Gui.mc().player;
       if (var1 != null && auctionOpenNow()) {
          long var2 = System.currentTimeMillis();
-         long var4 = (long)var1.field_7512.field_7763 << 32 | var1.field_7512.method_37421() & 4294967295L;
+         long var4 = (long)var1.currentScreenHandler.syncId << 32 | var1.currentScreenHandler.getRevision() & 4294967295L;
          if (var4 != this.pageKey) {
             this.pageKey = var4;
             this.pageChangedAt = var2;
-            this.pageChangedTick = var1.field_6012;
+            this.pageChangedTick = var1.age;
             if (this.refreshPending) {
                this.refreshPending = false;
                this.learnAnswer(var2 - this.refreshSentAt);
@@ -532,16 +532,16 @@ final class SniperBot {
                this.refreshPending = false;
             }
 
-            if (var2 - this.pageChangedAt < this.settleMs || var1.field_6012 - this.pageChangedTick < 2) {
+            if (var2 - this.pageChangedAt < this.settleMs || var1.age - this.pageChangedTick < 2) {
                return null;
-            } else if (!var1.field_7512.method_34255().method_7960()) {
+            } else if (!var1.currentScreenHandler.getCursorStack().isEmpty()) {
                return null;
             } else {
-               String var6 = ServerText.normalize(Gui.mc().field_1755.method_25440());
+               String var6 = ServerText.normalize(Gui.mc().currentScreen.getTitle());
                if (this.wantItems <= 0 && var6.contains("(page") && !var6.contains("(page 1)")) {
                   return null;
                } else {
-                  this.skip.values().removeIf(var2x -> var2x < var2);
+                  this.skip.values().removeIf(long_ -> long_ < var2);
                   List var7 = Gui.containerNow();
                   int var8 = -1;
                   double var9 = 1.7976931348623157E308;
@@ -549,8 +549,8 @@ final class SniperBot {
                   for (int var11 = 0; var11 < 45 && var11 < var7.size(); var11++) {
                      ItemStack var15 = (ItemStack)var7.get(var11);
                      double var13;
-                     if (!var15.method_7960() && this.target.matches(var15) && !((var13 = ServerText.askingPrice(var15)) <= 0.0)) {
-                        long var16 = Math.round(var13 / Math.max(1, var15.method_7947()));
+                     if (!var15.isEmpty() && this.target.matches(var15) && !((var13 = ServerText.askingPrice(var15)) <= 0.0)) {
+                        long var16 = Math.round(var13 / Math.max(1, var15.getCount()));
                         String var12;
                         if ((this.wantItems > 0 ? Math.round(var13) : var16) <= this.target.maxPrice
                            && (this.budget <= 0L || this.spent + this.wrongSpent + Math.round(var13) <= this.budget)
@@ -559,8 +559,8 @@ final class SniperBot {
                               return this.click(var1, var11, var15, var13, var16, var12);
                            }
 
-                           double var18 = var13 / Math.max(1, var15.method_7947());
-                           if (room(var1, var15) >= var15.method_7947() && var18 < var9) {
+                           double var18 = var13 / Math.max(1, var15.getCount());
+                           if (room(var1, var15) >= var15.getCount() && var18 < var9) {
                               var8 = var11;
                               var9 = var18;
                            }
@@ -571,12 +571,12 @@ final class SniperBot {
                   if (var8 >= 0) {
                      ItemStack var22 = (ItemStack)var7.get(var8);
                      double var23 = ServerText.askingPrice(var22);
-                     return this.click(var1, var8, var22, var23, Math.round(var23 / Math.max(1, var22.method_7947())), fingerprint(var22, var23));
+                     return this.click(var1, var8, var22, var23, Math.round(var23 / Math.max(1, var22.getCount())), fingerprint(var22, var23));
                   } else if (this.wantItems > 0) {
                      int var21 = nextPageSlot(var7);
                      if (var21 >= 0 && this.pagesTurned < 5) {
                         this.pagesTurned++;
-                        Gui.mc().field_1761.method_2906(var1.field_7512.field_7763, var21, 0, SlotActionType.field_7790, var1);
+                        Gui.mc().interactionManager.clickSlot(var1.currentScreenHandler.syncId, var21, 0, SlotActionType.PICKUP, var1);
                         this.refreshPending = true;
                         this.refreshSentAt = var2;
                         return null;
@@ -590,7 +590,7 @@ final class SniperBot {
                      if (var2 >= this.nextRefresh) {
                         int var20 = refreshSlot(var7);
                         if (var20 >= 0) {
-                           Gui.mc().field_1761.method_2906(var1.field_7512.field_7763, var20, 0, SlotActionType.field_7790, var1);
+                           Gui.mc().interactionManager.clickSlot(var1.currentScreenHandler.syncId, var20, 0, SlotActionType.PICKUP, var1);
                            this.refreshPending = true;
                            this.refreshSentAt = var2;
                         }
@@ -608,14 +608,14 @@ final class SniperBot {
       }
    }
 
-   private static int nextPageSlot(List<ItemStack> var0) {
-      for (int var1 = 45; var1 < var0.size(); var1++) {
-         ItemStack var3 = (ItemStack)var0.get(var1);
+   private static int nextPageSlot(List<ItemStack> list) {
+      for (int var1 = 45; var1 < list.size(); var1++) {
+         ItemStack var3 = (ItemStack)list.get(var1);
          String var2;
-         if (!var3.method_7960()
+         if (!var3.isEmpty()
             && !(var2 = Gui.nameOf(var3)).contains("prev")
             && !var2.contains("back")
-            && (var2.contains("next") || var3.method_31574(Items.field_8107) && var2.contains("page"))) {
+            && (var2.contains("next") || var3.isOf(Items.ARROW) && var2.contains("page"))) {
             return var1;
          }
       }
@@ -623,14 +623,14 @@ final class SniperBot {
       return -1;
    }
 
-   private void noteMiss(String var1, List<ItemStack> var2, long var3) {
+   private void noteMiss(String string, List<ItemStack> list, long l) {
       this.searches++;
-      if (var3 - this.lastMissNote >= 30000L) {
-         this.lastMissNote = var3;
+      if (l - this.lastMissNote >= 30000L) {
+         this.lastMissNote = l;
          int var5 = 0;
 
-         for (int var6 = 0; var6 < 45 && var6 < var2.size(); var6++) {
-            if (!((ItemStack)var2.get(var6)).method_7960()) {
+         for (int var6 = 0; var6 < 45 && var6 < list.size(); var6++) {
+            if (!((ItemStack)list.get(var6)).isEmpty()) {
                var5++;
             }
          }
@@ -645,23 +645,23 @@ final class SniperBot {
                .value("/ah " + this.target.search)
                .text(" yet (" + var5 + " other listings), searching again.")
          );
-         LOGGER.info("[EFN] AH purchase found no {} on '{}' after {} searches:{}", new Object[]{this.target.describe(), var1, this.searches, describe(var2)});
+         LOGGER.info("[EFN] AH purchase found no {} on '{}' after {} searches:{}", this.target.describe(), string, this.searches, describe(list));
       }
    }
 
-   private SniperBot.Hit click(ClientPlayerEntity var1, int var2, ItemStack var3, double var4, long var6, String var8) {
+   private SniperBot.Hit click(ClientPlayerEntity clientPlayerEntity, int i, ItemStack itemStack, double d, long l, String string) {
       this.confirmPressed = false;
-      Gui.mc().field_1761.method_2906(var1.field_7512.field_7763, var2, 0, SlotActionType.field_7790, var1);
+      Gui.mc().interactionManager.clickSlot(clientPlayerEntity.currentScreenHandler.syncId, i, 0, SlotActionType.PICKUP, clientPlayerEntity);
       return new SniperBot.Hit(
-         var2, var3, Math.round(var4), var6, this.target.timed() ? SnipeTarget.minutesLeft(var3) : -1, var8, var3.method_7964().getString()
+         i, itemStack, Math.round(d), l, this.target.timed() ? SnipeTarget.minutesLeft(itemStack) : -1, string, itemStack.getName().getString()
       );
    }
 
-   private static int freeSlots(ClientPlayerEntity var0) {
+   private static int freeSlots(ClientPlayerEntity clientPlayerEntity) {
       int var1 = 0;
 
       for (int var2 = 0; var2 < 36; var2++) {
-         if (var0.method_31548().method_5438(var2).method_7960()) {
+         if (clientPlayerEntity.getInventory().getStack(var2).isEmpty()) {
             var1++;
          }
       }
@@ -669,52 +669,52 @@ final class SniperBot {
       return var1;
    }
 
-   private static int room(ClientPlayerEntity var0, ItemStack var1) {
+   private static int room(ClientPlayerEntity clientPlayerEntity, ItemStack itemStack) {
       int var2 = 0;
 
       for (int var3 = 0; var3 < 36; var3++) {
-         ItemStack var4 = var0.method_31548().method_5438(var3);
-         if (var4.method_7960()) {
-            var2 += var1.method_7914();
-         } else if (ItemStack.method_31577(var4, var1)) {
-            var2 += Math.max(0, var4.method_7914() - var4.method_7947());
+         ItemStack var4 = clientPlayerEntity.getInventory().getStack(var3);
+         if (var4.isEmpty()) {
+            var2 += itemStack.getMaxCount();
+         } else if (ItemStack.areItemsAndComponentsEqual(var4, itemStack)) {
+            var2 += Math.max(0, var4.getMaxCount() - var4.getCount());
          }
       }
 
       return var2;
    }
 
-   private void learnAnswer(long var1) {
-      if (var1 > 0L && var1 <= 3000L) {
-         this.answerMs = this.answerMs <= 0L ? var1 : (this.answerMs * 3L + var1) / 4L;
+   private void learnAnswer(long l) {
+      if (l > 0L && l <= 3000L) {
+         this.answerMs = this.answerMs <= 0L ? l : (this.answerMs * 3L + l) / 4L;
       }
    }
 
-   private long answerTimeout(ClientPlayerEntity var1) {
+   private long answerTimeout(ClientPlayerEntity clientPlayerEntity) {
       long var3 = this.answerMs > 0L ? this.answerMs * 3L : 1000L;
-      PlayerListEntry var2 = Gui.mc().method_1562() == null ? null : Gui.mc().method_1562().method_2871(var1.method_5667());
+      PlayerListEntry var2 = Gui.mc().getNetworkHandler() == null ? null : Gui.mc().getNetworkHandler().getPlayerListEntry(clientPlayerEntity.getUuid());
       if (var2 != null) {
-         var3 = Math.max(var3, var2.method_2959() * 2L);
+         var3 = Math.max(var3, var2.getLatency() * 2L);
       }
 
       return Math.clamp(var3 + 300L, 700L, 3000L);
    }
 
-   private static String fingerprint(ItemStack var0, double var1) {
+   private static String fingerprint(ItemStack itemStack, double d) {
       StringBuilder var3 = new StringBuilder();
-      var3.append(Registries.field_41178.method_10221(var0.method_7909()))
+      var3.append(Registries.ITEM.getId(itemStack.getItem()))
          .append('|')
-         .append(var0.method_7947())
+         .append(itemStack.getCount())
          .append('|')
-         .append(ServerText.key(var0.method_7964().getString()))
+         .append(ServerText.key(itemStack.getName().getString()))
          .append('|')
-         .append(Math.round(var1))
+         .append(Math.round(d))
          .append('|')
-         .append(var0.method_7919())
+         .append(itemStack.getDamage())
          .append('|')
-         .append(EnchantmentHelper.method_57532(var0));
+         .append(EnchantmentHelper.getEnchantments(itemStack));
 
-      for (String var5 : ServerText.lore(var0)) {
+      for (String var5 : ServerText.lore(itemStack)) {
          String var6 = ServerText.normalize(var5);
          if (!TIME.matcher(var6).find()) {
             var3.append('|').append(var6);
@@ -724,7 +724,7 @@ final class SniperBot {
       return var3.toString();
    }
 
-   private boolean handleBuy(SniperBot.Hit var1, long var2) {
+   private boolean handleBuy(SniperBot.Hit hit, long l) {
       Object[] var4 = new Object[]{null};
       int[] var5 = new int[]{-1};
       long[] var6 = new long[]{0L, -9223372036854775808L};
@@ -734,36 +734,36 @@ final class SniperBot {
 
       while (System.currentTimeMillis() < var9) {
          SniperBot.Purchase var11 = this.purchase;
-         if (var11 != null && var11.at() >= var2 && var11.at() > this.handledAt) {
-            return this.bought(var1, var11);
+         if (var11 != null && var11.at() >= l && var11.at() > this.handledAt) {
+            return this.bought(hit, var11);
          }
 
-         if (this.poorAt >= var2) {
+         if (this.poorAt >= l) {
             this.say(
                ModuleChat.body()
                   .danger("Not enough money")
                   .text(" for ")
-                  .name(var1.name())
+                  .name(hit.name())
                   .text(" at $")
-                  .value(ServerText.shortMoney(var1.total()))
+                  .value(ServerText.shortMoney(hit.total()))
                   .text(", stopping.")
             );
             this.stopper.accept(this);
             throw new MacroWorker.Cancelled();
          }
 
-         if (this.goneAt >= var2 || this.ownAt >= var2) {
-            this.skip.put(var1.fingerprint(), System.currentTimeMillis() + 60000L);
+         if (this.goneAt >= l || this.ownAt >= l) {
+            this.skip.put(hit.fingerprint(), System.currentTimeMillis() + 60000L);
             return false;
          }
 
-         SniperBot.Step var12 = this.worker.call(() -> this.confirmStep(var1, var4, var5, var6, var7, var8));
+         SniperBot.Step var12 = this.worker.call(() -> this.confirmStep(hit, var4, var5, var6, var7, var8));
          if (var12 == SniperBot.Step.WRONG) {
-            if (this.strikes.merge(var1.fingerprint(), 1, Integer::sum) >= 2) {
-               this.skip.put(var1.fingerprint(), System.currentTimeMillis() + 600000L);
+            if (this.strikes.merge(hit.fingerprint(), 1, Integer::sum) >= 2) {
+               this.skip.put(hit.fingerprint(), System.currentTimeMillis() + 600000L);
             }
 
-            this.say(ModuleChat.body().warn("Did not buy").text(" ").name(var1.name()).text(": " + var8[0].reason() + "."));
+            this.say(ModuleChat.body().warn("Did not buy").text(" ").name(hit.name()).text(": " + var8[0].reason() + "."));
             if (var8[0].fatal()) {
                this.unreadable = 0;
             } else if (++this.unreadable >= 4) {
@@ -786,18 +786,18 @@ final class SniperBot {
          this.worker.sleep(2L);
       }
 
-      this.skip.put(var1.fingerprint(), System.currentTimeMillis() + 60000L);
+      this.skip.put(hit.fingerprint(), System.currentTimeMillis() + 60000L);
       return !this.worker.call(SniperBot::auctionOpenNow);
    }
 
-   private SniperBot.Step confirmStep(SniperBot.Hit var1, Object[] var2, int[] var3, long[] var4, boolean[] var5, SniperBot.Problem[] var6) {
-      ClientPlayerEntity var8 = Gui.mc().field_1724;
+   private SniperBot.Step confirmStep(SniperBot.Hit hit, Object[] objects, int[] is, long[] ls, boolean[] bls, SniperBot.Problem[] problems) {
+      ClientPlayerEntity var8 = Gui.mc().player;
       if (var8 == null) {
          return SniperBot.Step.WAIT;
       } else {
          Dialogs.View var9 = Dialogs.current(Gui.mc());
          if (var9 != null) {
-            if (var9.dialog() == var2[0]) {
+            if (var9.dialog() == objects[0]) {
                return SniperBot.Step.WAIT;
             } else if (!var9.titled("buy") && !var9.titled("sure") && !var9.titled("purchase") && !var9.titled("confirm")) {
                return SniperBot.Step.WAIT;
@@ -806,58 +806,63 @@ final class SniperBot {
                if (var15 == null) {
                   return SniperBot.Step.WAIT;
                } else {
-                  SniperBot.Problem var16 = this.dialogProblem(var9, var1, var5[0]);
+                  SniperBot.Problem var16 = this.dialogProblem(var9, hit, bls[0]);
                   if (var16 != null) {
                      LOGGER.info(
                         "[EFN] AH Sniper cancelled a purchase dialog ({}): {} body={} items={}",
-                        new Object[]{var16.reason(), var9.describe(), var9.body(), describe(var9.items())}
+                        var16.reason(),
+                        var9.describe(),
+                        var9.body(),
+                        describe(var9.items())
                      );
                      Dialogs.close(Gui.mc());
-                     var6[0] = var16;
+                     problems[0] = var16;
                      return SniperBot.Step.WRONG;
                   } else if (!Dialogs.press(Gui.mc(), var9, var15, Map.of())) {
                      return SniperBot.Step.WAIT;
                   } else {
-                     var2[0] = var9.dialog();
-                     var5[0] = true;
+                     objects[0] = var9.dialog();
+                     bls[0] = true;
                      this.confirmPressed = true;
                      return SniperBot.Step.PRESSED;
                   }
                }
             }
          } else if (Gui.containerOpenNow() && !auctionOpenNow()) {
-            int var10 = var8.field_7512.field_7763;
-            if (var10 == var3[0]) {
+            int var10 = var8.currentScreenHandler.syncId;
+            if (var10 == is[0]) {
                return SniperBot.Step.WAIT;
             } else {
                List var11 = Gui.containerNow();
-               int var12 = confirmSlot(var11, var1);
+               int var12 = confirmSlot(var11, hit);
                if (var12 < 0) {
                   return SniperBot.Step.WAIT;
                } else {
                   long var13 = System.currentTimeMillis();
-                  if (var4[1] != var10) {
-                     var4[0] = var13;
-                     var4[1] = var10;
+                  if (ls[1] != var10) {
+                     ls[0] = var13;
+                     ls[1] = var10;
                   }
 
                   SniperBot.Problem var7;
-                  if ((var7 = this.chestProblem(var11, var12, var1, var5[0])) != null) {
-                     if (!var7.fatal() && var13 - var4[0] < 400L) {
+                  if ((var7 = this.chestProblem(var11, var12, hit, bls[0])) != null) {
+                     if (!var7.fatal() && var13 - ls[0] < 400L) {
                         return SniperBot.Step.WAIT;
                      } else {
                         LOGGER.info(
                            "[EFN] AH Sniper cancelled a purchase menu ({}): '{}' {}",
-                           new Object[]{var7.reason(), ServerText.normalize(Gui.mc().field_1755.method_25440()), describe(var11)}
+                           var7.reason(),
+                           ServerText.normalize(Gui.mc().currentScreen.getTitle()),
+                           describe(var11)
                         );
-                        var8.method_7346();
-                        var6[0] = var7;
+                        var8.closeHandledScreen();
+                        problems[0] = var7;
                         return SniperBot.Step.WRONG;
                      }
                   } else {
-                     Gui.mc().field_1761.method_2906(var10, var12, 0, SlotActionType.field_7790, var8);
-                     var3[0] = var10;
-                     var5[0] = true;
+                     Gui.mc().interactionManager.clickSlot(var10, var12, 0, SlotActionType.PICKUP, var8);
+                     is[0] = var10;
+                     bls[0] = true;
                      this.confirmPressed = true;
                      return SniperBot.Step.PRESSED;
                   }
@@ -869,14 +874,12 @@ final class SniperBot {
       }
    }
 
-   private static int confirmSlot(List<ItemStack> var0, SniperBot.Hit var1) {
+   private static int confirmSlot(List<ItemStack> list, SniperBot.Hit hit) {
       int var2 = -1;
 
-      for (int var3 = 0; var3 < var0.size(); var3++) {
-         ItemStack var4 = (ItemStack)var0.get(var3);
-         if (!var4.method_7960()
-            && !var4.method_31574(var1.stack().method_7909())
-            && Registries.field_41178.method_10221(var4.method_7909()).method_12832().contains("lime")) {
+      for (int var3 = 0; var3 < list.size(); var3++) {
+         ItemStack var4 = (ItemStack)list.get(var3);
+         if (!var4.isEmpty() && !var4.isOf(hit.stack().getItem()) && Registries.ITEM.getId(var4.getItem()).getPath().contains("lime")) {
             String var5 = Gui.nameOf(var4);
             if (var5.contains("confirm") || var5.contains("buy") || var5.contains("purchase") || var5.contains("yes")) {
                return var3;
@@ -891,106 +894,106 @@ final class SniperBot {
       return var2;
    }
 
-   private SniperBot.Problem chestProblem(List<ItemStack> var1, int var2, SniperBot.Hit var3, boolean var4) {
+   private SniperBot.Problem chestProblem(List<ItemStack> list, int i, SniperBot.Hit hit, boolean bl) {
       boolean var5 = false;
       double var6 = -1.0;
 
-      for (int var8 = 0; var8 < var1.size(); var8++) {
-         ItemStack var9 = (ItemStack)var1.get(var8);
-         if (!var9.method_7960()) {
+      for (int var8 = 0; var8 < list.size(); var8++) {
+         ItemStack var9 = (ItemStack)list.get(var8);
+         if (!var9.isEmpty()) {
             double var10 = ServerText.askingPrice(textOf(var9));
             if (var10 > var6) {
                var6 = var10;
             }
 
-            if (var8 != var2) {
-               if (this.sameListing(var9, var3)) {
+            if (var8 != i) {
+               if (this.sameListing(var9, hit)) {
                   var5 = true;
                } else if (!decoration(var9) && var10 > 0.0) {
-                  return new SniperBot.Problem("the menu was for " + var9.method_7964().getString(), true);
+                  return new SniperBot.Problem("the menu was for " + var9.getName().getString(), true);
                }
             }
          }
       }
 
-      return this.verdict(var5, var6, var3, var4);
+      return this.verdict(var5, var6, hit, bl);
    }
 
-   private SniperBot.Problem dialogProblem(Dialogs.View var1, SniperBot.Hit var2, boolean var3) {
+   private SniperBot.Problem dialogProblem(Dialogs.View view, SniperBot.Hit hit, boolean bl) {
       ArrayList var4 = new ArrayList();
-      var4.add(var1.title());
-      var4.addAll(var1.body());
+      var4.add(view.title());
+      var4.addAll(view.body());
 
-      for (Dialogs.Button var6 : var1.buttons()) {
+      for (Dialogs.Button var6 : view.buttons()) {
          var4.add(var6.label());
       }
 
       double var12 = ServerText.askingPrice(var4);
       boolean var7 = false;
 
-      for (ItemStack var9 : var1.items()) {
-         if (!var9.method_7960()) {
+      for (ItemStack var9 : view.items()) {
+         if (!var9.isEmpty()) {
             double var10 = ServerText.askingPrice(textOf(var9));
             if (var10 > var12) {
                var12 = var10;
             }
 
-            if (this.sameListing(var9, var2)) {
+            if (this.sameListing(var9, hit)) {
                var7 = true;
             } else if (!decoration(var9)) {
-               return new SniperBot.Problem("the menu was for " + var9.method_7964().getString(), true);
+               return new SniperBot.Problem("the menu was for " + var9.getName().getString(), true);
             }
          }
       }
 
-      if (!var7 && var1.items().isEmpty()) {
-         String var13 = ServerText.key(var2.name());
+      if (!var7 && view.items().isEmpty()) {
+         String var13 = ServerText.key(hit.name());
          var7 = !var13.isEmpty() && ServerText.key(String.join(" ", var4)).contains(var13);
       }
 
-      return this.verdict(var7, var12, var2, var3);
+      return this.verdict(var7, var12, hit, bl);
    }
 
-   private SniperBot.Problem verdict(boolean var1, double var2, SniperBot.Hit var4, boolean var5) {
-      if (var2 > this.limit(var4)) {
-         return new SniperBot.Problem("the menu asked $" + ServerText.shortMoney(var2), true);
-      } else if (var5) {
+   private SniperBot.Problem verdict(boolean bl, double d, SniperBot.Hit hit, boolean bl2) {
+      if (d > this.limit(hit)) {
+         return new SniperBot.Problem("the menu asked $" + ServerText.shortMoney(d), true);
+      } else if (bl2) {
          return null;
-      } else if (!var1) {
+      } else if (!bl) {
          return new SniperBot.Problem("the menu did not show this listing", false);
       } else {
-         return var2 <= 0.0 ? new SniperBot.Problem("the menu did not show the price", false) : null;
+         return d <= 0.0 ? new SniperBot.Problem("the menu did not show the price", false) : null;
       }
    }
 
-   private double limit(SniperBot.Hit var1) {
-      double var2 = this.wantItems > 0 ? this.target.maxPrice : (double)this.target.maxPrice * Math.max(1, var1.stack().method_7947());
-      return Math.min(var2, var1.total() * 1.02 + 1.0);
+   private double limit(SniperBot.Hit hit) {
+      double var2 = this.wantItems > 0 ? this.target.maxPrice : (double)this.target.maxPrice * Math.max(1, hit.stack().getCount());
+      return Math.min(var2, hit.total() * 1.02 + 1.0);
    }
 
-   private boolean sameListing(ItemStack var1, SniperBot.Hit var2) {
-      ItemStack var3 = var2.stack();
-      if (var1.method_31574(var3.method_7909()) && var1.method_7947() == var3.method_7947() && var1.method_7919() == var3.method_7919()) {
-         String var4 = ServerText.key(var3.method_7964().getString());
-         if (!ServerText.key(var1.method_7964().getString()).contains(var4)) {
+   private boolean sameListing(ItemStack itemStack, SniperBot.Hit hit) {
+      ItemStack var3 = hit.stack();
+      if (itemStack.isOf(var3.getItem()) && itemStack.getCount() == var3.getCount() && itemStack.getDamage() == var3.getDamage()) {
+         String var4 = ServerText.key(var3.getName().getString());
+         if (!ServerText.key(itemStack.getName().getString()).contains(var4)) {
             return false;
-         } else if (!EnchantmentHelper.method_57532(var1).equals(EnchantmentHelper.method_57532(var3))) {
+         } else if (!EnchantmentHelper.getEnchantments(itemStack).equals(EnchantmentHelper.getEnchantments(var3))) {
             return false;
-         } else if (!this.target.sameKind(var1)) {
+         } else if (!this.target.sameKind(itemStack)) {
             return false;
-         } else if (var2.minutes() < 0) {
+         } else if (hit.minutes() < 0) {
             return true;
          } else {
-            int var5 = SnipeTarget.minutesLeft(var1);
-            return var5 >= 0 && Math.abs(var5 - var2.minutes()) <= 2;
+            int var5 = SnipeTarget.minutesLeft(itemStack);
+            return var5 >= 0 && Math.abs(var5 - hit.minutes()) <= 2;
          }
       } else {
          return false;
       }
    }
 
-   private static boolean decoration(ItemStack var0) {
-      String var2 = Registries.field_41178.method_10221(var0.method_7909()).method_12832();
+   private static boolean decoration(ItemStack itemStack) {
+      String var2 = Registries.ITEM.getId(itemStack.getItem()).getPath();
       if (!var2.contains("glass_pane")
          && !var2.endsWith("stained_glass")
          && !var2.equals("glass")
@@ -1002,7 +1005,7 @@ final class SniperBot {
          boolean var1 = var2.startsWith("lime_") || var2.startsWith("green_") || var2.startsWith("red_");
          if (!var1
             || !var2.endsWith("_dye") && !var2.endsWith("_wool") && !var2.endsWith("_concrete") && !var2.endsWith("_terracotta") && !var2.endsWith("_carpet")) {
-            String var4 = Gui.nameOf(var0);
+            String var4 = Gui.nameOf(itemStack);
             return var4.contains("confirm") || var4.contains("cancel") || var4.contains("go back") || var4.contains("close");
          } else {
             return true;
@@ -1012,27 +1015,27 @@ final class SniperBot {
       }
    }
 
-   private static List<String> textOf(ItemStack var0) {
+   private static List<String> textOf(ItemStack itemStack) {
       ArrayList var1 = new ArrayList();
-      var1.add(var0.method_7964().getString());
-      var1.addAll(ServerText.lore(var0));
+      var1.add(itemStack.getName().getString());
+      var1.addAll(ServerText.lore(itemStack));
       return var1;
    }
 
-   private static String describe(List<ItemStack> var0) {
+   private static String describe(List<ItemStack> list) {
       StringBuilder var1 = new StringBuilder();
 
-      for (int var2 = 0; var2 < var0.size() && var1.length() < 2000; var2++) {
-         ItemStack var3 = (ItemStack)var0.get(var2);
-         if (!var3.method_7960()) {
+      for (int var2 = 0; var2 < list.size() && var1.length() < 2000; var2++) {
+         ItemStack var3 = (ItemStack)list.get(var2);
+         if (!var3.isEmpty()) {
             var1.append(" [")
                .append(var2)
                .append(' ')
-               .append(Registries.field_41178.method_10221(var3.method_7909()).method_12832())
+               .append(Registries.ITEM.getId(var3.getItem()).getPath())
                .append(" x")
-               .append(var3.method_7947())
+               .append(var3.getCount())
                .append(" '")
-               .append(var3.method_7964().getString())
+               .append(var3.getName().getString())
                .append('\'');
 
             for (String var5 : ServerText.lore(var3)) {
@@ -1046,13 +1049,13 @@ final class SniperBot {
       return var1.toString();
    }
 
-   private boolean bought(SniperBot.Hit var1, SniperBot.Purchase var2) {
-      this.handledAt = var2.at();
-      int var4 = Math.max(1, var2.count());
-      long var5 = var2.total() > 0L ? var2.total() : var1.total();
-      boolean var3 = var2.name().isEmpty() || namesMatch(var2.name(), var1.stack());
+   private boolean bought(SniperBot.Hit hit, SniperBot.Purchase purchase) {
+      this.handledAt = purchase.at();
+      int var4 = Math.max(1, purchase.count());
+      long var5 = purchase.total() > 0L ? purchase.total() : hit.total();
+      boolean var3 = purchase.name().isEmpty() || namesMatch(purchase.name(), hit.stack());
       boolean var8 = this.wantItems > 0 ? var5 <= this.target.maxPrice : var5 <= this.target.maxPrice * var4;
-      this.skip.put(var1.fingerprint(), System.currentTimeMillis() + 15000L);
+      this.skip.put(hit.fingerprint(), System.currentTimeMillis() + 15000L);
       if (var3 && var8) {
          this.bought++;
          this.boughtItems += var4;
@@ -1063,7 +1066,7 @@ final class SniperBot {
             ModuleChat.body()
                .good(this.wantItems > 0 ? "Bought" : "Sniped")
                .text(" ")
-               .name(var1.name())
+               .name(hit.name())
                .text(" for $")
                .value(ServerText.shortMoney(var5))
                .text(" (")
@@ -1151,14 +1154,12 @@ final class SniperBot {
       } else {
          this.wrong++;
          this.wrongSpent += var5;
-         LOGGER.warn(
-            "[EFN] AH Sniper bought {}x '{}' for {} while sniping '{}' under {}", new Object[]{var4, var2.name(), var5, var1.name(), this.target.maxPrice}
-         );
+         LOGGER.warn("[EFN] AH Sniper bought {}x '{}' for {} while sniping '{}' under {}", var4, purchase.name(), var5, hit.name(), this.target.maxPrice);
          this.say(
             ModuleChat.body()
                .danger("Bought the wrong listing")
                .text(": " + var4 + "x ")
-               .name(var2.name().isEmpty() ? var1.name() : var2.name())
+               .name(purchase.name().isEmpty() ? hit.name() : purchase.name())
                .text(" for $")
                .value(ServerText.shortMoney(var5))
                .text(". AH Sniper stopped to keep your money safe.")
@@ -1168,21 +1169,21 @@ final class SniperBot {
       }
    }
 
-   private void finish(ModuleChat.Body var1) {
+   private void finish(ModuleChat.Body body) {
       this.complete = true;
-      this.say(var1);
+      this.say(body);
       this.stopper.accept(this);
       throw new MacroWorker.Cancelled();
    }
 
-   private static boolean namesMatch(String var0, ItemStack var1) {
-      String var2 = ServerText.key(var0);
+   private static boolean namesMatch(String string, ItemStack itemStack) {
+      String var2 = ServerText.key(string);
       if (var2.isEmpty()) {
          return true;
       } else {
-         String var3 = ServerText.key(var1.method_7964().getString());
-         String var4 = ServerText.key(new ItemStack(var1.method_7909()).method_7964().getString());
-         String var5 = ServerText.key(Registries.field_41178.method_10221(var1.method_7909()).method_12832());
+         String var3 = ServerText.key(itemStack.getName().getString());
+         String var4 = ServerText.key(new ItemStack(itemStack.getItem()).getName().getString());
+         String var5 = ServerText.key(Registries.ITEM.getId(itemStack.getItem()).getPath());
          return !var3.isEmpty() && (var2.contains(var3) || var3.contains(var2))
             || !var4.isEmpty() && var2.contains(var4)
             || !var5.isEmpty() && var2.contains(var5);
@@ -1196,19 +1197,19 @@ final class SniperBot {
       }
    }
 
-   void onNote(String var1) {
-      String var2 = ServerText.normalize(var1);
+   void onNote(String string) {
+      String var2 = ServerText.normalize(string);
       if (!var2.isEmpty()) {
          this.note = var2.length() > 120 ? var2.substring(0, 120) : var2;
          this.noteAt = System.currentTimeMillis();
       }
    }
 
-   void onChat(String var1) {
-      String var2 = ServerText.normalize(var1);
+   void onChat(String string) {
+      String var2 = ServerText.normalize(string);
       if (!var2.isEmpty()) {
          long var3 = System.currentTimeMillis();
-         this.onNote(var1);
+         this.onNote(string);
          Matcher var5 = RATE_LIMIT.matcher(var2);
          if (var5.find()) {
             try {
@@ -1239,8 +1240,8 @@ final class SniperBot {
       }
    }
 
-   private static SniperBot.Purchase parsePurchase(String var0, long var1) {
-      String var5 = var0.substring("you bought".length()).trim();
+   private static SniperBot.Purchase parsePurchase(String string, long l) {
+      String var5 = string.substring("you bought".length()).trim();
       int var6 = 1;
       Matcher var7 = BOUGHT_COUNT.matcher(var5);
       if (var7.find()) {
@@ -1256,7 +1257,7 @@ final class SniperBot {
          var9 = Math.round((Double)var3.get(0));
       }
 
-      return new SniperBot.Purchase(var1, var6, var8, var9);
+      return new SniperBot.Purchase(l, var6, var8, var9);
    }
 
    String summary() {
@@ -1273,8 +1274,8 @@ final class SniperBot {
          + (this.stock != null ? ". " + AuctionHouse.summary(this.stocks) : ".");
    }
 
-   private static String formatMinutes(int var0) {
-      return var0 % 60 == 0 ? var0 / 60 + "h" : var0 / 60 + "h " + var0 % 60 + "m";
+   private static String formatMinutes(int i) {
+      return i % 60 == 0 ? i / 60 + "h" : i / 60 + "h " + i % 60 + "m";
    }
 
    @Environment(EnvType.CLIENT)

@@ -51,11 +51,11 @@ public final class DiscordIpc implements Closeable {
    private final DiscordIpc.Pipe pipe;
    private final ByteBuffer header = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
 
-   private DiscordIpc(DiscordIpc.Pipe var1) {
-      this.pipe = var1;
+   private DiscordIpc(DiscordIpc.Pipe pipe) {
+      this.pipe = pipe;
    }
 
-   public static DiscordIpc connect(String var0) throws IOException {
+   public static DiscordIpc connect(String string) throws IOException {
       DiscordIpc.Pipe var1 = WINDOWS ? openWindowsPipe() : openUnixSocket();
       if (var1 == null) {
          return null;
@@ -63,7 +63,7 @@ public final class DiscordIpc implements Closeable {
          DiscordIpc var3 = new DiscordIpc(var1);
 
          try {
-            var3.handshake(var0);
+            var3.handshake(string);
             return var3;
          } catch (RuntimeException | IOException var5) {
             var3.close();
@@ -72,11 +72,11 @@ public final class DiscordIpc implements Closeable {
       }
    }
 
-   public void setActivity(JsonObject var1) throws IOException, DiscordIpc.RefusedException {
+   public void setActivity(JsonObject jsonObject) throws IOException, DiscordIpc.RefusedException {
       String var3 = UUID.randomUUID().toString();
       JsonObject var4 = new JsonObject();
       var4.addProperty("pid", PID);
-      var4.add("activity", (JsonElement)(var1 != null ? var1 : JsonNull.INSTANCE));
+      var4.add("activity", (JsonElement)(jsonObject != null ? jsonObject : JsonNull.INSTANCE));
       JsonObject var5 = new JsonObject();
       var5.addProperty("cmd", "SET_ACTIVITY");
       var5.add("args", var4);
@@ -110,10 +110,10 @@ public final class DiscordIpc implements Closeable {
       }
    }
 
-   private void handshake(String var1) throws IOException {
+   private void handshake(String string) throws IOException {
       JsonObject var3 = new JsonObject();
       var3.addProperty("v", 1);
-      var3.addProperty("client_id", var1);
+      var3.addProperty("client_id", string);
       this.send(0, var3);
       long var4 = System.nanoTime() + REPLY_TIMEOUT_NANOS;
 
@@ -135,30 +135,30 @@ public final class DiscordIpc implements Closeable {
       }
    }
 
-   private JsonObject answer(DiscordIpc.Frame var1) throws IOException {
-      return switch (var1.opcode()) {
-         case 1 -> var1.json();
-         case 2 -> throw new IOException("Discord closed the connection: " + errorMessage(var1.json()));
+   private JsonObject answer(DiscordIpc.Frame frame) throws IOException {
+      return switch (frame.opcode()) {
+         case 1 -> frame.json();
+         case 2 -> throw new IOException("Discord closed the connection: " + errorMessage(frame.json()));
          case 3 -> {
-            this.send(4, var1.body());
+            this.send(4, frame.body());
             yield null;
          }
          default -> null;
       };
    }
 
-   private DiscordIpc.Frame readFrame(long var1, boolean var3) throws IOException {
+   private DiscordIpc.Frame readFrame(long l, boolean bl) throws IOException {
       this.header.clear();
-      if (!var3 && this.pipe.readWaiting(this.header) == 0) {
+      if (!bl && this.pipe.readWaiting(this.header) == 0) {
          return null;
       } else {
-         this.readFully(this.header, var1);
+         this.readFully(this.header, l);
          this.header.flip();
          int var4 = this.header.getInt();
          int var5 = this.header.getInt();
          if (var5 >= 0 && var5 <= 1048576) {
             ByteBuffer var6 = ByteBuffer.allocate(var5);
-            this.readFully(var6, var1);
+            this.readFully(var6, l);
             return new DiscordIpc.Frame(var4, var6.array());
          } else {
             throw new IOException("Discord sent a frame of " + var5 + " bytes");
@@ -166,10 +166,10 @@ public final class DiscordIpc implements Closeable {
       }
    }
 
-   private void readFully(ByteBuffer var1, long var2) throws IOException {
-      while (var1.hasRemaining()) {
-         if (this.pipe.readWaiting(var1) <= 0) {
-            if (System.nanoTime() - var2 >= 0L) {
+   private void readFully(ByteBuffer byteBuffer, long l) throws IOException {
+      while (byteBuffer.hasRemaining()) {
+         if (this.pipe.readWaiting(byteBuffer) <= 0) {
+            if (System.nanoTime() - l >= 0L) {
                throw new SocketTimeoutException("Discord did not answer in time");
             }
 
@@ -178,24 +178,24 @@ public final class DiscordIpc implements Closeable {
       }
    }
 
-   private void send(int var1, JsonObject var2) throws IOException {
-      this.send(var1, GSON.toJson(var2).getBytes(StandardCharsets.UTF_8));
+   private void send(int i, JsonObject jsonObject) throws IOException {
+      this.send(i, GSON.toJson((JsonElement)jsonObject).getBytes(StandardCharsets.UTF_8));
    }
 
-   private void send(int var1, byte[] var2) throws IOException {
-      ByteBuffer var3 = ByteBuffer.allocate(8 + var2.length).order(ByteOrder.LITTLE_ENDIAN);
-      var3.putInt(var1).putInt(var2.length).put(var2).flip();
+   private void send(int i, byte[] bs) throws IOException {
+      ByteBuffer var3 = ByteBuffer.allocate(8 + bs.length).order(ByteOrder.LITTLE_ENDIAN);
+      var3.putInt(i).putInt(bs.length).put(bs).flip();
       this.pipe.write(var3, System.nanoTime() + REPLY_TIMEOUT_NANOS);
    }
 
-   private static String errorMessage(JsonObject var0) {
-      JsonElement var1 = var0.get("data");
-      String var2 = string(var1 != null && var1.isJsonObject() ? var1.getAsJsonObject() : var0, "message");
-      return var2 != null ? var2 : var0.toString();
+   private static String errorMessage(JsonObject jsonObject) {
+      JsonElement var1 = jsonObject.get("data");
+      String var2 = string(var1 != null && var1.isJsonObject() ? var1.getAsJsonObject() : jsonObject, "message");
+      return var2 != null ? var2 : jsonObject.toString();
    }
 
-   private static String string(JsonObject var0, String var1) {
-      JsonElement var2 = var0.get(var1);
+   private static String string(JsonObject jsonObject, String string) {
+      JsonElement var2 = jsonObject.get(string);
       return var2 != null && var2.isJsonPrimitive() ? var2.getAsString() : null;
    }
 
@@ -260,12 +260,12 @@ public final class DiscordIpc implements Closeable {
       return var8;
    }
 
-   private static void addSubfolders(Set<Path> var0, Path var1, String var2) {
-      if (Files.isDirectory(var1)) {
-         try (DirectoryStream var3 = Files.newDirectoryStream(var1, var2)) {
+   private static void addSubfolders(Set<Path> set, Path path, String string) {
+      if (Files.isDirectory(path)) {
+         try (DirectoryStream var3 = Files.newDirectoryStream(path, string)) {
             for (Path var5 : var3) {
                if (Files.isDirectory(var5)) {
-                  var0.add(var5);
+                  set.add(var5);
                }
             }
          } catch (SecurityException | IOException var8) {
@@ -290,23 +290,23 @@ public final class DiscordIpc implements Closeable {
 
    @Environment(EnvType.CLIENT)
    private interface Pipe extends Closeable {
-      int readWaiting(ByteBuffer var1) throws IOException;
+      int readWaiting(ByteBuffer byteBuffer) throws IOException;
 
-      void write(ByteBuffer var1, long var2) throws IOException;
+      void write(ByteBuffer byteBuffer, long l) throws IOException;
    }
 
    @Environment(EnvType.CLIENT)
    public static final class RefusedException extends Exception {
-      RefusedException(String var1) {
-         super(var1);
+      RefusedException(String string) {
+         super(string);
       }
    }
 
    @Environment(EnvType.CLIENT)
    private record UnixPipe(SocketChannel channel) implements DiscordIpc.Pipe {
       @Override
-      public int readWaiting(ByteBuffer var1) throws IOException {
-         int var2 = this.channel.read(var1);
+      public int readWaiting(ByteBuffer byteBuffer) throws IOException {
+         int var2 = this.channel.read(byteBuffer);
          if (var2 < 0) {
             throw new EOFException("Discord hung up");
          } else {
@@ -315,10 +315,10 @@ public final class DiscordIpc implements Closeable {
       }
 
       @Override
-      public void write(ByteBuffer var1, long var2) throws IOException {
-         while (var1.hasRemaining()) {
-            if (this.channel.write(var1) <= 0) {
-               if (System.nanoTime() - var2 >= 0L) {
+      public void write(ByteBuffer byteBuffer, long l) throws IOException {
+         while (byteBuffer.hasRemaining()) {
+            if (this.channel.write(byteBuffer) <= 0) {
+               if (System.nanoTime() - l >= 0L) {
                   throw new SocketTimeoutException("Discord stopped reading");
                }
 
@@ -336,25 +336,25 @@ public final class DiscordIpc implements Closeable {
    @Environment(EnvType.CLIENT)
    private record WindowsPipe(RandomAccessFile file) implements DiscordIpc.Pipe {
       @Override
-      public int readWaiting(ByteBuffer var1) throws IOException {
+      public int readWaiting(ByteBuffer byteBuffer) throws IOException {
          long var2 = this.file.length();
          if (var2 <= 0L) {
             return 0;
          } else {
-            int var4 = this.file.read(var1.array(), var1.arrayOffset() + var1.position(), (int)Math.min(var2, (long)var1.remaining()));
+            int var4 = this.file.read(byteBuffer.array(), byteBuffer.arrayOffset() + byteBuffer.position(), (int)Math.min(var2, (long)byteBuffer.remaining()));
             if (var4 < 0) {
                throw new EOFException("Discord hung up");
             } else {
-               var1.position(var1.position() + var4);
+               byteBuffer.position(byteBuffer.position() + var4);
                return var4;
             }
          }
       }
 
       @Override
-      public void write(ByteBuffer var1, long var2) throws IOException {
-         this.file.write(var1.array(), var1.arrayOffset() + var1.position(), var1.remaining());
-         var1.position(var1.limit());
+      public void write(ByteBuffer byteBuffer, long l) throws IOException {
+         this.file.write(byteBuffer.array(), byteBuffer.arrayOffset() + byteBuffer.position(), byteBuffer.remaining());
+         byteBuffer.position(byteBuffer.limit());
       }
 
       @Override

@@ -18,13 +18,13 @@ public abstract class MixinFakeStatsScoreboard {
    }
 
    @Inject(
-      method = {"method_1158"},
+      method = {"setObjectiveSlot"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$fakeSidebar(ScoreboardDisplaySlot var1, ScoreboardObjective var2, CallbackInfo var3) {
-      if (FakeStats.redirect((Scoreboard)this, var1, var2)) {
-         var3.cancel();
+   private void efn$fakeSidebar(ScoreboardDisplaySlot scoreboardDisplaySlot, ScoreboardObjective scoreboardObjective, CallbackInfo callbackInfo) {
+      if (FakeStats.redirect((Scoreboard)this, scoreboardDisplaySlot, scoreboardObjective)) {
+         callbackInfo.cancel();
       }
    }
 }

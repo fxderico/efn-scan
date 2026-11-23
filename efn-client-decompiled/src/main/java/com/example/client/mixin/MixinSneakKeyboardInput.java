@@ -18,16 +18,16 @@ public abstract class MixinSneakKeyboardInput {
    }
 
    @Inject(
-      method = {"method_3129"},
+      method = {"tick"},
       at = {@At("TAIL")}
    )
-   private void efn$forceSneak(CallbackInfo var1) {
+   private void efn$forceSneak(CallbackInfo callbackInfo) {
       SneakModule var2 = SneakModule.active;
       if (var2 != null && var2.doVanilla()) {
          Input var3 = (Input)this;
-         PlayerInput var4 = var3.field_54155;
-         if (!var4.comp_3164()) {
-            var3.field_54155 = new PlayerInput(var4.comp_3159(), var4.comp_3160(), var4.comp_3161(), var4.comp_3162(), var4.comp_3163(), true, var4.comp_3165());
+         PlayerInput var4 = var3.playerInput;
+         if (!var4.sneak()) {
+            var3.playerInput = new PlayerInput(var4.forward(), var4.backward(), var4.left(), var4.right(), var4.jump(), true, var4.sprint());
          }
       }
    }

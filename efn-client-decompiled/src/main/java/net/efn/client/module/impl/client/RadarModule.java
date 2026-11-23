@@ -47,7 +47,7 @@ public final class RadarModule extends ClientModule {
       return this.dotColor.argb();
    }
 
-   public boolean shows(PlayerEntity var1) {
-      return !(var1 instanceof ClientPlayerEntity) && !var1.method_31481() && !var1.method_29504() && !var1.method_7325();
+   public boolean shows(PlayerEntity playerEntity) {
+      return !(playerEntity instanceof ClientPlayerEntity) && !playerEntity.isRemoved() && !playerEntity.isDead() && !playerEntity.isSpectator();
    }
 }

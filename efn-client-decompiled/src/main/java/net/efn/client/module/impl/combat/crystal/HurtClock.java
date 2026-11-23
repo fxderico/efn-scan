@@ -29,7 +29,7 @@ public final class HurtClock {
    private static final int RELAX_STREAK = 8;
    private static final int REMOVE_GRACE = 3;
    private static final double ANCHOR_MATCH_SQR = 0.25;
-   private static final Int2ObjectOpenHashMap<HurtClock.Mark> MARKS = new Int2ObjectOpenHashMap();
+   private static final Int2ObjectOpenHashMap<HurtClock.Mark> MARKS = new Int2ObjectOpenHashMap<>();
    private static ClientPlayerEntity lastPlayer;
    private static World lastLevel;
    private static Packet<?> lastPacket;
@@ -40,36 +40,36 @@ public final class HurtClock {
    private HurtClock() {
    }
 
-   public static void note(ClientPlayerEntity var0, Packet<?> var1) {
-      if (var1 != lastPacket) {
-         lastPacket = var1;
-         if (var1 instanceof BundleS2CPacket var2) {
-            for (Packet var4 : var2.method_48324()) {
-               handle(var0, var4);
+   public static void note(ClientPlayerEntity clientPlayerEntity, Packet<?> packet) {
+      if (packet != lastPacket) {
+         lastPacket = packet;
+         if (packet instanceof BundleS2CPacket var2) {
+            for (Packet var4 : var2.getPackets()) {
+               handle(clientPlayerEntity, var4);
             }
          } else {
-            handle(var0, var1);
+            handle(clientPlayerEntity, packet);
          }
       }
    }
 
-   public static void tick(ClientPlayerEntity var0) {
-      now = var0.field_6012;
-      if (var0 != lastPlayer || var0.method_73183() != lastLevel) {
+   public static void tick(ClientPlayerEntity clientPlayerEntity) {
+      now = clientPlayerEntity.age;
+      if (clientPlayerEntity != lastPlayer || clientPlayerEntity.getEntityWorld() != lastLevel) {
          MARKS.clear();
          margin = 0;
          streak = 0;
-         lastPlayer = var0;
-         lastLevel = var0.method_73183();
+         lastPlayer = clientPlayerEntity;
+         lastLevel = clientPlayerEntity.getEntityWorld();
       }
 
       ObjectIterator var1 = MARKS.int2ObjectEntrySet().iterator();
 
       while (var1.hasNext()) {
          Entry var3 = (Entry)var1.next();
-         Entity var4 = lastLevel.method_8469(var3.getIntKey());
+         Entity var4 = lastLevel.getEntityById(var3.getIntKey());
          LivingEntity var2;
-         if (var4 instanceof LivingEntity && (var2 = (LivingEntity)var4).method_5805()) {
+         if (var4 instanceof LivingEntity && (var2 = (LivingEntity)var4).isAlive()) {
             HurtClock.Mark var5 = (HurtClock.Mark)var3.getValue();
             if (var5.removedAt != -1000 && !var5.confirmed && now - var5.removedAt > 3) {
                margin = Math.min(2, margin + 1);
@@ -83,18 +83,18 @@ public final class HurtClock {
       }
    }
 
-   public static boolean freshAt(LivingEntity var0, int var1, int var2) {
-      if (var0.field_6008 - var1 - var2 > 10) {
+   public static boolean freshAt(LivingEntity livingEntity, int i, int j) {
+      if (livingEntity.timeUntilRegen - i - j > 10) {
          return false;
       } else {
-         HurtClock.Mark var3 = (HurtClock.Mark)MARKS.get(var0.method_5628());
-         return var3 == null || var3.shotTick == -1000 || now + var1 - var3.shotTick >= 10 + margin;
+         HurtClock.Mark var3 = MARKS.get(livingEntity.getId());
+         return var3 == null || var3.shotTick == -1000 || now + i - var3.shotTick >= 10 + margin;
       }
    }
 
-   public static int opensIn(LivingEntity var0, int var1) {
+   public static int opensIn(LivingEntity livingEntity, int i) {
       for (int var2 = 0; var2 < 20; var2++) {
-         if (freshAt(var0, var2, var1)) {
+         if (freshAt(livingEntity, var2, i)) {
             return var2;
          }
       }
@@ -102,45 +102,45 @@ public final class HurtClock {
       return 20;
    }
 
-   public static float effective(CrystalDamage.Victim var0, float var1, int var2, int var3) {
-      LivingEntity var4 = var0.entity();
-      if (freshAt(var4, var2, var3)) {
-         return var0.reduce(var1);
+   public static float effective(CrystalDamage.Victim victim, float f, int i, int j) {
+      LivingEntity var4 = victim.entity();
+      if (freshAt(var4, i, j)) {
+         return victim.reduce(f);
       } else {
-         HurtClock.Mark var5 = (HurtClock.Mark)MARKS.get(var4.method_5628());
+         HurtClock.Mark var5 = MARKS.get(var4.getId());
          float var6 = var5 == null ? 3.4028235E38F : var5.lastRaw;
-         return var1 > var6 ? var0.reduce(var1 - var6) : 0.0F;
+         return f > var6 ? victim.reduce(f - var6) : 0.0F;
       }
    }
 
-   public static void shot(ClientPlayerEntity var0, LivingEntity var1, float var2, Object var3, int var4) {
-      HurtClock.Mark var5 = (HurtClock.Mark)MARKS.computeIfAbsent(var1.method_5628(), var0x -> new HurtClock.Mark());
-      if (freshAt(var1, 0, var4)) {
-         var5.shotTick = var0.field_6012;
-         var5.shotRaw = var2;
-         var5.lastRaw = var2;
-         var5.shotKey = var3;
+   public static void shot(ClientPlayerEntity clientPlayerEntity, LivingEntity livingEntity, float f, Object object, int i) {
+      HurtClock.Mark var5 = MARKS.computeIfAbsent(livingEntity.getId(), ix -> new HurtClock.Mark());
+      if (freshAt(livingEntity, 0, i)) {
+         var5.shotTick = clientPlayerEntity.age;
+         var5.shotRaw = f;
+         var5.lastRaw = f;
+         var5.shotKey = object;
          var5.confirmed = false;
          var5.removedAt = -1000;
       } else {
-         var5.lastRaw = Math.max(var5.lastRaw, var2);
+         var5.lastRaw = Math.max(var5.lastRaw, f);
       }
    }
 
-   private static void handle(ClientPlayerEntity var0, Packet<?> var1) {
-      if (var1 instanceof EntityDamageS2CPacket var2) {
-         damaged(var0, var2);
-      } else if (var1 instanceof EntitiesDestroyS2CPacket var3) {
-         removed(var3.method_36548());
+   private static void handle(ClientPlayerEntity clientPlayerEntity, Packet<?> packet) {
+      if (packet instanceof EntityDamageS2CPacket var2) {
+         damaged(clientPlayerEntity, var2);
+      } else if (packet instanceof EntitiesDestroyS2CPacket var3) {
+         removed(var3.getEntityIds());
       }
    }
 
-   private static void damaged(ClientPlayerEntity var0, EntityDamageS2CPacket var1) {
-      Entity var3 = var0.method_73183().method_8469(var1.comp_1267());
+   private static void damaged(ClientPlayerEntity clientPlayerEntity, EntityDamageS2CPacket entityDamageS2CPacket) {
+      Entity var3 = clientPlayerEntity.getEntityWorld().getEntityById(entityDamageS2CPacket.entityId());
       PlayerEntity var2;
-      if (var3 instanceof PlayerEntity && MeleeAttacks.isEnemy(var0, var2 = (PlayerEntity)var3)) {
-         HurtClock.Mark var4 = (HurtClock.Mark)MARKS.computeIfAbsent(var2.method_5628(), var0x -> new HurtClock.Mark());
-         if (var4.shotTick != -1000 && !var4.confirmed && ours(var0, var4, var1)) {
+      if (var3 instanceof PlayerEntity && MeleeAttacks.isEnemy(clientPlayerEntity, var2 = (PlayerEntity)var3)) {
+         HurtClock.Mark var4 = MARKS.computeIfAbsent(var2.getId(), i -> new HurtClock.Mark());
+         if (var4.shotTick != -1000 && !var4.confirmed && ours(clientPlayerEntity, var4, entityDamageS2CPacket)) {
             var4.lastRaw = var4.shotRaw;
             var4.confirmed = true;
             if (var4.shotKey instanceof Integer && ++streak >= 8) {
@@ -148,38 +148,37 @@ public final class HurtClock {
                streak = 0;
             }
          } else {
-            RegistryEntry var5 = var1.comp_1268();
+            RegistryEntry var5 = entityDamageS2CPacket.sourceType();
             var4.shotTick = -1000;
             var4.removedAt = -1000;
-            var4.lastRaw = !var5.method_40225(DamageTypes.field_42320) && !var5.method_40225(DamageTypes.field_42360) ? 3.4028235E38F : 0.0F;
+            var4.lastRaw = !var5.matchesKey(DamageTypes.PLAYER_ATTACK) && !var5.matchesKey(DamageTypes.MOB_ATTACK) ? 3.4028235E38F : 0.0F;
          }
       }
    }
 
-   private static boolean ours(ClientPlayerEntity var0, HurtClock.Mark var1, EntityDamageS2CPacket var2) {
-      RegistryEntry var3 = var2.comp_1268();
-      if (var3.method_40225(DamageTypes.field_42332)) {
-         if (var2.comp_1269() != var0.method_5628()) {
+   private static boolean ours(ClientPlayerEntity clientPlayerEntity, HurtClock.Mark mark, EntityDamageS2CPacket entityDamageS2CPacket) {
+      RegistryEntry var3 = entityDamageS2CPacket.sourceType();
+      if (var3.matchesKey(DamageTypes.PLAYER_EXPLOSION)) {
+         if (entityDamageS2CPacket.sourceCauseId() != clientPlayerEntity.getId()) {
             return false;
          } else {
-            return !(var1.shotKey instanceof Integer var7) ? false : var2.comp_1270() == var7;
+            return !(mark.shotKey instanceof Integer var7) ? false : entityDamageS2CPacket.sourceDirectId() == var7;
          }
-      } else if (!var3.method_40225(DamageTypes.field_42334)) {
+      } else if (!var3.matchesKey(DamageTypes.BAD_RESPAWN_POINT)) {
          return false;
       } else {
-         return !(var1.shotKey instanceof Vec3d var5) ? false : var2.comp_1271().filter(var1x -> var1x.method_1025(var5) < 0.25).isPresent();
+         return !(mark.shotKey instanceof Vec3d var5)
+            ? false
+            : entityDamageS2CPacket.sourcePosition().filter(vec3d2 -> vec3d2.squaredDistanceTo(var5) < 0.25).isPresent();
       }
    }
 
-   private static void removed(IntList var0) {
-      ObjectIterator var1 = MARKS.values().iterator();
-
-      while (var1.hasNext()) {
-         HurtClock.Mark var2 = (HurtClock.Mark)var1.next();
+   private static void removed(IntList intList) {
+      for (HurtClock.Mark var2 : MARKS.values()) {
          if (var2.shotTick != -1000 && !var2.confirmed) {
             Object var4 = var2.shotKey;
             Integer var3;
-            if (var2.shotKey instanceof Integer && var0.contains(var3 = (Integer)var4)) {
+            if (var2.shotKey instanceof Integer && intList.contains((var3 = (Integer)var4).intValue())) {
                var2.removedAt = now;
             }
          }

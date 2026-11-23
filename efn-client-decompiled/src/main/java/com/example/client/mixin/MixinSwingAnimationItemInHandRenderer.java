@@ -20,18 +20,20 @@ public abstract class MixinSwingAnimationItemInHandRenderer {
    }
 
    @WrapOperation(
-      method = {"method_3228"},
+      method = {"renderFirstPersonItem"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_759;method_65816(FLnet/minecraft/class_4587;ILnet/minecraft/class_1306;)V"
+         target = "Lnet/minecraft/client/render/item/HeldItemRenderer;swingArm(FLnet/minecraft/client/util/math/MatrixStack;ILnet/minecraft/util/Arm;)V"
       )}
    )
-   private void efn$swingStyle(HeldItemRenderer var1, float var2, MatrixStack var3, int var4, Arm var5, Operation<Void> var6, @Local(argsOnly = true) Hand var7) {
+   private void efn$swingStyle(
+      HeldItemRenderer heldItemRenderer, float f, MatrixStack matrixStack, int i, Arm arm, Operation<Void> operation, @Local(argsOnly = true) Hand hand
+   ) {
       SwingAnimationModule var8 = SwingAnimationModule.active;
-      if (var8 != null && var8.covers(var7 == Hand.field_5808)) {
-         var8.pose(var3, var2, var4);
+      if (var8 != null && var8.covers(hand == Hand.MAIN_HAND)) {
+         var8.pose(matrixStack, f, i);
       } else {
-         var6.call(new Object[]{var1, var2, var3, var4, var5});
+         operation.call(heldItemRenderer, f, matrixStack, i, arm);
       }
    }
 }

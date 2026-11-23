@@ -43,7 +43,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 
 @Environment(EnvType.CLIENT)
@@ -90,33 +89,33 @@ public final class SingleAnchorMacroModule extends ClientModule {
 
    @Override
    protected void onDisable() {
-      MinecraftClient var2 = MinecraftClient.method_1551();
+      MinecraftClient var2 = MinecraftClient.getInstance();
       PlayerInventory var1;
       if (this.step != SingleAnchorMacroModule.Step.IDLE
-         && var2.field_1724 != null
-         && !(var2.field_1755 instanceof HandledScreen)
-         && this.switchBackDue(var1 = var2.field_1724.method_31548())) {
-         var1.method_61496(this.previousSlot);
+         && var2.player != null
+         && !(var2.currentScreen instanceof HandledScreen)
+         && this.switchBackDue(var1 = var2.player.getInventory())) {
+         var1.setSelectedSlot(this.previousSlot);
       }
 
       this.stop();
    }
 
    @EventHandler
-   public void onTick(TickEvent var1) {
+   public void onTick(TickEvent tickEvent) {
       this.tick++;
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientPlayerEntity var3 = var2.field_1724;
-      if (var3 != null && var2.field_1687 != null && var2.field_1761 != null && !var3.method_29504()) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientPlayerEntity var3 = var2.player;
+      if (var3 != null && var2.world != null && var2.interactionManager != null && !var3.isDead()) {
          LootLatch.update(var2, var3);
-         LootGuard.update(var2.field_1687, var3);
-         PlayerInventory var4 = var3.method_31548();
-         if (var2.field_1755 != null) {
+         LootGuard.update(var2.world, var3);
+         PlayerInventory var4 = var3.getInventory();
+         if (var2.currentScreen != null) {
             if (this.step != SingleAnchorMacroModule.Step.IDLE && this.step != SingleAnchorMacroModule.Step.SWITCH_BACK) {
                this.wrapUp(var4);
             }
          } else if (!AutoEatModule.isEating() && !AutoInvTotemModule.wantsHotbar()) {
-            if (this.step != SingleAnchorMacroModule.Step.IDLE && (this.hotbarMovedByPlayer(var4) || var2.field_1687 != this.activeLevel)) {
+            if (this.step != SingleAnchorMacroModule.Step.IDLE && (this.hotbarMovedByPlayer(var4) || var2.world != this.activeLevel)) {
                this.stop();
             }
 
@@ -127,7 +126,7 @@ public final class SingleAnchorMacroModule extends ClientModule {
             }
 
             if (LootLatch.latched() && this.step == SingleAnchorMacroModule.Step.IDLE) {
-               if (!var3.method_6115() && anchorInPlay(var2, var3)) {
+               if (!var3.isUsingItem() && anchorInPlay(var2, var3)) {
                   suppressUse(var2);
                }
             } else if (this.step != SingleAnchorMacroModule.Step.IDLE || this.tryStart(var2, var3)) {
@@ -135,7 +134,7 @@ public final class SingleAnchorMacroModule extends ClientModule {
                if (this.step == SingleAnchorMacroModule.Step.SWITCH_BACK) {
                   if (!MeleeAttacks.actedThisTick(var3)) {
                      if (this.switchBackDue(var4)) {
-                        var4.method_61496(this.previousSlot);
+                        var4.setSelectedSlot(this.previousSlot);
                      }
 
                      this.stop();
@@ -169,55 +168,55 @@ public final class SingleAnchorMacroModule extends ClientModule {
    }
 
    @EventHandler
-   public void onPacketApplied(PacketAppliedEvent var1) {
+   public void onPacketApplied(PacketAppliedEvent packetAppliedEvent) {
       if (this.step == SingleAnchorMacroModule.Step.AWAIT_GUARD && this.guard != null) {
          BlockPos var2 = this.guard.pos();
-         if (var1.packet instanceof BlockUpdateS2CPacket var4) {
-            if (var4.method_11309().equals(var2)) {
-               this.guardReported = var4.method_11308();
+         if (packetAppliedEvent.packet instanceof BlockUpdateS2CPacket var4) {
+            if (var4.getPos().equals(var2)) {
+               this.guardReported = var4.getState();
             }
-         } else if (var1.packet instanceof ChunkDeltaUpdateS2CPacket var6) {
-            var6.method_30621((var2x, var3) -> {
-               if (var2x.equals(var2)) {
-                  this.guardReported = var3;
+         } else if (packetAppliedEvent.packet instanceof ChunkDeltaUpdateS2CPacket var6) {
+            var6.visitUpdates((blockPos2, blockState) -> {
+               if (blockPos2.equals(var2)) {
+                  this.guardReported = blockState;
                }
             });
          }
       }
    }
 
-   private boolean tryStart(MinecraftClient var1, ClientPlayerEntity var2) {
-      if (MeleeAttacks.rightClickComing(var1) && !CombatMacroLock.heldByOther(this)) {
-         if (!var2.method_7325()
-            && canClick(var2)
-            && !MeleeAttacks.actedThisTick(var2)
-            && MeleeAttacks.handsFree(var1, var2)
-            && !var2.method_6079().method_31574(Items.field_8801)) {
-            HitResult var7 = var2.method_5745(var2.method_55754(), 1.0F, false);
+   private boolean tryStart(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      if (MeleeAttacks.rightClickComing(minecraftClient) && !CombatMacroLock.heldByOther(this)) {
+         if (!clientPlayerEntity.isSpectator()
+            && canClick(clientPlayerEntity)
+            && !MeleeAttacks.actedThisTick(clientPlayerEntity)
+            && MeleeAttacks.handsFree(minecraftClient, clientPlayerEntity)
+            && !clientPlayerEntity.getOffHandStack().isOf(Items.GLOWSTONE)) {
+            HitResult var7 = clientPlayerEntity.raycast(clientPlayerEntity.getBlockInteractionRange(), 1.0F, false);
             BlockHitResult var6;
-            if (var7 instanceof BlockHitResult && (var6 = (BlockHitResult)var7).method_17783() == Type.field_1332) {
-               ClientWorld var8 = var1.field_1687;
-               BlockState var9 = var8.method_8320(var6.method_17777());
-               boolean var10 = var9.method_27852(Blocks.field_23152);
+            if (var7 instanceof BlockHitResult && (var6 = (BlockHitResult)var7).getType() == Type.BLOCK) {
+               ClientWorld var8 = minecraftClient.world;
+               BlockState var9 = var8.getBlockState(var6.getBlockPos());
+               boolean var10 = var9.isOf(Blocks.RESPAWN_ANCHOR);
                BlockPos var5;
                if (var10) {
-                  var5 = var6.method_17777().method_10062();
+                  var5 = var6.getBlockPos().toImmutable();
                } else {
-                  if (!var2.method_6047().method_31574(Items.field_23141) || ServerRotation.pending()) {
+                  if (!clientPlayerEntity.getMainHandStack().isOf(Items.RESPAWN_ANCHOR) || ServerRotation.pending()) {
                      return false;
                   }
 
-                  var5 = Crystals.placedObsidian(var8, var2, var6, var9);
+                  var5 = Crystals.placedObsidian(var8, clientPlayerEntity, var6, var9);
                }
 
-               if (var5 == null || var8.method_27983() == World.field_25180) {
+               if (var5 == null || var8.getRegistryKey() == World.NETHER) {
                   return false;
-               } else if (this.protectLoot.get() && LootGuard.near(Vec3d.method_24953(var5))) {
+               } else if (this.protectLoot.get() && LootGuard.near(Vec3d.ofCenter(var5))) {
                   return false;
                } else {
-                  PlayerInventory var11 = var2.method_31548();
+                  PlayerInventory var11 = clientPlayerEntity.getInventory();
                   boolean var4 = chargeOf(var9) > 0;
-                  if (!var4 && findHotbar(var11, Items.field_8801) == -1) {
+                  if (!var4 && findHotbar(var11, Items.GLOWSTONE) == -1) {
                      return false;
                   } else if (AnchorGuard.detonatorSlot(var11) == -1) {
                      return false;
@@ -226,15 +225,15 @@ public final class SingleAnchorMacroModule extends ClientModule {
                   } else if (!CombatMacroLock.tryAcquire(this)) {
                      return false;
                   } else {
-                     this.previousSlot = var11.method_67532();
+                     this.previousSlot = var11.getSelectedSlot();
                      this.activeLevel = var8;
                      this.anchorPos = var5;
-                     this.sightline = var6.method_17784();
+                     this.sightline = var6.getPos();
                      SingleAnchorMacroModule.Step var3 = this.blastGuard.get() ? SingleAnchorMacroModule.Step.GUARD : SingleAnchorMacroModule.Step.CHARGE;
                      if (var10) {
                         this.scheduleNow(var3);
                      } else {
-                        AnchorGuard.click(var1, var2, var6);
+                        AnchorGuard.click(minecraftClient, clientPlayerEntity, var6);
                         this.schedule(var3);
                      }
 
@@ -252,88 +251,88 @@ public final class SingleAnchorMacroModule extends ClientModule {
       }
    }
 
-   private static void swallowClicks(MinecraftClient var0) {
-      MeleeAttacks.takeAttackClicks(var0);
-      suppressUse(var0);
+   private static void swallowClicks(MinecraftClient minecraftClient) {
+      MeleeAttacks.takeAttackClicks(minecraftClient);
+      suppressUse(minecraftClient);
    }
 
-   private static boolean anchorInPlay(MinecraftClient var0, ClientPlayerEntity var1) {
-      ItemStack var3 = var1.method_6047();
-      if (!var3.method_31574(Items.field_23141) && !var3.method_31574(Items.field_8801)) {
-         HitResult var4 = var0.field_1765;
+   private static boolean anchorInPlay(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      ItemStack var3 = clientPlayerEntity.getMainHandStack();
+      if (!var3.isOf(Items.RESPAWN_ANCHOR) && !var3.isOf(Items.GLOWSTONE)) {
+         HitResult var4 = minecraftClient.crosshairTarget;
          BlockHitResult var2;
          return var4 instanceof BlockHitResult
-            && (var2 = (BlockHitResult)var4).method_17783() == Type.field_1332
-            && var0.field_1687.method_8320(var2.method_17777()).method_27852(Blocks.field_23152);
+            && (var2 = (BlockHitResult)var4).getType() == Type.BLOCK
+            && minecraftClient.world.getBlockState(var2.getBlockPos()).isOf(Blocks.RESPAWN_ANCHOR);
       } else {
          return true;
       }
    }
 
-   private static void suppressUse(MinecraftClient var0) {
-      KeyBinding var1 = var0.field_1690.field_1904;
-      var1.method_23481(false);
+   private static void suppressUse(MinecraftClient minecraftClient) {
+      KeyBinding var1 = minecraftClient.options.useKey;
+      var1.setPressed(false);
 
-      while (var1.method_1436()) {
+      while (var1.wasPressed()) {
       }
    }
 
-   private void runStep(MinecraftClient var1, ClientPlayerEntity var2) {
+   private void runStep(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
       switch (this.step) {
          case GUARD:
-            this.placeGuard(var1, var2);
+            this.placeGuard(minecraftClient, clientPlayerEntity);
             break;
          case AWAIT_GUARD:
-            this.awaitGuard(var1, var2);
+            this.awaitGuard(minecraftClient, clientPlayerEntity);
             break;
          case CHARGE:
-            this.charge(var1, var2);
+            this.charge(minecraftClient, clientPlayerEntity);
             break;
          case DETONATE:
-            this.detonate(var1, var2);
+            this.detonate(minecraftClient, clientPlayerEntity);
             break;
          case REPLACE:
-            this.replace(var1, var2);
+            this.replace(minecraftClient, clientPlayerEntity);
       }
    }
 
-   private void expire(PlayerInventory var1) {
+   private void expire(PlayerInventory playerInventory) {
       if (this.step != SingleAnchorMacroModule.Step.GUARD && this.step != SingleAnchorMacroModule.Step.AWAIT_GUARD) {
-         this.wrapUp(var1);
+         this.wrapUp(playerInventory);
       } else {
-         this.skipGuard(var1);
+         this.skipGuard(playerInventory);
       }
    }
 
-   private void placeGuard(MinecraftClient var1, ClientPlayerEntity var2) {
-      PlayerInventory var4 = var2.method_31548();
-      BlockState var5 = var1.field_1687.method_8320(this.anchorPos);
-      if (!var5.method_27852(Blocks.field_23152)) {
+   private void placeGuard(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      PlayerInventory var4 = clientPlayerEntity.getInventory();
+      BlockState var5 = minecraftClient.world.getBlockState(this.anchorPos);
+      if (!var5.isOf(Blocks.RESPAWN_ANCHOR)) {
          this.wrapUp(var4);
       } else {
-         AnchorGuard.Spot var6 = AnchorGuard.find(var1.field_1687, var2, this.anchorPos, this.sightline);
+         AnchorGuard.Spot var6 = AnchorGuard.find(minecraftClient.world, clientPlayerEntity, this.anchorPos, this.sightline);
          if (var6 != null && var6.standing()) {
             this.guarded();
          } else {
             int var7 = guardSlot(var4, this.glowstoneNeeded(chargeOf(var5) > 0));
             Rotation var8 = ServerRotation.sent();
-            BlockHitResult var3 = var6 != null && var8 != null ? AnchorGuard.hitAlong(var1.field_1687, var2, var8, var6) : null;
-            if (var6 != null && var7 != -1 && (var3 != null || ServerRotation.canRotate(var2))) {
+            BlockHitResult var3 = var6 != null && var8 != null ? AnchorGuard.hitAlong(minecraftClient.world, clientPlayerEntity, var8, var6) : null;
+            if (var6 != null && var7 != -1 && (var3 != null || ServerRotation.canRotate(clientPlayerEntity))) {
                if (var3 == null) {
-                  ServerRotation.request(RotationUtils.fromTo(var2.method_33571(), var6.aim()));
-                  MeleeAttacks.claimTick(var1);
+                  ServerRotation.request(RotationUtils.fromTo(clientPlayerEntity.getEyePos(), var6.aim()));
+                  MeleeAttacks.claimTick(minecraftClient);
                   this.readyAt = this.tick + 1;
                } else {
                   this.guard = var6;
-                  this.guardBlock = Block.method_9503(var4.method_5438(var7).method_7909());
+                  this.guardBlock = Block.getBlockFromItem(var4.getStack(var7).getItem());
                   this.guardReported = null;
                   this.select(var4, var7);
-                  AnchorGuard.click(var1, var2, var3);
-                  ServerRotation.request(RotationUtils.fromTo(var2.method_33571(), Vec3d.method_24953((Vec3i)this.anchorPos)));
+                  AnchorGuard.click(minecraftClient, clientPlayerEntity, var3);
+                  ServerRotation.request(RotationUtils.fromTo(clientPlayerEntity.getEyePos(), Vec3d.ofCenter(this.anchorPos)));
                   this.guardTries++;
                   if (this.withoutGuard.is("Cancel")) {
                      this.schedule(SingleAnchorMacroModule.Step.AWAIT_GUARD);
-                     this.deadline = this.readyAt + Crystals.confirmWindow(var1, var2);
+                     this.deadline = this.readyAt + Crystals.confirmWindow(minecraftClient, clientPlayerEntity);
                   } else {
                      this.schedule(SingleAnchorMacroModule.Step.CHARGE);
                   }
@@ -345,16 +344,16 @@ public final class SingleAnchorMacroModule extends ClientModule {
       }
    }
 
-   private void awaitGuard(MinecraftClient var1, ClientPlayerEntity var2) {
-      boolean var3 = var1.field_1687.method_8320(this.guard.pos()).method_27852(this.guardBlock);
-      if (var3 && this.guardReported != null && this.guardReported.method_27852(this.guardBlock)) {
+   private void awaitGuard(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      boolean var3 = minecraftClient.world.getBlockState(this.guard.pos()).isOf(this.guardBlock);
+      if (var3 && this.guardReported != null && this.guardReported.isOf(this.guardBlock)) {
          this.guarded();
       } else if (var3) {
          this.readyAt = this.tick + 1;
       } else if (this.guardTries < 2) {
          this.scheduleNow(SingleAnchorMacroModule.Step.GUARD);
       } else {
-         this.skipGuard(var2.method_31548());
+         this.skipGuard(clientPlayerEntity.getInventory());
       }
    }
 
@@ -363,31 +362,31 @@ public final class SingleAnchorMacroModule extends ClientModule {
       this.scheduleNow(SingleAnchorMacroModule.Step.CHARGE);
    }
 
-   private void skipGuard(PlayerInventory var1) {
+   private void skipGuard(PlayerInventory playerInventory) {
       this.guard = null;
       if (this.withoutGuard.is("Cancel")) {
-         this.wrapUp(var1);
+         this.wrapUp(playerInventory);
       } else {
          this.scheduleNow(SingleAnchorMacroModule.Step.CHARGE);
       }
    }
 
-   private void charge(MinecraftClient var1, ClientPlayerEntity var2) {
-      PlayerInventory var3 = var2.method_31548();
-      BlockState var4 = var1.field_1687.method_8320(this.anchorPos);
-      if (!var4.method_27852(Blocks.field_23152)) {
+   private void charge(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      PlayerInventory var3 = clientPlayerEntity.getInventory();
+      BlockState var4 = minecraftClient.world.getBlockState(this.anchorPos);
+      if (!var4.isOf(Blocks.RESPAWN_ANCHOR)) {
          this.wrapUp(var3);
       } else if (chargeOf(var4) > 0 && !this.refilled) {
          this.scheduleNow(SingleAnchorMacroModule.Step.DETONATE);
       } else {
-         int var5 = findHotbar(var3, Items.field_8801);
-         if (var5 != -1 && canClick(var2)) {
-            BlockHitResult var6 = AnchorGuard.anchorHit(var1.field_1687, var2, this.anchorPos);
+         int var5 = findHotbar(var3, Items.GLOWSTONE);
+         if (var5 != -1 && canClick(clientPlayerEntity)) {
+            BlockHitResult var6 = AnchorGuard.anchorHit(minecraftClient.world, clientPlayerEntity, this.anchorPos);
             if (var6 == null) {
                this.readyAt = this.tick + 1;
             } else {
                this.select(var3, var5);
-               AnchorGuard.click(var1, var2, var6);
+               AnchorGuard.click(minecraftClient, clientPlayerEntity, var6);
                this.schedule(SingleAnchorMacroModule.Step.DETONATE);
             }
          } else {
@@ -396,28 +395,30 @@ public final class SingleAnchorMacroModule extends ClientModule {
       }
    }
 
-   private void detonate(MinecraftClient var1, ClientPlayerEntity var2) {
-      PlayerInventory var4 = var2.method_31548();
-      if (chargeOf(var1.field_1687.method_8320(this.anchorPos)) != 0 && canClick(var2) && !var2.method_6079().method_31574(Items.field_8801)) {
-         BlockHitResult var5 = AnchorGuard.anchorHit(var1.field_1687, var2, this.anchorPos);
+   private void detonate(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      PlayerInventory var4 = clientPlayerEntity.getInventory();
+      if (chargeOf(minecraftClient.world.getBlockState(this.anchorPos)) != 0
+         && canClick(clientPlayerEntity)
+         && !clientPlayerEntity.getOffHandStack().isOf(Items.GLOWSTONE)) {
+         BlockHitResult var5 = AnchorGuard.anchorHit(minecraftClient.world, clientPlayerEntity, this.anchorPos);
          if (var5 == null) {
             this.readyAt = this.tick + 1;
          } else {
             int var6 = this.mode.is("Double")
                   && !this.refilled
-                  && var5.method_17780() == Direction.field_11036
-                  && this.anchorPos.method_10264() >= var2.method_31478()
-                  && findHotbar(var4, Items.field_8801) != -1
-               ? findHotbar(var4, Items.field_23141)
+                  && var5.getSide() == Direction.UP
+                  && this.anchorPos.getY() >= clientPlayerEntity.getBlockY()
+                  && findHotbar(var4, Items.GLOWSTONE) != -1
+               ? findHotbar(var4, Items.RESPAWN_ANCHOR)
                : -1;
             int var3 = var6 != -1 ? var6 : AnchorGuard.detonatorSlot(var4);
             if (var3 == -1) {
                this.wrapUp(var4);
-            } else if (this.lethal(var2, var4.method_5438(var3))) {
+            } else if (this.lethal(clientPlayerEntity, var4.getStack(var3))) {
                this.wrapUp(var4);
             } else {
                this.select(var4, var3);
-               AnchorGuard.click(var1, var2, var5);
+               AnchorGuard.click(minecraftClient, clientPlayerEntity, var5);
                if (var3 == var6) {
                   this.refilled = true;
                   this.replaceHit = var5;
@@ -432,16 +433,16 @@ public final class SingleAnchorMacroModule extends ClientModule {
       }
    }
 
-   private void replace(MinecraftClient var1, ClientPlayerEntity var2) {
-      PlayerInventory var4 = var2.method_31548();
+   private void replace(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      PlayerInventory var4 = clientPlayerEntity.getInventory();
       Rotation var5 = ServerRotation.sent();
-      Vec3d var6 = var2.method_33571();
+      Vec3d var6 = clientPlayerEntity.getEyePos();
       boolean var3 = var5 != null
          && new Box(this.anchorPos)
-            .method_992(var6, var6.method_1019(Vec3d.method_1030(var5.pitch(), var5.yaw()).method_1021(var2.method_55754())))
+            .raycast(var6, var6.add(Vec3d.fromPolar(var5.pitch(), var5.yaw()).multiply(clientPlayerEntity.getBlockInteractionRange())))
             .isPresent();
-      if (this.replaceHit != null && var3 && var2.method_6047().method_31574(Items.field_23141) && canClick(var2)) {
-         AnchorGuard.click(var1, var2, this.replaceHit);
+      if (this.replaceHit != null && var3 && clientPlayerEntity.getMainHandStack().isOf(Items.RESPAWN_ANCHOR) && canClick(clientPlayerEntity)) {
+         AnchorGuard.click(minecraftClient, clientPlayerEntity, this.replaceHit);
          this.replaceHit = null;
          this.schedule(SingleAnchorMacroModule.Step.CHARGE);
       } else {
@@ -449,33 +450,33 @@ public final class SingleAnchorMacroModule extends ClientModule {
       }
    }
 
-   private boolean lethal(ClientPlayerEntity var1, ItemStack var2) {
-      if (!var2.method_31574(Items.field_8288) && !var1.method_6079().method_31574(Items.field_8288)) {
-         float var3 = CrystalDamage.estimate(Vec3d.method_24953((Vec3i)this.anchorPos), var1, 5.0F, this.anchorPos);
-         return CrystalDamage.endangers(var1, var3);
+   private boolean lethal(ClientPlayerEntity clientPlayerEntity, ItemStack itemStack) {
+      if (!itemStack.isOf(Items.TOTEM_OF_UNDYING) && !clientPlayerEntity.getOffHandStack().isOf(Items.TOTEM_OF_UNDYING)) {
+         float var3 = CrystalDamage.estimate(Vec3d.ofCenter(this.anchorPos), clientPlayerEntity, 5.0F, this.anchorPos);
+         return CrystalDamage.endangers(clientPlayerEntity, var3);
       } else {
          return false;
       }
    }
 
-   private void wrapUp(PlayerInventory var1) {
-      if (this.switchBackDue(var1)) {
+   private void wrapUp(PlayerInventory playerInventory) {
+      if (this.switchBackDue(playerInventory)) {
          this.step = SingleAnchorMacroModule.Step.SWITCH_BACK;
       } else {
          this.stop();
       }
    }
 
-   private boolean switchBackDue(PlayerInventory var1) {
+   private boolean switchBackDue(PlayerInventory playerInventory) {
       return this.switchBack.get()
-         && PlayerInventory.method_7380(this.previousSlot)
+         && PlayerInventory.isValidHotbarIndex(this.previousSlot)
          && this.ownSlot != -1
          && this.ownSlot != this.previousSlot
-         && var1.method_67532() == this.ownSlot;
+         && playerInventory.getSelectedSlot() == this.ownSlot;
    }
 
-   private boolean hotbarMovedByPlayer(PlayerInventory var1) {
-      return var1.method_67532() != (this.ownSlot != -1 ? this.ownSlot : this.previousSlot);
+   private boolean hotbarMovedByPlayer(PlayerInventory playerInventory) {
+      return playerInventory.getSelectedSlot() != (this.ownSlot != -1 ? this.ownSlot : this.previousSlot);
    }
 
    private void stop() {
@@ -494,45 +495,45 @@ public final class SingleAnchorMacroModule extends ClientModule {
       CombatMacroLock.release(this);
    }
 
-   private void schedule(SingleAnchorMacroModule.Step var1) {
-      this.step = var1;
+   private void schedule(SingleAnchorMacroModule.Step step) {
+      this.step = step;
       this.readyAt = this.tick + 1 + this.delay.getInt();
       this.deadline = this.readyAt + 5;
    }
 
-   private void scheduleNow(SingleAnchorMacroModule.Step var1) {
-      this.step = var1;
+   private void scheduleNow(SingleAnchorMacroModule.Step step) {
+      this.step = step;
       this.readyAt = this.tick;
       this.deadline = this.tick + 5;
    }
 
-   private void select(PlayerInventory var1, int var2) {
-      if (var1.method_67532() != var2) {
-         var1.method_61496(var2);
-         this.ownSlot = var2;
+   private void select(PlayerInventory playerInventory, int i) {
+      if (playerInventory.getSelectedSlot() != i) {
+         playerInventory.setSelectedSlot(i);
+         this.ownSlot = i;
       }
    }
 
-   private static boolean canClick(ClientPlayerEntity var0) {
-      return !var0.method_21823();
+   private static boolean canClick(ClientPlayerEntity clientPlayerEntity) {
+      return !clientPlayerEntity.shouldCancelInteraction();
    }
 
-   private static int chargeOf(BlockState var0) {
-      return var0.method_27852(Blocks.field_23152) ? (Integer)var0.method_11654(RespawnAnchorBlock.field_23153) : 0;
+   private static int chargeOf(BlockState blockState) {
+      return blockState.isOf(Blocks.RESPAWN_ANCHOR) ? blockState.get(RespawnAnchorBlock.CHARGES) : 0;
    }
 
-   private int glowstoneNeeded(boolean var1) {
-      int var2 = var1 ? 0 : 1;
+   private int glowstoneNeeded(boolean bl) {
+      int var2 = bl ? 0 : 1;
       return this.mode.is("Double") ? var2 + 1 : var2;
    }
 
-   private static int guardSlot(PlayerInventory var0, int var1) {
+   private static int guardSlot(PlayerInventory playerInventory, int i) {
       int var2 = -1;
 
       for (int var3 = 0; var3 < 9; var3++) {
-         ItemStack var4 = var0.method_5438(var3);
-         if (!var4.method_31574(Items.field_8801) && AnchorGuard.isGuardBlock(var4)) {
-            if (Block.method_9503(var4.method_7909()).method_9520() >= 600.0F) {
+         ItemStack var4 = playerInventory.getStack(var3);
+         if (!var4.isOf(Items.GLOWSTONE) && AnchorGuard.isGuardBlock(var4)) {
+            if (Block.getBlockFromItem(var4.getItem()).getBlastResistance() >= 600.0F) {
                return var3;
             }
 
@@ -545,14 +546,14 @@ public final class SingleAnchorMacroModule extends ClientModule {
       if (var2 != -1) {
          return var2;
       } else {
-         int var5 = findHotbar(var0, Items.field_8801);
-         return var5 != -1 && countHotbar(var0, Items.field_8801) > var1 ? var5 : -1;
+         int var5 = findHotbar(playerInventory, Items.GLOWSTONE);
+         return var5 != -1 && countHotbar(playerInventory, Items.GLOWSTONE) > i ? var5 : -1;
       }
    }
 
-   private static int findHotbar(PlayerInventory var0, Item var1) {
+   private static int findHotbar(PlayerInventory playerInventory, Item item) {
       for (int var2 = 0; var2 < 9; var2++) {
-         if (var0.method_5438(var2).method_31574(var1)) {
+         if (playerInventory.getStack(var2).isOf(item)) {
             return var2;
          }
       }
@@ -560,13 +561,13 @@ public final class SingleAnchorMacroModule extends ClientModule {
       return -1;
    }
 
-   private static int countHotbar(PlayerInventory var0, Item var1) {
+   private static int countHotbar(PlayerInventory playerInventory, Item item) {
       int var2 = 0;
 
       for (int var3 = 0; var3 < 9; var3++) {
-         ItemStack var4 = var0.method_5438(var3);
-         if (var4.method_31574(var1)) {
-            var2 += var4.method_7947();
+         ItemStack var4 = playerInventory.getStack(var3);
+         if (var4.isOf(item)) {
+            var2 += var4.getCount();
          }
       }
 

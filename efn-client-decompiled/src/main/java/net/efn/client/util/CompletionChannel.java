@@ -39,18 +39,18 @@ public final class CompletionChannel {
    public static void install() {
       if (!INSTANCE.installed) {
          INSTANCE.installed = true;
-         PacketSendEvent.TYPE.listen(CompletionChannel.class, var0 -> INSTANCE.outgoing(var0.packet));
-         PacketReceiveNettyEvent.TYPE.listen(CompletionChannel.class, var0 -> {
-            if (INSTANCE.ingest(var0.packet)) {
-               var0.setCancelled(true);
+         PacketSendEvent.TYPE.listen(CompletionChannel.class, packetSendEvent -> INSTANCE.outgoing(packetSendEvent.packet));
+         PacketReceiveNettyEvent.TYPE.listen(CompletionChannel.class, packetReceiveNettyEvent -> {
+            if (INSTANCE.ingest(packetReceiveNettyEvent.packet)) {
+               packetReceiveNettyEvent.setCancelled(true);
             }
          });
       }
    }
 
-   public int fire(Object var1, String var2, CompletionChannel.Form var3) {
-      ClientPlayNetworkHandler var5 = MinecraftClient.method_1551().method_1562();
-      if (var5 != null && var1 != null && var2 != null) {
+   public int fire(Object object, String string, CompletionChannel.Form form) {
+      ClientPlayNetworkHandler var5 = MinecraftClient.getInstance().getNetworkHandler();
+      if (var5 != null && object != null && string != null) {
          Object var6 = this.lock;
          CompletionChannel.Request var4;
          synchronized (var6) {
@@ -60,7 +60,7 @@ public final class CompletionChannel {
                this.nextKey = 1;
             }
 
-            var4 = new CompletionChannel.Request(var8, var1, want(var2), System.currentTimeMillis(), var3 == CompletionChannel.Form.BOTH ? 2 : 1);
+            var4 = new CompletionChannel.Request(var8, object, want(string), System.currentTimeMillis(), form == CompletionChannel.Form.BOTH ? 2 : 1);
             this.line.addLast(var4);
             this.byKey.put(var8, var4);
          }
@@ -69,12 +69,12 @@ public final class CompletionChannel {
 
          byte var10;
          try {
-            if (var3 != CompletionChannel.Form.BARE) {
-               var5.method_52787(new RequestCommandCompletionsC2SPacket(0, "/" + var2));
+            if (form != CompletionChannel.Form.BARE) {
+               var5.sendPacket(new RequestCommandCompletionsC2SPacket(0, "/" + string));
             }
 
-            if (var3 != CompletionChannel.Form.SLASH) {
-               var5.method_52787(new RequestCommandCompletionsC2SPacket(0, var2));
+            if (form != CompletionChannel.Form.SLASH) {
+               var5.sendPacket(new RequestCommandCompletionsC2SPacket(0, string));
             }
 
             return var4.key;
@@ -97,18 +97,18 @@ public final class CompletionChannel {
       }
    }
 
-   public List<String> poll(int var1) {
+   public List<String> poll(int i) {
       Object var2 = this.lock;
       synchronized (var2) {
-         CompletionChannel.Request var4 = this.byKey.get(var1);
+         CompletionChannel.Request var4 = this.byKey.get(i);
          return var4 != null && !var4.forgotten ? var4.names : null;
       }
    }
 
-   public void forget(int var1) {
+   public void forget(int i) {
       Object var2 = this.lock;
       synchronized (var2) {
-         CompletionChannel.Request var4 = this.byKey.remove(var1);
+         CompletionChannel.Request var4 = this.byKey.remove(i);
          if (var4 != null) {
             var4.forgotten = true;
             if (!var4.waiting()) {
@@ -118,21 +118,21 @@ public final class CompletionChannel {
       }
    }
 
-   public void prune(long var1) {
+   public void prune(long l) {
       Object var3 = this.lock;
       synchronized (var3) {
-         this.expire(var1);
+         this.expire(l);
       }
    }
 
-   public void clear(Object var1) {
+   public void clear(Object object) {
       Object var2 = this.lock;
       synchronized (var2) {
          Iterator var4 = this.line.iterator();
 
          while (var4.hasNext()) {
             CompletionChannel.Request var5 = (CompletionChannel.Request)var4.next();
-            if (var5.owner == var1) {
+            if (var5.owner == object) {
                var5.forgotten = true;
                this.byKey.remove(var5.key);
                if (!var5.waiting()) {
@@ -143,24 +143,24 @@ public final class CompletionChannel {
       }
    }
 
-   private void outgoing(Packet<?> var1) {
-      if (!this.sending && var1 instanceof RequestCommandCompletionsC2SPacket var2) {
-         ClientPlayNetworkHandler var3 = MinecraftClient.method_1551().method_1562();
+   private void outgoing(Packet<?> packet) {
+      if (!this.sending && packet instanceof RequestCommandCompletionsC2SPacket var2) {
+         ClientPlayNetworkHandler var3 = MinecraftClient.getInstance().getNetworkHandler();
          Object var4 = this.lock;
          synchronized (var4) {
             this.follow(var3);
-            this.line.addLast(new CompletionChannel.Request(0, FOREIGN, want(var2.method_12148()), System.currentTimeMillis(), 1));
+            this.line.addLast(new CompletionChannel.Request(0, FOREIGN, want(var2.getPartialCommand()), System.currentTimeMillis(), 1));
          }
       }
    }
 
-   private boolean ingest(Packet<?> var1) {
-      if (!(var1 instanceof CommandSuggestionsS2CPacket var2)) {
+   private boolean ingest(Packet<?> packet) {
+      if (!(packet instanceof CommandSuggestionsS2CPacket var2)) {
          return false;
       } else {
          ArrayList var3 = new ArrayList();
 
-         for (Suggestion var5 : var2.method_11397().getList()) {
+         for (Suggestion var5 : var2.getSuggestions().getList()) {
             String var6 = var5.getText();
             if (var6 != null && !var6.isBlank()) {
                var3.add(var6.trim());
@@ -215,20 +215,20 @@ public final class CompletionChannel {
       }
    }
 
-   private void follow(ClientPlayNetworkHandler var1) {
-      if (var1 != this.connection) {
-         this.connection = var1;
+   private void follow(ClientPlayNetworkHandler clientPlayNetworkHandler) {
+      if (clientPlayNetworkHandler != this.connection) {
+         this.connection = clientPlayNetworkHandler;
          this.line.clear();
          this.byKey.clear();
       }
    }
 
-   private void expire(long var1) {
+   private void expire(long l) {
       Iterator var3 = this.line.iterator();
 
       while (var3.hasNext()) {
          CompletionChannel.Request var4 = (CompletionChannel.Request)var3.next();
-         long var5 = var1 - var4.at;
+         long var5 = l - var4.at;
          if (var5 > 15000L || var4.owner == FOREIGN && var5 > 4000L) {
             var3.remove();
             if (var4.owner != FOREIGN) {
@@ -238,8 +238,8 @@ public final class CompletionChannel {
       }
    }
 
-   static String want(String var0) {
-      String var2 = var0 == null ? "" : var0.trim();
+   static String want(String string) {
+      String var2 = string == null ? "" : string.trim();
       if (var2.startsWith("/")) {
          var2 = var2.substring(1);
       }
@@ -249,8 +249,8 @@ public final class CompletionChannel {
       return stripDots(var2).toLowerCase(Locale.ROOT);
    }
 
-   public static String core(String var0) {
-      String var1 = var0.replaceAll("\u00a7.", "").trim();
+   public static String core(String string) {
+      String var1 = string.replaceAll("\u00a7.", "").trim();
       int var2 = var1.lastIndexOf(32);
       if (var2 >= 0) {
          var1 = var1.substring(var2 + 1);
@@ -260,14 +260,14 @@ public final class CompletionChannel {
       return stripDots(var1).toLowerCase(Locale.ROOT);
    }
 
-   private static String stripDots(String var0) {
+   private static String stripDots(String string) {
       int var1 = 0;
 
-      while (var1 < var0.length() && var0.charAt(var1) == '.') {
+      while (var1 < string.length() && string.charAt(var1) == '.') {
          var1++;
       }
 
-      return var0.substring(var1);
+      return string.substring(var1);
    }
 
    @Environment(EnvType.CLIENT)
@@ -291,12 +291,12 @@ public final class CompletionChannel {
       List<String> names;
       boolean forgotten;
 
-      Request(int var1, Object var2, String var3, long var4, int var6) {
-         this.key = var1;
-         this.owner = var2;
-         this.want = var3;
-         this.at = var4;
-         this.expected = var6;
+      Request(int i, Object object, String string, long l, int j) {
+         this.key = i;
+         this.owner = object;
+         this.want = string;
+         this.at = l;
+         this.expected = j;
       }
 
       boolean waiting() {

@@ -72,7 +72,6 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.BlockPos.Mutable;
 import net.minecraft.util.math.Direction.Type;
-import net.minecraft.world.World;
 
 @Environment(EnvType.CLIENT)
 public final class SchematicBuilderModule extends ClientModule {
@@ -120,9 +119,9 @@ public final class SchematicBuilderModule extends ClientModule {
    private static final double FULL_FALL = 8.0;
    private static final int STUCK_GAP_TICKS = 60;
    private static final int ARRIVE_GRACE_TICKS = 30;
-   private static final Predicate<ItemStack> TOTEM = var0 -> var0.method_31574(Items.field_8288);
+   private static final Predicate<ItemStack> TOTEM = itemStack -> itemStack.isOf(Items.TOTEM_OF_UNDYING);
    private static final Direction[] SUPPORT_SIDES = new Direction[]{
-      Direction.field_11033, Direction.field_11043, Direction.field_11035, Direction.field_11034, Direction.field_11039, Direction.field_11036
+      Direction.DOWN, Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST, Direction.UP
    };
    private final BooleanSetting buyFromAh = this.addSetting("buy-from-ah", new BooleanSetting("Buy From AH", true));
    private final StringSetting maxPerListing = this.addSetting(
@@ -146,10 +145,10 @@ public final class SchematicBuilderModule extends ClientModule {
    private final BooleanSetting eat = this.addSetting("eat", new BooleanSetting("Eat When Hungry", true));
    private final NumberSetting tickDelay = this.addSetting("tick-delay", new NumberSetting("Tick Delay", 1.0F, 0.0F, 10.0F).step(1.0F));
    private final BooleanSetting chatFeedback = this.addSetting("chat-feedback", new BooleanSetting("Chat Feedback", true));
-   private final MinecraftClient mc = MinecraftClient.method_1551();
-   private final PlacementManager placement = new PlacementManager(this.mc, (var1, var2, var3) -> {
-      if (var1.startsWith("missing-item-") || var1.startsWith("unsupported-")) {
-         this.feedback(var1, var2, var3);
+   private final MinecraftClient mc = MinecraftClient.getInstance();
+   private final PlacementManager placement = new PlacementManager(this.mc, (string, string2, i) -> {
+      if (string.startsWith("missing-item-") || string.startsWith("unsupported-")) {
+         this.feedback(string, string2, i);
       }
    });
    private final SchematicManager schematics = new SchematicManager(this.mc);
@@ -281,22 +280,22 @@ public final class SchematicBuilderModule extends ClientModule {
          .setOutcome(
             new PlacementManager.Outcome() {
                @Override
-               public void placed(BlockPos var1) {
-                  if (SchematicBuilderModule.this.mc.field_1687 != null
-                     && SchematicBuilderModule.this.mc.field_1687.method_8320(var1).method_26204() instanceof ChestBlock) {
+               public void placed(BlockPos blockPos) {
+                  if (SchematicBuilderModule.this.mc.world != null
+                     && SchematicBuilderModule.this.mc.world.getBlockState(blockPos).getBlock() instanceof ChestBlock) {
                      SchematicBuilderModule.trace(
-                        "chest confirmed at " + var1.method_23854() + " as " + SchematicBuilderModule.this.mc.field_1687.method_8320(var1)
+                        "chest confirmed at " + blockPos.toShortString() + " as " + SchematicBuilderModule.this.mc.world.getBlockState(blockPos)
                      );
                   }
 
-                  SchematicBuilderModule.this.tries.merge(var1.method_10063(), 1, Integer::sum);
+                  SchematicBuilderModule.this.tries.merge(blockPos.asLong(), 1, Integer::sum);
                   SchematicBuilderModule.this.lastPlaceTick = SchematicBuilderModule.this.tick;
                   SchematicBuilderModule.this.verified = false;
                }
 
                @Override
-               public void failed(BlockPos var1) {
-                  SchematicBuilderModule.this.tries.merge(var1.method_10063(), 1, Integer::sum);
+               public void failed(BlockPos blockPos) {
+                  SchematicBuilderModule.this.tries.merge(blockPos.asLong(), 1, Integer::sum);
                   SchematicBuilderModule.this.lastPlaceTick = SchematicBuilderModule.this.tick;
                }
             }
@@ -310,7 +309,7 @@ public final class SchematicBuilderModule extends ClientModule {
 
    @Override
    protected void onEnable() {
-      if (this.mc.field_1724 == null || this.mc.field_1687 == null) {
+      if (this.mc.player == null || this.mc.world == null) {
          this.say(ModuleChat.body().warn("Join a world first."));
          this.requestDisable();
       } else if (!this.schematics.hasActiveSchematic()) {
@@ -333,7 +332,7 @@ public final class SchematicBuilderModule extends ClientModule {
                }
 
                this.resetState();
-               this.snapshotInventory(this.mc.field_1724);
+               this.snapshotInventory(this.mc.player);
                this.placement.start();
                boolean var4 = this.walking = this.walk.get() && BaritoneCompat.canWalk();
                if (this.walk.get() && !this.walking) {
@@ -344,27 +343,27 @@ public final class SchematicBuilderModule extends ClientModule {
                   BaritoneCompat.lockForBuild();
                }
 
-               this.on(TickEvent.TYPE, Stage.PRE, var1x -> {
+               this.on(TickEvent.TYPE, Stage.PRE, tickEvent -> {
                   this.relogger.tick(this.mc);
                   if (!this.relogger.active()) {
                      this.placement.tick(this.config());
                      this.step();
                   }
 
-                  if (this.placing && this.mc.field_1755 == null) {
+                  if (this.placing && this.mc.currentScreen == null) {
                      this.placement.tickPre(this.config());
                   }
                });
                this.on(
                   PacketAppliedEvent.TYPE,
-                  var1x -> {
-                     Packet var3x = var1x.packet;
+                  packetAppliedEvent -> {
+                     Packet var3x = packetAppliedEvent.packet;
                      EntityStatusS2CPacket var2;
                      if (var3x instanceof EntityStatusS2CPacket
-                        && (var2 = (EntityStatusS2CPacket)var3x).method_11470() == 35
-                        && this.mc.field_1687 != null
-                        && this.mc.field_1724 != null
-                        && var2.method_11469((World)this.mc.field_1687) == this.mc.field_1724) {
+                        && (var2 = (EntityStatusS2CPacket)var3x).getStatus() == 35
+                        && this.mc.world != null
+                        && this.mc.player != null
+                        && var2.getEntity(this.mc.world) == this.mc.player) {
                         this.totemPopped = true;
                      }
                   }
@@ -397,8 +396,8 @@ public final class SchematicBuilderModule extends ClientModule {
          this.bridger.release(this.mc);
       }
 
-      if (this.breaker != null && this.mc.field_1761 != null) {
-         this.mc.field_1761.method_2925();
+      if (this.breaker != null && this.mc.interactionManager != null) {
+         this.mc.interactionManager.cancelBlockBreaking();
       }
 
       if (this.breaker != null) {
@@ -428,9 +427,9 @@ public final class SchematicBuilderModule extends ClientModule {
       return Boolean.getBoolean("easyplace.builder.debug");
    }
 
-   static void trace(String var0) {
+   static void trace(String string) {
       if (Boolean.getBoolean("easyplace.builder.debug")) {
-         EasyPlace.LOG.info("[builder] " + var0);
+         EasyPlace.LOG.info("[builder] " + string);
       }
    }
 
@@ -523,7 +522,7 @@ public final class SchematicBuilderModule extends ClientModule {
       this.placement.setScope(null);
    }
 
-   private boolean watchRefusals(ClientPlayerEntity var1) {
+   private boolean watchRefusals(ClientPlayerEntity clientPlayerEntity) {
       int var2 = this.placement.refusedCount();
       if (var2 < this.refusedTracked) {
          this.refusedTracked = var2;
@@ -535,10 +534,10 @@ public final class SchematicBuilderModule extends ClientModule {
          }
 
          this.refusedTracked = var2;
-         BlockPos var4 = var1.method_24515();
+         BlockPos var4 = clientPlayerEntity.getBlockPos();
          if (var4.equals(this.refusedStand)) {
             if (++this.refusedHere >= 2) {
-               this.badStands.put(var4.method_10063(), this.tick + 600L);
+               this.badStands.put(var4.asLong(), this.tick + 600L);
                this.stopMoving();
                this.route = null;
                this.noPlanUntil = this.tick;
@@ -570,16 +569,16 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private boolean watchStall(ClientPlayerEntity var1) {
+   private boolean watchStall(ClientPlayerEntity clientPlayerEntity) {
       if (this.purchase == null && this.sell == null && !this.relogger.active()) {
          int var2 = this.scan == null ? 2147483647 : this.missingKeys.size() + this.scan.liquids.size() + this.scaffold.size();
          if (this.placement.placedCount() != this.stallProgress
             || var2 < this.leastLeft
             || this.stallAt == null
-            || !this.stallAt.method_19771(var1.method_24515(), 3.0)) {
+            || !this.stallAt.isWithinDistance(clientPlayerEntity.getBlockPos(), 3.0)) {
             this.stallProgress = this.placement.placedCount();
             this.leastLeft = Math.min(this.leastLeft, var2);
-            this.stallAt = var1.method_24515();
+            this.stallAt = clientPlayerEntity.getBlockPos();
             this.stallSince = this.tick;
             return false;
          } else if (this.tick - this.stallSince < 1200L) {
@@ -588,7 +587,7 @@ public final class SchematicBuilderModule extends ClientModule {
             this.stallSince = this.tick;
             trace(
                "nothing moved for 1200 ticks at "
-                  + var1.method_24515().method_23854()
+                  + clientPlayerEntity.getBlockPos().toShortString()
                   + ": hop "
                   + (this.hop != null)
                   + " climber "
@@ -596,9 +595,9 @@ public final class SchematicBuilderModule extends ClientModule {
                   + " bridger "
                   + (this.bridger != null)
                   + " breaker "
-                  + (this.breaker == null ? "-" : this.breaker.pos().method_23854())
+                  + (this.breaker == null ? "-" : this.breaker.pos().toShortString())
                   + " filler "
-                  + (this.filler == null ? "-" : this.filler.kind() + " " + this.filler.cell().method_23854())
+                  + (this.filler == null ? "-" : this.filler.kind() + " " + this.filler.cell().toShortString())
                   + " user "
                   + (this.user != null)
                   + " eater "
@@ -616,17 +615,17 @@ public final class SchematicBuilderModule extends ClientModule {
                   + " layer "
                   + (this.scan == null ? "?" : this.scan.layer)
                   + " "
-                  + this.placement.debugState(var1.method_24515())
+                  + this.placement.debugState(clientPlayerEntity.getBlockPos())
                   + " | "
                   + this.scanState()
             );
             this.feedback("stall", "Nothing moved for a minute, starting over from here", 100);
             if (this.filler != null) {
-               this.waterFails.put(this.filler.cell().method_10063(), 2);
+               this.waterFails.put(this.filler.cell().asLong(), 2);
             }
 
             if (this.routeTarget != null) {
-               this.deferred.add(this.routeTarget.method_10063());
+               this.deferred.add(this.routeTarget.asLong());
             }
 
             this.releaseMovement();
@@ -675,7 +674,7 @@ public final class SchematicBuilderModule extends ClientModule {
                + " retriedDeferred "
                + this.retriedDeferred
                + " buckets "
-               + (this.mc.field_1724 == null ? "?" : count(this.mc.field_1724, Items.field_8705))
+               + (this.mc.player == null ? "?" : count(this.mc.player, Items.WATER_BUCKET))
          );
          int var2 = 0;
 
@@ -684,11 +683,11 @@ public final class SchematicBuilderModule extends ClientModule {
                break;
             }
 
-            long var5 = var4.pos().method_10063();
+            long var5 = var4.pos().asLong();
             var1.append(" [")
-               .append(var4.pos().method_23854())
+               .append(var4.pos().toShortString())
                .append(' ')
-               .append(var4.expected().method_26204().method_9518().getString())
+               .append(var4.expected().getBlock().getName().getString())
                .append(this.scan.waiting.contains(var5) ? " waiting" : "")
                .append(this.deferred.contains(var5) ? " deferred" : "")
                .append(this.lackingKeys.contains(var5) ? " lacking" : "")
@@ -712,8 +711,8 @@ public final class SchematicBuilderModule extends ClientModule {
          this.bridger.release(this.mc);
       }
 
-      if (this.breaker != null && this.mc.field_1761 != null) {
-         this.mc.field_1761.method_2925();
+      if (this.breaker != null && this.mc.interactionManager != null) {
+         this.mc.interactionManager.cancelBlockBreaking();
       }
 
       if (this.breaker != null) {
@@ -789,9 +788,9 @@ public final class SchematicBuilderModule extends ClientModule {
    }
 
    private void step() {
-      ClientPlayerEntity var1 = this.mc.field_1724;
-      ClientWorld var2 = this.mc.field_1687;
-      if (var1 != null && var2 != null && this.mc.field_1761 != null) {
+      ClientPlayerEntity var1 = this.mc.player;
+      ClientWorld var2 = this.mc.world;
+      if (var1 != null && var2 != null && this.mc.interactionManager != null) {
          this.tick++;
          if (var2 != this.seenLevel) {
             if (this.seenLevel != null) {
@@ -804,14 +803,14 @@ public final class SchematicBuilderModule extends ClientModule {
          if (!this.watchRefusals(var1)) {
             this.keepScaffoldList();
             if (!this.watchStall(var1)) {
-               if (this.mc.field_1755 instanceof AbstractSignEditScreen) {
-                  this.mc.field_1755.method_25419();
-               } else if (this.mc.field_1755 instanceof HandledScreen && this.purchase == null && this.sell == null && this.user == null) {
+               if (this.mc.currentScreen instanceof AbstractSignEditScreen) {
+                  this.mc.currentScreen.close();
+               } else if (this.mc.currentScreen instanceof HandledScreen && this.purchase == null && this.sell == null && this.user == null) {
                   if (tracing()) {
-                     String var20 = this.mc.field_1755.method_25440().getString();
+                     String var20 = this.mc.currentScreen.getTitle().getString();
                      String var18;
-                     if (this.mc.field_1765 instanceof BlockHitResult var22) {
-                        var18 = var22.method_17777().method_23854() + " " + var2.method_8320(var22.method_17777()).method_26204();
+                     if (this.mc.crosshairTarget instanceof BlockHitResult var22) {
+                        var18 = var22.getBlockPos().toShortString() + " " + var2.getBlockState(var22.getBlockPos()).getBlock();
                      } else {
                         var18 = "-";
                      }
@@ -822,9 +821,9 @@ public final class SchematicBuilderModule extends ClientModule {
                            + " opened; aiming at "
                            + var18
                            + " shift "
-                           + var1.method_5715()
+                           + var1.isSneaking()
                            + " key "
-                           + this.mc.field_1690.field_1832.method_1434()
+                           + this.mc.options.sneakKey.isPressed()
                            + " hop "
                            + (this.hop != null)
                            + " climber "
@@ -838,11 +837,11 @@ public final class SchematicBuilderModule extends ClientModule {
                            + " breaker "
                            + (this.breaker != null)
                            + " "
-                           + this.placement.debugState(var1.method_24515())
+                           + this.placement.debugState(var1.getBlockPos())
                      );
                   }
 
-                  var1.method_7346();
+                  var1.closeHandledScreen();
                   this.feedback("stray-menu", "Closed a menu that was opened by mistake", 100);
                } else if (this.purchase != null) {
                   this.placing = false;
@@ -855,8 +854,8 @@ public final class SchematicBuilderModule extends ClientModule {
                      this.rescanSoon();
                   } else if (this.keepTotem.get()
                      && this.totemPopped
-                     && this.purchaseItem != Items.field_8288
-                     && !var1.method_6079().method_31574(Items.field_8288)
+                     && this.purchaseItem != Items.TOTEM_OF_UNDYING
+                     && !var1.getOffHandStack().isOf(Items.TOTEM_OF_UNDYING)
                      && !Hands.has(var1, TOTEM)) {
                      this.purchase.cancel();
                      this.spent = this.spent + this.purchase.spent();
@@ -882,12 +881,12 @@ public final class SchematicBuilderModule extends ClientModule {
                   BlockUser.Result var17 = this.user.tick(this.mc);
                   if (var17 != BlockUser.Result.RUNNING) {
                      if (this.user.crafter()) {
-                        this.craftersDone.add(this.user.pos().method_10063());
+                        this.craftersDone.add(this.user.pos().asLong());
                         if (var17 == BlockUser.Result.FAILED) {
-                           this.feedback("crafter", "Could not set the crafter at " + this.user.pos().method_23854(), 1);
+                           this.feedback("crafter", "Could not set the crafter at " + this.user.pos().toShortString(), 1);
                         }
                      } else if (var17 == BlockUser.Result.FAILED) {
-                        this.clickFailed.add(this.user.pos().method_10063());
+                        this.clickFailed.add(this.user.pos().asLong());
                      }
 
                      this.user.close(this.mc);
@@ -909,8 +908,8 @@ public final class SchematicBuilderModule extends ClientModule {
                      this.climber = null;
                      this.walkFails.clear();
                      if (var15 == Climber.Result.FAILED) {
-                        trace("climb failed at " + var1.method_24515().method_23854() + " in " + var2.method_8316(var1.method_24515()));
-                        this.badClimbs.put(this.climber.column().method_10063(), this.tick + 1200L);
+                        trace("climb failed at " + var1.getBlockPos().toShortString() + " in " + var2.getFluidState(var1.getBlockPos()));
+                        this.badClimbs.put(this.climber.column().asLong(), this.tick + 1200L);
                         this.route = null;
                         if (++this.climbFails >= 2) {
                            this.climbFails = 0;
@@ -931,8 +930,8 @@ public final class SchematicBuilderModule extends ClientModule {
                   if (var14 != Bridger.Result.RUNNING) {
                      this.bridger.release(this.mc);
                      if (var14 == Bridger.Result.FAILED) {
-                        trace("bridge failed to " + this.bridger.spot().method_23854() + " from " + var1.method_24515().method_23854());
-                        this.badStands.put(this.bridger.spot().method_10063(), this.tick + 400L);
+                        trace("bridge failed to " + this.bridger.spot().toShortString() + " from " + var1.getBlockPos().toShortString());
+                        this.badStands.put(this.bridger.spot().asLong(), this.tick + 400L);
                         this.route = null;
                      }
 
@@ -944,8 +943,8 @@ public final class SchematicBuilderModule extends ClientModule {
                   Hop.Result var13 = this.hop.tick(this.mc);
                   if (var13 != Hop.Result.RUNNING) {
                      if (var13 == Hop.Result.FAILED) {
-                        trace("hop failed to " + this.hop.spot().method_23854() + " from " + var1.method_24515().method_23854() + " y=" + var1.method_23318());
-                        this.badStands.put(this.hop.spot().method_10063(), this.tick + 400L);
+                        trace("hop failed to " + this.hop.spot().toShortString() + " from " + var1.getBlockPos().toShortString() + " y=" + var1.getY());
+                        this.badStands.put(this.hop.spot().asLong(), this.tick + 400L);
                         this.route = null;
                      }
 
@@ -961,12 +960,12 @@ public final class SchematicBuilderModule extends ClientModule {
                   Breaker.Result var12 = this.breaker.tick(this.mc);
                   if (var12 != Breaker.Result.RUNNING) {
                      if (var12 == Breaker.Result.DONE) {
-                        long var19 = this.breaker.pos().method_10063();
+                        long var19 = this.breaker.pos().asLong();
                         this.scaffold.remove(var19);
                         this.spentSupport.remove(var19);
                         this.supportFor.remove(var19);
                      } else {
-                        this.stuckScaffold.add(this.breaker.pos().method_10063());
+                        this.stuckScaffold.add(this.breaker.pos().asLong());
                      }
 
                      this.breaker = null;
@@ -986,11 +985,11 @@ public final class SchematicBuilderModule extends ClientModule {
                      if (this.routeIndex < this.route.size()) {
                         BlockPos var4 = this.cleanupLeaf(var1, this.routeFloor());
                         if (var4 != null) {
-                           this.mc.field_1690.field_1894.method_23481(false);
-                           this.mc.field_1690.field_1867.method_23481(false);
-                           this.mc.field_1690.field_1903.method_23481(false);
-                           if (var1.method_24828() && !(var1.method_18798().method_37268() > 4.0E-4)) {
-                              trace("mining " + var4.method_23854() + " in passing, standing at " + var1.method_24515().method_23854());
+                           this.mc.options.forwardKey.setPressed(false);
+                           this.mc.options.sprintKey.setPressed(false);
+                           this.mc.options.jumpKey.setPressed(false);
+                           if (var1.isOnGround() && !(var1.getVelocity().horizontalLengthSquared() > 4.0E-4)) {
+                              trace("mining " + var4.toShortString() + " in passing, standing at " + var1.getBlockPos().toShortString());
                               this.stopMoving();
                               this.breaker = new Breaker(var4, false);
                               return;
@@ -1000,20 +999,17 @@ public final class SchematicBuilderModule extends ClientModule {
                         }
 
                         BlockPos var5 = this.routeIndex == 0 ? this.routeStart : this.route.get(this.routeIndex - 1).pos();
-                        BlockPos var6 = var1.method_24515();
-                        if (!var1.method_24828()) {
+                        BlockPos var6 = var1.getBlockPos();
+                        if (!var1.isOnGround()) {
                            return;
                         }
 
-                        if (var5 == null
-                           || var6.method_10263() == var5.method_10263()
-                              && var6.method_10260() == var5.method_10260()
-                              && Math.abs(var6.method_10264() - var5.method_10264()) <= 1) {
+                        if (var5 == null || var6.getX() == var5.getX() && var6.getZ() == var5.getZ() && Math.abs(var6.getY() - var5.getY()) <= 1) {
                            StandPlanner.Step var10;
                            if ((var10 = this.route.get(this.routeIndex++)).move() != StandPlanner.Move.WALK && var10.move() != StandPlanner.Move.LEAP) {
                               if (var10.move() != StandPlanner.Move.BRIDGE) {
-                                 int var24 = var10.pos().method_10264() - var1.method_24515().method_10264();
-                                 BlockPos var26 = var10.pos().method_10087(Math.max(1, var24));
+                                 int var24 = var10.pos().getY() - var1.getBlockPos().getY();
+                                 BlockPos var26 = var10.pos().down(Math.max(1, var24));
                                  if (var24 >= 1 && var24 <= 2 && this.pillarFits(var2, var26) && Climber.leavesCount(var1) >= var24) {
                                     this.climber = new Climber(var26, this.scaffold, var24);
                                     return;
@@ -1021,36 +1017,36 @@ public final class SchematicBuilderModule extends ClientModule {
 
                                  trace(
                                     "route pillar refused at "
-                                       + var1.method_24515().method_23854()
+                                       + var1.getBlockPos().toShortString()
                                        + " column="
-                                       + var26.method_23854()
+                                       + var26.toShortString()
                                        + " y="
-                                       + var1.method_23318()
+                                       + var1.getY()
                                        + " ground="
-                                       + var1.method_24828()
+                                       + var1.isOnGround()
                                  );
                                  this.route = null;
                                  this.noPlanUntil = this.tick + 40L;
                                  return;
                               }
 
-                              BlockPos var23 = var10.pos().method_10074();
+                              BlockPos var23 = var10.pos().down();
                               WorldSchematic var25 = this.schematics.getSchematicWorld();
                               Item var9 = null;
                               if (var25 == null
-                                 || var25.method_8320(var23).method_26215()
-                                 || (var9 = BlockStateUtil.requiredItem(var25.method_8320(var23))) != null && count(var1, var9) > 0) {
-                                 this.bridger = new Bridger(var1.method_24515(), var10.pos(), this.scaffold, var9);
+                                 || var25.getBlockState(var23).isAir()
+                                 || (var9 = BlockStateUtil.requiredItem(var25.getBlockState(var23))) != null && count(var1, var9) > 0) {
+                                 this.bridger = new Bridger(var1.getBlockPos(), var10.pos(), this.scaffold, var9);
                                  if (this.routeIndex < this.route.size()
                                     && this.route.get(this.routeIndex).move() == StandPlanner.Move.BRIDGE
-                                    && this.route.get(this.routeIndex).pos().method_10059(var10.pos()).equals(var10.pos().method_10059(var1.method_24515()))) {
+                                    && this.route.get(this.routeIndex).pos().subtract(var10.pos()).equals(var10.pos().subtract(var1.getBlockPos()))) {
                                     this.bridger.chained();
                                  }
 
                                  return;
                               }
 
-                              trace("route bridge into " + var23.method_23854() + " without its block");
+                              trace("route bridge into " + var23.toShortString() + " without its block");
                               this.route = null;
                               this.noPlanUntil = this.tick + 40L;
                               return;
@@ -1060,21 +1056,19 @@ public final class SchematicBuilderModule extends ClientModule {
                               && this.routeIndex < this.route.size()
                               && this.route.get(this.routeIndex).move() == StandPlanner.Move.WALK;
                            this.hop = new Hop(var10.pos(), var8, var10.move() == StandPlanner.Move.LEAP);
-                           boolean var7 = var10.pos().method_19455(var1.method_24515())
-                                 - Math.abs(var10.pos().method_10264() - var1.method_24515().method_10264())
-                              >= 3;
+                           boolean var7 = var10.pos().getManhattanDistance(var1.getBlockPos()) - Math.abs(var10.pos().getY() - var1.getBlockPos().getY()) >= 3;
                            if (this.flatRunAhead(var10.pos()) >= 3 || var10.move() == StandPlanner.Move.LEAP && var7) {
                               this.hop.sprinting();
                            }
 
                            if (var10.move() == StandPlanner.Move.WALK
                               && (
-                                 Walker.risky(var2, var1.method_24515())
+                                 Walker.risky(var2, var1.getBlockPos())
                                     || Walker.risky(var2, var10.pos())
-                                    || Walker.icy(var2, var1.method_24515())
+                                    || Walker.icy(var2, var1.getBlockPos())
                                     || Walker.icy(var2, var10.pos())
                               )) {
-                              if (var10.pos().method_10264() >= var1.method_24515().method_10264()) {
+                              if (var10.pos().getY() >= var1.getBlockPos().getY()) {
                                  this.hop.careful();
                               } else {
                                  this.hop.slow();
@@ -1084,16 +1078,16 @@ public final class SchematicBuilderModule extends ClientModule {
                            return;
                         }
 
-                        this.mc.field_1690.field_1894.method_23481(false);
-                        this.mc.field_1690.field_1867.method_23481(false);
-                        this.mc.field_1690.field_1903.method_23481(false);
-                        if (var1.method_18798().method_37268() > 4.0E-4) {
-                           this.mc.field_1690.field_1832.method_23481(true);
+                        this.mc.options.forwardKey.setPressed(false);
+                        this.mc.options.sprintKey.setPressed(false);
+                        this.mc.options.jumpKey.setPressed(false);
+                        if (var1.getVelocity().horizontalLengthSquared() > 4.0E-4) {
+                           this.mc.options.sneakKey.setPressed(true);
                            return;
                         }
 
-                        this.mc.field_1690.field_1832.method_23481(false);
-                        trace("off the route at " + var6.method_23854() + ", expected " + var5.method_23854() + ", planning again");
+                        this.mc.options.sneakKey.setPressed(false);
+                        trace("off the route at " + var6.toShortString() + ", expected " + var5.toShortString() + ", planning again");
                         this.route = null;
                         this.routeTarget = null;
                         this.noPlanUntil = this.tick;
@@ -1114,14 +1108,14 @@ public final class SchematicBuilderModule extends ClientModule {
                      Walker.Result var3 = this.walker.tick(var1, this.tick);
                      if (var3 == Walker.Result.FAILED) {
                         if (this.walkStand != null) {
-                           this.badStands.put(this.walkStand.method_10063(), this.tick + 1200L);
+                           this.badStands.put(this.walkStand.asLong(), this.tick + 1200L);
                         }
 
-                        if (this.walkTarget != null && this.walkFails.merge(this.walkTarget.method_10063(), 1, Integer::sum) >= 2) {
-                           this.deferred.add(this.walkTarget.method_10063());
+                        if (this.walkTarget != null && this.walkFails.merge(this.walkTarget.asLong(), 1, Integer::sum) >= 2) {
+                           this.deferred.add(this.walkTarget.asLong());
                         }
 
-                        if (this.walkFrom != null && var1.method_73189().method_1022(this.walkFrom) < 1.0) {
+                        if (this.walkFrom != null && var1.getEntityPos().distanceTo(this.walkFrom) < 1.0) {
                            this.stuckWalks++;
                         }
                      } else if (var3 == Walker.Result.ARRIVED) {
@@ -1132,11 +1126,11 @@ public final class SchematicBuilderModule extends ClientModule {
                         this.walkTarget = null;
                         this.rescanSoon();
                      }
-                  } else if (this.mc.field_1755 != null) {
+                  } else if (this.mc.currentScreen != null) {
                      this.placing = false;
-                     if (var1.field_7512 != var1.field_7498 && ++this.strayMenuTicks > 100) {
+                     if (var1.currentScreenHandler != var1.playerScreenHandler && ++this.strayMenuTicks > 100) {
                         this.strayMenuTicks = 0;
-                        var1.method_7346();
+                        var1.closeHandledScreen();
                         this.feedback("stray-menu", "Closed a menu that was left open", 100);
                      }
                   } else {
@@ -1159,7 +1153,7 @@ public final class SchematicBuilderModule extends ClientModule {
                                  return;
                               }
 
-                              if (var1.method_6032() <= 8.0F) {
+                              if (var1.getHealth() <= 8.0F) {
                                  this.feedback("no-food", "Low on health and nothing to eat: health won't come back", 600);
                               }
                            }
@@ -1184,11 +1178,11 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private void fillerDone(boolean var1) {
-      long var2 = this.filler.cell().method_10063();
+   private void fillerDone(boolean bl) {
+      long var2 = this.filler.cell().asLong();
       switch (this.filler.kind()) {
          case SUPPORT_LEAF:
-            if (var1) {
+            if (bl) {
                this.scaffold.add(var2);
             } else {
                this.supportFor.remove(var2);
@@ -1200,17 +1194,17 @@ public final class SchematicBuilderModule extends ClientModule {
          case WATER_SOURCE:
          case WATERLOG:
          case LAVA_SOURCE:
-            if (var1) {
+            if (bl) {
                this.bucketsEmptied++;
                this.pouredAt.put(var2, this.tick);
             } else {
                this.waterFails.merge(var2, 1, Integer::sum);
             }
 
-            trace((var1 ? "poured into " : "could not pour into ") + this.filler.cell().method_23854() + " (" + this.filler.kind() + ")");
+            trace((bl ? "poured into " : "could not pour into ") + this.filler.cell().toShortString() + " (" + this.filler.kind() + ")");
             break;
          case REFILL:
-            if (var1) {
+            if (bl) {
                this.bucketsEmptied = Math.max(0, this.bucketsEmptied - 1);
             } else {
                this.nextRefillTick = this.tick + 100L;
@@ -1218,8 +1212,8 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private boolean mindTotem(ClientPlayerEntity var1) {
-      if (var1.method_6079().method_31574(Items.field_8288)) {
+   private boolean mindTotem(ClientPlayerEntity clientPlayerEntity) {
+      if (clientPlayerEntity.getOffHandStack().isOf(Items.TOTEM_OF_UNDYING)) {
          if (this.totemSwapTick > 0L) {
             this.feedback("totem-ok", "Totem is in the offhand", 1);
          }
@@ -1227,10 +1221,10 @@ public final class SchematicBuilderModule extends ClientModule {
          this.totemPopped = false;
          this.totemSwapTick = 0L;
          return false;
-      } else if (Hands.has(var1, TOTEM)) {
+      } else if (Hands.has(clientPlayerEntity, TOTEM)) {
          if (this.totemSwapTick > 0L && this.tick - this.totemSwapTick < 5L) {
             return true;
-         } else if (!Hands.toOffhand(this.mc, var1, TOTEM)) {
+         } else if (!Hands.toOffhand(this.mc, clientPlayerEntity, TOTEM)) {
             return false;
          } else {
             this.totemSwapTick = this.tick;
@@ -1240,7 +1234,7 @@ public final class SchematicBuilderModule extends ClientModule {
          return false;
       } else {
          this.nextTotemBuyTick = this.tick + 1200L;
-         if (!this.buyFromAh.get() || room(var1, new ItemStack(Items.field_8288)) <= 0 && !this.startSelling(var1, false)) {
+         if (!this.buyFromAh.get() || room(clientPlayerEntity, new ItemStack(Items.TOTEM_OF_UNDYING)) <= 0 && !this.startSelling(clientPlayerEntity, false)) {
             this.feedback("totem-none", "No totem for the offhand" + (this.buyFromAh.get() ? " and no room to buy one" : " (Buy From AH is off)"), 1200);
             this.totemPopped = false;
             return false;
@@ -1249,39 +1243,39 @@ public final class SchematicBuilderModule extends ClientModule {
          } else {
             this.feedback("totem-buy", this.totemPopped ? "Totem popped, buying a new one" : "No totem in the offhand, buying one", 1);
             this.totemPopped = false;
-            return this.startPurchase(Items.field_8288, 1);
+            return this.startPurchase(Items.TOTEM_OF_UNDYING, 1);
          }
       }
    }
 
-   private void debugLookUp(ClientWorld var1, WorldSchematic var2) {
+   private void debugLookUp(ClientWorld clientWorld, WorldSchematic worldSchematic) {
       if (tracing() && this.tick - this.lastLookUpTrace >= 400L && this.scan != null) {
          for (BuildScan.Cell var4 : this.scan.missing) {
             BlockPos var5 = var4.pos();
-            if (StateRules.lookFor(var4.expected()) == Direction.field_11036 && !var1.method_8320(var5.method_10084()).method_26215()) {
+            if (StateRules.lookFor(var4.expected()) == Direction.UP && !clientWorld.getBlockState(var5.up()).isAir()) {
                StringBuilder var6 = new StringBuilder(
                   "lookup "
-                     + var5.method_23854()
+                     + var5.toShortString()
                      + " waiting="
-                     + this.scan.waiting.contains(var5.method_10063())
+                     + this.scan.waiting.contains(var5.asLong())
                      + " deferred="
-                     + this.deferred.contains(var5.method_10063())
+                     + this.deferred.contains(var5.asLong())
                );
 
-               for (Direction var8 : Type.field_11062) {
-                  BlockPos var9 = var5.method_10074().method_10093(var8);
-                  double var10 = Walker.floor(var1, var9);
-                  Vec3d var12 = new Vec3d(var9.method_10263() + 0.5, (Double.isNaN(var10) ? var9.method_10264() : var10) + 1.62, var9.method_10260() + 0.5);
+               for (Direction var8 : Type.HORIZONTAL) {
+                  BlockPos var9 = var5.down().offset(var8);
+                  double var10 = Walker.floor(clientWorld, var9);
+                  Vec3d var12 = new Vec3d(var9.getX() + 0.5, (Double.isNaN(var10) ? var9.getY() : var10) + 1.62, var9.getZ() + 0.5);
                   var6.append(" ")
                      .append(var8)
                      .append("[feet=")
-                     .append(var1.method_8320(var9).method_26204().method_9518().getString())
+                     .append(clientWorld.getBlockState(var9).getBlock().getName().getString())
                      .append(" head=")
-                     .append(var1.method_8320(var9.method_10084()).method_26204().method_9518().getString())
+                     .append(clientWorld.getBlockState(var9.up()).getBlock().getName().getString())
                      .append(" floor=")
                      .append(var10)
                      .append(" wait=")
-                     .append(this.scan.waiting.contains(var9.method_10063()))
+                     .append(this.scan.waiting.contains(var9.asLong()))
                      .append(" ok=")
                      .append(this.placement.placeableFrom(var4.expected(), var5, var12))
                      .append("]");
@@ -1295,7 +1289,7 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private void rescan(ClientWorld var1, ClientPlayerEntity var2) {
+   private void rescan(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity) {
       WorldSchematic var3 = this.schematics.getSchematicWorld();
       List var4 = this.schematics.activeBoxes();
       this.nextScan = this.tick + 20L;
@@ -1311,13 +1305,13 @@ public final class SchematicBuilderModule extends ClientModule {
 
       this.placedAtScan = this.placement.placedCount();
       if (var3 != null && !var4.isEmpty()) {
-         Box var5 = var2.method_5829().method_1014(0.05);
+         Box var5 = clientPlayerEntity.getBoundingBox().expand(0.05);
          this.scan = BuildScan.run(
-            var1,
+            clientWorld,
             var3,
             var4,
-            var3x -> this.deferred.contains(var3x.method_10063()) || var5.method_994(new Box(var3x)) || enclosed(var1, var3x),
-            var1x -> this.deferred.contains(var1x.method_10063()),
+            blockPos -> this.deferred.contains(blockPos.asLong()) || var5.intersects(new Box(blockPos)) || enclosed(clientWorld, blockPos),
+            blockPos -> this.deferred.contains(blockPos.asLong()),
             this::liquidPending,
             this.latePhase,
             this.scaffold,
@@ -1326,19 +1320,19 @@ public final class SchematicBuilderModule extends ClientModule {
             this.placeTnt.get(),
             this.machineLast.get()
          );
-         this.debugLookUp(var1, var3);
-         this.scaffold.removeIf(var2x -> {
-            BlockPos var3x = BlockPos.method_10092(var2x);
-            if (!var1.method_22340(var3x)) {
+         this.debugLookUp(clientWorld, var3);
+         this.scaffold.removeIf(long_ -> {
+            BlockPos var3x = BlockPos.fromLong(long_);
+            if (!clientWorld.isChunkLoaded(var3x)) {
                return false;
             } else {
-               BlockState var4x = var1.method_8320(var3x);
-               return !Scaffold.block(var4x) || !var3.method_8320(var3x).method_26215() && StateRules.done(var4x, var3.method_8320(var3x));
+               BlockState var4x = clientWorld.getBlockState(var3x);
+               return !Scaffold.block(var4x) || !var3.getBlockState(var3x).isAir() && StateRules.done(var4x, var3.getBlockState(var3x));
             }
          });
 
          for (long var7 : this.scaffold) {
-            if (!var3.method_8320(BlockPos.method_10092(var7)).method_26215()) {
+            if (!var3.getBlockState(BlockPos.fromLong(var7)).isAir()) {
                this.buildScaffold.add(var7);
             }
          }
@@ -1346,7 +1340,7 @@ public final class SchematicBuilderModule extends ClientModule {
          this.missingKeys.clear();
 
          for (BuildScan.Cell var8 : this.scan.missing) {
-            this.missingKeys.add(var8.pos().method_10063());
+            this.missingKeys.add(var8.pos().asLong());
          }
 
          this.lackingKeys.clear();
@@ -1354,8 +1348,8 @@ public final class SchematicBuilderModule extends ClientModule {
             HashMap var11 = new HashMap();
 
             for (BuildScan.Cell var9 : this.scan.missing) {
-               if (lacking(var2, var9.expected(), var11)) {
-                  this.lackingKeys.add(var9.pos().method_10063());
+               if (lacking(clientPlayerEntity, var9.expected(), var11)) {
+                  this.lackingKeys.add(var9.pos().asLong());
                }
             }
          }
@@ -1363,7 +1357,7 @@ public final class SchematicBuilderModule extends ClientModule {
          this.trackStubborn();
          if (this.scan.layer != 2147483647 && this.scan.layer != this.shownLayer) {
             this.shownLayer = this.scan.layer;
-            long var12 = this.scan.missing.stream().filter(var1x -> var1x.pos().method_10264() == this.scan.layer).count();
+            long var12 = this.scan.missing.stream().filter(cell -> cell.pos().getY() == this.scan.layer).count();
             this.feedback("layer", "Layer Y=" + this.scan.layer + ", " + var12 + (var12 == 1L ? " block" : " blocks") + " to place", 1);
          }
       } else {
@@ -1376,7 +1370,7 @@ public final class SchematicBuilderModule extends ClientModule {
    private void trackStubborn() {
       if (!this.scan.wholeSchematic) {
          int var1 = this.scan.layer + 1;
-         this.tries.keySet().removeIf(var2x -> BlockPos.method_10071(var2x) <= var1 && !this.missingKeys.contains(var2x));
+         this.tries.keySet().removeIf(long_ -> BlockPos.unpackLongY(long_) <= var1 && !this.missingKeys.contains(long_));
       } else {
          this.tries.keySet().retainAll(this.missingKeys);
       }
@@ -1387,9 +1381,7 @@ public final class SchematicBuilderModule extends ClientModule {
          if ((Integer)var2.getValue() >= 8) {
             if (this.deferred.add((Long)var2.getKey())) {
                this.feedback(
-                  "gave-up-" + var2.getKey(),
-                  "The block at " + BlockPos.method_10092((Long)var2.getKey()).method_23854() + " keeps disappearing, skipping it",
-                  1
+                  "gave-up-" + var2.getKey(), "The block at " + BlockPos.fromLong((Long)var2.getKey()).toShortString() + " keeps disappearing, skipping it", 1
                );
             }
          } else if ((Integer)var2.getValue() >= 3) {
@@ -1402,41 +1394,41 @@ public final class SchematicBuilderModule extends ClientModule {
       this.nextScan = Math.min(this.nextScan, this.tick + 1L);
    }
 
-   private void decide(ClientWorld var1, ClientPlayerEntity var2) {
+   private void decide(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity) {
       if (this.armed) {
-         this.endOfBuild(var1, var2);
+         this.endOfBuild(clientWorld, clientPlayerEntity);
       } else {
          int var5 = this.scan.layer;
          WorldSchematic var6 = this.schematics.getSchematicWorld();
-         Item var7 = this.routeTarget != null && var6 != null ? BlockStateUtil.requiredItem(var6.method_8320(this.routeTarget)) : null;
-         this.routeItemTicks = var7 != null && count(var2, var7) > 0 ? this.routeItemTicks + 1 : 0;
+         Item var7 = this.routeTarget != null && var6 != null ? BlockStateUtil.requiredItem(var6.getBlockState(this.routeTarget)) : null;
+         this.routeItemTicks = var7 != null && count(clientPlayerEntity, var7) > 0 ? this.routeItemTicks + 1 : 0;
          int var8 = var5 != 2147483647 ? var5 : this.highestMissing();
          int var9 = var8 == -2147483648 ? 0 : this.waterWanted(var8);
          int var4 = var8 == -2147483648 ? 0 : this.cappedLavaWanted(var8);
-         if (var9 <= 0 || !this.refillWater(var1, var2, var9)) {
+         if (var9 <= 0 || !this.refillWater(clientWorld, clientPlayerEntity, var9)) {
             if (this.buyFromAh.get() && var8 != -2147483648) {
                Map var11 = this.scan.needs(var8);
                if (var9 > 0) {
-                  var11.put(Items.field_8705, var9);
+                  var11.put(Items.WATER_BUCKET, var9);
                }
 
                if (var4 > 0) {
-                  var11.put(Items.field_8187, Math.min(var4, 8));
+                  var11.put(Items.LAVA_BUCKET, Math.min(var4, 8));
                }
 
-               if (this.buyMissing(var2, var11)) {
+               if (this.buyMissing(clientPlayerEntity, var11)) {
                   return;
                }
             }
 
             BlockPos var3;
-            if ((var3 = this.cleanupLeaf(var2)) != null) {
+            if ((var3 = this.cleanupLeaf(clientPlayerEntity)) != null) {
                this.breaker = new Breaker(var3, false);
                this.placing = false;
-            } else if (!this.sweepFinishedLayers(var1, var2)) {
+            } else if (!this.sweepFinishedLayers(clientWorld, clientPlayerEntity)) {
                if (this.crafterSlots.get()) {
                   for (BlockPos var12 : this.scan.crafters) {
-                     if (this.inReach(var2, var12) && Aim.at(this.mc, var12) != null) {
+                     if (this.inReach(clientPlayerEntity, var12) && Aim.at(this.mc, var12) != null) {
                         this.user = BlockUser.crafter(var12, this.scan.crafterSlots.get(var12));
                         this.placing = false;
                         return;
@@ -1446,7 +1438,9 @@ public final class SchematicBuilderModule extends ClientModule {
 
                if (this.clickStates.get()) {
                   for (BuildScan.Cell var19 : this.scan.adjust) {
-                     if (!this.clickFailed.contains(var19.pos().method_10063()) && this.inReach(var2, var19.pos()) && Aim.at(this.mc, var19.pos()) != null) {
+                     if (!this.clickFailed.contains(var19.pos().asLong())
+                        && this.inReach(clientPlayerEntity, var19.pos())
+                        && Aim.at(this.mc, var19.pos()) != null) {
                         this.user = BlockUser.adjust(var19.pos(), var19.expected());
                         this.placing = false;
                         return;
@@ -1454,22 +1448,22 @@ public final class SchematicBuilderModule extends ClientModule {
                   }
                }
 
-               if (!this.placeWater.get() || !this.waterNow(var2) && !this.cappedLavaNow(var1, var2)) {
+               if (!this.placeWater.get() || !this.waterNow(clientPlayerEntity) && !this.cappedLavaNow(clientWorld, clientPlayerEntity)) {
                   if (var8 == -2147483648) {
-                     this.endOfBuild(var1, var2);
+                     this.endOfBuild(clientWorld, clientPlayerEntity);
                   } else {
-                     Vec3d var18 = var2.method_33571();
+                     Vec3d var18 = clientPlayerEntity.getEyePos();
                      Set var20 = this.scan.waiting;
-                     Set var13 = lastExit(var1, var2);
+                     Set var13 = lastExit(clientWorld, clientPlayerEntity);
                      this.placement
                         .setScope(
                            new BuildScope(
                               var8,
                               40.0,
-                              var4x -> var20.contains(var4x.method_10063())
-                                 || var13.contains(var4x.method_10063())
-                                 || this.stubborn.contains(var4x.method_10063()) && var4x.method_46558().method_1022(var18) > 2.8
-                                 || this.deferred.contains(var4x.method_10063()) && this.tries.getOrDefault(var4x.method_10063(), 0) >= 8
+                              blockPos -> var20.contains(blockPos.asLong())
+                                 || var13.contains(blockPos.asLong())
+                                 || this.stubborn.contains(blockPos.asLong()) && blockPos.toCenterPos().distanceTo(var18) > 2.8
+                                 || this.deferred.contains(blockPos.asLong()) && this.tries.getOrDefault(blockPos.asLong(), 0) >= 8
                            )
                         );
                      if (!this.placing) {
@@ -1478,27 +1472,36 @@ public final class SchematicBuilderModule extends ClientModule {
                      }
 
                      if (this.tick - this.placingSince >= 4L && this.placement.ticksWithoutTarget() >= 4L) {
-                        if (!this.supportLeaves.get() || !this.placeSupport(var1, var2, var8, true)) {
+                        if (!this.supportLeaves.get() || !this.placeSupport(clientWorld, clientPlayerEntity, var8, true)) {
                            if (!this.supportLeaves.get()
                               || this.routeTarget == null
                               || this.tick - this.arrivedAt >= 34L
-                              || !this.placeSupportFor(var1, var2, this.routeTarget)) {
-                              if (this.walking || this.tick < this.noPlanUntil || !this.plan(var1, var2, var8)) {
-                                 int var14 = var2.method_24515().method_10264();
-                                 if (!this.walking || var5 == 2147483647 || var5 < var14 + 2 || !this.goUp(var1, var2)) {
-                                    if (this.walking && var5 != 2147483647 && var5 >= var14 && this.stuckWalks >= 2 && this.goUp(var1, var2)) {
+                              || !this.placeSupportFor(clientWorld, clientPlayerEntity, this.routeTarget)) {
+                              if (this.walking || this.tick < this.noPlanUntil || !this.plan(clientWorld, clientPlayerEntity, var8)) {
+                                 int var14 = clientPlayerEntity.getBlockPos().getY();
+                                 if (!this.walking || var5 == 2147483647 || var5 < var14 + 2 || !this.goUp(clientWorld, clientPlayerEntity)) {
+                                    if (this.walking
+                                       && var5 != 2147483647
+                                       && var5 >= var14
+                                       && this.stuckWalks >= 2
+                                       && this.goUp(clientWorld, clientPlayerEntity)) {
                                        this.stuckWalks = 0;
-                                    } else if (!this.walkTowardsWork(var1, var2, var8)) {
-                                       if (!this.supportLeaves.get() || !this.placeSupport(var1, var2, var8, false)) {
-                                          if (!this.walking || var5 == 2147483647 || var5 < var14 || !this.goUp(var1, var2)) {
+                                    } else if (!this.walkTowardsWork(clientWorld, clientPlayerEntity, var8)) {
+                                       if (!this.supportLeaves.get() || !this.placeSupport(clientWorld, clientPlayerEntity, var8, false)) {
+                                          if (!this.walking || var5 == 2147483647 || var5 < var14 || !this.goUp(clientWorld, clientPlayerEntity)) {
                                              if (var5 == 2147483647) {
-                                                this.endOfBuild(var1, var2);
+                                                this.endOfBuild(clientWorld, clientPlayerEntity);
                                              } else if (this.tick - this.lastStuckTick >= 60L) {
                                                 this.lastStuckTick = this.tick;
-                                                BuildScan.Cell var15 = this.nearestOpen(var2, var8);
+                                                BuildScan.Cell var15 = this.nearestOpen(clientPlayerEntity, var8);
                                                 if (var15 != null) {
-                                                   trace("stuck, skipping " + var15.pos().method_23854() + " at " + var2.method_24515().method_23854());
-                                                   this.deferred.add(var15.pos().method_10063());
+                                                   trace(
+                                                      "stuck, skipping "
+                                                         + var15.pos().toShortString()
+                                                         + " at "
+                                                         + clientPlayerEntity.getBlockPos().toShortString()
+                                                   );
+                                                   this.deferred.add(var15.pos().asLong());
                                                 }
 
                                                 this.feedback("stuck", "Can't reach the rest of layer Y=" + var5 + " from here, skipping it for now", 100);
@@ -1518,9 +1521,9 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private static Set<Long> lastExit(ClientWorld var0, ClientPlayerEntity var1) {
-      BlockPos var2 = var1.method_24515();
-      List var3 = Walker.steps(var0, var2);
+   private static Set<Long> lastExit(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity) {
+      BlockPos var2 = clientPlayerEntity.getBlockPos();
+      List var3 = Walker.steps(clientWorld, var2);
       if (var3.size() != 1) {
          return Set.of();
       } else {
@@ -1528,18 +1531,14 @@ public final class SchematicBuilderModule extends ClientModule {
          HashSet var5 = new HashSet();
 
          for (int var6 = 0; var6 <= 2; var6++) {
-            var5.add(var4.method_10086(var6).method_10063());
+            var5.add(var4.up(var6).asLong());
          }
 
-         if (var4.method_10264() > var2.method_10264()) {
-            var5.add(var2.method_10086(2).method_10063());
+         if (var4.getY() > var2.getY()) {
+            var5.add(var2.up(2).asLong());
          }
 
-         var5.add(
-            var2.method_10093(Direction.method_10147(var4.method_10263() - var2.method_10263(), 0.0F, var4.method_10260() - var2.method_10260()))
-               .method_10084()
-               .method_10063()
-         );
+         var5.add(var2.offset(Direction.getFacing((float)(var4.getX() - var2.getX()), 0.0F, (float)(var4.getZ() - var2.getZ()))).up().asLong());
          return var5;
       }
    }
@@ -1548,36 +1547,36 @@ public final class SchematicBuilderModule extends ClientModule {
       int var1 = -2147483648;
 
       for (BuildScan.Cell var3 : this.scan.missing) {
-         if (!this.scan.waiting.contains(var3.pos().method_10063())) {
-            var1 = Math.max(var1, var3.pos().method_10264());
+         if (!this.scan.waiting.contains(var3.pos().asLong())) {
+            var1 = Math.max(var1, var3.pos().getY());
          }
       }
 
       return var1;
    }
 
-   private boolean goUp(ClientWorld var1, ClientPlayerEntity var2) {
-      BlockPos var3 = Hop.spot(var1, var2, var0 -> false);
+   private boolean goUp(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity) {
+      BlockPos var3 = Hop.spot(clientWorld, clientPlayerEntity, blockPos -> false);
       if (var3 != null) {
          this.stopMoving();
          this.hop = new Hop(var3);
          return true;
       } else {
-         return this.startClimb(var2);
+         return this.startClimb(clientPlayerEntity);
       }
    }
 
-   private boolean placeSupport(ClientWorld var1, ClientPlayerEntity var2, int var3, boolean var4) {
+   private boolean placeSupport(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, int i, boolean bl) {
       for (BuildScan.Cell var6 : this.scan.missing) {
          BlockPos var7 = var6.pos();
-         if (var7.method_10264() <= var3
-            && !this.deferred.contains(var7.method_10063())
-            && !this.scan.waiting.contains(var7.method_10063())
-            && this.inReach(var2, var7)
-            && !(var6.expected().method_26204() instanceof FallingBlock)
-            && (StateRules.lookFor(var6.expected()) != Direction.field_11036 || var7.equals(this.routeTarget))
-            && (!var4 || !this.missingNeighbour(var7) && !bridgeable(var1, var6.expected(), var7))
-            && this.placeSupportFor(var1, var2, var7)) {
+         if (var7.getY() <= i
+            && !this.deferred.contains(var7.asLong())
+            && !this.scan.waiting.contains(var7.asLong())
+            && this.inReach(clientPlayerEntity, var7)
+            && !(var6.expected().getBlock() instanceof FallingBlock)
+            && (StateRules.lookFor(var6.expected()) != Direction.UP || var7.equals(this.routeTarget))
+            && (!bl || !this.missingNeighbour(var7) && !bridgeable(clientWorld, var6.expected(), var7))
+            && this.placeSupportFor(clientWorld, clientPlayerEntity, var7)) {
             return true;
          }
       }
@@ -1585,14 +1584,15 @@ public final class SchematicBuilderModule extends ClientModule {
       return false;
    }
 
-   private static boolean bridgeable(ClientWorld var0, BlockState var1, BlockPos var2) {
-      if (StateRules.lookFor(var1) == null
-         && StateRules.flatLookFor(var1) == null
-         && !(var1.method_26204() instanceof FallingBlock)
-         && var1.method_26234(var0, var2)) {
-         for (Direction var4 : Type.field_11062) {
-            BlockPos var5 = var2.method_10093(var4);
-            if (Block.method_9501(var0.method_8320(var5).method_26218(var0, var5), var4.method_10153()) && Walker.roomAt(var0, var5.method_10084())) {
+   private static boolean bridgeable(ClientWorld clientWorld, BlockState blockState, BlockPos blockPos) {
+      if (StateRules.lookFor(blockState) == null
+         && StateRules.flatLookFor(blockState) == null
+         && !(blockState.getBlock() instanceof FallingBlock)
+         && blockState.isFullCube(clientWorld, blockPos)) {
+         for (Direction var4 : Type.HORIZONTAL) {
+            BlockPos var5 = blockPos.offset(var4);
+            if (Block.isFaceFullSquare(clientWorld.getBlockState(var5).getOutlineShape(clientWorld, var5), var4.getOpposite())
+               && Walker.roomAt(clientWorld, var5.up())) {
                return true;
             }
          }
@@ -1603,31 +1603,31 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private boolean placeSupportFor(ClientWorld var1, ClientPlayerEntity var2, BlockPos var3) {
-      if ((!this.latePhase || !this.placeTnt.get()) && this.missingKeys.contains(var3.method_10063()) && !this.scan.waiting.contains(var3.method_10063())) {
+   private boolean placeSupportFor(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, BlockPos blockPos) {
+      if ((!this.latePhase || !this.placeTnt.get()) && this.missingKeys.contains(blockPos.asLong()) && !this.scan.waiting.contains(blockPos.asLong())) {
          WorldSchematic var4 = this.schematics.getSchematicWorld();
          if (var4 == null) {
             return false;
          } else {
-            BlockState var5 = var4.method_8320(var3);
-            if (!(var5.method_26204() instanceof FallingBlock) && !this.placement.placeableFrom(var5, var3, var2.method_33571())) {
-               List var6 = this.scaffoldFor(var1, var5, var3, var2.method_33571());
+            BlockState var5 = var4.getBlockState(blockPos);
+            if (!(var5.getBlock() instanceof FallingBlock) && !this.placement.placeableFrom(var5, blockPos, clientPlayerEntity.getEyePos())) {
+               List var6 = this.scaffoldFor(clientWorld, var5, blockPos, clientPlayerEntity.getEyePos());
                if (var6 == null) {
                   return false;
                } else {
                   BlockPos var7 = (BlockPos)var6.get(0);
                   if (!CellFiller.reachable(this.mc, var7, CellFiller.Kind.SUPPORT_LEAF)) {
                      return false;
-                  } else if (Scaffold.count(var2) >= 1) {
-                     trace("scaffold " + var7.method_23854() + " (" + var6.size() + " to go) for " + var3.method_23854());
+                  } else if (Scaffold.count(clientPlayerEntity) >= 1) {
+                     trace("scaffold " + var7.toShortString() + " (" + var6.size() + " to go) for " + blockPos.toShortString());
                      this.stopMoving();
-                     this.supportFor.put(var7.method_10063(), var3.method_10063());
-                     if (var3.equals(this.routeTarget)) {
+                     this.supportFor.put(var7.asLong(), blockPos.asLong());
+                     if (blockPos.equals(this.routeTarget)) {
                         this.proppedAt = this.tick;
                      }
 
-                     if (!var4.method_8320(var7).method_26215()) {
-                        this.buildScaffold.add(var7.method_10063());
+                     if (!var4.getBlockState(var7).isAir()) {
+                        this.buildScaffold.add(var7.asLong());
                      }
 
                      this.filler = new CellFiller(var7, CellFiller.Kind.SUPPORT_LEAF);
@@ -1648,32 +1648,30 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private List<BlockPos> scaffoldFor(ClientWorld var1, BlockState var2, BlockPos var3, Vec3d var4) {
+   private List<BlockPos> scaffoldFor(ClientWorld clientWorld, BlockState blockState, BlockPos blockPos, Vec3d vec3d) {
       WorldSchematic var5 = this.schematics.getSchematicWorld();
       if (var5 == null) {
          return null;
       } else {
-         double var6 = (this.mc.field_1724 == null ? 4.5 : this.mc.field_1724.method_55754()) - 0.6;
-         Direction var8 = StateRules.lookFor(var2);
-         Direction var9 = StateRules.flatLookFor(var2);
-         Box var10 = new Box(
-            var4.field_1352 - 0.3, var4.field_1351 - 1.62, var4.field_1350 - 0.3, var4.field_1352 + 0.3, var4.field_1351 + 0.18, var4.field_1350 + 0.3
-         );
+         double var6 = (this.mc.player == null ? 4.5 : this.mc.player.getBlockInteractionRange()) - 0.6;
+         Direction var8 = StateRules.lookFor(blockState);
+         Direction var9 = StateRules.flatLookFor(blockState);
+         Box var10 = new Box(vec3d.x - 0.3, vec3d.y - 1.62, vec3d.z - 0.3, vec3d.x + 0.3, vec3d.y + 0.18, vec3d.z + 0.3);
 
          for (int var11 = 0; var11 < 2; var11++) {
-            for (BlockPos var13 : BuildOrder.supportCells(var2, var3)) {
-               boolean var16 = var11 == 0 ? scaffoldFits(var1, var5, var13) : this.buildCellFits(var1, var5, var13);
-               if (var16 && !this.badScaffold.contains(var13.method_10063()) && !var10.method_994(new Box(var13))) {
-                  Direction var17 = Direction.method_10147(
-                     var3.method_10263() - var13.method_10263(), var3.method_10264() - var13.method_10264(), var3.method_10260() - var13.method_10260()
+            for (BlockPos var13 : BuildOrder.supportCells(blockState, blockPos)) {
+               boolean var16 = var11 == 0 ? scaffoldFits(clientWorld, var5, var13) : this.buildCellFits(clientWorld, var5, var13);
+               if (var16 && !this.badScaffold.contains(var13.asLong()) && !var10.intersects(new Box(var13))) {
+                  Direction var17 = Direction.getFacing(
+                     (float)(blockPos.getX() - var13.getX()), (float)(blockPos.getY() - var13.getY()), (float)(blockPos.getZ() - var13.getZ())
                   );
-                  Vec3d var18 = var13.method_46558().method_43206(var17, 0.5);
-                  Vec3d var19 = var18.method_1020(var4);
-                  boolean var15 = var8 == Direction.field_11036 && var13.equals(var3.method_10084());
+                  Vec3d var18 = var13.toCenterPos().offset(var17, 0.5);
+                  Vec3d var19 = var18.subtract(vec3d);
+                  boolean var15 = var8 == Direction.UP && var13.equals(blockPos.up());
                   if (var15
-                     ? !(var4.field_1351 <= var13.method_10264() + 0.05) && !(var13.method_46558().method_1022(var4) > var6 + 0.5)
-                     : !(var19.method_1033() > var6)
-                        && PlacementUtil.isFaceVisibleToEye(var13, var17, var4)
+                     ? !(vec3d.y <= var13.getY() + 0.05) && !(var13.toCenterPos().distanceTo(vec3d) > var6 + 0.5)
+                     : !(var19.length() > var6)
+                        && PlacementUtil.isFaceVisibleToEye(var13, var17, vec3d)
                         && (var8 == null || Walker.dominant(var19, var8))
                         && (var9 == null || Walker.facingFlat(var19, var9))) {
                      ArrayList var21 = new ArrayList();
@@ -1682,30 +1680,30 @@ public final class SchematicBuilderModule extends ClientModule {
 
                      for (int var24 = 0;
                         var24 < 4
-                           && (var24 <= 0 || scaffoldFits(var1, var5, var22) && !var10.method_994(new Box(var22)))
-                           && !(var22.method_46558().method_1022(var4) > var6 + 0.5);
+                           && (var24 <= 0 || scaffoldFits(clientWorld, var5, var22) && !var10.intersects(new Box(var22)))
+                           && !(var22.toCenterPos().distanceTo(vec3d) > var6 + 0.5);
                         var24++
                      ) {
                         var21.add(var22);
-                        if (var24 == 0 && sideBase(var1, var22, var3, var4) || solidUnder(var1, var22) && var4.field_1351 > var22.method_10264() + 0.05) {
+                        if (var24 == 0 && sideBase(clientWorld, var22, blockPos, vec3d) || solidUnder(clientWorld, var22) && vec3d.y > var22.getY() + 0.05) {
                            var23 = true;
                            break;
                         }
 
-                        var22 = var22.method_10074();
+                        var22 = var22.down();
                      }
 
                      List var14;
                      if (!var23
                         && var21.size() >= 1
-                        && scaffoldFits(var1, var5, var13)
-                        && (var14 = this.besideChain(var1, var5, var13, var3, var4, var10, var6)) != null) {
+                        && scaffoldFits(clientWorld, var5, var13)
+                        && (var14 = this.besideChain(clientWorld, var5, var13, blockPos, vec3d, var10, var6)) != null) {
                         return var14;
                      }
 
-                     if (var23 && (var21.size() <= 1 || !(var4.field_1351 <= var13.method_10264() + 0.05))) {
+                     if (var23 && (var21.size() <= 1 || !(vec3d.y <= var13.getY() + 0.05))) {
                         Collections.reverse(var21);
-                        if (Aim.against(this.mc, (BlockPos)var21.get(0), null, var4) != null) {
+                        if (Aim.against(this.mc, (BlockPos)var21.get(0), null, vec3d) != null) {
                            return var21;
                         }
                      }
@@ -1718,20 +1716,22 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private List<BlockPos> besideChain(ClientWorld var1, WorldSchematic var2, BlockPos var3, BlockPos var4, Vec3d var5, Box var6, double var7) {
-      if (var5.field_1351 <= var3.method_10264() + 0.05) {
+   private List<BlockPos> besideChain(
+      ClientWorld clientWorld, WorldSchematic worldSchematic, BlockPos blockPos, BlockPos blockPos2, Vec3d vec3d, Box box, double d
+   ) {
+      if (vec3d.y <= blockPos.getY() + 0.05) {
          return null;
       } else {
-         for (Direction var10 : Type.field_11062) {
-            BlockPos var11 = var3.method_10093(var10);
-            if (!var11.equals(var4)
-               && scaffoldFits(var1, var2, var11)
-               && solidUnder(var1, var11)
-               && !var6.method_994(new Box(var11))
-               && !(var11.method_46558().method_1022(var5) > var7 + 0.5)
-               && !this.badScaffold.contains(var11.method_10063())
-               && Aim.against(this.mc, var11, null, var5) != null) {
-               return new ArrayList<>(List.of(var11, var3));
+         for (Direction var10 : Type.HORIZONTAL) {
+            BlockPos var11 = blockPos.offset(var10);
+            if (!var11.equals(blockPos2)
+               && scaffoldFits(clientWorld, worldSchematic, var11)
+               && solidUnder(clientWorld, var11)
+               && !box.intersects(new Box(var11))
+               && !(var11.toCenterPos().distanceTo(vec3d) > d + 0.5)
+               && !this.badScaffold.contains(var11.asLong())
+               && Aim.against(this.mc, var11, null, vec3d) != null) {
+               return new ArrayList<>(List.of(var11, blockPos));
             }
          }
 
@@ -1739,12 +1739,12 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private boolean buildCellFits(ClientWorld var1, WorldSchematic var2, BlockPos var3) {
-      if (this.missingKeys.contains(var3.method_10063()) && var1.method_8320(var3).method_26215() && !waterCell(var1, var2, var3)) {
+   private boolean buildCellFits(ClientWorld clientWorld, WorldSchematic worldSchematic, BlockPos blockPos) {
+      if (this.missingKeys.contains(blockPos.asLong()) && clientWorld.getBlockState(blockPos).isAir() && !waterCell(clientWorld, worldSchematic, blockPos)) {
          for (Direction var7 : Direction.values()) {
-            BlockPos var8 = var3.method_10093(var7);
-            BlockState var9 = var2.method_8320(var8);
-            if (var9.method_26204() instanceof ObserverBlock && var8.method_10093((Direction)var9.method_11654(Properties.field_12525)).equals(var3)) {
+            BlockPos var8 = blockPos.offset(var7);
+            BlockState var9 = worldSchematic.getBlockState(var8);
+            if (var9.getBlock() instanceof ObserverBlock && var8.offset(var9.get(Properties.FACING)).equals(blockPos)) {
                return false;
             }
          }
@@ -1755,14 +1755,14 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private static boolean sideBase(ClientWorld var0, BlockPos var1, BlockPos var2, Vec3d var3) {
+   private static boolean sideBase(ClientWorld clientWorld, BlockPos blockPos, BlockPos blockPos2, Vec3d vec3d) {
       for (Direction var7 : Direction.values()) {
-         BlockPos var9 = var1.method_10093(var7);
+         BlockPos var9 = blockPos.offset(var7);
          BlockState var8;
-         if (!var9.equals(var2)
-            && !(var8 = var0.method_8320(var9)).method_45474()
-            && !var8.method_26218(var0, var9).method_1110()
-            && PlacementUtil.isFaceVisibleToEye(var9, var7.method_10153(), var3)) {
+         if (!var9.equals(blockPos2)
+            && !(var8 = clientWorld.getBlockState(var9)).isReplaceable()
+            && !var8.getOutlineShape(clientWorld, var9).isEmpty()
+            && PlacementUtil.isFaceVisibleToEye(var9, var7.getOpposite(), vec3d)) {
             return true;
          }
       }
@@ -1770,20 +1770,20 @@ public final class SchematicBuilderModule extends ClientModule {
       return false;
    }
 
-   private static boolean solidUnder(ClientWorld var0, BlockPos var1) {
-      BlockState var2 = var0.method_8320(var1.method_10074());
-      return !var2.method_45474() && !var2.method_26218(var0, var1.method_10074()).method_1110();
+   private static boolean solidUnder(ClientWorld clientWorld, BlockPos blockPos) {
+      BlockState var2 = clientWorld.getBlockState(blockPos.down());
+      return !var2.isReplaceable() && !var2.getOutlineShape(clientWorld, blockPos.down()).isEmpty();
    }
 
-   private boolean neededNow(BlockPos var1) {
+   private boolean neededNow(BlockPos blockPos) {
       int var2 = this.scan != null && this.scan.layer != 2147483647 ? this.scan.layer : 2147483647;
       Mutable var3 = new Mutable();
 
       for (int var4 = -1; var4 <= 1; var4++) {
-         if (var1.method_10264() + var4 <= var2) {
+         if (blockPos.getY() + var4 <= var2) {
             for (int var5 = -1; var5 <= 1; var5++) {
                for (int var6 = -1; var6 <= 1; var6++) {
-                  long var7 = var3.method_10103(var1.method_10263() + var5, var1.method_10264() + var4, var1.method_10260() + var6).method_10063();
+                  long var7 = var3.set(blockPos.getX() + var5, blockPos.getY() + var4, blockPos.getZ() + var6).asLong();
                   if (this.missingKeys.contains(var7) && !this.deferred.contains(var7) && !this.scan.waiting.contains(var7) && !this.lackingKeys.contains(var7)
                      )
                    {
@@ -1797,9 +1797,9 @@ public final class SchematicBuilderModule extends ClientModule {
       return false;
    }
 
-   private boolean missingNeighbour(BlockPos var1) {
+   private boolean missingNeighbour(BlockPos blockPos) {
       for (Direction var5 : Direction.values()) {
-         long var6 = var1.method_10093(var5).method_10063();
+         long var6 = blockPos.offset(var5).asLong();
          if (this.missingKeys.contains(var6) && !this.deferred.contains(var6) && !this.scan.waiting.contains(var6) && !this.lackingKeys.contains(var6)) {
             return true;
          }
@@ -1808,42 +1808,42 @@ public final class SchematicBuilderModule extends ClientModule {
       return false;
    }
 
-   private boolean pillarFits(ClientWorld var1, BlockPos var2) {
-      Long var3 = this.badClimbs.get(var2.method_10063());
+   private boolean pillarFits(ClientWorld clientWorld, BlockPos blockPos) {
+      Long var3 = this.badClimbs.get(blockPos.asLong());
       if (var3 != null && var3 > this.tick) {
          return false;
-      } else if (var1.method_8316(var2).method_15763(var1, var2) > 0.4F) {
+      } else if (clientWorld.getFluidState(blockPos).getHeight(clientWorld, blockPos) > 0.4F) {
          return false;
       } else {
          WorldSchematic var4 = this.schematics.getSchematicWorld();
 
          for (int var5 = 0; var5 < 2; var5++) {
-            BlockPos var6 = var2.method_10086(var5);
-            if (!scaffoldFits(var1, var4, var6) && !runningWaterFits(var1, var4, var6)) {
+            BlockPos var6 = blockPos.up(var5);
+            if (!scaffoldFits(clientWorld, var4, var6) && !runningWaterFits(clientWorld, var4, var6)) {
                return false;
             }
          }
 
-         return Climber.hasRoom(this.mc, var2);
+         return Climber.hasRoom(this.mc, blockPos);
       }
    }
 
-   private boolean digOut(ClientWorld var1, ClientPlayerEntity var2) {
-      BlockPos var3 = var2.method_24515();
-      BlockState var4 = var1.method_8320(var3);
-      if (!var4.method_26215()
-         && !var4.method_45474()
-         && !var4.method_26234(var1, var3)
-         && !(var1.method_8321(var3) instanceof Inventory)
-         && !(var4.method_26214(var1, var3) < 0.0F)) {
+   private boolean digOut(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity) {
+      BlockPos var3 = clientPlayerEntity.getBlockPos();
+      BlockState var4 = clientWorld.getBlockState(var3);
+      if (!var4.isAir()
+         && !var4.isReplaceable()
+         && !var4.isFullCube(clientWorld, var3)
+         && !(clientWorld.getBlockEntity(var3) instanceof Inventory)
+         && !(var4.getHardness(clientWorld, var3) < 0.0F)) {
          for (Direction var8 : Direction.values()) {
-            if (!var1.method_8316(var3.method_10093(var8)).method_15769()) {
+            if (!clientWorld.getFluidState(var3.offset(var8)).isEmpty()) {
                return false;
             }
          }
 
-         trace("shut in on " + var4 + " at " + var3.method_23854() + ", mining it to pillar out");
-         this.feedback("dig-out", "Shut in at " + var3.method_23854() + ", mining the block underfoot to climb out (it goes back in later)", 100);
+         trace("shut in on " + var4 + " at " + var3.toShortString() + ", mining it to pillar out");
+         this.feedback("dig-out", "Shut in at " + var3.toShortString() + ", mining the block underfoot to climb out (it goes back in later)", 100);
          this.stopMoving();
          this.breaker = new Breaker(var3, false);
          return true;
@@ -1852,27 +1852,27 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private boolean escapeClimb(ClientWorld var1) {
+   private boolean escapeClimb(ClientWorld clientWorld) {
       BlockPos var4 = Climber.column(this.mc);
       WorldSchematic var5 = this.schematics.getSchematicWorld();
       if (var4 != null && var5 != null && Climber.hasRoom(this.mc, var4)) {
          for (int var3 = 0; var3 < 2; var3++) {
-            BlockPos var2 = var4.method_10086(var3);
-            if (!var1.method_8320(var2).method_45474()
-               || !var1.method_8316(var2).method_15769() && !runningWaterFits(var1, var5, var2)
-               || var5.method_8320(var2).method_26204() instanceof FluidBlock) {
+            BlockPos var2 = var4.up(var3);
+            if (!clientWorld.getBlockState(var2).isReplaceable()
+               || !clientWorld.getFluidState(var2).isEmpty() && !runningWaterFits(clientWorld, var5, var2)
+               || var5.getBlockState(var2).getBlock() instanceof FluidBlock) {
                return false;
             }
          }
 
          for (int var7 = 0; var7 < 2; var7++) {
-            BlockPos var6 = var4.method_10086(var7);
-            if (!var5.method_8320(var6).method_26215()) {
-               this.buildScaffold.add(var6.method_10063());
+            BlockPos var6 = var4.up(var7);
+            if (!var5.getBlockState(var6).isAir()) {
+               this.buildScaffold.add(var6.asLong());
             }
          }
 
-         trace("shut in at " + var4.method_23854() + ", pillaring out");
+         trace("shut in at " + var4.toShortString() + ", pillaring out");
          this.stopMoving();
          this.climber = new Climber(var4, this.scaffold);
          return true;
@@ -1881,26 +1881,26 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private static boolean runningWaterFits(ClientWorld var0, WorldSchematic var1, BlockPos var2) {
-      FluidState var3 = var0.method_8316(var2);
-      if (!var3.method_15769() && !var3.method_15771() && var0.method_8320(var2).method_45474()) {
-         BlockState var4 = var1 == null ? Blocks.field_10124.method_9564() : var1.method_8320(var2);
-         return var4.method_26215() || var4.method_26204() instanceof FluidBlock && !var4.method_26227().method_15771();
+   private static boolean runningWaterFits(ClientWorld clientWorld, WorldSchematic worldSchematic, BlockPos blockPos) {
+      FluidState var3 = clientWorld.getFluidState(blockPos);
+      if (!var3.isEmpty() && !var3.isStill() && clientWorld.getBlockState(blockPos).isReplaceable()) {
+         BlockState var4 = worldSchematic == null ? Blocks.AIR.getDefaultState() : worldSchematic.getBlockState(blockPos);
+         return var4.isAir() || var4.getBlock() instanceof FluidBlock && !var4.getFluidState().isStill();
       } else {
          return false;
       }
    }
 
-   static boolean scaffoldFits(ClientWorld var0, WorldSchematic var1, BlockPos var2) {
-      BlockState var3 = var0.method_8320(var2);
-      if (var3.method_45474() && !waterCell(var0, var1, var2)) {
-         if (var1 != null && !var1.method_8320(var2).method_26215()) {
+   static boolean scaffoldFits(ClientWorld clientWorld, WorldSchematic worldSchematic, BlockPos blockPos) {
+      BlockState var3 = clientWorld.getBlockState(blockPos);
+      if (var3.isReplaceable() && !waterCell(clientWorld, worldSchematic, blockPos)) {
+         if (worldSchematic != null && !worldSchematic.getBlockState(blockPos).isAir()) {
             return false;
          } else {
             for (Direction var7 : Direction.values()) {
-               BlockPos var9 = var2.method_10093(var7);
-               BlockState var8 = var1 != null ? var1.method_8320(var9) : var0.method_8320(var9);
-               if (var8.method_26204() instanceof ObserverBlock && var9.method_10093((Direction)var8.method_11654(Properties.field_12525)).equals(var2)) {
+               BlockPos var9 = blockPos.offset(var7);
+               BlockState var8 = worldSchematic != null ? worldSchematic.getBlockState(var9) : clientWorld.getBlockState(var9);
+               if (var8.getBlock() instanceof ObserverBlock && var9.offset(var8.get(Properties.FACING)).equals(blockPos)) {
                   return false;
                }
             }
@@ -1912,13 +1912,13 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   static boolean waterCell(ClientWorld var0, WorldSchematic var1, BlockPos var2) {
-      return !var0.method_8316(var2).method_15769() || var1 != null && !var1.method_8320(var2).method_26227().method_15769();
+   static boolean waterCell(ClientWorld clientWorld, WorldSchematic worldSchematic, BlockPos blockPos) {
+      return !clientWorld.getFluidState(blockPos).isEmpty() || worldSchematic != null && !worldSchematic.getBlockState(blockPos).getFluidState().isEmpty();
    }
 
-   private static boolean floating(ClientWorld var0, BlockPos var1) {
+   private static boolean floating(ClientWorld clientWorld, BlockPos blockPos) {
       for (Direction var5 : Direction.values()) {
-         if (!var0.method_8320(var1.method_10093(var5)).method_45474()) {
+         if (!clientWorld.getBlockState(blockPos.offset(var5)).isReplaceable()) {
             return false;
          }
       }
@@ -1926,19 +1926,19 @@ public final class SchematicBuilderModule extends ClientModule {
       return true;
    }
 
-   private boolean buyMissing(ClientPlayerEntity var1, Map<Item, Integer> var2) {
+   private boolean buyMissing(ClientPlayerEntity clientPlayerEntity, Map<Item, Integer> map) {
       if (this.tick - this.lastPlaceTick < 40L) {
          return false;
       } else {
-         ArrayList var3 = new ArrayList(var2.entrySet());
-         var3.sort(Comparator.comparing(var0 -> Registries.field_41178.method_10221((Item)var0.getKey()).toString()));
+         ArrayList var3 = new ArrayList(map.entrySet());
+         var3.sort(Comparator.comparing(entry -> Registries.ITEM.getId((Item)entry.getKey()).toString()));
 
          for (Entry var5 : var3) {
             Item var6 = (Item)var5.getKey();
-            int var7 = (Integer)var5.getValue() - count(var1, var6);
+            int var7 = (Integer)var5.getValue() - count(clientPlayerEntity, var6);
             if (var7 > 0) {
-               int var8 = room(var1, new ItemStack(var6));
-               if (var6 == Items.field_8705) {
+               int var8 = room(clientPlayerEntity, new ItemStack(var6));
+               if (var6 == Items.WATER_BUCKET) {
                   var8 = Math.min(var8 - 4, 8);
                }
 
@@ -1946,7 +1946,7 @@ public final class SchematicBuilderModule extends ClientModule {
                   return this.startPurchase(var6, Math.min(buyAmount(var6, var7), var8));
                }
 
-               if (this.startSelling(var1, false)) {
+               if (this.startSelling(clientPlayerEntity, false)) {
                   return true;
                }
             }
@@ -1956,12 +1956,12 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private static int buyAmount(Item var0, int var1) {
-      int var2 = new ItemStack(var0).method_7914();
-      return var1 > 16 && var2 > 16 ? (var1 + var2 - 1) / var2 * var2 : var1;
+   private static int buyAmount(Item item, int i) {
+      int var2 = new ItemStack(item).getMaxCount();
+      return i > 16 && var2 > 16 ? (i + var2 - 1) / var2 * var2 : i;
    }
 
-   private boolean startPurchase(Item var1, int var2) {
+   private boolean startPurchase(Item item, int i) {
       long var3 = this.remainingBudget();
       if (var3 < 0L) {
          this.say(ModuleChat.body().warn("Max Total Spend reached").text(", stopping."));
@@ -1969,21 +1969,21 @@ public final class SchematicBuilderModule extends ClientModule {
          return true;
       } else {
          this.stopMoving();
-         this.purchaseItem = var1;
-         this.purchaseNeed = this.mc.field_1724 == null ? var2 : count(this.mc.field_1724, var1) + var2;
-         this.purchaseName = new ItemStack(var1).method_7964().getString();
-         this.purchase = var1 == Items.field_8280
+         this.purchaseItem = item;
+         this.purchaseNeed = this.mc.player == null ? i : count(this.mc.player, item) + i;
+         this.purchaseName = new ItemStack(item).getName().getString();
+         this.purchase = item == Items.GLASS
             ? AhPurchase.startAny(
-               this, Items.field_8280, "Glass", "glass stack", var0 -> var0.method_31574(Items.field_8280), var2, this.maxListing, this.refresh.getInt(), var3
+               this, Items.GLASS, "Glass", "glass stack", itemStack -> itemStack.isOf(Items.GLASS), i, this.maxListing, this.refresh.getInt(), var3
             )
-            : AhPurchase.start(this, var1, var2, this.maxListing, this.refresh.getInt(), var3);
+            : AhPurchase.start(this, item, i, this.maxListing, this.refresh.getInt(), var3);
          return true;
       }
    }
 
    private boolean buyLeaves() {
-      ClientPlayerEntity var1 = this.mc.field_1724;
-      if (var1 != null && (room(var1, new ItemStack(Items.field_8280)) > 0 || this.startSelling(var1, false))) {
+      ClientPlayerEntity var1 = this.mc.player;
+      if (var1 != null && (room(var1, new ItemStack(Items.GLASS)) > 0 || this.startSelling(var1, false))) {
          if (this.sell != null) {
             return true;
          } else {
@@ -1996,9 +1996,7 @@ public final class SchematicBuilderModule extends ClientModule {
                this.stopMoving();
                this.purchaseItem = null;
                this.purchaseName = "Leaves";
-               this.purchase = AhPurchase.startAny(
-                  this, Items.field_8280, "Glass", "glass stack", Scaffold::glass, 16, this.maxListing, this.refresh.getInt(), var2
-               );
+               this.purchase = AhPurchase.startAny(this, Items.GLASS, "Glass", "glass stack", Scaffold::glass, 16, this.maxListing, this.refresh.getInt(), var2);
                return true;
             }
          }
@@ -2036,11 +2034,11 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private boolean startClimb(ClientPlayerEntity var1) {
+   private boolean startClimb(ClientPlayerEntity clientPlayerEntity) {
       if (!this.climb.get()) {
          this.feedback("climb-off", "The next layer is out of reach; turn on Climb With Leaves to go up", 200);
          return false;
-      } else if (Climber.leavesCount(var1) < 2) {
+      } else if (Climber.leavesCount(clientPlayerEntity) < 2) {
          if (this.buyFromAh.get()) {
             return this.buyLeaves();
          } else {
@@ -2051,7 +2049,7 @@ public final class SchematicBuilderModule extends ClientModule {
          return false;
       } else {
          BlockPos var2 = Climber.column(this.mc);
-         if (var2 != null && this.pillarFits(this.mc.field_1687, var2)) {
+         if (var2 != null && this.pillarFits(this.mc.world, var2)) {
             this.stopMoving();
             this.placing = false;
             this.climber = new Climber(var2, this.scaffold);
@@ -2064,18 +2062,18 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private boolean walkTowardsWork(ClientWorld var1, ClientPlayerEntity var2, int var3) {
+   private boolean walkTowardsWork(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, int i) {
       ArrayList var4 = new ArrayList();
 
       for (BuildScan.Cell var6 : this.scan.missing) {
-         long var7 = var6.pos().method_10063();
-         if (var6.pos().method_10264() <= var3 && !this.deferred.contains(var7) && !this.scan.waiting.contains(var7) && !enclosed(var1, var6.pos())) {
+         long var7 = var6.pos().asLong();
+         if (var6.pos().getY() <= i && !this.deferred.contains(var7) && !this.scan.waiting.contains(var7) && !enclosed(clientWorld, var6.pos())) {
             var4.add(var6);
          }
       }
 
-      var4.sort(Comparator.comparingDouble(var1x -> var1x.pos().method_19770(var2.method_73189())));
-      BlockPos var11 = var2.method_24515();
+      var4.sort(Comparator.comparingDouble(cell -> cell.pos().getSquaredDistance(clientPlayerEntity.getEntityPos())));
+      BlockPos var11 = clientPlayerEntity.getBlockPos();
 
       for (int var12 = 0; var12 < var4.size() && var12 < 16; var12++) {
          BuildScan.Cell var8 = (BuildScan.Cell)var4.get(var12);
@@ -2083,43 +2081,45 @@ public final class SchematicBuilderModule extends ClientModule {
             return false;
          }
 
-         boolean var9 = this.stubborn.contains(var8.pos().method_10063());
+         boolean var9 = this.stubborn.contains(var8.pos().asLong());
          BlockPos var13 = var9
-            ? Walker.standFor(var1, var2, var8.pos(), var8.expected(), this::badStand, 2.2)
-            : Walker.standFor(var1, var2, var8.pos(), var8.expected(), this::badStand);
+            ? Walker.standFor(clientWorld, clientPlayerEntity, var8.pos(), var8.expected(), this::badStand, 2.2)
+            : Walker.standFor(clientWorld, clientPlayerEntity, var8.pos(), var8.expected(), this::badStand);
          if (var13 != null && !var13.equals(var11)) {
             this.walkTarget = var8.pos();
-            this.walkTo(var2, var13);
+            this.walkTo(clientPlayerEntity, var13);
             return true;
          }
 
-         if (this.walkFails.merge(var8.pos().method_10063(), 1, Integer::sum) >= 2) {
-            this.deferred.add(var8.pos().method_10063());
+         if (this.walkFails.merge(var8.pos().asLong(), 1, Integer::sum) >= 2) {
+            this.deferred.add(var8.pos().asLong());
          }
       }
 
       return false;
    }
 
-   private boolean badStand(BlockPos var1) {
-      Long var2 = this.badStands.get(var1.method_10063());
+   private boolean badStand(BlockPos blockPos) {
+      Long var2 = this.badStands.get(blockPos.asLong());
       if (var2 == null) {
          return false;
       } else if (var2 > this.tick) {
          return true;
       } else {
-         this.badStands.remove(var1.method_10063());
+         this.badStands.remove(blockPos.asLong());
          return false;
       }
    }
 
-   private boolean plan(ClientWorld var1, ClientPlayerEntity var2, int var3) {
-      this.missedRouteTarget(var2);
+   private boolean plan(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, int i) {
+      this.missedRouteTarget(clientPlayerEntity);
       if (this.climbTo != -2147483648) {
-         BlockPos var4 = var2.method_24515().method_10264() < this.climbTo && Climber.leavesCount(var2) >= 2 && this.tick >= this.noClimbUntil
+         BlockPos var4 = clientPlayerEntity.getBlockPos().getY() < this.climbTo
+               && Climber.leavesCount(clientPlayerEntity) >= 2
+               && this.tick >= this.noClimbUntil
             ? Climber.column(this.mc)
             : null;
-         if (var4 != null && this.pillarFits(var1, var4)) {
+         if (var4 != null && this.pillarFits(clientWorld, var4)) {
             this.stopMoving();
             this.climber = new Climber(var4, this.scaffold);
             return true;
@@ -2133,11 +2133,11 @@ public final class SchematicBuilderModule extends ClientModule {
 
       for (BuildScan.Cell var7 : this.scan.missing) {
          Item var8;
-         if (var7.pos().method_10264() <= var3
-            && !this.deferred.contains(var7.pos().method_10063())
-            && !this.scan.waiting.contains(var7.pos().method_10063())
+         if (var7.pos().getY() <= i
+            && !this.deferred.contains(var7.pos().asLong())
+            && !this.scan.waiting.contains(var7.pos().asLong())
             && (var8 = BlockStateUtil.requiredItem(var7.expected())) != null) {
-            if (count(var2, var8) <= 0) {
+            if (count(clientPlayerEntity, var8) <= 0) {
                var5.merge(var8, 1, Integer::sum);
             } else {
                var10.add(
@@ -2145,39 +2145,39 @@ public final class SchematicBuilderModule extends ClientModule {
                      var7.pos(),
                      var7.expected(),
                      StandPlanner.Use.PLACE,
-                     this.stubborn.contains(var7.pos().method_10063()) ? 2.5999999999999996 : 1.7976931348623157E308
+                     this.stubborn.contains(var7.pos().asLong()) ? 2.5999999999999996 : 1.7976931348623157E308
                   )
                );
             }
          }
       }
 
-      if (Hands.has(var2, var0 -> var0.method_31574(Items.field_8705))) {
+      if (Hands.has(clientPlayerEntity, itemStack -> itemStack.isOf(Items.WATER_BUCKET))) {
          for (BuildScan.Liquid var14 : this.scan.liquids) {
             if (var14.kind() != CellFiller.Kind.LAVA_SOURCE && this.dueNow(var14) && this.waterPending(var14.pos())) {
-               var10.add(liquidTarget(var1, var14));
+               var10.add(liquidTarget(clientWorld, var14));
             }
          }
       }
 
-      if (Hands.has(var2, var0 -> var0.method_31574(Items.field_8187)) && !this.lavaGivenUp) {
+      if (Hands.has(clientPlayerEntity, itemStack -> itemStack.isOf(Items.LAVA_BUCKET)) && !this.lavaGivenUp) {
          WorldSchematic var12 = this.schematics.getSchematicWorld();
          ArrayList var15 = new ArrayList();
 
          for (BuildScan.Liquid var9 : this.scan.liquids) {
             if (var9.capped()
-               && (this.scan.layer == 2147483647 || var9.pos().method_10264() < this.scan.layer)
+               && (this.scan.layer == 2147483647 || var9.pos().getY() < this.scan.layer)
                && this.liquidPending(var9.pos())
                && var12 != null
-               && walledIn(var1, var12, var9.pos())) {
-               var15.add(liquidTarget(var1, var9));
+               && walledIn(clientWorld, var12, var9.pos())) {
+               var15.add(liquidTarget(clientWorld, var9));
             }
          }
 
          if (!var15.isEmpty() && this.tick >= this.lavaFirstUntil) {
             this.lavaFirstUntil = this.tick + 200L;
             this.lavaPlanning = true;
-            this.startPlanner(var1, var2, var15);
+            this.startPlanner(clientWorld, clientPlayerEntity, var15);
             return true;
          }
 
@@ -2186,7 +2186,7 @@ public final class SchematicBuilderModule extends ClientModule {
 
       if (!var5.isEmpty() && !this.buyFromAh.get()) {
          ArrayList var13 = new ArrayList();
-         var5.forEach((var1x, var2x) -> var13.add(var2x + "x " + new ItemStack(var1x).method_7964().getString()));
+         var5.forEach((item, integer) -> var13.add(integer + "x " + new ItemStack(item).getName().getString()));
          this.feedback(
             "lacking",
             "Missing in inventory: "
@@ -2200,33 +2200,35 @@ public final class SchematicBuilderModule extends ClientModule {
       if (var10.isEmpty()) {
          return false;
       } else {
-         this.startPlanner(var1, var2, var10);
+         this.startPlanner(clientWorld, clientPlayerEntity, var10);
          return true;
       }
    }
 
-   private void missedRouteTarget(ClientPlayerEntity var1) {
+   private void missedRouteTarget(ClientPlayerEntity clientPlayerEntity) {
       if (this.routeTarget != null && this.tick - this.arrivedAt < 34L) {
-         long var2 = this.routeTarget.method_10063();
+         long var2 = this.routeTarget.asLong();
          if (this.missingKeys.contains(var2) && this.placement.placedCount() > this.placedAtArrival) {
-            trace("placed others instead of " + this.routeTarget.method_23854());
+            trace("placed others instead of " + this.routeTarget.toShortString());
          } else if (this.missingKeys.contains(var2) && this.proppedAt >= this.arrivedAt) {
-            trace("propped " + this.routeTarget.method_23854() + ", placing it comes next");
+            trace("propped " + this.routeTarget.toShortString() + ", placing it comes next");
          } else if (this.missingKeys.contains(var2) && this.routeItemTicks < 4) {
-            trace("arrived without the item for " + this.routeTarget.method_23854());
+            trace("arrived without the item for " + this.routeTarget.toShortString());
          } else if (this.missingKeys.contains(var2)) {
             WorldSchematic var5 = this.schematics.getSchematicWorld();
-            boolean var4 = tracing() && var5 != null && this.placement.placeableFrom(var5.method_8320(this.routeTarget), this.routeTarget, var1.method_33571());
+            boolean var4 = tracing()
+               && var5 != null
+               && this.placement.placeableFrom(var5.getBlockState(this.routeTarget), this.routeTarget, clientPlayerEntity.getEyePos());
             if (tracing()) {
                trace(
                   "arrived but did not place "
-                     + this.routeTarget.method_23854()
+                     + this.routeTarget.toShortString()
                      + " standing at "
-                     + var1.method_24515().method_23854()
+                     + clientPlayerEntity.getBlockPos().toShortString()
                      + " planned "
-                     + (this.routeStand == null ? "?" : this.routeStand.method_23854())
+                     + (this.routeStand == null ? "?" : this.routeStand.toShortString())
                      + " pos="
-                     + var1.method_73189()
+                     + clientPlayerEntity.getEntityPos()
                      + " exactNow="
                      + var4
                      + " waiting="
@@ -2242,11 +2244,11 @@ public final class SchematicBuilderModule extends ClientModule {
                this.deferred.add(var2);
             }
          } else if (this.routeUse == StandPlanner.Use.BREAK && this.scaffold.contains(var2)) {
-            trace("arrived but did not mine the leaf at " + this.routeTarget.method_23854());
+            trace("arrived but did not mine the leaf at " + this.routeTarget.toShortString());
             this.walkFails.merge(var2, 1, Integer::sum);
          } else if ((this.routeUse == StandPlanner.Use.POUR || this.routeUse == StandPlanner.Use.WATERLOG)
-            && this.scan.liquids.stream().anyMatch(var2x -> var2x.pos().method_10063() == var2)) {
-            trace("arrived but could not pour into " + this.routeTarget.method_23854());
+            && this.scan.liquids.stream().anyMatch(liquid -> liquid.pos().asLong() == var2)) {
+            trace("arrived but could not pour into " + this.routeTarget.toShortString());
             this.waterFails.merge(var2, 1, Integer::sum);
          }
       }
@@ -2254,75 +2256,77 @@ public final class SchematicBuilderModule extends ClientModule {
       this.routeTarget = null;
    }
 
-   private static StandPlanner.Target liquidTarget(ClientWorld var0, BuildScan.Liquid var1) {
+   private static StandPlanner.Target liquidTarget(ClientWorld clientWorld, BuildScan.Liquid liquid) {
       return new StandPlanner.Target(
-         var1.pos(), var0.method_8320(var1.pos()), var1.kind() == CellFiller.Kind.WATERLOG ? StandPlanner.Use.WATERLOG : StandPlanner.Use.POUR
+         liquid.pos(), clientWorld.getBlockState(liquid.pos()), liquid.kind() == CellFiller.Kind.WATERLOG ? StandPlanner.Use.WATERLOG : StandPlanner.Use.POUR
       );
    }
 
-   private void startPlanner(final ClientWorld var1, ClientPlayerEntity var2, List<StandPlanner.Target> var3) {
-      Vec3d var4 = var2.method_73189();
-      var3.sort(Comparator.<StandPlanner.Target>comparingInt(var0 -> var0.pos().method_10264()).thenComparingDouble(var1x -> var1x.pos().method_19770(var4)));
-      if (var3.size() > 600) {
-         var3 = new ArrayList(var3.subList(0, 600));
+   private void startPlanner(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, List<StandPlanner.Target> list) {
+      Vec3d var4 = clientPlayerEntity.getEntityPos();
+      list.sort(
+         Comparator.<StandPlanner.Target>comparingInt(target -> target.pos().getY()).thenComparingDouble(target -> target.pos().getSquaredDistance(var4))
+      );
+      if (list.size() > 600) {
+         list = new ArrayList(list.subList(0, 600));
       }
 
       this.plannedKeys.clear();
 
-      for (StandPlanner.Target var6 : var3) {
-         this.plannedKeys.add(var6.pos().method_10063());
+      for (StandPlanner.Target var6 : list) {
+         this.plannedKeys.add(var6.pos().asLong());
       }
 
       final WorldSchematic var9 = this.schematics.getSchematicWorld();
       boolean var10 = !this.latePhase || !this.placeTnt.get();
-      boolean var7 = this.climb.get() && var10 && Climber.leavesCount(var2) >= 2 && this.tick >= this.noClimbUntil;
-      boolean var8 = this.climb.get() && var10 && !this.sweepPlanning && Climber.leavesCount(var2) >= 1;
+      boolean var7 = this.climb.get() && var10 && Climber.leavesCount(clientPlayerEntity) >= 2 && this.tick >= this.noClimbUntil;
+      boolean var8 = this.climb.get() && var10 && !this.sweepPlanning && Climber.leavesCount(clientPlayerEntity) >= 1;
       trace(
          "plan from "
-            + var2.method_24515().method_23854()
+            + clientPlayerEntity.getBlockPos().toShortString()
             + " targets="
-            + var3.size()
+            + list.size()
             + " first="
-            + ((StandPlanner.Target)var3.get(0)).pos().method_23854()
+            + ((StandPlanner.Target)list.get(0)).pos().toShortString()
             + " pillars="
             + var7
             + " leaves="
-            + Climber.leavesCount(var2)
+            + Climber.leavesCount(clientPlayerEntity)
       );
       this.planner = new StandPlanner(
-            var1,
-            var2,
-            (List<StandPlanner.Target>)var3,
-            var2x -> this.badStand(var2x)
-               || this.scaffold.contains(var2x.method_10074().method_10063()) && !supports(var2, var2x.method_10074()) && !this.walkway(var2x.method_10074()),
-            var7 ? (var2x, var3x) -> (var3x || Walker.floor(var1, var2x) == var2x.method_10264()) && this.pillarFits(var1, var2x) : null,
-            var8 ? var3x -> scaffoldFits(var1, var9, var3x) && !this.scan.waiting.contains(var3x.method_10063()) : null,
+            clientWorld,
+            clientPlayerEntity,
+            list,
+            blockPos -> this.badStand(blockPos)
+               || this.scaffold.contains(blockPos.down().asLong()) && !supports(clientPlayerEntity, blockPos.down()) && !this.walkway(blockPos.down()),
+            var7 ? (blockPos, bl) -> (bl || Walker.floor(clientWorld, blockPos) == blockPos.getY()) && this.pillarFits(clientWorld, blockPos) : null,
+            var8 ? blockPos -> scaffoldFits(clientWorld, var9, blockPos) && !this.scan.waiting.contains(blockPos.asLong()) : null,
             this.placement::placeableFrom,
             new StandPlanner.Support() {
                @Override
-               public boolean possible(BlockPos var1x, Vec3d var2x) {
-                  return var9 != null && SchematicBuilderModule.this.scaffoldFor(var1, var9.method_8320(var1x), var1x, var2x) != null;
+               public boolean possible(BlockPos blockPos, Vec3d vec3d) {
+                  return var9 != null && SchematicBuilderModule.this.scaffoldFor(clientWorld, var9.getBlockState(blockPos), blockPos, vec3d) != null;
                }
 
                @Override
-               public boolean behind(BlockState var1x, BlockPos var2x, Vec3d var3x) {
-                  return SchematicBuilderModule.this.scaffoldFor(var1, var1x, var2x, var3x) != null;
+               public boolean behind(BlockState blockState, BlockPos blockPos, Vec3d vec3d) {
+                  return SchematicBuilderModule.this.scaffoldFor(clientWorld, blockState, blockPos, vec3d) != null;
                }
             }
          )
-         .falls(!this.fallsNext ? 0.0 : (var2.method_6032() >= 18.0F ? 8.0 : (var2.method_6032() >= 15.0F ? 5.0 : 0.0)));
+         .falls(!this.fallsNext ? 0.0 : (clientPlayerEntity.getHealth() >= 18.0F ? 8.0 : (clientPlayerEntity.getHealth() >= 15.0F ? 5.0 : 0.0)));
       this.planWithFalls = this.fallsNext;
       this.fallsNext = false;
       this.placing = false;
       this.followPlanner();
    }
 
-   private int flatRunAhead(BlockPos var1) {
+   private int flatRunAhead(BlockPos blockPos) {
       int var3 = 0;
 
       StandPlanner.Step var2;
       for (int var4 = this.routeIndex;
-         var4 < this.route.size() && (var2 = this.route.get(var4)).move() == StandPlanner.Move.WALK && var2.pos().method_10264() == var1.method_10264();
+         var4 < this.route.size() && (var2 = this.route.get(var4)).move() == StandPlanner.Move.WALK && var2.pos().getY() == blockPos.getY();
          var4++
       ) {
          var3++;
@@ -2336,14 +2340,9 @@ public final class SchematicBuilderModule extends ClientModule {
       if (var3 != StandPlanner.Status.RUNNING) {
          StandPlanner var4 = this.planner;
          this.planner = null;
-         if (var3 == StandPlanner.Status.NONE && var4.visited() <= 2 && this.mc.field_1687 != null && this.mc.field_1724 != null && tracing()) {
+         if (var3 == StandPlanner.Status.NONE && var4.visited() <= 2 && this.mc.world != null && this.mc.player != null && tracing()) {
             trace(
-               "boxed in: "
-                  + Walker.explain(this.mc.field_1687, this.mc.field_1724.method_24515())
-                  + " pos "
-                  + this.mc.field_1724.method_73189()
-                  + " why "
-                  + var4.whyStuck()
+               "boxed in: " + Walker.explain(this.mc.world, this.mc.player.getBlockPos()) + " pos " + this.mc.player.getEntityPos() + " why " + var4.whyStuck()
             );
          }
 
@@ -2356,7 +2355,7 @@ public final class SchematicBuilderModule extends ClientModule {
                + var3
                + " visited="
                + var4.visited()
-               + (var3 == StandPlanner.Status.FOUND ? " target=" + var4.target().pos().method_23854() + " route=" + var4.route() : "")
+               + (var3 == StandPlanner.Status.FOUND ? " target=" + var4.target().pos().toShortString() + " route=" + var4.route() : "")
          );
          if (var3 == StandPlanner.Status.APPROACH && !var4.route().isEmpty()) {
             trace("approach " + var4.route());
@@ -2368,7 +2367,7 @@ public final class SchematicBuilderModule extends ClientModule {
             this.sweepPlanning = false;
             this.route = var4.route();
             this.routeIndex = 0;
-            this.routeStart = this.mc.field_1724 == null ? null : this.mc.field_1724.method_24515();
+            this.routeStart = this.mc.player == null ? null : this.mc.player.getBlockPos();
             this.routeTarget = null;
             this.routeUse = null;
             this.routeStand = this.route.get(this.route.size() - 1).pos();
@@ -2384,8 +2383,8 @@ public final class SchematicBuilderModule extends ClientModule {
             } else if (var3 == StandPlanner.Status.NONE
                && !this.planWithFalls
                && !this.sweepPlanning
-               && this.mc.field_1724 != null
-               && this.mc.field_1724.method_6032() >= 15.0F) {
+               && this.mc.player != null
+               && this.mc.player.getHealth() >= 15.0F) {
                this.fallsNext = true;
                this.noPlanUntil = this.tick;
             } else {
@@ -2401,7 +2400,7 @@ public final class SchematicBuilderModule extends ClientModule {
                if (var3 == StandPlanner.Status.FOUND && !var4.route().isEmpty()) {
                   this.route = var4.route();
                   this.routeIndex = 0;
-                  this.routeStart = this.mc.field_1724 == null ? null : this.mc.field_1724.method_24515();
+                  this.routeStart = this.mc.player == null ? null : this.mc.player.getBlockPos();
                   this.routeTarget = var4.target().pos();
                   this.routeUse = var4.target().use();
                   this.routeStand = this.route.get(this.route.size() - 1).pos();
@@ -2409,27 +2408,27 @@ public final class SchematicBuilderModule extends ClientModule {
                   this.noPlanUntil = this.tick + 40L;
                   BlockPos var2;
                   if (var3 == StandPlanner.Status.NONE
-                     && this.mc.field_1724 != null
-                     && this.mc.field_1687 != null
-                     && var4.lowestTargetY() - this.mc.field_1724.method_24515().method_10264() > 4
-                     && Climber.leavesCount(this.mc.field_1724) >= 2
+                     && this.mc.player != null
+                     && this.mc.world != null
+                     && var4.lowestTargetY() - this.mc.player.getBlockPos().getY() > 4
+                     && Climber.leavesCount(this.mc.player) >= 2
                      && this.tick >= this.noClimbUntil
                      && (var2 = Climber.column(this.mc)) != null
-                     && this.pillarFits(this.mc.field_1687, var2)) {
-                     trace("far below the work, climbing at " + var2.method_23854());
+                     && this.pillarFits(this.mc.world, var2)) {
+                     trace("far below the work, climbing at " + var2.toShortString());
                      this.climbTo = var4.lowestTargetY() - 4;
                      this.stopMoving();
                      this.climber = new Climber(var2, this.scaffold);
                   } else if (var3 != StandPlanner.Status.NONE
                      || var4.visited() > 3
-                     || this.mc.field_1724 == null
-                     || this.mc.field_1687 == null
-                     || Climber.leavesCount(this.mc.field_1724) < 2
-                     || !this.escapeClimb(this.mc.field_1687) && !this.digOut(this.mc.field_1687, this.mc.field_1724)) {
-                     ClientPlayerEntity var6 = this.mc.field_1724;
+                     || this.mc.player == null
+                     || this.mc.world == null
+                     || Climber.leavesCount(this.mc.player) < 2
+                     || !this.escapeClimb(this.mc.world) && !this.digOut(this.mc.world, this.mc.player)) {
+                     ClientPlayerEntity var6 = this.mc.player;
                      BlockPos var1 = var6 != null && var4.visited() <= 3 ? this.supportingLeaf(var6) : null;
                      if (var1 != null && this.dropBelow(var1) <= 4) {
-                        trace("stranded on the leaf at " + var1.method_23854() + ", mining it to get down");
+                        trace("stranded on the leaf at " + var1.toShortString() + ", mining it to get down");
                         this.stopMoving();
                         this.breaker = new Breaker(var1, true);
                      }
@@ -2449,19 +2448,19 @@ public final class SchematicBuilderModule extends ClientModule {
          }
 
          if (this.walkFails.merge(var3, 1, Integer::sum) >= 2 && this.deferred.add(var3)) {
-            trace("no plan reaches " + BlockPos.method_10092(var3).method_23854() + ", leaving it for later");
+            trace("no plan reaches " + BlockPos.fromLong(var3).toShortString() + ", leaving it for later");
          }
       }
    }
 
-   private void walkTo(ClientPlayerEntity var1, BlockPos var2) {
+   private void walkTo(ClientPlayerEntity clientPlayerEntity, BlockPos blockPos) {
       this.placing = false;
-      this.walkStand = var2;
-      this.walkFrom = var1.method_73189();
-      this.walker.go(var1, var2, this.tick);
+      this.walkStand = blockPos;
+      this.walkFrom = clientPlayerEntity.getEntityPos();
+      this.walker.go(clientPlayerEntity, blockPos, this.tick);
    }
 
-   private boolean walkToFix(ClientWorld var1, ClientPlayerEntity var2) {
+   private boolean walkToFix(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity) {
       ArrayList var3 = new ArrayList();
       if (this.crafterSlots.get()) {
          var3.addAll(this.scan.crafters);
@@ -2469,36 +2468,36 @@ public final class SchematicBuilderModule extends ClientModule {
 
       if (this.clickStates.get()) {
          for (BuildScan.Cell var5 : this.scan.adjust) {
-            if (!this.clickFailed.contains(var5.pos().method_10063())) {
+            if (!this.clickFailed.contains(var5.pos().asLong())) {
                var3.add(var5.pos());
             }
          }
       }
 
-      var3.sort(Comparator.comparingDouble(var1x -> var1x.method_19770(var2.method_73189())));
+      var3.sort(Comparator.comparingDouble(blockPos -> blockPos.getSquaredDistance(clientPlayerEntity.getEntityPos())));
       if (!this.walking) {
-         return this.planToClick(var1, var2, var3, var1x -> {
-            if (this.scan.crafters.contains(var1x)) {
-               this.craftersDone.add(var1x.method_10063());
+         return this.planToClick(clientWorld, clientPlayerEntity, var3, blockPos -> {
+            if (this.scan.crafters.contains(blockPos)) {
+               this.craftersDone.add(blockPos.asLong());
             } else {
-               this.clickFailed.add(var1x.method_10063());
+               this.clickFailed.add(blockPos.asLong());
             }
          });
       } else {
-         BlockPos var8 = var2.method_24515();
+         BlockPos var8 = clientPlayerEntity.getBlockPos();
 
          for (BlockPos var6 : var3) {
-            BlockPos var7 = Walker.standFor(var1, var2, var6, Blocks.field_10124.method_9564(), this::badStand);
-            if (var7 != null && !var7.equals(var8) && this.walkFails.merge(var6.method_10063(), 1, Integer::sum) <= 2) {
+            BlockPos var7 = Walker.standFor(clientWorld, clientPlayerEntity, var6, Blocks.AIR.getDefaultState(), this::badStand);
+            if (var7 != null && !var7.equals(var8) && this.walkFails.merge(var6.asLong(), 1, Integer::sum) <= 2) {
                this.walkTarget = null;
-               this.walkTo(var2, var7);
+               this.walkTo(clientPlayerEntity, var7);
                return true;
             }
 
             if (this.scan.crafters.contains(var6)) {
-               this.craftersDone.add(var6.method_10063());
+               this.craftersDone.add(var6.asLong());
             } else {
-               this.clickFailed.add(var6.method_10063());
+               this.clickFailed.add(var6.asLong());
             }
          }
 
@@ -2506,14 +2505,14 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private boolean planToClick(ClientWorld var1, ClientPlayerEntity var2, List<BlockPos> var3, Consumer<BlockPos> var4) {
+   private boolean planToClick(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, List<BlockPos> list, Consumer<BlockPos> consumer) {
       ArrayList var5 = new ArrayList();
 
-      for (BlockPos var7 : var3) {
-         if (this.walkFails.getOrDefault(var7.method_10063(), 0) >= 2) {
-            var4.accept(var7);
+      for (BlockPos var7 : list) {
+         if (this.walkFails.getOrDefault(var7.asLong(), 0) >= 2) {
+            consumer.accept(var7);
          } else {
-            var5.add(new StandPlanner.Target(var7, var1.method_8320(var7), StandPlanner.Use.CLICK));
+            var5.add(new StandPlanner.Target(var7, clientWorld.getBlockState(var7), StandPlanner.Use.CLICK));
          }
       }
 
@@ -2522,13 +2521,13 @@ public final class SchematicBuilderModule extends ClientModule {
       } else if (this.tick < this.noPlanUntil) {
          return true;
       } else {
-         this.walkFails.merge(((StandPlanner.Target)var5.get(0)).pos().method_10063(), 1, Integer::sum);
-         this.startPlanner(var1, var2, var5);
+         this.walkFails.merge(((StandPlanner.Target)var5.get(0)).pos().asLong(), 1, Integer::sum);
+         this.startPlanner(clientWorld, clientPlayerEntity, var5);
          return true;
       }
    }
 
-   private boolean flipLevers(ClientWorld var1, ClientPlayerEntity var2) {
+   private boolean flipLevers(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity) {
       WorldSchematic var3 = this.schematics.getSchematicWorld();
       if (var3 == null) {
          return false;
@@ -2536,15 +2535,15 @@ public final class SchematicBuilderModule extends ClientModule {
          ArrayList var4 = new ArrayList();
 
          for (BlockPos var6 : this.scan.levers) {
-            if (!this.clickFailed.contains(var6.method_10063())) {
-               if (this.inReach(var2, var6) && Aim.at(this.mc, var6) != null) {
+            if (!this.clickFailed.contains(var6.asLong())) {
+               if (this.inReach(clientPlayerEntity, var6) && Aim.at(this.mc, var6) != null) {
                   if (!this.armed) {
                      this.feedback("levers", "Everything is in, flipping the levers on last", 1);
                   }
 
                   this.armed = true;
                   this.leversFlipped++;
-                  this.user = BlockUser.lever(var6, var3.method_8320(var6));
+                  this.user = BlockUser.lever(var6, var3.getBlockState(var6));
                   return true;
                }
 
@@ -2552,12 +2551,12 @@ public final class SchematicBuilderModule extends ClientModule {
             }
          }
 
-         var4.sort(Comparator.comparingDouble(var1x -> var1x.method_19770(var2.method_73189())));
-         return this.planToClick(var1, var2, var4, var1x -> this.clickFailed.add(var1x.method_10063()));
+         var4.sort(Comparator.comparingDouble(blockPos -> blockPos.getSquaredDistance(clientPlayerEntity.getEntityPos())));
+         return this.planToClick(clientWorld, clientPlayerEntity, var4, blockPos -> this.clickFailed.add(blockPos.asLong()));
       }
    }
 
-   private boolean relaxStuck(ClientWorld var1, ClientPlayerEntity var2) {
+   private boolean relaxStuck(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity) {
       WorldSchematic var3 = this.schematics.getSchematicWorld();
       if (var3 == null) {
          return false;
@@ -2570,12 +2569,12 @@ public final class SchematicBuilderModule extends ClientModule {
             }
 
             BlockPos var7 = var6.pos();
-            if (this.deferred.contains(var7.method_10063()) && BuildOrder.lookOnly(var6.expected())) {
+            if (this.deferred.contains(var7.asLong()) && BuildOrder.lookOnly(var6.expected())) {
                BlockState var8 = null;
                int var9 = 0;
 
                for (BlockState var11 : BuildOrder.turnedVariants(var6.expected())) {
-                  int var12 = this.placeSpots(var1, var2, var7, var11);
+                  int var12 = this.placeSpots(clientWorld, clientPlayerEntity, var7, var11);
                   if (var12 > var9) {
                      var9 = var12;
                      var8 = var11;
@@ -2583,13 +2582,13 @@ public final class SchematicBuilderModule extends ClientModule {
                }
 
                if (var8 != null) {
-                  trace("relaxing " + var7.method_23854() + " " + var6.expected() + " -> " + var8 + " (" + var9 + " spots)");
-                  var3.method_8652(var7, var8, 18);
+                  trace("relaxing " + var7.toShortString() + " " + var6.expected() + " -> " + var8 + " (" + var9 + " spots)");
+                  var3.setBlockState(var7, var8, 18);
                   this.relaxed.add(var7);
-                  this.deferred.remove(var7.method_10063());
-                  this.tries.remove(var7.method_10063());
-                  this.walkFails.remove(var7.method_10063());
-                  this.stubborn.remove(var7.method_10063());
+                  this.deferred.remove(var7.asLong());
+                  this.tries.remove(var7.asLong());
+                  this.walkFails.remove(var7.asLong());
+                  this.stubborn.remove(var7.asLong());
                   var4++;
                }
             }
@@ -2615,7 +2614,7 @@ public final class SchematicBuilderModule extends ClientModule {
 
          while (var3.hasNext()) {
             long var4 = (Long)((Entry)var3.next()).getValue();
-            if (this.deferred.contains(var4) && this.missingKeys.contains(var4) && BuildOrder.lookOnly(var1.method_8320(BlockPos.method_10092(var4)))) {
+            if (this.deferred.contains(var4) && this.missingKeys.contains(var4) && BuildOrder.lookOnly(var1.getBlockState(BlockPos.fromLong(var4)))) {
                var3.remove();
                var2 = true;
             }
@@ -2629,24 +2628,24 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private int placeSpots(ClientWorld var1, ClientPlayerEntity var2, BlockPos var3, BlockState var4) {
-      double var5 = var2.method_55754() - 0.65;
+   private int placeSpots(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, BlockPos blockPos, BlockState blockState) {
+      double var5 = clientPlayerEntity.getBlockInteractionRange() - 0.65;
       int var7 = 0;
 
       for (int var8 = -2; var8 <= 2; var8++) {
          for (int var9 = -4; var9 <= 4; var9++) {
             for (int var10 = -4; var10 <= 4; var10++) {
-               BlockPos var12 = var3.method_10069(var9, var8, var10);
+               BlockPos var12 = blockPos.add(var9, var8, var10);
                Vec3d var11;
-               if (!var12.equals(var3)
-                  && !var12.method_10084().equals(var3)
-                  && Walker.standable(var1, var12)
+               if (!var12.equals(blockPos)
+                  && !var12.up().equals(blockPos)
+                  && Walker.standable(clientWorld, var12)
                   && !(
-                     (var11 = new Vec3d(var12.method_10263() + 0.5, Walker.floor(var1, var12) + var2.method_5751(), var12.method_10260() + 0.5))
-                           .method_1022(var3.method_46558())
+                     (var11 = new Vec3d(var12.getX() + 0.5, Walker.floor(clientWorld, var12) + clientPlayerEntity.getStandingEyeHeight(), var12.getZ() + 0.5))
+                           .distanceTo(blockPos.toCenterPos())
                         > var5
                   )
-                  && this.placement.placeableFrom(var4, var3, var11)) {
+                  && this.placement.placeableFrom(blockState, blockPos, var11)) {
                   var7++;
                }
             }
@@ -2656,16 +2655,16 @@ public final class SchematicBuilderModule extends ClientModule {
       return var7;
    }
 
-   private BuildScan.Cell nearestOpen(ClientPlayerEntity var1, int var2) {
+   private BuildScan.Cell nearestOpen(ClientPlayerEntity clientPlayerEntity, int i) {
       BuildScan.Cell var3 = null;
       double var4 = 1.7976931348623157E308;
 
       for (BuildScan.Cell var7 : this.scan.missing) {
          double var8;
-         if (var7.pos().method_10264() <= var2
-            && !this.deferred.contains(var7.pos().method_10063())
-            && !this.scan.waiting.contains(var7.pos().method_10063())
-            && (var8 = var7.pos().method_19770(var1.method_73189())) < var4) {
+         if (var7.pos().getY() <= i
+            && !this.deferred.contains(var7.pos().asLong())
+            && !this.scan.waiting.contains(var7.pos().asLong())
+            && (var8 = var7.pos().getSquaredDistance(clientPlayerEntity.getEntityPos())) < var4) {
             var4 = var8;
             var3 = var7;
          }
@@ -2674,23 +2673,23 @@ public final class SchematicBuilderModule extends ClientModule {
       return var3;
    }
 
-   private void endOfBuild(ClientWorld var1, ClientPlayerEntity var2) {
+   private void endOfBuild(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity) {
       this.placing = false;
       if (this.armed) {
-         this.finishBuild(var1, var2);
+         this.finishBuild(clientWorld, clientPlayerEntity);
       } else if (this.scan.wholeSchematic) {
-         BlockPos var3 = this.supportingLeaf(var2);
+         BlockPos var3 = this.supportingLeaf(clientPlayerEntity);
          if (var3 != null && this.walking) {
-            BlockPos var8 = Walker.stepAside(var1, var2, var1x -> this.scaffold.contains(var1x.method_10074().method_10063()));
+            BlockPos var8 = Walker.stepAside(clientWorld, clientPlayerEntity, blockPos -> this.scaffold.contains(blockPos.down().asLong()));
             if (var8 != null) {
                this.walkTarget = null;
-               this.walkTo(var2, var8);
+               this.walkTo(clientPlayerEntity, var8);
                return;
             }
          } else if (var3 != null) {
-            for (BlockPos var5 : Walker.steps(var1, var2.method_24515())) {
-               if (!this.scaffold.contains(var5.method_10074().method_10063()) && !this.badStand(var5)) {
-                  this.badStands.put(var5.method_10063(), this.tick + 200L);
+            for (BlockPos var5 : Walker.steps(clientWorld, clientPlayerEntity.getBlockPos())) {
+               if (!this.scaffold.contains(var5.down().asLong()) && !this.badStand(var5)) {
+                  this.badStands.put(var5.asLong(), this.tick + 200L);
                   this.stopMoving();
                   this.hop = new Hop(var5);
                   return;
@@ -2698,7 +2697,7 @@ public final class SchematicBuilderModule extends ClientModule {
             }
          }
 
-         if (!this.walkToFix(var1, var2)) {
+         if (!this.walkToFix(clientWorld, clientPlayerEntity)) {
             if (!this.retriedDeferred && !this.deferred.isEmpty()) {
                this.retriedDeferred = true;
                this.deferred.clear();
@@ -2708,34 +2707,34 @@ public final class SchematicBuilderModule extends ClientModule {
                this.rescanSoon();
             } else {
                if (this.relaxFacing.get() && !this.relaxTried && !this.deferred.isEmpty()) {
-                  if (this.releaseProps() || this.tick < this.noPlanUntil || this.planner != null || this.sweepScaffold(var1, var2)) {
+                  if (this.releaseProps() || this.tick < this.noPlanUntil || this.planner != null || this.sweepScaffold(clientWorld, clientPlayerEntity)) {
                      return;
                   }
 
                   this.relaxTried = true;
-                  if (this.relaxStuck(var1, var2)) {
+                  if (this.relaxStuck(clientWorld, clientPlayerEntity)) {
                      return;
                   }
                }
 
-               if (!this.placeWater.get() || this.waterGivenUp || !this.liquids(var1, var2, false)) {
+               if (!this.placeWater.get() || this.waterGivenUp || !this.liquids(clientWorld, clientPlayerEntity, false)) {
                   if (!this.latePhase && this.scan.late > 0) {
                      if (!this.leftoversAdopted) {
                         this.leftoversAdopted = true;
-                        int var9 = this.adoptLeftoverScaffold(var1);
+                        int var9 = this.adoptLeftoverScaffold(clientWorld);
                         if (var9 > 0) {
                            this.feedback("leftover", var9 + " stray glass or leaf blocks are in empty cells of the build, mining them first", 1);
                         }
                      }
 
                      if (this.tick >= this.noPlanUntil && this.planner == null) {
-                        if (!this.sweepScaffold(var1, var2)) {
+                        if (!this.sweepScaffold(clientWorld, clientPlayerEntity)) {
                            if (!this.scaffold.isEmpty()) {
                               ArrayList var10 = new ArrayList();
 
                               for (long var6 : this.scaffold) {
                                  if (var10.size() < 5) {
-                                    var10.add(BlockPos.method_10092(var6).method_23854());
+                                    var10.add(BlockPos.fromLong(var6).toShortString());
                                  }
                               }
 
@@ -2764,14 +2763,14 @@ public final class SchematicBuilderModule extends ClientModule {
                            }
                         }
                      }
-                  } else if (!this.placeWater.get() || this.lavaGivenUp || !this.liquids(var1, var2, true)) {
-                     if (!this.sweepScaffold(var1, var2)) {
+                  } else if (!this.placeWater.get() || this.lavaGivenUp || !this.liquids(clientWorld, clientPlayerEntity, true)) {
+                     if (!this.sweepScaffold(clientWorld, clientPlayerEntity)) {
                         if (!this.verified) {
                            this.verified = true;
                            this.feedback("verify", "Scaffold is out, checking the whole build once more", 1);
                            this.rescanSoon();
                         } else {
-                           this.finishBuild(var1, var2);
+                           this.finishBuild(clientWorld, clientPlayerEntity);
                         }
                      }
                   }
@@ -2781,10 +2780,10 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private void finishBuild(ClientWorld var1, ClientPlayerEntity var2) {
-      if (!this.flipLevers.get() || !this.flipLevers(var1, var2)) {
-         if (!this.startSelling(var2, true)) {
-            int var3 = (int)this.scan.missing.stream().filter(var1x -> this.scan.waiting.contains(var1x.pos().method_10063())).count();
+   private void finishBuild(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity) {
+      if (!this.flipLevers.get() || !this.flipLevers(clientWorld, clientPlayerEntity)) {
+         if (!this.startSelling(clientPlayerEntity, true)) {
+            int var3 = (int)this.scan.missing.stream().filter(cell -> this.scan.waiting.contains(cell.pos().asLong())).count();
             int var4 = this.scan.missing.size() - var3;
             int var5 = this.liquidsLeft(false);
             int var6 = this.liquidsLeft(true);
@@ -2870,22 +2869,22 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private static String someOf(List<BlockPos> var0) {
+   private static String someOf(List<BlockPos> list) {
       ArrayList var1 = new ArrayList();
 
-      for (BlockPos var3 : var0) {
+      for (BlockPos var3 : list) {
          if (var1.size() == 4) {
             break;
          }
 
-         var1.add(var3.method_23854());
+         var1.add(var3.toShortString());
       }
 
-      return String.join("; ", var1) + (var0.size() > 4 ? "; ..." : "");
+      return String.join("; ", var1) + (list.size() > 4 ? "; ..." : "");
    }
 
-   private boolean waterNow(ClientPlayerEntity var1) {
-      if (!Hands.has(var1, var0 -> var0.method_31574(Items.field_8705))) {
+   private boolean waterNow(ClientPlayerEntity clientPlayerEntity) {
+      if (!Hands.has(clientPlayerEntity, itemStack -> itemStack.isOf(Items.WATER_BUCKET))) {
          return false;
       } else {
          for (BuildScan.Liquid var3 : this.scan.liquids) {
@@ -2903,23 +2902,23 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private boolean dueNow(BuildScan.Liquid var1) {
-      return var1.kind() == CellFiller.Kind.WATERLOG || this.scan.layer == 2147483647 || var1.pos().method_10264() < this.scan.layer;
+   private boolean dueNow(BuildScan.Liquid liquid) {
+      return liquid.kind() == CellFiller.Kind.WATERLOG || this.scan.layer == 2147483647 || liquid.pos().getY() < this.scan.layer;
    }
 
-   private boolean waterPending(BlockPos var1) {
-      return this.placeWater.get() && !this.waterGivenUp && this.waterFails.getOrDefault(var1.method_10063(), 0) < 2;
+   private boolean waterPending(BlockPos blockPos) {
+      return this.placeWater.get() && !this.waterGivenUp && this.waterFails.getOrDefault(blockPos.asLong(), 0) < 2;
    }
 
-   private boolean liquidPending(BlockPos var1) {
+   private boolean liquidPending(BlockPos blockPos) {
       WorldSchematic var2 = this.schematics.getSchematicWorld();
-      return var2 != null && var2.method_8320(var1).method_26227().method_15767(FluidTags.field_15518)
-         ? this.placeWater.get() && !this.lavaGivenUp && this.waterFails.getOrDefault(var1.method_10063(), 0) < 2
-         : this.waterPending(var1);
+      return var2 != null && var2.getBlockState(blockPos).getFluidState().isIn(FluidTags.LAVA)
+         ? this.placeWater.get() && !this.lavaGivenUp && this.waterFails.getOrDefault(blockPos.asLong(), 0) < 2
+         : this.waterPending(blockPos);
    }
 
-   private boolean cappedLavaNow(ClientWorld var1, ClientPlayerEntity var2) {
-      if (!this.lavaGivenUp && Hands.has(var2, var0 -> var0.method_31574(Items.field_8187))) {
+   private boolean cappedLavaNow(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity) {
+      if (!this.lavaGivenUp && Hands.has(clientPlayerEntity, itemStack -> itemStack.isOf(Items.LAVA_BUCKET))) {
          WorldSchematic var3 = this.schematics.getSchematicWorld();
          if (var3 == null) {
             return false;
@@ -2928,16 +2927,16 @@ public final class SchematicBuilderModule extends ClientModule {
                BlockPos var7 = var5.pos();
                FluidState var6;
                if (var5.capped()
-                  && (this.scan.layer == 2147483647 || var7.method_10264() < this.scan.layer)
+                  && (this.scan.layer == 2147483647 || var7.getY() < this.scan.layer)
                   && this.liquidPending(var7)
                   && (
-                     !(var6 = var3.method_8320(var7.method_10074()).method_26227()).method_15771()
-                        || !var6.method_15767(FluidTags.field_15518)
-                        || var1.method_8316(var7.method_10074()).method_15771() && var1.method_8316(var7.method_10074()).method_15767(FluidTags.field_15518)
+                     !(var6 = var3.getBlockState(var7.down()).getFluidState()).isStill()
+                        || !var6.isIn(FluidTags.LAVA)
+                        || clientWorld.getFluidState(var7.down()).isStill() && clientWorld.getFluidState(var7.down()).isIn(FluidTags.LAVA)
                   )
-                  && walledIn(var1, var3, var7)
+                  && walledIn(clientWorld, var3, var7)
                   && CellFiller.reachable(this.mc, var7, var5.kind())) {
-                  trace("capped lava " + var7.method_23854());
+                  trace("capped lava " + var7.toShortString());
                   this.stopMoving();
                   this.filler = new CellFiller(var7, var5.kind());
                   return true;
@@ -2951,11 +2950,11 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private int cappedLavaWanted(int var1) {
+   private int cappedLavaWanted(int i) {
       int var2 = 0;
 
       for (BuildScan.Liquid var4 : this.scan.liquids) {
-         if (var4.capped() && var4.pos().method_10264() < var1 && this.liquidPending(var4.pos())) {
+         if (var4.capped() && var4.pos().getY() < i && this.liquidPending(var4.pos())) {
             var2++;
          }
       }
@@ -2963,11 +2962,11 @@ public final class SchematicBuilderModule extends ClientModule {
       return var2;
    }
 
-   private int waterWanted(int var1) {
+   private int waterWanted(int i) {
       int var2 = 0;
 
       for (BuildScan.Liquid var4 : this.scan.liquids) {
-         if (var4.kind() != CellFiller.Kind.LAVA_SOURCE && var4.pos().method_10264() <= var1 && this.waterPending(var4.pos())) {
+         if (var4.kind() != CellFiller.Kind.LAVA_SOURCE && var4.pos().getY() <= i && this.waterPending(var4.pos())) {
             var2++;
          }
       }
@@ -2975,15 +2974,15 @@ public final class SchematicBuilderModule extends ClientModule {
       return var2;
    }
 
-   private boolean refillWater(ClientWorld var1, ClientPlayerEntity var2, int var3) {
-      if (var3 > count(var2, Items.field_8705) && count(var2, Items.field_8550) > 0 && this.tick >= this.nextRefillTick) {
-         BlockPos var4 = BlockPos.method_49638(var2.method_33571());
+   private boolean refillWater(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, int i) {
+      if (i > count(clientPlayerEntity, Items.WATER_BUCKET) && count(clientPlayerEntity, Items.BUCKET) > 0 && this.tick >= this.nextRefillTick) {
+         BlockPos var4 = BlockPos.ofFloored(clientPlayerEntity.getEyePos());
 
-         for (BlockPos var6 : BlockPos.method_10097(var4.method_10069(-5, -5, -5), var4.method_10069(5, 5, 5))) {
-            Long var7 = this.pouredAt.get(var6.method_10063());
-            if ((var7 == null || this.tick - var7 >= 1200L) && CellFiller.endless(var1, var6) && Aim.water(this.mc, var6) != null) {
+         for (BlockPos var6 : BlockPos.iterate(var4.add(-5, -5, -5), var4.add(5, 5, 5))) {
+            Long var7 = this.pouredAt.get(var6.asLong());
+            if ((var7 == null || this.tick - var7 >= 1200L) && CellFiller.endless(clientWorld, var6) && Aim.water(this.mc, var6) != null) {
                this.stopMoving();
-               this.filler = new CellFiller(var6.method_10062(), CellFiller.Kind.REFILL);
+               this.filler = new CellFiller(var6.toImmutable(), CellFiller.Kind.REFILL);
                return true;
             }
          }
@@ -2995,18 +2994,18 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private int liquidsLeft(boolean var1) {
-      return !this.placeWater.get() ? 0 : (int)this.scan.liquids.stream().filter(var1x -> var1x.kind() == CellFiller.Kind.LAVA_SOURCE == var1).count();
+   private int liquidsLeft(boolean bl) {
+      return !this.placeWater.get() ? 0 : (int)this.scan.liquids.stream().filter(liquid -> liquid.kind() == CellFiller.Kind.LAVA_SOURCE == bl).count();
    }
 
-   private boolean liquids(ClientWorld var1, ClientPlayerEntity var2, boolean var3) {
+   private boolean liquids(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, boolean bl) {
       WorldSchematic var5 = this.schematics.getSchematicWorld();
       ArrayList var6 = new ArrayList();
       int var7 = 0;
 
       for (BuildScan.Liquid var9 : this.scan.liquids) {
-         if (var9.kind() == CellFiller.Kind.LAVA_SOURCE == var3 && this.waterFails.getOrDefault(var9.pos().method_10063(), 0) < 2) {
-            if (var3 && !walledIn(var1, var5, var9.pos())) {
+         if (var9.kind() == CellFiller.Kind.LAVA_SOURCE == bl && this.waterFails.getOrDefault(var9.pos().asLong(), 0) < 2) {
+            if (bl && !walledIn(clientWorld, var5, var9.pos())) {
                var7++;
             } else {
                var6.add(var9);
@@ -3022,26 +3021,26 @@ public final class SchematicBuilderModule extends ClientModule {
          return false;
       } else {
          var6.sort(
-            Comparator.<BuildScan.Liquid>comparingInt(var0 -> var0.pos().method_10264())
-               .thenComparingDouble(var1x -> var1x.pos().method_19770(var2.method_73189()))
+            Comparator.<BuildScan.Liquid>comparingInt(liquid -> liquid.pos().getY())
+               .thenComparingDouble(liquid -> liquid.pos().getSquaredDistance(clientPlayerEntity.getEntityPos()))
          );
-         Item var14 = var3 ? Items.field_8187 : Items.field_8705;
-         String var4 = var3 ? "lava" : "water";
-         if (!Hands.has(var2, var1x -> var1x.method_31574(var14))) {
-            if (!var3 && this.refillWater(var1, var2, var6.size())) {
+         Item var14 = bl ? Items.LAVA_BUCKET : Items.WATER_BUCKET;
+         String var4 = bl ? "lava" : "water";
+         if (!Hands.has(clientPlayerEntity, itemStack -> itemStack.isOf(var14))) {
+            if (!bl && this.refillWater(clientWorld, clientPlayerEntity, var6.size())) {
                return true;
             } else if (!this.buyFromAh.get()) {
                this.feedback("no-" + var4, "Need " + var4 + " buckets for " + var6.size() + " " + var4 + " cells", 200);
-               this.giveUpLiquid(var3);
+               this.giveUpLiquid(bl);
                return false;
             } else {
-               int var17 = freeSlots(var2);
+               int var17 = freeSlots(clientPlayerEntity);
                if (var17 <= 0) {
-                  if (this.startSelling(var2, false)) {
+                  if (this.startSelling(clientPlayerEntity, false)) {
                      return true;
                   } else {
                      this.feedback(var4 + "-room", "No free inventory slot for " + var4 + " buckets", 200);
-                     this.giveUpLiquid(var3);
+                     this.giveUpLiquid(bl);
                      return false;
                   }
                } else {
@@ -3059,33 +3058,33 @@ public final class SchematicBuilderModule extends ClientModule {
             }
 
             if (this.walking) {
-               BlockPos var16 = var2.method_24515();
+               BlockPos var16 = clientPlayerEntity.getBlockPos();
 
                for (BuildScan.Liquid var20 : var6) {
-                  BlockPos var13 = Walker.standFor(var1, var2, var20.pos(), Blocks.field_10124.method_9564(), this::badStand, 2.8);
+                  BlockPos var13 = Walker.standFor(clientWorld, clientPlayerEntity, var20.pos(), Blocks.AIR.getDefaultState(), this::badStand, 2.8);
                   if (var13 != null && !var13.equals(var16)) {
                      this.walkTarget = null;
-                     this.walkTo(var2, var13);
+                     this.walkTo(clientPlayerEntity, var13);
                      return true;
                   }
 
-                  this.waterFails.merge(var20.pos().method_10063(), 1, Integer::sum);
+                  this.waterFails.merge(var20.pos().asLong(), 1, Integer::sum);
                }
 
                return false;
             } else {
-               this.missedRouteTarget(var2);
+               this.missedRouteTarget(clientPlayerEntity);
                if (this.tick < this.noPlanUntil) {
-                  this.giveUpLiquid(var3);
+                  this.giveUpLiquid(bl);
                   return false;
                } else {
                   ArrayList var15 = new ArrayList();
 
                   for (BuildScan.Liquid var12 : var6) {
-                     var15.add(liquidTarget(var1, var12));
+                     var15.add(liquidTarget(clientWorld, var12));
                   }
 
-                  this.startPlanner(var1, var2, var15);
+                  this.startPlanner(clientWorld, clientPlayerEntity, var15);
                   return true;
                }
             }
@@ -3093,7 +3092,7 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private boolean sweepFinishedLayers(ClientWorld var1, ClientPlayerEntity var2) {
+   private boolean sweepFinishedLayers(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity) {
       if (this.scan.layer != 2147483647 && !this.walking) {
          if (this.sweptLayer == 2147483647 || this.scan.layer > this.sweptLayer) {
             this.sweptLayer = this.scan.layer;
@@ -3109,12 +3108,12 @@ public final class SchematicBuilderModule extends ClientModule {
             ArrayList var3 = new ArrayList();
 
             for (long var5 : this.scaffold) {
-               BlockPos var7 = BlockPos.method_10092(var5);
-               if (var7.method_10264() < this.scan.layer - 1
-                  && var1.method_22340(var7)
+               BlockPos var7 = BlockPos.fromLong(var5);
+               if (var7.getY() < this.scan.layer - 1
+                  && clientWorld.isChunkLoaded(var7)
                   && this.walkFails.getOrDefault(var5, 0) < 2
-                  && !this.keepScaffold(var2, var5)) {
-                  var3.add(new StandPlanner.Target(var7, var1.method_8320(var7), StandPlanner.Use.BREAK));
+                  && !this.keepScaffold(clientPlayerEntity, var5)) {
+                  var3.add(new StandPlanner.Target(var7, clientWorld.getBlockState(var7), StandPlanner.Use.BREAK));
                }
             }
 
@@ -3123,9 +3122,9 @@ public final class SchematicBuilderModule extends ClientModule {
                return false;
             } else {
                this.feedback("layer-sweep", "Mining " + var3.size() + " scaffold blocks under the finished layers", 200);
-               this.missedRouteTarget(var2);
+               this.missedRouteTarget(clientPlayerEntity);
                this.sweepPlanning = true;
-               this.startPlanner(var1, var2, var3);
+               this.startPlanner(clientWorld, clientPlayerEntity, var3);
                return true;
             }
          } else {
@@ -3136,7 +3135,7 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private int adoptLeftoverScaffold(ClientWorld var1) {
+   private int adoptLeftoverScaffold(ClientWorld clientWorld) {
       WorldSchematic var2 = this.schematics.getSchematicWorld();
       if (var2 == null) {
          return 0;
@@ -3148,11 +3147,11 @@ public final class SchematicBuilderModule extends ClientModule {
             for (int var7 = var6.minY(); var7 <= var6.maxY(); var7++) {
                for (int var8 = var6.minX(); var8 <= var6.maxX(); var8++) {
                   for (int var9 = var6.minZ(); var9 <= var6.maxZ(); var9++) {
-                     var4.method_10103(var8, var7, var9);
-                     if (var1.method_22340(var4)
-                        && var2.method_8320(var4).method_26215()
-                        && Scaffold.block(var1.method_8320(var4))
-                        && this.scaffold.add(var4.method_10063())) {
+                     var4.set(var8, var7, var9);
+                     if (clientWorld.isChunkLoaded(var4)
+                        && var2.getBlockState(var4).isAir()
+                        && Scaffold.block(clientWorld.getBlockState(var4))
+                        && this.scaffold.add(var4.asLong())) {
                         var3++;
                      }
                   }
@@ -3164,18 +3163,18 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private boolean sweepScaffold(ClientWorld var1, ClientPlayerEntity var2) {
+   private boolean sweepScaffold(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity) {
       if (!this.walking && !this.scaffold.isEmpty()) {
-         this.missedRouteTarget(var2);
+         this.missedRouteTarget(clientPlayerEntity);
          if (this.tick < this.noPlanUntil) {
             return false;
          } else {
             ArrayList var3 = new ArrayList();
 
             for (long var5 : this.scaffold) {
-               BlockPos var7 = BlockPos.method_10092(var5);
-               if (var1.method_22340(var7) && this.walkFails.getOrDefault(var5, 0) < 2 && !this.keepScaffold(var2, var5)) {
-                  var3.add(new StandPlanner.Target(var7, var1.method_8320(var7), StandPlanner.Use.BREAK));
+               BlockPos var7 = BlockPos.fromLong(var5);
+               if (clientWorld.isChunkLoaded(var7) && this.walkFails.getOrDefault(var5, 0) < 2 && !this.keepScaffold(clientPlayerEntity, var5)) {
+                  var3.add(new StandPlanner.Target(var7, clientWorld.getBlockState(var7), StandPlanner.Use.BREAK));
                }
             }
 
@@ -3183,7 +3182,7 @@ public final class SchematicBuilderModule extends ClientModule {
                return false;
             } else {
                this.feedback("sweep", "Mining " + var3.size() + " scaffold leaves left behind", 200);
-               this.startPlanner(var1, var2, var3);
+               this.startPlanner(clientWorld, clientPlayerEntity, var3);
                return true;
             }
          }
@@ -3192,63 +3191,67 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private void giveUpLiquid(boolean var1) {
-      if (var1) {
+   private void giveUpLiquid(boolean bl) {
+      if (bl) {
          this.lavaGivenUp = true;
       } else {
          this.waterGivenUp = true;
       }
    }
 
-   private static boolean walledIn(ClientWorld var0, WorldSchematic var1, BlockPos var2) {
-      return walledIn(var0, var1, var2, new HashSet<>());
+   private static boolean walledIn(ClientWorld clientWorld, WorldSchematic worldSchematic, BlockPos blockPos) {
+      return walledIn(clientWorld, worldSchematic, blockPos, new HashSet<>());
    }
 
-   private static boolean walledIn(ClientWorld var0, WorldSchematic var1, BlockPos var2, Set<Long> var3) {
-      if (var3.add(var2.method_10063()) && var3.size() <= 64) {
+   private static boolean walledIn(ClientWorld clientWorld, WorldSchematic worldSchematic, BlockPos blockPos, Set<Long> set) {
+      if (set.add(blockPos.asLong()) && set.size() <= 64) {
          for (Direction var7 : Direction.values()) {
             BlockPos var8;
             BlockState var9;
-            if (var7 != Direction.field_11036
-               && (var9 = var0.method_8320(var8 = var2.method_10093(var7))).method_45474()
-               && (!var9.method_26227().method_15767(FluidTags.field_15518) || !var9.method_26227().method_15771())
-               && (var1 == null || !var1.method_8320(var8).method_26227().method_15767(FluidTags.field_15518) || !walledIn(var0, var1, var8, var3))) {
+            if (var7 != Direction.UP
+               && (var9 = clientWorld.getBlockState(var8 = blockPos.offset(var7))).isReplaceable()
+               && (!var9.getFluidState().isIn(FluidTags.LAVA) || !var9.getFluidState().isStill())
+               && (
+                  worldSchematic == null
+                     || !worldSchematic.getBlockState(var8).getFluidState().isIn(FluidTags.LAVA)
+                     || !walledIn(clientWorld, worldSchematic, var8, set)
+               )) {
                return false;
             }
          }
 
          return true;
       } else {
-         return var3.size() <= 64;
+         return set.size() <= 64;
       }
    }
 
-   private void snapshotInventory(ClientPlayerEntity var1) {
+   private void snapshotInventory(ClientPlayerEntity clientPlayerEntity) {
       this.startCounts.clear();
-      PlayerInventory var2 = var1.method_31548();
+      PlayerInventory var2 = clientPlayerEntity.getInventory();
 
       for (int var3 = 0; var3 < 36; var3++) {
-         ItemStack var4 = var2.method_5438(var3);
-         if (!var4.method_7960()) {
-            this.startCounts.merge(var4.method_7909(), var4.method_7947(), Integer::sum);
+         ItemStack var4 = var2.getStack(var3);
+         if (!var4.isEmpty()) {
+            this.startCounts.merge(var4.getItem(), var4.getCount(), Integer::sum);
          }
       }
    }
 
-   private boolean startSelling(ClientPlayerEntity var1, boolean var2) {
+   private boolean startSelling(ClientPlayerEntity clientPlayerEntity, boolean bl) {
       if (this.sellLeftovers.get() && this.sell == null && this.tick >= this.nextSellTick) {
          Map var4 = Map.of();
-         if (!var2) {
+         if (!bl) {
             WorldSchematic var5 = this.schematics.getSchematicWorld();
-            if (var5 == null || this.mc.field_1687 == null) {
+            if (var5 == null || this.mc.world == null) {
                return false;
             }
 
-            var4 = BuildScan.remainingItems(this.mc.field_1687, var5, this.schematics.activeBoxes());
+            var4 = BuildScan.remainingItems(this.mc.world, var5, this.schematics.activeBoxes());
          }
 
          Map var3;
-         if ((var3 = this.leftoverSlots(var1, var4)).isEmpty()) {
+         if ((var3 = this.leftoverSlots(clientPlayerEntity, var4)).isEmpty()) {
             this.nextSellTick = this.tick + 200L;
             return false;
          } else {
@@ -3262,16 +3265,16 @@ public final class SchematicBuilderModule extends ClientModule {
       }
    }
 
-   private Map<Integer, Item> leftoverSlots(ClientPlayerEntity var1, Map<Item, Integer> var2) {
-      PlayerInventory var3 = var1.method_31548();
+   private Map<Integer, Item> leftoverSlots(ClientPlayerEntity clientPlayerEntity, Map<Item, Integer> map) {
+      PlayerInventory var3 = clientPlayerEntity.getInventory();
       LinkedHashMap var4 = new LinkedHashMap();
       HashMap var5 = new HashMap();
 
       for (int var6 = 0; var6 < 36; var6++) {
-         ItemStack var7 = var3.method_5438(var6);
-         if (!var7.method_7960() && !var7.method_31574(Items.field_8288) && !var7.method_31574(Items.field_8705) && !var7.method_31574(Items.field_8187)) {
-            var4.computeIfAbsent(var7.method_7909(), var0 -> new ArrayList<>()).add(var6);
-            var5.merge(var7.method_7909(), var7.method_7947(), Integer::sum);
+         ItemStack var7 = var3.getStack(var6);
+         if (!var7.isEmpty() && !var7.isOf(Items.TOTEM_OF_UNDYING) && !var7.isOf(Items.WATER_BUCKET) && !var7.isOf(Items.LAVA_BUCKET)) {
+            var4.computeIfAbsent(var7.getItem(), item -> new ArrayList<>()).add(var6);
+            var5.merge(var7.getItem(), var7.getCount(), Integer::sum);
          }
       }
 
@@ -3280,14 +3283,14 @@ public final class SchematicBuilderModule extends ClientModule {
       for (Entry var8 : var4.entrySet()) {
          Item var9 = (Item)var8.getKey();
          ItemStack var10 = new ItemStack(var9);
-         int var11 = this.bought.getOrDefault(var9, 0) + (var9 == Items.field_8550 ? this.bucketsEmptied : 0) + (Scaffold.item(var10) ? this.leavesBought : 0);
-         int var12 = Math.min(var11, (Integer)var5.get(var9) - this.startCounts.getOrDefault(var9, 0) - var2.getOrDefault(var9, 0));
+         int var11 = this.bought.getOrDefault(var9, 0) + (var9 == Items.BUCKET ? this.bucketsEmptied : 0) + (Scaffold.item(var10) ? this.leavesBought : 0);
+         int var12 = Math.min(var11, (Integer)var5.get(var9) - this.startCounts.getOrDefault(var9, 0) - map.getOrDefault(var9, 0));
          if (var12 > 0) {
             ArrayList var13 = new ArrayList((Collection)var8.getValue());
-            var13.sort(Comparator.comparingInt(var1x -> -var3.method_5438(var1x).method_7947()));
+            var13.sort(Comparator.comparingInt(integer -> -var3.getStack(integer).getCount()));
 
             for (int var15 : var13) {
-               int var16 = var3.method_5438(var15).method_7947();
+               int var16 = var3.getStack(var15).getCount();
                if (var16 <= var12) {
                   var17.put(var15, var9);
                   var12 -= var16;
@@ -3299,29 +3302,29 @@ public final class SchematicBuilderModule extends ClientModule {
       return var17;
    }
 
-   private BlockPos cleanupLeaf(ClientPlayerEntity var1) {
-      return this.cleanupLeaf(var1, Set.of());
+   private BlockPos cleanupLeaf(ClientPlayerEntity clientPlayerEntity) {
+      return this.cleanupLeaf(clientPlayerEntity, Set.of());
    }
 
    private Set<Long> routeFloor() {
       HashSet var1 = new HashSet();
 
       for (int var2 = Math.max(0, this.routeIndex - 1); var2 < this.route.size(); var2++) {
-         var1.add(this.route.get(var2).pos().method_10074().method_10063());
+         var1.add(this.route.get(var2).pos().down().asLong());
       }
 
       return var1;
    }
 
-   private BlockPos cleanupLeaf(ClientPlayerEntity var1, Set<Long> var2) {
-      double var3 = var1.method_55754();
+   private BlockPos cleanupLeaf(ClientPlayerEntity clientPlayerEntity, Set<Long> set) {
+      double var3 = clientPlayerEntity.getBlockInteractionRange();
       Iterator var5 = this.scaffold.iterator();
 
       while (var5.hasNext()) {
          long var6 = (Long)var5.next();
-         BlockPos var8 = BlockPos.method_10092(var6);
-         if (this.mc.field_1687.method_22340(var8)) {
-            if (!Scaffold.block(this.mc.field_1687.method_8320(var8))) {
+         BlockPos var8 = BlockPos.fromLong(var6);
+         if (this.mc.world.isChunkLoaded(var8)) {
+            if (!Scaffold.block(this.mc.world.getBlockState(var8))) {
                var5.remove();
                this.spentSupport.remove(var6);
                this.supportFor.remove(var6);
@@ -3338,11 +3341,11 @@ public final class SchematicBuilderModule extends ClientModule {
                }
 
                if (!this.stuckScaffold.contains(var6)
-                  && !supports(var1, var8)
+                  && !supports(clientPlayerEntity, var8)
                   && !this.walkway(var8)
-                  && !var2.contains(var6)
+                  && !set.contains(var6)
                   && (this.buildScaffold.contains(var6) || this.spentSupport.contains(var6) || !this.neededNow(var8))
-                  && !(var8.method_46558().method_1022(var1.method_33571()) > var3)
+                  && !(var8.toCenterPos().distanceTo(clientPlayerEntity.getEyePos()) > var3)
                   && Aim.at(this.mc, var8) != null) {
                   return var8;
                }
@@ -3353,28 +3356,25 @@ public final class SchematicBuilderModule extends ClientModule {
       return null;
    }
 
-   private boolean keepScaffold(ClientPlayerEntity var1, long var2) {
-      BlockPos var4 = BlockPos.method_10092(var2);
-      Long var5 = this.supportFor.get(var2);
+   private boolean keepScaffold(ClientPlayerEntity clientPlayerEntity, long l) {
+      BlockPos var4 = BlockPos.fromLong(l);
+      Long var5 = this.supportFor.get(l);
       return var5 != null && this.missingKeys.contains(var5) && !this.deferred.contains(var5)
          ? true
-         : this.stuckScaffold.contains(var2)
-            || supports(var1, var4)
+         : this.stuckScaffold.contains(l)
+            || supports(clientPlayerEntity, var4)
             || this.walkway(var4)
-            || !this.buildScaffold.contains(var2) && !this.spentSupport.contains(var2) && var5 == null && this.neededNow(var4);
+            || !this.buildScaffold.contains(l) && !this.spentSupport.contains(l) && var5 == null && this.neededNow(var4);
    }
 
-   private boolean walkway(BlockPos var1) {
-      return this.scan != null
-         && this.scan.layer != 2147483647
-         && var1.method_10264() == this.scan.layer - 1
-         && !this.buildScaffold.contains(var1.method_10063());
+   private boolean walkway(BlockPos blockPos) {
+      return this.scan != null && this.scan.layer != 2147483647 && blockPos.getY() == this.scan.layer - 1 && !this.buildScaffold.contains(blockPos.asLong());
    }
 
-   private int dropBelow(BlockPos var1) {
+   private int dropBelow(BlockPos blockPos) {
       for (int var2 = 1; var2 <= 8; var2++) {
-         BlockPos var3 = var1.method_10087(var2 - 1);
-         if (!Double.isNaN(Walker.floor(this.mc.field_1687, var3))) {
+         BlockPos var3 = blockPos.down(var2 - 1);
+         if (!Double.isNaN(Walker.floor(this.mc.world, var3))) {
             return var2;
          }
       }
@@ -3382,10 +3382,10 @@ public final class SchematicBuilderModule extends ClientModule {
       return 2147483647;
    }
 
-   private BlockPos supportingLeaf(ClientPlayerEntity var1) {
+   private BlockPos supportingLeaf(ClientPlayerEntity clientPlayerEntity) {
       for (long var3 : this.scaffold) {
-         BlockPos var5 = BlockPos.method_10092(var3);
-         if (supports(var1, var5)) {
+         BlockPos var5 = BlockPos.fromLong(var3);
+         if (supports(clientPlayerEntity, var5)) {
             return var5;
          }
       }
@@ -3393,20 +3393,20 @@ public final class SchematicBuilderModule extends ClientModule {
       return null;
    }
 
-   private static boolean supports(ClientPlayerEntity var0, BlockPos var1) {
-      Box var3 = var0.method_5829();
+   private static boolean supports(ClientPlayerEntity clientPlayerEntity, BlockPos blockPos) {
+      Box var3 = clientPlayerEntity.getBoundingBox();
       Box var2;
-      return var3.method_994(var2 = new Box(var1)) || var3.method_989(0.0, -0.25, 0.0).method_994(var2);
+      return var3.intersects(var2 = new Box(blockPos)) || var3.offset(0.0, -0.25, 0.0).intersects(var2);
    }
 
-   private boolean inReach(ClientPlayerEntity var1, BlockPos var2) {
-      return var2.method_46558().method_1022(var1.method_33571()) <= var1.method_55754() - 0.3;
+   private boolean inReach(ClientPlayerEntity clientPlayerEntity, BlockPos blockPos) {
+      return blockPos.toCenterPos().distanceTo(clientPlayerEntity.getEyePos()) <= clientPlayerEntity.getBlockInteractionRange() - 0.3;
    }
 
-   private static boolean enclosed(ClientWorld var0, BlockPos var1) {
+   private static boolean enclosed(ClientWorld clientWorld, BlockPos blockPos) {
       for (Direction var5 : Direction.values()) {
-         BlockPos var6 = var1.method_10093(var5);
-         if (var0.method_8320(var6).method_45474()) {
+         BlockPos var6 = blockPos.offset(var5);
+         if (clientWorld.getBlockState(var6).isReplaceable()) {
             return false;
          }
       }
@@ -3420,50 +3420,50 @@ public final class SchematicBuilderModule extends ClientModule {
       this.placing = false;
    }
 
-   private static boolean lacking(ClientPlayerEntity var0, BlockState var1, Map<Item, Boolean> var2) {
-      Item var3 = BlockStateUtil.requiredItem(var1);
-      return var3 != null && var3 != Items.field_8162 ? var2.computeIfAbsent(var3, var1x -> count(var0, var1x) <= 0) : false;
+   private static boolean lacking(ClientPlayerEntity clientPlayerEntity, BlockState blockState, Map<Item, Boolean> map) {
+      Item var3 = BlockStateUtil.requiredItem(blockState);
+      return var3 != null && var3 != Items.AIR ? map.computeIfAbsent(var3, item -> count(clientPlayerEntity, item) <= 0) : false;
    }
 
-   private static int count(ClientPlayerEntity var0, Item var1) {
+   private static int count(ClientPlayerEntity clientPlayerEntity, Item item) {
       int var2 = 0;
-      PlayerInventory var3 = var0.method_31548();
+      PlayerInventory var3 = clientPlayerEntity.getInventory();
 
       for (int var4 = 0; var4 < 36; var4++) {
-         if (var3.method_5438(var4).method_31574(var1)) {
-            var2 += var3.method_5438(var4).method_7947();
+         if (var3.getStack(var4).isOf(item)) {
+            var2 += var3.getStack(var4).getCount();
          }
       }
 
-      if (var0.method_6079().method_31574(var1)) {
-         var2 += var0.method_6079().method_7947();
+      if (clientPlayerEntity.getOffHandStack().isOf(item)) {
+         var2 += clientPlayerEntity.getOffHandStack().getCount();
       }
 
       return var2;
    }
 
-   private static int room(ClientPlayerEntity var0, ItemStack var1) {
+   private static int room(ClientPlayerEntity clientPlayerEntity, ItemStack itemStack) {
       int var2 = 0;
-      PlayerInventory var3 = var0.method_31548();
+      PlayerInventory var3 = clientPlayerEntity.getInventory();
 
       for (int var4 = 0; var4 < 36; var4++) {
-         ItemStack var5 = var3.method_5438(var4);
-         if (var5.method_7960()) {
-            var2 += var1.method_7914();
-         } else if (var5.method_31574(var1.method_7909())) {
-            var2 += Math.max(0, var5.method_7914() - var5.method_7947());
+         ItemStack var5 = var3.getStack(var4);
+         if (var5.isEmpty()) {
+            var2 += itemStack.getMaxCount();
+         } else if (var5.isOf(itemStack.getItem())) {
+            var2 += Math.max(0, var5.getMaxCount() - var5.getCount());
          }
       }
 
       return var2;
    }
 
-   private static int freeSlots(ClientPlayerEntity var0) {
+   private static int freeSlots(ClientPlayerEntity clientPlayerEntity) {
       int var1 = 0;
-      PlayerInventory var2 = var0.method_31548();
+      PlayerInventory var2 = clientPlayerEntity.getInventory();
 
       for (int var3 = 0; var3 < 36; var3++) {
-         if (var2.method_5438(var3).method_7960()) {
+         if (var2.getStack(var3).isEmpty()) {
             var1++;
          }
       }
@@ -3471,16 +3471,16 @@ public final class SchematicBuilderModule extends ClientModule {
       return var1;
    }
 
-   private void say(ModuleChat.Body var1) {
-      ModuleChat.send(this, var1);
+   private void say(ModuleChat.Body body) {
+      ModuleChat.send(this, body);
    }
 
-   private void feedback(String var1, String var2, int var3) {
+   private void feedback(String string, String string2, int i) {
       if (this.chatFeedback.get()) {
-         long var4 = this.lastFeedbackTick.getOrDefault(var1, -4611686018427387904L);
-         if (this.tick - var4 >= var3) {
-            this.lastFeedbackTick.put(var1, this.tick);
-            ModuleChat.send(this, var2);
+         long var4 = this.lastFeedbackTick.getOrDefault(string, -4611686018427387904L);
+         if (this.tick - var4 >= i) {
+            this.lastFeedbackTick.put(string, this.tick);
+            ModuleChat.send(this, string2);
          }
       }
    }

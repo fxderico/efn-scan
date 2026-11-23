@@ -37,19 +37,15 @@ final class Bridger {
    private int tries;
    private Vec3d lastPos;
 
-   Bridger(BlockPos var1, BlockPos var2, Set<Long> var3, Item var4) {
-      this.from = var1;
-      this.spot = var2;
-      this.leaf = var2.method_10074();
-      this.way = var2.method_10263() > var1.method_10263()
-         ? Direction.field_11034
-         : (
-            var2.method_10263() < var1.method_10263()
-               ? Direction.field_11039
-               : (var2.method_10260() > var1.method_10260() ? Direction.field_11035 : Direction.field_11043)
-         );
-      this.scaffold = var3;
-      this.material = var4;
+   Bridger(BlockPos blockPos, BlockPos blockPos2, Set<Long> set, Item item) {
+      this.from = blockPos;
+      this.spot = blockPos2;
+      this.leaf = blockPos2.down();
+      this.way = blockPos2.getX() > blockPos.getX()
+         ? Direction.EAST
+         : (blockPos2.getX() < blockPos.getX() ? Direction.WEST : (blockPos2.getZ() > blockPos.getZ() ? Direction.SOUTH : Direction.NORTH));
+      this.scaffold = set;
+      this.material = item;
    }
 
    BlockPos spot() {
@@ -61,12 +57,14 @@ final class Bridger {
       return this;
    }
 
-   Bridger.Result tick(MinecraftClient var1) {
-      ClientPlayerEntity var2 = var1.field_1724;
-      if (var2 != null && var1.field_1687 != null && var1.field_1761 != null) {
-         var1.field_1690.field_1832.method_23481(true);
+   Bridger.Result tick(MinecraftClient minecraftClient) {
+      ClientPlayerEntity var2 = minecraftClient.player;
+      if (var2 != null && minecraftClient.world != null && minecraftClient.interactionManager != null) {
+         minecraftClient.options.sneakKey.setPressed(true);
          this.phaseTicks++;
-         boolean var3 = this.material == null ? Scaffold.block(var1.field_1687.method_8320(this.leaf)) : !var1.field_1687.method_8320(this.leaf).method_45474();
+         boolean var3 = this.material == null
+            ? Scaffold.block(minecraftClient.world.getBlockState(this.leaf))
+            : !minecraftClient.world.getBlockState(this.leaf).isReplaceable();
          switch (this.phase) {
             case 0:
                if (var3) {
@@ -74,25 +72,27 @@ final class Bridger {
                   return Bridger.Result.RUNNING;
                }
 
-               if (this.material == null ? !Scaffold.has(var2) : !Hands.has(var2, var1x -> var1x.method_31574(this.material))) {
+               if (this.material == null ? !Scaffold.has(var2) : !Hands.has(var2, itemStack -> itemStack.isOf(this.material))) {
                   return Bridger.Result.FAILED;
                }
 
-               boolean var14 = this.material == null ? Scaffold.hold(var1, var2) : Hands.hold(var1, var2, var1x -> var1x.method_31574(this.material));
+               boolean var14 = this.material == null
+                  ? Scaffold.hold(minecraftClient, var2)
+                  : Hands.hold(minecraftClient, var2, itemStack -> itemStack.isOf(this.material));
                if (!var14) {
                   return this.phaseTicks > 20 ? Bridger.Result.FAILED : Bridger.Result.RUNNING;
                }
 
-               this.lastPos = var2.method_73189();
+               this.lastPos = var2.getEntityPos();
                this.next(1);
                break;
             case 1:
-               double var13 = this.past(var2.method_73189());
-               Vec3d var16 = var2.method_73189();
-               this.stillTicks = var16.method_1025(this.lastPos) < 1.0E-4 ? this.stillTicks + 1 : 0;
+               double var13 = this.past(var2.getEntityPos());
+               Vec3d var16 = var2.getEntityPos();
+               this.stillTicks = var16.squaredDistanceTo(this.lastPos) < 1.0E-4 ? this.stillTicks + 1 : 0;
                this.lastPos = var16;
                if (var13 > 0.18 || var13 > 0.03 && this.stillTicks >= 3) {
-                  var1.field_1690.field_1894.method_23481(false);
+                  minecraftClient.options.forwardKey.setPressed(false);
                   this.next(2);
                   return Bridger.Result.RUNNING;
                }
@@ -101,38 +101,38 @@ final class Bridger {
                   return Bridger.Result.FAILED;
                }
 
-               float var7 = Aim.turn(var1, this.way.method_10144(), 30.0F, 22.0F);
-               var1.field_1690.field_1894.method_23481(var7 < 20.0F);
+               float var7 = Aim.turn(minecraftClient, this.way.getPositiveHorizontalDegrees(), 30.0F, 22.0F);
+               minecraftClient.options.forwardKey.setPressed(var7 < 20.0F);
                break;
             case 2:
                if (var3) {
                   if (this.material == null) {
-                     this.scaffold.add(this.leaf.method_10063());
+                     this.scaffold.add(this.leaf.asLong());
                   }
 
                   this.next(3);
                   return Bridger.Result.RUNNING;
                }
 
-               if (!var2.method_5715()) {
+               if (!var2.isSneaking()) {
                   if (this.phaseTicks > 10) {
-                     return this.retry(var1);
+                     return this.retry(minecraftClient);
                   }
 
                   return Bridger.Result.RUNNING;
                }
 
                if (this.clickedAt < 0) {
-                  Aim.Shot var12 = Aim.side(var1, this.from.method_10074(), this.way);
+                  Aim.Shot var12 = Aim.side(minecraftClient, this.from.down(), this.way);
                   if (var12 == null) {
-                     return this.retry(var1);
+                     return this.retry(minecraftClient);
                   }
 
-                  Aim.turn(var1, var12.yaw(), var12.pitch(), 22.0F);
+                  Aim.turn(minecraftClient, var12.yaw(), var12.pitch(), 22.0F);
                   if (!Aim.looking(var2, var12.yaw(), var12.pitch())) {
                      this.onAim = 0;
                      if (this.phaseTicks > 30) {
-                        return this.retry(var1);
+                        return this.retry(minecraftClient);
                      }
 
                      return Bridger.Result.RUNNING;
@@ -142,8 +142,8 @@ final class Bridger {
                      return Bridger.Result.RUNNING;
                   }
 
-                  ItemStack var15 = var2.method_6047();
-                  if (this.material == null ? !Scaffold.item(var15) : !var15.method_31574(this.material)) {
+                  ItemStack var15 = var2.getMainHandStack();
+                  if (this.material == null ? !Scaffold.item(var15) : !var15.isOf(this.material)) {
                      if (++this.tries >= 2) {
                         return Bridger.Result.FAILED;
                      }
@@ -152,22 +152,22 @@ final class Bridger {
                      return Bridger.Result.RUNNING;
                   }
 
-                  if (var1.field_1761.method_2896(var2, Hand.field_5808, var12.hit()).method_23665()) {
-                     var2.method_6104(Hand.field_5808);
+                  if (minecraftClient.interactionManager.interactBlock(var2, Hand.MAIN_HAND, var12.hit()).isAccepted()) {
+                     var2.swingHand(Hand.MAIN_HAND);
                   }
 
                   this.clickedAt = this.phaseTicks;
                } else if (this.phaseTicks - this.clickedAt > 12) {
-                  return this.retry(var1);
+                  return this.retry(minecraftClient);
                }
                break;
             case 3:
-               Vec3d var5 = var2.method_73189();
-               double var6 = this.spot.method_10263() + 0.5 - var5.field_1352;
-               double var8 = this.spot.method_10260() + 0.5 - var5.field_1350;
-               boolean var4 = var2.method_24828() && var2.method_24515().equals(this.spot);
+               Vec3d var5 = var2.getEntityPos();
+               double var6 = this.spot.getX() + 0.5 - var5.x;
+               double var8 = this.spot.getZ() + 0.5 - var5.z;
+               boolean var4 = var2.isOnGround() && var2.getBlockPos().equals(this.spot);
                if (var4 && (this.chained || Math.abs(var6) < 0.25 && Math.abs(var8) < 0.25)) {
-                  this.release(var1);
+                  this.release(minecraftClient);
                   return Bridger.Result.DONE;
                }
 
@@ -175,8 +175,8 @@ final class Bridger {
                   return Bridger.Result.FAILED;
                }
 
-               float var11 = Aim.turn(var1, (float)Math.toDegrees(Math.atan2(-var6, var8)), 30.0F, 22.0F);
-               var1.field_1690.field_1894.method_23481(var11 < 30.0F);
+               float var11 = Aim.turn(minecraftClient, (float)Math.toDegrees(Math.atan2(-var6, var8)), 30.0F, 22.0F);
+               minecraftClient.options.forwardKey.setPressed(var11 < 30.0F);
                break;
             default:
                return Bridger.Result.FAILED;
@@ -188,37 +188,37 @@ final class Bridger {
       }
    }
 
-   private double past(Vec3d var1) {
-      double var2 = this.way.method_10171() == AxisDirection.field_11056 ? 1.0 : 0.0;
+   private double past(Vec3d vec3d) {
+      double var2 = this.way.getDirection() == AxisDirection.POSITIVE ? 1.0 : 0.0;
 
-      return switch (this.way.method_10166()) {
-         case field_11048 -> (var1.field_1352 - (this.from.method_10263() + var2)) * this.way.method_10148();
-         case field_11051 -> (var1.field_1350 - (this.from.method_10260() + var2)) * this.way.method_10165();
+      return switch (this.way.getAxis()) {
+         case X -> (vec3d.x - (this.from.getX() + var2)) * this.way.getOffsetX();
+         case Z -> (vec3d.z - (this.from.getZ() + var2)) * this.way.getOffsetZ();
          default -> 0.0;
       };
    }
 
-   private Bridger.Result retry(MinecraftClient var1) {
+   private Bridger.Result retry(MinecraftClient minecraftClient) {
       if (++this.tries >= 2) {
          return Bridger.Result.FAILED;
       } else {
-         this.lastPos = var1.field_1724 == null ? this.lastPos : var1.field_1724.method_73189();
+         this.lastPos = minecraftClient.player == null ? this.lastPos : minecraftClient.player.getEntityPos();
          this.next(1);
          return Bridger.Result.RUNNING;
       }
    }
 
-   private void next(int var1) {
-      this.phase = var1;
+   private void next(int i) {
+      this.phase = i;
       this.phaseTicks = 0;
       this.stillTicks = 0;
       this.onAim = 0;
       this.clickedAt = -1;
    }
 
-   void release(MinecraftClient var1) {
-      var1.field_1690.field_1894.method_23481(false);
-      var1.field_1690.field_1832.method_23481(false);
+   void release(MinecraftClient minecraftClient) {
+      minecraftClient.options.forwardKey.setPressed(false);
+      minecraftClient.options.sneakKey.setPressed(false);
    }
 
    @Environment(EnvType.CLIENT)

@@ -19,13 +19,13 @@ public record WebhookConfig(String url, String username, String avatarUrl) {
       this.avatarUrl = avatarUrl;
    }
 
-   public WebhookConfig(String var1) {
-      this(var1, "EFN", "https://efn.lol/efn-logo.png");
+   public WebhookConfig(String string) {
+      this(string, "EFN", "https://efn.lol/efn-logo.png");
    }
 
-   public static boolean isValidUrl(String var0) {
+   public static boolean isValidUrl(String string) {
       try {
-         URI var1 = new URI(var0);
+         URI var1 = new URI(string);
          String var2 = var1.getScheme();
          return var1.getHost() != null && ("https".equalsIgnoreCase(var2) || "http".equalsIgnoreCase(var2));
       } catch (URISyntaxException var3) {
@@ -33,21 +33,21 @@ public record WebhookConfig(String url, String username, String avatarUrl) {
       }
    }
 
-   private static String normalizeRequired(String var0, String var1) {
-      String var2 = normalizeOptional(var0, null);
+   private static String normalizeRequired(String string, String string2) {
+      String var2 = normalizeOptional(string, null);
       if (var2 == null) {
-         throw new IllegalArgumentException(var1 + " cannot be blank");
+         throw new IllegalArgumentException(string2 + " cannot be blank");
       } else {
          return var2;
       }
    }
 
-   private static String normalizeOptional(String var0, String var1) {
-      if (var0 == null) {
-         return var1;
+   private static String normalizeOptional(String string, String string2) {
+      if (string == null) {
+         return string2;
       } else {
-         String var2 = var0.trim();
-         return var2.isEmpty() ? var1 : var2;
+         String var2 = string.trim();
+         return var2.isEmpty() ? string2 : var2;
       }
    }
 }

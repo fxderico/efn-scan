@@ -8,9 +8,9 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Environment(EnvType.CLIENT)
 @Mixin(
-   targets = {"net/minecraft/class_481$class_484"}
+   targets = {"net/minecraft/client/gui/screen/ingame/CreativeInventoryScreen$CreativeSlot"}
 )
 public interface AccessorCreativeSlotWrapper {
-   @Accessor("field_2898")
+   @Accessor("slot")
    Slot efn$target();
 }

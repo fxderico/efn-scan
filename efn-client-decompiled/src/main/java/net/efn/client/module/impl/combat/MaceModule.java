@@ -68,18 +68,22 @@ public final class MaceModule extends ClientModule {
    @Override
    protected void onDisable() {
       this.smashed = false;
-      this.slots.drop(MinecraftClient.method_1551(), this.swapBack.get());
+      this.slots.drop(MinecraftClient.getInstance(), this.swapBack.get());
    }
 
-   public void beforeAttack(ClientPlayerEntity var1, Entity var2) {
-      if (this.autoSwap.get() && var2 instanceof LivingEntity var3) {
-         if (!MeleeAttacks.shieldBlocks(var3, var1) || MeleeAttacks.shieldBroken(var3)) {
-            boolean var4 = MaceItem.method_58659(var1);
+   public void beforeAttack(ClientPlayerEntity clientPlayerEntity, Entity entity) {
+      if (this.autoSwap.get() && entity instanceof LivingEntity var3) {
+         if (!MeleeAttacks.shieldBlocks(var3, clientPlayerEntity) || MeleeAttacks.shieldBroken(var3)) {
+            boolean var4 = MaceItem.shouldDealAdditionalDamage(clientPlayerEntity);
             if (var4 || this.breachSwap.get()) {
-               int var5 = this.bestMace(var1, var3, var4);
+               int var5 = this.bestMace(clientPlayerEntity, var3, var4);
                if (var5 >= 0) {
-                  if (var4 || !(expected(var1, var1.method_31548().method_5438(var5), var3) < expected(var1, var1.method_6047(), var3) * 1.15F)) {
-                     this.slots.take(var1, var5);
+                  if (var4
+                     || !(
+                        expected(clientPlayerEntity, clientPlayerEntity.getInventory().getStack(var5), var3)
+                           < expected(clientPlayerEntity, clientPlayerEntity.getMainHandStack(), var3) * 1.15F
+                     )) {
+                     this.slots.take(clientPlayerEntity, var5);
                   }
                }
             }
@@ -87,18 +91,18 @@ public final class MaceModule extends ClientModule {
       }
    }
 
-   private int bestMace(ClientPlayerEntity var1, LivingEntity var2, boolean var3) {
-      boolean var4 = var3 && this.pick.is("Wind Burst");
-      PlayerInventory var5 = var1.method_31548();
+   private int bestMace(ClientPlayerEntity clientPlayerEntity, LivingEntity livingEntity, boolean bl) {
+      boolean var4 = bl && this.pick.is("Wind Burst");
+      PlayerInventory var5 = clientPlayerEntity.getInventory();
       int var6 = -1;
       boolean var7 = false;
       float var8 = 0.0F;
 
-      for (int var9 = 0; var9 < PlayerInventory.method_7368(); var9++) {
-         ItemStack var10 = var5.method_5438(var9);
-         if (var10.method_31574(Items.field_49814) && !var10.method_63692() && (var3 || level(var10, Enchantments.field_50158) != 0)) {
-            boolean var11 = var4 && level(var10, Enchantments.field_50159) > 0;
-            float var12 = expected(var1, var10, var2);
+      for (int var9 = 0; var9 < PlayerInventory.getHotbarSize(); var9++) {
+         ItemStack var10 = var5.getStack(var9);
+         if (var10.isOf(Items.MACE) && !var10.willBreakNextUse() && (bl || level(var10, Enchantments.BREACH) != 0)) {
+            boolean var11 = var4 && level(var10, Enchantments.WIND_BURST) > 0;
+            float var12 = expected(clientPlayerEntity, var10, livingEntity);
             if (var6 < 0 || (!var7 || var11) && (var7 != var11 || !(var12 <= var8))) {
                var6 = var9;
                var7 = var11;
@@ -110,44 +114,44 @@ public final class MaceModule extends ClientModule {
       return var6;
    }
 
-   private static float expected(ClientPlayerEntity var0, ItemStack var1, LivingEntity var2) {
-      float var4 = MeleeAttacks.charge(var0);
-      double var5 = var0.field_6017;
-      float var7 = (float)(1.0 + MeleeAttacks.attackDamage(var0.method_6047())) * (0.2F + 0.8F * var4 * var4);
-      if (var1.method_31574(Items.field_49814) && MaceItem.method_58659(var0)) {
-         var7 += (float)(smashBonus(var5) + 0.5 * level(var1, Enchantments.field_50157) * var5);
+   private static float expected(ClientPlayerEntity clientPlayerEntity, ItemStack itemStack, LivingEntity livingEntity) {
+      float var4 = MeleeAttacks.charge(clientPlayerEntity);
+      double var5 = clientPlayerEntity.fallDistance;
+      float var7 = (float)(1.0 + MeleeAttacks.attackDamage(clientPlayerEntity.getMainHandStack())) * (0.2F + 0.8F * var4 * var4);
+      if (itemStack.isOf(Items.MACE) && MaceItem.shouldDealAdditionalDamage(clientPlayerEntity)) {
+         var7 += (float)(smashBonus(var5) + 0.5 * level(itemStack, Enchantments.DENSITY) * var5);
       }
 
-      if (MeleeAttacks.wouldCrit(var0, var2)) {
+      if (MeleeAttacks.wouldCrit(clientPlayerEntity, livingEntity)) {
          var7 *= 1.5F;
       }
 
       int var3;
-      if ((var3 = level(var1, Enchantments.field_9118)) > 0) {
+      if ((var3 = level(itemStack, Enchantments.SHARPNESS)) > 0) {
          var7 += var4 * (0.5F * var3 + 0.5F);
       }
 
-      return afterArmor(var2, var7, level(var1, Enchantments.field_50158));
+      return afterArmor(livingEntity, var7, level(itemStack, Enchantments.BREACH));
    }
 
-   private static double smashBonus(double var0) {
-      if (var0 <= 3.0) {
-         return 4.0 * var0;
+   private static double smashBonus(double d) {
+      if (d <= 3.0) {
+         return 4.0 * d;
       } else {
-         return var0 <= 8.0 ? 12.0 + 2.0 * (var0 - 3.0) : 22.0 + var0 - 8.0;
+         return d <= 8.0 ? 12.0 + 2.0 * (d - 3.0) : 22.0 + d - 8.0;
       }
    }
 
-   private static float afterArmor(LivingEntity var0, float var1, int var2) {
-      float var3 = var0.method_6096();
-      float var4 = (float)var0.method_45325(EntityAttributes.field_23725);
-      float var5 = MathHelper.method_15363(var3 - var1 / (2.0F + var4 / 4.0F), var3 * 0.2F, 20.0F) / 25.0F;
-      return var1 * (1.0F - MathHelper.method_15363(var5 - 0.15F * var2, 0.0F, 1.0F));
+   private static float afterArmor(LivingEntity livingEntity, float f, int i) {
+      float var3 = livingEntity.getArmor();
+      float var4 = (float)livingEntity.getAttributeValue(EntityAttributes.ARMOR_TOUGHNESS);
+      float var5 = MathHelper.clamp(var3 - f / (2.0F + var4 / 4.0F), var3 * 0.2F, 20.0F) / 25.0F;
+      return f * (1.0F - MathHelper.clamp(var5 - 0.15F * i, 0.0F, 1.0F));
    }
 
-   private static int level(ItemStack var0, RegistryKey<Enchantment> var1) {
-      for (Entry var3 : var0.method_58657().method_57539()) {
-         if (((RegistryEntry)var3.getKey()).method_40225(var1)) {
+   private static int level(ItemStack itemStack, RegistryKey<Enchantment> registryKey) {
+      for (Entry var3 : itemStack.getEnchantments().getEnchantmentEntries()) {
+         if (((RegistryEntry)var3.getKey()).matchesKey(registryKey)) {
             return var3.getIntValue();
          }
       }
@@ -158,9 +162,9 @@ public final class MaceModule extends ClientModule {
    @EventHandler(
       priority = EventPriority.HIGH
    )
-   public void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      if (var2.field_1724 != null && var2.field_1724.method_24828()) {
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      if (var2.player != null && var2.player.isOnGround()) {
          this.smashed = false;
       }
 
@@ -168,45 +172,45 @@ public final class MaceModule extends ClientModule {
    }
 
    @EventHandler
-   public void onSmashTick(TickEvent var1) {
+   public void onSmashTick(TickEvent tickEvent) {
       if (this.smashAssist.get()) {
-         this.trySmash(MinecraftClient.method_1551());
+         this.trySmash(MinecraftClient.getInstance());
       }
    }
 
-   private void trySmash(MinecraftClient var1) {
-      if (MeleeAttacks.canAct(var1) && !CombatMacroLock.heldByOther(this) && !AutoInvTotemModule.wantsHotbar()) {
-         ClientPlayerEntity var4 = var1.field_1724;
+   private void trySmash(MinecraftClient minecraftClient) {
+      if (MeleeAttacks.canAct(minecraftClient) && !CombatMacroLock.heldByOther(this) && !AutoInvTotemModule.wantsHotbar()) {
+         ClientPlayerEntity var4 = minecraftClient.player;
          if (!MeleeAttacks.actedThisTick(var4)
-            && !MeleeAttacks.clickPending(var1)
-            && !MeleeAttacks.rightClickComing(var1)
+            && !MeleeAttacks.clickPending(minecraftClient)
+            && !MeleeAttacks.rightClickComing(minecraftClient)
             && !ServerRotation.pending()
-            && var1.field_1771 <= 0
-            && MeleeAttacks.handsFree(var1, var4)) {
-            if (!(var4.method_18798().field_1351 >= 0.0)) {
-               EntityHitResult var5 = MeleeAttacks.crosshairHit(var1);
+            && minecraftClient.attackCooldown <= 0
+            && MeleeAttacks.handsFree(minecraftClient, var4)) {
+            if (!(var4.getVelocity().y >= 0.0)) {
+               EntityHitResult var5 = MeleeAttacks.crosshairHit(minecraftClient);
                LivingEntity var2;
                Entity var3;
-               if (var5 != null && (var3 = var5.method_17782()) instanceof LivingEntity && MeleeAttacks.isEnemy(var4, var2 = (LivingEntity)var3)) {
+               if (var5 != null && (var3 = var5.getEntity()) instanceof LivingEntity && MeleeAttacks.isEnemy(var4, var2 = (LivingEntity)var3)) {
                   if (var2 instanceof PlayerEntity || this.mobs.get()) {
                      if (this.smashReady(var4, var2)) {
                         if (MeleeAttacks.shieldBlocks(var2, var4) && !MeleeAttacks.shieldBroken(var2)) {
                            int var6 = ShieldBreakerModule.bestAxe(var4);
                            if (canHoldOneTick(var4, var2) && var6 >= 0 && (this.autoSwap.get() || this.swapBack.get()) && this.slots.take(var4, var6)) {
-                              if (MeleeAttacks.attack(var1, var5)) {
+                              if (MeleeAttacks.attack(minecraftClient, var5)) {
                                  MeleeAttacks.noteShieldBroken(var2);
-                                 MeleeAttacks.claimTick(var1);
+                                 MeleeAttacks.claimTick(minecraftClient);
                               } else {
-                                 this.slots.drop(var1, true);
+                                 this.slots.drop(minecraftClient, true);
                               }
                            }
                         } else if (this.holdsSmash(var4, var2)) {
                            InputControl.dropSprint();
-                           var1.field_1771 = Math.max(var1.field_1771, 1);
+                           minecraftClient.attackCooldown = Math.max(minecraftClient.attackCooldown, 1);
                         } else {
-                           if (MeleeAttacks.attack(var1, var5)) {
+                           if (MeleeAttacks.attack(minecraftClient, var5)) {
                               this.smashed = true;
-                              MeleeAttacks.claimTick(var1);
+                              MeleeAttacks.claimTick(minecraftClient);
                            }
                         }
                      }
@@ -221,36 +225,37 @@ public final class MaceModule extends ClientModule {
       this.smashed = true;
    }
 
-   public boolean smashReady(ClientPlayerEntity var1, LivingEntity var2) {
+   public boolean smashReady(ClientPlayerEntity clientPlayerEntity, LivingEntity livingEntity) {
       return this.isEnabled()
          && !this.smashed
-         && MaceItem.method_58659(var1)
-         && var1.field_6017 >= this.minFall.get()
-         && (var1.method_6047().method_31574(Items.field_49814) || this.autoSwap.get() && this.bestMace(var1, var2, true) >= 0);
+         && MaceItem.shouldDealAdditionalDamage(clientPlayerEntity)
+         && clientPlayerEntity.fallDistance >= this.minFall.get()
+         && (clientPlayerEntity.getMainHandStack().isOf(Items.MACE) || this.autoSwap.get() && this.bestMace(clientPlayerEntity, livingEntity, true) >= 0);
    }
 
-   public boolean holdsSmash(ClientPlayerEntity var1, LivingEntity var2) {
-      boolean var3 = MeleeAttacks.charge(var1) <= 0.9F && var1.method_7261(1.5F) > 0.9F;
-      return canHoldOneTick(var1, var2) && (this.smashTiming.is("Delayed") || var3 || var2.field_6235 > 0 || var1.method_5624());
+   public boolean holdsSmash(ClientPlayerEntity clientPlayerEntity, LivingEntity livingEntity) {
+      boolean var3 = MeleeAttacks.charge(clientPlayerEntity) <= 0.9F && clientPlayerEntity.getAttackCooldownProgress(1.5F) > 0.9F;
+      return canHoldOneTick(clientPlayerEntity, livingEntity)
+         && (this.smashTiming.is("Delayed") || var3 || livingEntity.hurtTime > 0 || clientPlayerEntity.isSprinting());
    }
 
-   private static boolean canHoldOneTick(ClientPlayerEntity var0, LivingEntity var1) {
-      Vec3d var2 = var0.method_18798();
-      if (!var0.method_73183().method_8587(var0, var0.method_5829().method_997(var2))) {
+   private static boolean canHoldOneTick(ClientPlayerEntity clientPlayerEntity, LivingEntity livingEntity) {
+      Vec3d var2 = clientPlayerEntity.getVelocity();
+      if (!clientPlayerEntity.getEntityWorld().isSpaceEmpty(clientPlayerEntity, clientPlayerEntity.getBoundingBox().offset(var2))) {
          return false;
       } else {
-         double var3 = var0.method_55755() - 0.35;
+         double var3 = clientPlayerEntity.getEntityInteractionRange() - 0.35;
          if (var3 <= 0.0) {
             return false;
          } else {
-            Vec3d var5 = var0.method_33571().method_1019(var2);
-            Vec3d var6 = var1.method_73189().method_1023(var1.field_6014, var1.field_6036, var1.field_5969);
-            Box var7 = var1.method_5829().method_997(var6).method_1014(var1.method_5871());
-            if (var7.method_1006(var5)) {
+            Vec3d var5 = clientPlayerEntity.getEyePos().add(var2);
+            Vec3d var6 = livingEntity.getEntityPos().subtract(livingEntity.lastX, livingEntity.lastY, livingEntity.lastZ);
+            Box var7 = livingEntity.getBoundingBox().offset(var6).expand(livingEntity.getTargetingMargin());
+            if (var7.contains(var5)) {
                return true;
             } else {
-               Optional var8 = var7.method_992(var5, var5.method_1019(var0.method_5828(1.0F).method_1021(var3)));
-               return var8.isPresent() && MeleeAttacks.lineIsClear(var0, var5, (Vec3d)var8.get());
+               Optional var8 = var7.raycast(var5, var5.add(clientPlayerEntity.getRotationVec(1.0F).multiply(var3)));
+               return var8.isPresent() && MeleeAttacks.lineIsClear(clientPlayerEntity, var5, (Vec3d)var8.get());
             }
          }
       }

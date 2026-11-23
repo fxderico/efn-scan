@@ -10,18 +10,18 @@ import net.fabricmc.api.Environment;
 public final class BooleanSetting extends Setting {
    private final ImBoolean value;
 
-   public BooleanSetting(String var1, boolean var2) {
-      super(var1);
-      this.value = new ImBoolean(var2);
+   public BooleanSetting(String string, boolean bl) {
+      super(string);
+      this.value = new ImBoolean(bl);
    }
 
    public boolean get() {
       return this.value.get();
    }
 
-   public void set(boolean var1) {
-      if (this.value.get() != var1) {
-         this.value.set(var1);
+   public void set(boolean bl) {
+      if (this.value.get() != bl) {
+         this.value.set(bl);
          this.notifyChanged();
       }
    }
@@ -36,10 +36,10 @@ public final class BooleanSetting extends Setting {
    }
 
    @Override
-   protected void deserializeValue(JsonElement var1) {
-      if (var1 != null && var1.isJsonPrimitive()) {
+   protected void deserializeValue(JsonElement jsonElement) {
+      if (jsonElement != null && jsonElement.isJsonPrimitive()) {
          try {
-            this.value.set(var1.getAsBoolean());
+            this.value.set(jsonElement.getAsBoolean());
          } catch (RuntimeException var3) {
          }
       }

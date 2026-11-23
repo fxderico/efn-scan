@@ -32,21 +32,21 @@ public final class SpeedMineModule extends ClientModule {
       active = null;
    }
 
-   public static float scaleProgress(BlockState var0, float var1) {
+   public static float scaleProgress(BlockState blockState, float f) {
       SpeedMineModule var2 = active;
-      return var2 != null && affects(var0) ? var1 / var2.breakAt.get() : var1;
+      return var2 != null && affects(blockState) ? f / var2.breakAt.get() : f;
    }
 
-   public static boolean dropsDelay(BlockState var0, float var1) {
+   public static boolean dropsDelay(BlockState blockState, float f) {
       SpeedMineModule var2 = active;
-      return var2 != null && var2.skipDelay.get() && affects(var0) ? !var2.keepInstantDelay.get() || var1 < 1.0F : false;
+      return var2 != null && var2.skipDelay.get() && affects(blockState) ? !var2.keepInstantDelay.get() || f < 1.0F : false;
    }
 
-   private static boolean affects(BlockState var0) {
-      if (var0.method_26215() || var0.method_27852(Blocks.field_10260)) {
+   private static boolean affects(BlockState blockState) {
+      if (blockState.isAir() || blockState.isOf(Blocks.SPAWNER)) {
          return false;
       } else {
-         return var0.method_27852(Blocks.field_10255) ? true : !var0.method_26164(BlockTags.field_33716) && !var0.method_26164(BlockTags.field_33713);
+         return blockState.isOf(Blocks.GRAVEL) ? true : !blockState.isIn(BlockTags.SHOVEL_MINEABLE) && !blockState.isIn(BlockTags.AXE_MINEABLE);
       }
    }
 }

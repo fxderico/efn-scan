@@ -10,13 +10,13 @@ public final class Noise {
    private Noise() {
    }
 
-   public static float noise(float var0, float var1, float var2) {
-      int var3 = floor(var0);
-      int var4 = floor(var1);
-      int var5 = floor(var2);
-      float var6 = var0 - var3;
-      float var7 = var1 - var4;
-      float var8 = var2 - var5;
+   public static float noise(float f, float g, float h) {
+      int var3 = floor(f);
+      int var4 = floor(g);
+      int var5 = floor(h);
+      float var6 = f - var3;
+      float var7 = g - var4;
+      float var8 = h - var5;
       int var9 = var3 & 0xFF;
       int var10 = var4 & 0xFF;
       int var11 = var5 & 0xFF;
@@ -37,56 +37,56 @@ public final class Noise {
       return lerp(var23, lerp(var24, var25, var13), var14);
    }
 
-   public static float noise(float var0, float var1) {
-      return noise(var0, var1, 0.37F);
+   public static float noise(float f, float g) {
+      return noise(f, g, 0.37F);
    }
 
-   public static float fbm(float var0, float var1, float var2, int var3) {
+   public static float fbm(float f, float g, float h, int i) {
       float var4 = 0.0F;
       float var5 = 0.5F;
       float var6 = 0.0F;
 
-      for (int var7 = 0; var7 < var3; var7++) {
-         var4 += var5 * noise(var0, var1, var2);
+      for (int var7 = 0; var7 < i; var7++) {
+         var4 += var5 * noise(f, g, h);
          var6 += var5;
-         var0 = var0 * 2.03F + 17.1F;
-         var1 = var1 * 2.03F - 4.7F;
-         var2 = var2 * 2.03F + 9.3F;
+         f = f * 2.03F + 17.1F;
+         g = g * 2.03F - 4.7F;
+         h = h * 2.03F + 9.3F;
          var5 *= 0.5F;
       }
 
       return var4 / var6;
    }
 
-   public static float fbm(float var0, float var1, int var2) {
-      return fbm(var0, var1, 0.37F, var2);
+   public static float fbm(float f, float g, int i) {
+      return fbm(f, g, 0.37F, i);
    }
 
-   public static float hash(int var0, int var1, int var2) {
-      int var3 = var0 * 522133279 ^ var1 * 1540483477 ^ var2 * 668265263;
+   public static float hash(int i, int j, int k) {
+      int var3 = i * 522133279 ^ j * 1540483477 ^ k * 668265263;
       var3 ^= var3 >>> 13;
       var3 *= -2048144789;
       var3 ^= var3 >>> 16;
       return (var3 & 65535) / 65535.0F;
    }
 
-   private static int floor(float var0) {
-      int var1 = (int)var0;
-      return var0 < var1 ? var1 - 1 : var1;
+   private static int floor(float f) {
+      int var1 = (int)f;
+      return f < var1 ? var1 - 1 : var1;
    }
 
-   private static float fade(float var0) {
-      return var0 * var0 * var0 * (var0 * (var0 * 6.0F - 15.0F) + 10.0F);
+   private static float fade(float f) {
+      return f * f * f * (f * (f * 6.0F - 15.0F) + 10.0F);
    }
 
-   private static float lerp(float var0, float var1, float var2) {
-      return var0 + (var1 - var0) * var2;
+   private static float lerp(float f, float g, float h) {
+      return f + (g - f) * h;
    }
 
-   private static float grad(int var0, float var1, float var2, float var3) {
-      int var5 = var0 & 15;
-      float var4 = var5 < 8 ? var1 : var2;
-      float var7 = var5 < 4 ? var2 : (var5 != 12 && var5 != 14 ? var3 : var1);
+   private static float grad(int i, float f, float g, float h) {
+      int var5 = i & 15;
+      float var4 = var5 < 8 ? f : g;
+      float var7 = var5 < 4 ? g : (var5 != 12 && var5 != 14 ? h : f);
       return ((var5 & 1) == 0 ? var4 : -var4) + ((var5 & 2) == 0 ? var7 : -var7);
    }
 

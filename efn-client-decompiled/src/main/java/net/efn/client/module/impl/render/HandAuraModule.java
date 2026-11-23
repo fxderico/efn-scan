@@ -48,7 +48,7 @@ public final class HandAuraModule extends ClientModule {
       if (RenderSystem.isOnRenderThread()) {
          HandAuraPass.release();
       } else {
-         MinecraftClient.method_1551().execute(HandAuraModule::releaseIfOff);
+         MinecraftClient.getInstance().execute(HandAuraModule::releaseIfOff);
       }
    }
 
@@ -63,10 +63,10 @@ public final class HandAuraModule extends ClientModule {
       return var0 != null && var0.shows() && HandAuraPass.begin();
    }
 
-   public static void endCapture(boolean var0) {
-      if (HandAuraPass.end() && var0) {
+   public static void endCapture(boolean bl) {
+      if (HandAuraPass.end() && bl) {
          HandAuraModule var1 = active;
-         float var2 = Math.max(1.0F, MinecraftClient.method_1551().method_1522().field_1481 / 1080.0F);
+         float var2 = Math.max(1.0F, MinecraftClient.getInstance().getFramebuffer().textureHeight / 1080.0F);
          if (var1 == null) {
             HandAuraPass.compose(-1, 0.0F, 2.0F, 0.0F, 2.0F * var2, -1, 0.0F, 0.0F);
          } else {
@@ -95,20 +95,20 @@ public final class HandAuraModule extends ClientModule {
       return this.manual() ? this.glowColor.argb() : CosmeticAccent.argb();
    }
 
-   private int sheenArgb(int var1) {
-      return this.manual() ? this.sheenColor.argb() : ColorHelper.method_61319(0.55F, var1, -1);
+   private int sheenArgb(int i) {
+      return this.manual() ? this.sheenColor.argb() : ColorHelper.lerp(0.55F, i, -1);
    }
 
    private boolean shows() {
       return this.aura.get() > 0.0F || this.rim.get() > 0.0F;
    }
 
-   private float auraStrength(long var1) {
+   private float auraStrength(long l) {
       float var3 = this.aura.get() / 100.0F;
       if (!this.breathe.get()) {
          return var3;
       } else {
-         double var4 = var1 % 3200000000L / 3.2E9;
+         double var4 = l % 3200000000L / 3.2E9;
          float var6 = (float)Math.sin(var4 * 3.141592653589793);
          return var3 * (0.6F + 0.4F * var6 * var6);
       }

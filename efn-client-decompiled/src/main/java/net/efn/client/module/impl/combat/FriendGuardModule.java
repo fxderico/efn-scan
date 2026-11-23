@@ -34,12 +34,12 @@ public final class FriendGuardModule extends ClientModule {
       this.lastHintAt = 0L;
    }
 
-   public static boolean intercepts(PlayerEntity var0, Entity var1) {
+   public static boolean intercepts(PlayerEntity playerEntity, Entity entity) {
       FriendGuardModule var3 = active;
       PlayerEntity var2;
-      if (var3 == null || !(var1 instanceof PlayerEntity) || (var2 = (PlayerEntity)var1) == var0) {
+      if (var3 == null || !(entity instanceof PlayerEntity) || (var2 = (PlayerEntity)entity) == playerEntity) {
          return false;
-      } else if (var0 == MinecraftClient.method_1551().field_1724 && MeleeAttacks.isFriend(var2)) {
+      } else if (playerEntity == MinecraftClient.getInstance().player && MeleeAttacks.isFriend(var2)) {
          var3.hint(var2);
          return true;
       } else {
@@ -47,12 +47,12 @@ public final class FriendGuardModule extends ClientModule {
       }
    }
 
-   public static boolean interceptsStab(ClientPlayerEntity var0) {
+   public static boolean interceptsStab(ClientPlayerEntity clientPlayerEntity) {
       FriendGuardModule var1 = active;
-      if (var1 != null && var0 != null) {
-         Entity var2 = MeleeAttacks.stabTarget(var0, var0x -> {
+      if (var1 != null && clientPlayerEntity != null) {
+         Entity var2 = MeleeAttacks.stabTarget(clientPlayerEntity, entity -> {
             PlayerEntity var1x;
-            return var0x instanceof PlayerEntity && MeleeAttacks.isFriend(var1x = (PlayerEntity)var0x);
+            return entity instanceof PlayerEntity && MeleeAttacks.isFriend(var1x = (PlayerEntity)entity);
          });
          if (var2 == null) {
             return false;
@@ -65,12 +65,12 @@ public final class FriendGuardModule extends ClientModule {
       }
    }
 
-   private void hint(PlayerEntity var1) {
+   private void hint(PlayerEntity playerEntity) {
       if (this.notificationsOn()) {
          long var2 = System.currentTimeMillis();
          if (var2 - this.lastHintAt >= 1500L) {
             this.lastHintAt = var2;
-            ModuleChat.actionBar(this, ModuleChat.body().text("Held back your hit on ").name(var1.method_7334().name()));
+            ModuleChat.actionBar(this, ModuleChat.body().text("Held back your hit on ").name(playerEntity.getGameProfile().name()));
          }
       }
    }

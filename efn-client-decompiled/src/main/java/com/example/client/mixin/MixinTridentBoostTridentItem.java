@@ -18,39 +18,39 @@ public abstract class MixinTridentBoostTridentItem {
    }
 
    @WrapOperation(
-      method = {"method_7840"},
+      method = {"onStoppedUsing"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_1657;method_5762(DDD)V"
+         target = "Lnet/minecraft/entity/player/PlayerEntity;addVelocity(DDD)V"
       )},
       require = 0
    )
-   private void efn$tridentBoostPush(PlayerEntity var1, double var2, double var4, double var6, Operation<Void> var8) {
+   private void efn$tridentBoostPush(PlayerEntity playerEntity, double d, double e, double f, Operation<Void> operation) {
       double var9 = TridentBoostModule.riptideMultiplier();
-      var8.call(new Object[]{var1, var2 * var9, var4 * var9, var6 * var9});
+      operation.call(playerEntity, d * var9, e * var9, f * var9);
    }
 
    @ModifyExpressionValue(
-      method = {"method_7836"},
+      method = {"use"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_1657;method_5721()Z"
+         target = "Lnet/minecraft/entity/player/PlayerEntity;isTouchingWaterOrRain()Z"
       )},
       require = 0
    )
-   private boolean efn$tridentBoostUseOutOfWater(boolean var1) {
-      return var1 || TridentBoostModule.allowOutOfWater();
+   private boolean efn$tridentBoostUseOutOfWater(boolean bl) {
+      return bl || TridentBoostModule.allowOutOfWater();
    }
 
    @ModifyExpressionValue(
-      method = {"method_7840"},
+      method = {"onStoppedUsing"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_1657;method_5721()Z"
+         target = "Lnet/minecraft/entity/player/PlayerEntity;isTouchingWaterOrRain()Z"
       )},
       require = 0
    )
-   private boolean efn$tridentBoostReleaseOutOfWater(boolean var1) {
-      return var1 || TridentBoostModule.allowOutOfWater();
+   private boolean efn$tridentBoostReleaseOutOfWater(boolean bl) {
+      return bl || TridentBoostModule.allowOutOfWater();
    }
 }

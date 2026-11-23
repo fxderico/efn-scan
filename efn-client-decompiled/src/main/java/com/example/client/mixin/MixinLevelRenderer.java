@@ -33,94 +33,81 @@ public abstract class MixinLevelRenderer {
    }
 
    @ModifyArg(
-      method = {"method_22710"},
+      method = {"render"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_863;method_23099(Lnet/minecraft/class_4604;DDDF)V"
+         target = "Lnet/minecraft/client/render/debug/DebugRenderer;render(Lnet/minecraft/client/render/Frustum;DDDF)V"
       )},
       index = 0
    )
-   private Frustum efn$onRenderLevel(Frustum var1, @Local(argsOnly = true,ordinal = 0) Matrix4f var2, @Local(argsOnly = true,ordinal = 1) Matrix4f var3) {
-      float var4 = MinecraftClient.method_1551().method_61966().method_60637(false);
-      TracerEngine.beginFrame(var2, var3);
-      WorldQuads.beginFrame(MinecraftClient.method_1551().field_1773.method_19418().method_71156());
-      CollectorScope var5 = ShaderOverlay.capture();
+   private Frustum efn$onRenderLevel(
+      Frustum frustum, @Local(argsOnly = true,ordinal = 0) Matrix4f matrix4f, @Local(argsOnly = true,ordinal = 1) Matrix4f matrix4f2
+   ) {
+      float var4 = MinecraftClient.getInstance().getRenderTickCounter().getTickProgress(false);
+      TracerEngine.beginFrame(matrix4f, matrix4f2);
+      WorldQuads.beginFrame(MinecraftClient.getInstance().gameRenderer.getCamera().getCameraPos());
 
-      try {
-         Render3DEvent.dispatch(var4, var1);
-      } catch (Throwable var9) {
-         if (var5 != null) {
-            try {
-               var5.close();
-            } catch (Throwable var8) {
-               var9.addSuppressed(var8);
-            }
-         }
-
-         throw var9;
+      try (CollectorScope var5 = ShaderOverlay.capture()) {
+         Render3DEvent.dispatch(var4, frustum);
       }
 
-      if (var5 != null) {
-         var5.close();
-      }
-
-      return var1;
+      return frustum;
    }
 
    @ModifyArg(
-      method = {"method_22710"},
+      method = {"render"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_761;method_62199(Lnet/minecraft/class_9909;Lnet/minecraft/class_12075;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lorg/joml/Matrix4f;)V"
+         target = "Lnet/minecraft/client/render/WorldRenderer;renderLateDebug(Lnet/minecraft/client/render/FrameGraphBuilder;Lnet/minecraft/client/render/state/CameraRenderState;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lorg/joml/Matrix4f;)V"
       )},
       index = 2
    )
-   private GpuBufferSlice efn$noFluidFogOnTop(GpuBufferSlice var1, @Local(argsOnly = true) Camera var2) {
-      return efn$onTopFog(var1, var2);
+   private GpuBufferSlice efn$noFluidFogOnTop(GpuBufferSlice gpuBufferSlice, @Local(argsOnly = true) Camera camera) {
+      return efn$onTopFog(gpuBufferSlice, camera);
    }
 
    @Unique
-   private static GpuBufferSlice efn$onTopFog(GpuBufferSlice var0, Camera var1) {
-      return var1.method_19334() == CameraSubmersionType.field_27888
-         ? var0
-         : ((AccessorGameRenderer)MinecraftClient.method_1551().field_1773).efn$getFogRenderer().method_71109(FogType.field_60101);
+   private static GpuBufferSlice efn$onTopFog(GpuBufferSlice gpuBufferSlice, Camera camera) {
+      return camera.getSubmersionType() == CameraSubmersionType.NONE
+         ? gpuBufferSlice
+         : ((AccessorGameRenderer)MinecraftClient.getInstance().gameRenderer).efn$getFogRenderer().getFogBuffer(FogType.NONE);
    }
 
    @Inject(
-      method = {"method_22710"},
+      method = {"render"},
       at = {@At("TAIL")}
    )
    private void efn$overlayAfterShaderPack(
-      CallbackInfo var1,
-      @Local(argsOnly = true) GpuBufferSlice var2,
-      @Local(argsOnly = true) Camera var3,
-      @Local(argsOnly = true,ordinal = 0) Matrix4f var4,
-      @Local(argsOnly = true,ordinal = 1) Matrix4f var5
+      CallbackInfo callbackInfo,
+      @Local(argsOnly = true) GpuBufferSlice gpuBufferSlice,
+      @Local(argsOnly = true) Camera camera,
+      @Local(argsOnly = true,ordinal = 0) Matrix4f matrix4f,
+      @Local(argsOnly = true,ordinal = 1) Matrix4f matrix4f2
    ) {
-      WorldQuads.render(var4, var5);
+      WorldQuads.render(matrix4f, matrix4f2);
       if (ShaderOverlay.pending()) {
-         ShaderOverlay.render(var3, var4, var5, var2, efn$onTopFog(var2, var3));
+         ShaderOverlay.render(camera, matrix4f, matrix4f2, gpuBufferSlice, efn$onTopFog(gpuBufferSlice, camera));
       }
    }
 
    @Inject(
-      method = {"method_22710"},
+      method = {"render"},
       at = {@At("TAIL")}
    )
-   private void efn$worldFogForHand(CallbackInfo var1, @Local(argsOnly = true) GpuBufferSlice var2, @Local(argsOnly = true) Camera var3) {
-      if (var3.method_19334() != CameraSubmersionType.field_27888) {
-         RenderSystem.setShaderFog(var2);
+   private void efn$worldFogForHand(CallbackInfo callbackInfo, @Local(argsOnly = true) GpuBufferSlice gpuBufferSlice, @Local(argsOnly = true) Camera camera) {
+      if (camera.getSubmersionType() != CameraSubmersionType.NONE) {
+         RenderSystem.setShaderFog(gpuBufferSlice);
       }
    }
 
    @Inject(
-      method = {"method_43788"},
+      method = {"hasBlindnessOrDarkness"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$keepSkyDuringBlindnessDarkness(Camera var1, CallbackInfoReturnable<Boolean> var2) {
+   private void efn$keepSkyDuringBlindnessDarkness(Camera camera, CallbackInfoReturnable<Boolean> callbackInfoReturnable) {
       if (NoRenderModule.hideBlindnessDarkness()) {
-         var2.setReturnValue(false);
+         callbackInfoReturnable.setReturnValue(false);
       }
    }
 }

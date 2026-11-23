@@ -39,9 +39,9 @@ public final class ZoomModule extends ClientModule {
    protected void onEnable() {
       target = this.zoom.get();
       if (this.cinematic.get()) {
-         MinecraftClient var1 = MinecraftClient.method_1551();
-         this.smoothBefore = var1.field_1690.field_1914;
-         var1.field_1690.field_1914 = true;
+         MinecraftClient var1 = MinecraftClient.getInstance();
+         this.smoothBefore = var1.options.smoothCameraEnabled;
+         var1.options.smoothCameraEnabled = true;
          this.smoothPushed = true;
       }
    }
@@ -50,14 +50,14 @@ public final class ZoomModule extends ClientModule {
    protected void onDisable() {
       target = 1.0F;
       if (this.smoothPushed) {
-         MinecraftClient.method_1551().field_1690.field_1914 = this.smoothBefore;
+         MinecraftClient.getInstance().options.smoothCameraEnabled = this.smoothBefore;
          this.smoothPushed = false;
       }
    }
 
-   public static float fov(float var0) {
+   public static float fov(float f) {
       float var1 = advance();
-      return var1 > 1.0001F ? var0 / var1 : var0;
+      return var1 > 1.0001F ? f / var1 : f;
    }
 
    public static double turnScale() {
@@ -65,10 +65,10 @@ public final class ZoomModule extends ClientModule {
       return var0 != null && var0.lowerSensitivity.get() && !(current <= 1.0001F) ? 1.0 / current : 1.0;
    }
 
-   public static boolean scroll(double var0) {
+   public static boolean scroll(double d) {
       ZoomModule var2 = instance;
-      if (var2 != null && var2.isEnabled() && var2.scroll.get() && var0 != 0.0) {
-         float var3 = target * (var0 > 0.0 ? 1.2F : 0.8333333F);
+      if (var2 != null && var2.isEnabled() && var2.scroll.get() && d != 0.0) {
+         float var3 = target * (d > 0.0 ? 1.2F : 0.8333333F);
          target = Math.max(1.1F, Math.min(50.0F, var3));
          return true;
       } else {

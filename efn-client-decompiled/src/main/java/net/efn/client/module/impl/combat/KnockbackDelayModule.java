@@ -33,7 +33,7 @@ public final class KnockbackDelayModule extends ClientModule {
    private final NumberSetting groundMax = this.addSetting("ground-max", new NumberSetting("Ground Delay Max (ms)", 250.0F, 0.0F, 1000.0F).step(10.0F));
    private final BooleanSetting waterCheck = this.addSetting("water-check", new BooleanSetting("Not In Water", false));
    private final BooleanSetting onlyFights = this.addSetting("only-fights", new BooleanSetting("Only Near Enemies", true));
-   private final MinecraftClient mc = MinecraftClient.method_1551();
+   private final MinecraftClient mc = MinecraftClient.getInstance();
    private final Deque<KnockbackDelayModule.Held> held = new ArrayDeque<>();
    private ClientPlayNetworkHandler heldFor;
    private volatile boolean fightNear;
@@ -54,8 +54,8 @@ public final class KnockbackDelayModule extends ClientModule {
          this.held.clear();
       }
 
-      this.on(TickEvent.TYPE, Stage.PRE, var1x -> {
-         this.fightNear = this.mc.field_1724 != null && this.enemyNear(this.mc.field_1724);
+      this.on(TickEvent.TYPE, Stage.PRE, tickEvent -> {
+         this.fightNear = this.mc.player != null && this.enemyNear(this.mc.player);
          this.applyDue(false);
       });
    }
@@ -66,9 +66,9 @@ public final class KnockbackDelayModule extends ClientModule {
    }
 
    @EventHandler
-   public void onPacketReceive(PacketReceiveNettyEvent var1) {
-      ClientPlayerEntity var3 = this.mc.field_1724;
-      if (var3 != null && pushesMe(var1.packet, var3)) {
+   public void onPacketReceive(PacketReceiveNettyEvent packetReceiveNettyEvent) {
+      ClientPlayerEntity var3 = this.mc.player;
+      if (var3 != null && pushesMe(packetReceiveNettyEvent.packet, var3)) {
          Deque var4 = this.held;
          boolean var2;
          synchronized (var4) {
@@ -76,41 +76,41 @@ public final class KnockbackDelayModule extends ClientModule {
          }
 
          if (var2 || this.delays(var3)) {
-            boolean var5 = var3.method_24828();
+            boolean var5 = var3.isOnGround();
             long var6 = var2 ? 0L : randomBetween(var5 ? this.groundMin.get() : this.airMin.get(), var5 ? this.groundMax.get() : this.airMax.get());
             Deque var8 = this.held;
             synchronized (var8) {
                if (this.held.isEmpty()) {
-                  this.heldFor = var3.field_3944;
+                  this.heldFor = var3.networkHandler;
                }
 
                long var10 = Math.max(System.currentTimeMillis() + var6, this.held.isEmpty() ? 0L : this.held.peekLast().due());
-               this.held.addLast(new KnockbackDelayModule.Held(var1.packet, var10));
+               this.held.addLast(new KnockbackDelayModule.Held(packetReceiveNettyEvent.packet, var10));
             }
 
-            var1.setCancelled(true);
+            packetReceiveNettyEvent.setCancelled(true);
          }
       }
    }
 
-   private static boolean pushesMe(Packet<?> var0, ClientPlayerEntity var1) {
+   private static boolean pushesMe(Packet<?> packet, ClientPlayerEntity clientPlayerEntity) {
       ExplosionS2CPacket var2;
-      return var0 instanceof EntityVelocityUpdateS2CPacket var3
-         ? var3.method_11818() == var1.method_5628()
-         : var0 instanceof ExplosionS2CPacket && (var2 = (ExplosionS2CPacket)var0).comp_2884().isPresent();
+      return packet instanceof EntityVelocityUpdateS2CPacket var3
+         ? var3.getEntityId() == clientPlayerEntity.getId()
+         : packet instanceof ExplosionS2CPacket && (var2 = (ExplosionS2CPacket)packet).playerKnockback().isPresent();
    }
 
-   private boolean delays(ClientPlayerEntity var1) {
-      if (this.waterCheck.get() && var1.method_5799()) {
+   private boolean delays(ClientPlayerEntity clientPlayerEntity) {
+      if (this.waterCheck.get() && clientPlayerEntity.isTouchingWater()) {
          return false;
       } else {
          return this.onlyFights.get() && !this.fightNear ? false : ThreadLocalRandom.current().nextDouble(100.0) < this.chance.get();
       }
    }
 
-   private boolean enemyNear(ClientPlayerEntity var1) {
-      for (PlayerEntity var3 : var1.method_73183().method_18456()) {
-         if (var3 != var1 && var3.method_5739(var1) <= 6.0 && MeleeAttacks.isEnemy(var1, var3)) {
+   private boolean enemyNear(ClientPlayerEntity clientPlayerEntity) {
+      for (PlayerEntity var3 : clientPlayerEntity.getEntityWorld().getPlayers()) {
+         if (var3 != clientPlayerEntity && var3.distanceTo(clientPlayerEntity) <= 6.0 && MeleeAttacks.isEnemy(clientPlayerEntity, var3)) {
             return true;
          }
       }
@@ -118,14 +118,14 @@ public final class KnockbackDelayModule extends ClientModule {
       return false;
    }
 
-   private static long randomBetween(float var0, float var1) {
-      long var2 = Math.round(Math.min(var0, var1));
-      long var4 = Math.round(Math.max(var0, var1));
+   private static long randomBetween(float f, float g) {
+      long var2 = Math.round(Math.min(f, g));
+      long var4 = Math.round(Math.max(f, g));
       return var4 <= var2 ? var2 : ThreadLocalRandom.current().nextLong(var2, var4 + 1L);
    }
 
-   private void applyDue(boolean var1) {
-      ClientPlayNetworkHandler var2 = this.mc.method_1562();
+   private void applyDue(boolean bl) {
+      ClientPlayNetworkHandler var2 = this.mc.getNetworkHandler();
       long var3 = System.currentTimeMillis();
 
       while (true) {
@@ -133,7 +133,7 @@ public final class KnockbackDelayModule extends ClientModule {
          KnockbackDelayModule.Held var5;
          synchronized (var6) {
             var5 = this.held.peekFirst();
-            if (var5 == null || !var1 && var5.due() > var3) {
+            if (var5 == null || !bl && var5.due() > var3) {
                return;
             }
 
@@ -148,8 +148,8 @@ public final class KnockbackDelayModule extends ClientModule {
       }
    }
 
-   private static void dispatch(Packet var0, PacketListener var1) {
-      var0.method_65081(var1);
+   private static void dispatch(Packet packet, PacketListener packetListener) {
+      packet.apply(packetListener);
    }
 
    @Environment(EnvType.CLIENT)

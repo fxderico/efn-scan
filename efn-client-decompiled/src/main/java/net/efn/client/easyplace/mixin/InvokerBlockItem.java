@@ -11,6 +11,6 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 @Environment(EnvType.CLIENT)
 @Mixin({BlockItem.class})
 public interface InvokerBlockItem {
-   @Invoker("method_7707")
-   BlockState easyplace$getPlacementState(ItemPlacementContext var1);
+   @Invoker("getPlacementState")
+   BlockState easyplace$getPlacementState(ItemPlacementContext itemPlacementContext);
 }

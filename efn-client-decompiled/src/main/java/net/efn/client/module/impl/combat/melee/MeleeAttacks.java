@@ -28,6 +28,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.attribute.EntityAttributeModifier.Operation;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.damage.DamageType;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.entity.mob.Angerable;
 import net.minecraft.entity.mob.MobEntity;
@@ -38,6 +39,7 @@ import net.minecraft.entity.vehicle.AbstractBoatEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.tag.ItemTags;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Hand;
 import net.minecraft.util.PlayerInput;
 import net.minecraft.util.hit.BlockHitResult;
@@ -64,62 +66,65 @@ public final class MeleeAttacks {
    private MeleeAttacks() {
    }
 
-   public static void noteAction(PlayerEntity var0) {
-      actorId = var0.method_5628();
-      actionTick = var0.field_6012;
+   public static void noteAction(PlayerEntity playerEntity) {
+      actorId = playerEntity.getId();
+      actionTick = playerEntity.age;
    }
 
-   public static boolean actedThisTick(PlayerEntity var0) {
-      return actionTick == var0.field_6012 && actorId == var0.method_5628();
+   public static boolean actedThisTick(PlayerEntity playerEntity) {
+      return actionTick == playerEntity.age && actorId == playerEntity.getId();
    }
 
-   public static boolean handsFree(MinecraftClient var0, ClientPlayerEntity var1) {
-      return !var1.method_6115()
-         && !var1.method_3144()
-         && !var0.field_1761.method_2923()
-         && !rowing(var1)
-         && !clickPending(var0.field_1690.field_1831)
-         && !clickPending(var0.field_1690.field_1869);
+   public static boolean handsFree(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      return !clientPlayerEntity.isUsingItem()
+         && !clientPlayerEntity.isRiding()
+         && !minecraftClient.interactionManager.isBreakingBlock()
+         && !rowing(clientPlayerEntity)
+         && !clickPending(minecraftClient.options.swapHandsKey)
+         && !clickPending(minecraftClient.options.dropKey);
    }
 
-   private static boolean rowing(ClientPlayerEntity var0) {
-      PlayerInput var1 = ((AccessorLocalPlayer)var0).efn$lastSentInput();
-      return var0.method_5854() instanceof AbstractBoatEntity && (var1.comp_3159() != var1.comp_3160() || var1.comp_3161() != var1.comp_3162());
+   private static boolean rowing(ClientPlayerEntity clientPlayerEntity) {
+      PlayerInput var1 = ((AccessorLocalPlayer)clientPlayerEntity).efn$lastSentInput();
+      return clientPlayerEntity.getVehicle() instanceof AbstractBoatEntity && (var1.forward() != var1.backward() || var1.left() != var1.right());
    }
 
-   public static boolean clickPending(MinecraftClient var0) {
-      return clickPending(var0.field_1690.field_1886);
+   public static boolean clickPending(MinecraftClient minecraftClient) {
+      return clickPending(minecraftClient.options.attackKey);
    }
 
-   public static boolean clickPending(KeyBinding var0) {
-      return ((AccessorTriggerbotKeyMapping)var0).efn$triggerbotClickCount() > 0;
+   public static boolean clickPending(KeyBinding keyBinding) {
+      return ((AccessorTriggerbotKeyMapping)keyBinding).efn$triggerbotClickCount() > 0;
    }
 
-   public static boolean rightClickComing(MinecraftClient var0) {
-      return var0.field_1690.field_1904.method_1434() || clickPending(var0.field_1690.field_1904);
+   public static boolean rightClickComing(MinecraftClient minecraftClient) {
+      return minecraftClient.options.useKey.isPressed() || clickPending(minecraftClient.options.useKey);
    }
 
-   public static void takeAttackClicks(MinecraftClient var0) {
-      KeyBinding var1 = var0.field_1690.field_1886;
+   public static void takeAttackClicks(MinecraftClient minecraftClient) {
+      KeyBinding var1 = minecraftClient.options.attackKey;
 
-      while (var1.method_1436()) {
+      while (var1.wasPressed()) {
       }
    }
 
-   public static void claimTick(MinecraftClient var0) {
-      takeAttackClicks(var0);
-      KeyBinding var1 = var0.field_1690.field_1904;
+   public static void claimTick(MinecraftClient minecraftClient) {
+      takeAttackClicks(minecraftClient);
+      KeyBinding var1 = minecraftClient.options.useKey;
 
-      while (var1.method_1436()) {
+      while (var1.wasPressed()) {
       }
 
-      var0.field_1771 = Math.max(var0.field_1771, 1);
-      AccessorCombatMinecraft var2 = (AccessorCombatMinecraft)var0;
+      minecraftClient.attackCooldown = Math.max(minecraftClient.attackCooldown, 1);
+      AccessorCombatMinecraft var2 = (AccessorCombatMinecraft)minecraftClient;
       var2.efn$setRightClickDelay(Math.max(var2.efn$rightClickDelay(), 2));
    }
 
-   public static boolean canAct(MinecraftClient var0) {
-      if (var0.field_1724 == null || var0.field_1687 == null || var0.field_1761 == null || var0.field_1755 != null) {
+   public static boolean canAct(MinecraftClient minecraftClient) {
+      if (minecraftClient.player == null
+         || minecraftClient.world == null
+         || minecraftClient.interactionManager == null
+         || minecraftClient.currentScreen != null) {
          return false;
       } else if (AutoEatModule.isEating()) {
          return false;
@@ -129,13 +134,13 @@ public final class MeleeAttacks {
       }
    }
 
-   public static EntityHitResult crosshairHit(MinecraftClient var0) {
-      ClientPlayerEntity var2 = var0.field_1724;
-      if (var2 != null && var0.field_1687 != null) {
-         HitResult var3 = var2.method_76762(1.0F, var2);
+   public static EntityHitResult crosshairHit(MinecraftClient minecraftClient) {
+      ClientPlayerEntity var2 = minecraftClient.player;
+      if (var2 != null && minecraftClient.world != null) {
+         HitResult var3 = var2.getCrosshairTarget(1.0F, var2);
          EntityHitResult var1;
-         if (var3 instanceof EntityHitResult && (var1 = (EntityHitResult)var3).method_17783() == Type.field_1331) {
-            return lineIsClear(var2, var2.method_33571(), var1.method_17784()) ? var1 : null;
+         if (var3 instanceof EntityHitResult && (var1 = (EntityHitResult)var3).getType() == Type.ENTITY) {
+            return lineIsClear(var2, var2.getEyePos(), var1.getPos()) ? var1 : null;
          } else {
             return null;
          }
@@ -144,43 +149,44 @@ public final class MeleeAttacks {
       }
    }
 
-   public static boolean lineIsClear(ClientPlayerEntity var0, Vec3d var1, Vec3d var2) {
-      BlockHitResult var3 = var0.method_73183().method_17742(new RaycastContext(var1, var2, ShapeType.field_17558, FluidHandling.field_1348, var0));
-      return var3.method_17783() == Type.field_1333 || var3.method_17784().method_1025(var1) >= var1.method_1025(var2) - 0.001;
+   public static boolean lineIsClear(ClientPlayerEntity clientPlayerEntity, Vec3d vec3d, Vec3d vec3d2) {
+      BlockHitResult var3 = clientPlayerEntity.getEntityWorld()
+         .raycast(new RaycastContext(vec3d, vec3d2, ShapeType.COLLIDER, FluidHandling.NONE, clientPlayerEntity));
+      return var3.getType() == Type.MISS || var3.getPos().squaredDistanceTo(vec3d) >= vec3d.squaredDistanceTo(vec3d2) - 0.001;
    }
 
-   public static boolean attack(MinecraftClient var0, EntityHitResult var1) {
-      return attack(var0, var1, 0.0);
+   public static boolean attack(MinecraftClient minecraftClient, EntityHitResult entityHitResult) {
+      return attack(minecraftClient, entityHitResult, 0.0);
    }
 
-   public static boolean attack(MinecraftClient var0, EntityHitResult var1, double var2) {
-      ClientPlayerEntity var5 = var0.field_1724;
-      if (var5 == null || var0.field_1687 == null || var0.field_1761 == null) {
+   public static boolean attack(MinecraftClient minecraftClient, EntityHitResult entityHitResult, double d) {
+      ClientPlayerEntity var5 = minecraftClient.player;
+      if (var5 == null || minecraftClient.world == null || minecraftClient.interactionManager == null) {
          return false;
-      } else if (var0.field_1771 > 0 || actedThisTick(var5)) {
+      } else if (minecraftClient.attackCooldown > 0 || actedThisTick(var5)) {
          return false;
-      } else if (handsFree(var0, var5) && !var5.method_7325()) {
-         if (var5.method_5624() != ((AccessorLocalPlayer)var5).efn$wasSprinting()) {
+      } else if (handsFree(minecraftClient, var5) && !var5.isSpectator()) {
+         if (var5.isSprinting() != ((AccessorLocalPlayer)var5).efn$wasSprinting()) {
             return false;
          } else {
-            ItemStack var6 = var5.method_6047();
-            if (var6.method_57826(DataComponentTypes.field_63631)) {
+            ItemStack var6 = var5.getMainHandStack();
+            if (var6.contains(DataComponentTypes.PIERCING_WEAPON)) {
                return false;
-            } else if (var6.method_45435(var0.field_1687.method_45162()) && !var5.method_75202(var6, 0)) {
-               Entity var7 = var1.method_17782();
-               if (var7.method_31481()) {
+            } else if (var6.isItemEnabled(minecraftClient.world.getEnabledFeatures()) && !var5.isBelowMinimumAttackCharge(var6, 0)) {
+               Entity var7 = entityHitResult.getEntity();
+               if (var7.isRemoved()) {
                   return false;
                } else {
-                  AttackRangeComponent var8 = (AttackRangeComponent)var6.method_58694(DataComponentTypes.field_64680);
-                  boolean var4 = var8 != null ? var8.method_76736(var5, var1.method_17784()) : var5.method_56092(var7.method_5829(), var2);
+                  AttackRangeComponent var8 = var6.get(DataComponentTypes.ATTACK_RANGE);
+                  boolean var4 = var8 != null ? var8.isWithinRange(var5, entityHitResult.getPos()) : var5.canInteractWithEntityIn(var7.getBoundingBox(), d);
                   if (!var4) {
                      return false;
                   } else {
-                     var0.field_1761.method_2918(var5, var7);
+                     minecraftClient.interactionManager.attackEntity(var5, var7);
                      if (!actedThisTick(var5)) {
                         return false;
                      } else {
-                        var5.method_6104(Hand.field_5808);
+                        var5.swingHand(Hand.MAIN_HAND);
                         return true;
                      }
                   }
@@ -194,35 +200,35 @@ public final class MeleeAttacks {
       }
    }
 
-   public static boolean stab(MinecraftClient var0, EntityHitResult var1) {
-      ClientPlayerEntity var3 = var0.field_1724;
-      if (var3 == null || var0.field_1687 == null || var0.field_1761 == null) {
+   public static boolean stab(MinecraftClient minecraftClient, EntityHitResult entityHitResult) {
+      ClientPlayerEntity var3 = minecraftClient.player;
+      if (var3 == null || minecraftClient.world == null || minecraftClient.interactionManager == null) {
          return false;
-      } else if (var0.field_1771 > 0 || actedThisTick(var3)) {
+      } else if (minecraftClient.attackCooldown > 0 || actedThisTick(var3)) {
          return false;
-      } else if (handsFree(var0, var3) && !var3.method_7325()) {
-         if (var3.method_5624() != ((AccessorLocalPlayer)var3).efn$wasSprinting()) {
+      } else if (handsFree(minecraftClient, var3) && !var3.isSpectator()) {
+         if (var3.isSprinting() != ((AccessorLocalPlayer)var3).efn$wasSprinting()) {
             return false;
          } else {
-            ItemStack var4 = var3.method_6047();
-            PiercingWeaponComponent var5 = (PiercingWeaponComponent)var4.method_58694(DataComponentTypes.field_63631);
+            ItemStack var4 = var3.getMainHandStack();
+            PiercingWeaponComponent var5 = var4.get(DataComponentTypes.PIERCING_WEAPON);
             if (var5 == null) {
                return false;
-            } else if (var4.method_45435(var0.field_1687.method_45162()) && !var3.method_75202(var4, 0)) {
-               Entity var6 = var1.method_17782();
-               if (var6.method_31481()) {
+            } else if (var4.isItemEnabled(minecraftClient.world.getEnabledFeatures()) && !var3.isBelowMinimumAttackCharge(var4, 0)) {
+               Entity var6 = entityHitResult.getEntity();
+               if (var6.isRemoved()) {
                   return false;
                } else {
-                  AttackRangeComponent var7 = (AttackRangeComponent)var4.method_58694(DataComponentTypes.field_64680);
-                  boolean var2 = var7 != null ? var7.method_76736(var3, var1.method_17784()) : var3.method_56092(var6.method_5829(), 0.0);
+                  AttackRangeComponent var7 = var4.get(DataComponentTypes.ATTACK_RANGE);
+                  boolean var2 = var7 != null ? var7.isWithinRange(var3, entityHitResult.getPos()) : var3.canInteractWithEntityIn(var6.getBoundingBox(), 0.0);
                   if (!var2) {
                      return false;
                   } else {
-                     var0.field_1761.method_75407(var5);
+                     minecraftClient.interactionManager.attackWithPiercingWeapon(var5);
                      if (!actedThisTick(var3)) {
                         return false;
                      } else {
-                        var3.method_6104(Hand.field_5808);
+                        var3.swingHand(Hand.MAIN_HAND);
                         return true;
                      }
                   }
@@ -236,23 +242,24 @@ public final class MeleeAttacks {
       }
    }
 
-   public static Entity stabTarget(ClientPlayerEntity var0, Predicate<Entity> var1) {
-      AttackRangeComponent var2 = var0.method_76693();
+   public static Entity stabTarget(ClientPlayerEntity clientPlayerEntity, Predicate<Entity> predicate) {
+      AttackRangeComponent var2 = clientPlayerEntity.getAttackRange();
       Rotation var3 = ServerRotation.sent();
-      Vec3d var4 = var3 != null ? Vec3d.method_1030(var3.pitch(), var3.yaw()) : var0.method_5828(1.0F);
-      Vec3d var5 = var0.method_33571();
-      Vec3d var6 = var5.method_1019(var4.method_1021(var2.method_76732(var0)));
-      Vec3d var7 = var5.method_1019(var4.method_1021(var2.method_76739(var0) + Math.max(0.0, var0.method_60478().method_1026(var4))));
-      BlockHitResult var8 = var0.method_73183().method_17742(new RaycastContext(var5, var7, ShapeType.field_17558, FluidHandling.field_1348, var0));
-      if (var8.method_17783() != Type.field_1333) {
-         var7 = var8.method_17784();
+      Vec3d var4 = var3 != null ? Vec3d.fromPolar(var3.pitch(), var3.yaw()) : clientPlayerEntity.getRotationVec(1.0F);
+      Vec3d var5 = clientPlayerEntity.getEyePos();
+      Vec3d var6 = var5.add(var4.multiply(var2.getEffectiveMinRange(clientPlayerEntity)));
+      Vec3d var7 = var5.add(var4.multiply(var2.getEffectiveMaxRange(clientPlayerEntity) + Math.max(0.0, clientPlayerEntity.getMovement().dotProduct(var4))));
+      BlockHitResult var8 = clientPlayerEntity.getEntityWorld()
+         .raycast(new RaycastContext(var5, var7, ShapeType.COLLIDER, FluidHandling.NONE, clientPlayerEntity));
+      if (var8.getType() != Type.MISS) {
+         var7 = var8.getPos();
       }
 
-      float var9 = var2.comp_5262();
+      float var9 = var2.hitboxMargin();
 
-      for (Entity var11 : var0.method_73183().method_8333(var0, new Box(var5, var7).method_1014(var9 + 1.0), var1)) {
-         Box var12 = var11.method_5829().method_1014(var9);
-         if (var12.method_1006(var6) || var12.method_992(var6, var7).isPresent()) {
+      for (Entity var11 : clientPlayerEntity.getEntityWorld().getOtherEntities(clientPlayerEntity, new Box(var5, var7).expand(var9 + 1.0), predicate)) {
+         Box var12 = var11.getBoundingBox().expand(var9);
+         if (var12.contains(var6) || var12.raycast(var6, var7).isPresent()) {
             return var11;
          }
       }
@@ -260,95 +267,98 @@ public final class MeleeAttacks {
       return null;
    }
 
-   private static boolean isHittable(ClientPlayerEntity var0, Entity var1) {
-      if (!(var1 instanceof LivingEntity var3 && var1 != var0 && !(var1 instanceof ArmorStandEntity))) {
+   private static boolean isHittable(ClientPlayerEntity clientPlayerEntity, Entity entity) {
+      if (!(entity instanceof LivingEntity var3 && entity != clientPlayerEntity && !(entity instanceof ArmorStandEntity))) {
          return false;
       } else {
          PlayerEntity var2;
-         return var3.method_5805() && var1.method_5732() && var0.method_5854() != var1
-            ? !(var1 instanceof PlayerEntity) || !(var2 = (PlayerEntity)var1).method_7325() && !var2.method_68878()
+         return var3.isAlive() && entity.isAttackable() && clientPlayerEntity.getVehicle() != entity
+            ? !(entity instanceof PlayerEntity) || !(var2 = (PlayerEntity)entity).isSpectator() && !var2.isCreative()
             : false;
       }
    }
 
-   public static boolean isEnemy(ClientPlayerEntity var0, Entity var1) {
+   public static boolean isEnemy(ClientPlayerEntity clientPlayerEntity, Entity entity) {
       PlayerEntity var2;
-      return isHittable(var0, var1) && !isFriend(var1)
-         ? !(var1 instanceof PlayerEntity) || var0.method_7256(var2 = (PlayerEntity)var1) && var0.field_3944.method_2871(var2.method_5667()) != null
+      return isHittable(clientPlayerEntity, entity) && !isFriend(entity)
+         ? !(entity instanceof PlayerEntity)
+            || clientPlayerEntity.shouldDamagePlayer(var2 = (PlayerEntity)entity)
+               && clientPlayerEntity.networkHandler.getPlayerListEntry(var2.getUuid()) != null
          : false;
    }
 
-   public static boolean isHostile(LivingEntity var0) {
+   public static boolean isHostile(LivingEntity livingEntity) {
       MobEntity var1;
-      return var0 instanceof Monster && (!(var0 instanceof Angerable) || var0 instanceof MobEntity && (var1 = (MobEntity)var0).method_6510());
+      return livingEntity instanceof Monster
+         && (!(livingEntity instanceof Angerable) || livingEntity instanceof MobEntity && (var1 = (MobEntity)livingEntity).isAttacking());
    }
 
-   public static float charge(PlayerEntity var0) {
-      return var0.method_7261(0.5F);
+   public static float charge(PlayerEntity playerEntity) {
+      return playerEntity.getAttackCooldownProgress(0.5F);
    }
 
-   public static int ticksToFull(PlayerEntity var0) {
-      return Math.max(0, MathHelper.method_15386((1.0F - charge(var0)) * var0.method_7279()));
+   public static int ticksToFull(PlayerEntity playerEntity) {
+      return Math.max(0, MathHelper.ceil((1.0F - charge(playerEntity)) * playerEntity.getAttackCooldownProgressPerTick()));
    }
 
-   public static boolean airborne(PlayerEntity var0) {
-      return !var0.method_24828()
-         && !var0.method_6101()
-         && !var0.method_5799()
-         && !var0.method_74025()
-         && !var0.method_5765()
-         && !var0.method_31549().field_7479
-         && !var0.method_6128();
+   public static boolean airborne(PlayerEntity playerEntity) {
+      return !playerEntity.isOnGround()
+         && !playerEntity.isClimbing()
+         && !playerEntity.isTouchingWater()
+         && !playerEntity.hasBlindnessEffect()
+         && !playerEntity.hasVehicle()
+         && !playerEntity.getAbilities().flying
+         && !playerEntity.isGliding();
    }
 
-   public static boolean wouldCrit(PlayerEntity var0, Entity var1) {
-      return charge(var0) > 0.9F && var0.field_6017 > 0.0 && critStance(var0, var1);
+   public static boolean wouldCrit(PlayerEntity playerEntity, Entity entity) {
+      return charge(playerEntity) > 0.9F && playerEntity.fallDistance > 0.0 && critStance(playerEntity, entity);
    }
 
-   public static boolean critStance(PlayerEntity var0, Entity var1) {
-      return !var0.method_24828()
-         && !var0.method_6101()
-         && !var0.method_5799()
-         && !var0.method_74025()
-         && !var0.method_5765()
-         && !var0.method_5624()
-         && var1 instanceof LivingEntity;
+   public static boolean critStance(PlayerEntity playerEntity, Entity entity) {
+      return !playerEntity.isOnGround()
+         && !playerEntity.isClimbing()
+         && !playerEntity.isTouchingWater()
+         && !playerEntity.hasBlindnessEffect()
+         && !playerEntity.hasVehicle()
+         && !playerEntity.isSprinting()
+         && entity instanceof LivingEntity;
    }
 
-   public static boolean shieldBlocks(LivingEntity var0, PlayerEntity var1) {
-      return shieldBlocks(var0, var1, var0.method_62821());
+   public static boolean shieldBlocks(LivingEntity livingEntity, PlayerEntity playerEntity) {
+      return shieldBlocks(livingEntity, playerEntity, livingEntity.getBlockingItem());
    }
 
-   public static boolean shieldBlocks(LivingEntity var0, PlayerEntity var1, ItemStack var2) {
-      if (var2 == null) {
+   public static boolean shieldBlocks(LivingEntity livingEntity, PlayerEntity playerEntity, ItemStack itemStack) {
+      if (itemStack == null) {
          return false;
       } else {
-         BlocksAttacksComponent var3 = (BlocksAttacksComponent)var2.method_58694(DataComponentTypes.field_56396);
+         BlocksAttacksComponent var3 = itemStack.get(DataComponentTypes.BLOCKS_ATTACKS);
          if (var3 == null) {
             return false;
          } else {
-            DamageSource var4 = var1.method_73183().method_48963().method_48802(var1);
-            if (var3.comp_3637().map(var1x -> var4.method_48789(var1x)).orElse(false)) {
+            DamageSource var4 = playerEntity.getEntityWorld().getDamageSources().playerAttack(playerEntity);
+            if (var3.bypassedBy().map(tagKey -> var4.isIn((TagKey<DamageType>)tagKey)).orElse(false)) {
                return false;
             } else {
-               Vec3d var5 = var0.method_5631(0.0F, var0.method_5791());
-               Vec3d var6 = var1.method_73189().method_1020(var0.method_73189());
-               Vec3d var7 = new Vec3d(var6.field_1352, 0.0, var6.field_1350).method_1029();
-               double var8 = Math.acos(MathHelper.method_15350(var7.method_1026(var5), -1.0, 1.0));
-               return var3.method_67202(var4, 1.0F, var8) > 0.0F;
+               Vec3d var5 = livingEntity.getRotationVector(0.0F, livingEntity.getHeadYaw());
+               Vec3d var6 = playerEntity.getEntityPos().subtract(livingEntity.getEntityPos());
+               Vec3d var7 = new Vec3d(var6.x, 0.0, var6.z).normalize();
+               double var8 = Math.acos(MathHelper.clamp(var7.dotProduct(var5), -1.0, 1.0));
+               return var3.getDamageReductionAmount(var4, 1.0F, var8) > 0.0F;
             }
          }
       }
    }
 
-   public static boolean wastedOnShield(ClientPlayerEntity var0, LivingEntity var1) {
-      if (shieldBlocks(var1, var0) && !shieldBroken(var1) && !disablesShields(var0.method_6047())) {
+   public static boolean wastedOnShield(ClientPlayerEntity clientPlayerEntity, LivingEntity livingEntity) {
+      if (shieldBlocks(livingEntity, clientPlayerEntity) && !shieldBroken(livingEntity) && !disablesShields(clientPlayerEntity.getMainHandStack())) {
          ShieldBreakerModule var2 = ModuleRegistry.get(ShieldBreakerModule.class);
          if (var2 != null && var2.isEnabled()) {
-            PlayerInventory var3 = var0.method_31548();
+            PlayerInventory var3 = clientPlayerEntity.getInventory();
 
-            for (int var4 = 0; var4 < PlayerInventory.method_7368(); var4++) {
-               if (disablesShields(var3.method_5438(var4))) {
+            for (int var4 = 0; var4 < PlayerInventory.getHotbarSize(); var4++) {
+               if (disablesShields(var3.getStack(var4))) {
                   return false;
                }
             }
@@ -362,43 +372,43 @@ public final class MeleeAttacks {
       }
    }
 
-   public static void noteShieldBroken(LivingEntity var0) {
-      shieldBrokenId = var0.method_5628();
-      shieldBrokenUntil = var0.field_6012 + 20;
+   public static void noteShieldBroken(LivingEntity livingEntity) {
+      shieldBrokenId = livingEntity.getId();
+      shieldBrokenUntil = livingEntity.age + 20;
    }
 
-   public static boolean shieldBroken(LivingEntity var0) {
-      return var0.method_5628() == shieldBrokenId && var0.field_6012 < shieldBrokenUntil;
+   public static boolean shieldBroken(LivingEntity livingEntity) {
+      return livingEntity.getId() == shieldBrokenId && livingEntity.age < shieldBrokenUntil;
    }
 
-   public static boolean disablesShields(ItemStack var0) {
-      WeaponComponent var1 = (WeaponComponent)var0.method_58694(DataComponentTypes.field_55878);
-      return var1 != null && var1.comp_3602() > 0.0F;
+   public static boolean disablesShields(ItemStack itemStack) {
+      WeaponComponent var1 = itemStack.get(DataComponentTypes.WEAPON);
+      return var1 != null && var1.disableBlockingForSeconds() > 0.0F;
    }
 
-   public static boolean isMeleeWeapon(ItemStack var0) {
-      return var0.method_31573(ItemTags.field_42611)
-         || var0.method_31573(ItemTags.field_42612)
-         || var0.method_31573(ItemTags.field_63257)
-         || var0.method_31574(Items.field_49814)
-         || var0.method_31574(Items.field_8547);
+   public static boolean isMeleeWeapon(ItemStack itemStack) {
+      return itemStack.isIn(ItemTags.SWORDS)
+         || itemStack.isIn(ItemTags.AXES)
+         || itemStack.isIn(ItemTags.SPEARS)
+         || itemStack.isOf(Items.MACE)
+         || itemStack.isOf(Items.TRIDENT);
    }
 
-   public static double attackDamage(ItemStack var0) {
+   public static double attackDamage(ItemStack itemStack) {
       double[] var1 = new double[]{0.0};
-      var0.method_57354(EquipmentSlot.field_6173, (var1x, var2) -> {
-         if (EntityAttributes.field_23721.equals(var1x) && var2.comp_2450() == Operation.field_6328) {
-            var1[0] += var2.comp_2449();
+      itemStack.applyAttributeModifiers(EquipmentSlot.MAINHAND, (registryEntry, entityAttributeModifier) -> {
+         if (EntityAttributes.ATTACK_DAMAGE.equals(registryEntry) && entityAttributeModifier.operation() == Operation.ADD_VALUE) {
+            var1[0] += entityAttributeModifier.value();
          }
       });
       return var1[0];
    }
 
-   public static boolean isFriend(Entity var0) {
-      return !(var0 instanceof PlayerEntity var1) ? false : FriendStore.getInstance().isFriend(var1.method_7334().name());
+   public static boolean isFriend(Entity entity) {
+      return !(entity instanceof PlayerEntity var1) ? false : FriendStore.getInstance().isFriend(var1.getGameProfile().name());
    }
 
-   public static int spread(int var0) {
-      return var0 > 0 ? ThreadLocalRandom.current().nextInt(var0 + 1) : 0;
+   public static int spread(int i) {
+      return i > 0 ? ThreadLocalRandom.current().nextInt(i + 1) : 0;
    }
 }

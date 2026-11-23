@@ -16,10 +16,10 @@ public final class Render2DEvent extends Event {
    private Render2DEvent() {
    }
 
-   public static void dispatch(DrawContext var0, float var1) {
+   public static void dispatch(DrawContext drawContext, float f) {
       if (TYPE.hasPreListeners()) {
-         INSTANCE.graphics = var0;
-         INSTANCE.partialTick = var1;
+         INSTANCE.graphics = drawContext;
+         INSTANCE.partialTick = f;
          TYPE.dispatch(INSTANCE);
          INSTANCE.graphics = null;
       }

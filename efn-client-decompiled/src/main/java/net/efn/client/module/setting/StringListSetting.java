@@ -17,10 +17,10 @@ public final class StringListSetting extends Setting {
    private List<String> values;
    private boolean itemPicker;
 
-   public StringListSetting(String var1, String... var2) {
-      super(var1);
+   public StringListSetting(String string, String... strings) {
+      super(string);
 
-      for (String var6 : var2) {
+      for (String var6 : strings) {
          this.entries.add(new ImString(var6, 256));
       }
    }
@@ -34,9 +34,9 @@ public final class StringListSetting extends Setting {
       return this.itemPicker;
    }
 
-   public boolean addValue(String var1) {
-      if (this.canAdd() && var1 != null && !var1.isBlank()) {
-         this.entries.add(new ImString(var1, 256));
+   public boolean addValue(String string) {
+      if (this.canAdd() && string != null && !string.isBlank()) {
+         this.entries.add(new ImString(string, 256));
          this.changed();
          return true;
       } else {
@@ -44,9 +44,9 @@ public final class StringListSetting extends Setting {
       }
    }
 
-   public boolean removeValue(String var1) {
+   public boolean removeValue(String string) {
       for (int var2 = 0; var2 < this.entries.size(); var2++) {
-         if (this.entries.get(var2).get().trim().equalsIgnoreCase(var1)) {
+         if (this.entries.get(var2).get().trim().equalsIgnoreCase(string)) {
             this.entries.remove(var2);
             this.changed();
             return true;
@@ -84,8 +84,8 @@ public final class StringListSetting extends Setting {
       return this.entries.size();
    }
 
-   public ImString entry(int var1) {
-      return this.entries.get(var1);
+   public ImString entry(int i) {
+      return this.entries.get(i);
    }
 
    public boolean canAdd() {
@@ -99,9 +99,9 @@ public final class StringListSetting extends Setting {
       }
    }
 
-   public void remove(int var1) {
-      if (var1 >= 0 && var1 < this.entries.size()) {
-         this.entries.remove(var1);
+   public void remove(int i) {
+      if (i >= 0 && i < this.entries.size()) {
+         this.entries.remove(i);
          this.changed();
       }
    }
@@ -127,23 +127,23 @@ public final class StringListSetting extends Setting {
    }
 
    @Override
-   protected void deserializeValue(JsonElement var1) {
-      if (var1 != null) {
+   protected void deserializeValue(JsonElement jsonElement) {
+      if (jsonElement != null) {
          Object var2;
-         if (var1.isJsonArray()) {
+         if (jsonElement.isJsonArray()) {
             var2 = new ArrayList();
 
-            for (JsonElement var4 : var1.getAsJsonArray()) {
+            for (JsonElement var4 : jsonElement.getAsJsonArray()) {
                if (var4 != null && var4.isJsonPrimitive()) {
                   var2.add(var4.getAsString());
                }
             }
          } else {
-            if (!var1.isJsonPrimitive()) {
+            if (!jsonElement.isJsonPrimitive()) {
                return;
             }
 
-            var2 = splitLegacy(var1.getAsString());
+            var2 = splitLegacy(jsonElement.getAsString());
          }
 
          this.entries.clear();
@@ -156,13 +156,13 @@ public final class StringListSetting extends Setting {
       }
    }
 
-   private static List<String> splitLegacy(String var0) {
+   private static List<String> splitLegacy(String string) {
       ArrayList var1 = new ArrayList();
       StringBuilder var2 = new StringBuilder();
 
-      for (int var3 = 0; var3 < var0.length(); var3++) {
-         char var4 = var0.charAt(var3);
-         if (var4 == '\\' && var3 + 1 < var0.length() && var0.charAt(var3 + 1) == '|') {
+      for (int var3 = 0; var3 < string.length(); var3++) {
+         char var4 = string.charAt(var3);
+         if (var4 == '\\' && var3 + 1 < string.length() && string.charAt(var3 + 1) == '|') {
             var2.append('|');
             var3++;
          } else if (var4 == '|') {
@@ -177,10 +177,10 @@ public final class StringListSetting extends Setting {
       return var1;
    }
 
-   private static void addTrimmed(List<String> var0, CharSequence var1) {
-      String var2 = var1.toString().trim();
+   private static void addTrimmed(List<String> list, CharSequence charSequence) {
+      String var2 = charSequence.toString().trim();
       if (!var2.isEmpty()) {
-         var0.add(var2);
+         list.add(var2);
       }
    }
 }

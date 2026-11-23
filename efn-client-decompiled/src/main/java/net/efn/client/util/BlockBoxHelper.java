@@ -14,12 +14,12 @@ public final class BlockBoxHelper {
    private BlockBoxHelper() {
    }
 
-   public static Box scaledBlockBox(BlockPos var0, float var1) {
-      float var2 = Math.max(0.1F, Math.min(2.0F, var1));
+   public static Box scaledBlockBox(BlockPos blockPos, float f) {
+      float var2 = Math.max(0.1F, Math.min(2.0F, f));
       double var3 = var2 * 0.5;
-      double var5 = var0.method_10263() + 0.5;
-      double var7 = var0.method_10264() + 0.5;
-      double var9 = var0.method_10260() + 0.5;
+      double var5 = blockPos.getX() + 0.5;
+      double var7 = blockPos.getY() + 0.5;
+      double var9 = blockPos.getZ() + 0.5;
       return new Box(var5 - var3, var7 - var3, var9 - var3, var5 + var3, var7 + var3, var9 + var3);
    }
 }

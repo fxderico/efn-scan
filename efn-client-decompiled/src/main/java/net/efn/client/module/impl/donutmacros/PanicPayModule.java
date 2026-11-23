@@ -86,15 +86,15 @@ public final class PanicPayModule extends ClientModule {
 
    @Override
    protected void onEnable() {
-      MinecraftClient var1 = MinecraftClient.method_1551();
+      MinecraftClient var1 = MinecraftClient.getInstance();
       String var2 = this.payTo.get().trim();
-      if (var1.field_1724 == null || var1.method_1562() == null) {
+      if (var1.player == null || var1.getNetworkHandler() == null) {
          this.say(ModuleChat.body().warn("Join a server first."));
          this.requestDisable();
       } else if (!VALID_NAME.matcher(var2).matches()) {
          this.say(ModuleChat.body().warn("Set Pay To to a player name first."));
          this.requestDisable();
-      } else if (var2.equalsIgnoreCase(var1.method_1548().method_1676())) {
+      } else if (var2.equalsIgnoreCase(var1.getSession().getUsername())) {
          this.say(ModuleChat.body().warn("Pay To is your own name."));
          this.requestDisable();
       } else {
@@ -111,16 +111,16 @@ public final class PanicPayModule extends ClientModule {
             } finally {
                this.finish(var1);
             }
-         }, var2x -> {
-            LOGGER.error("[EFN] Panic Pay stopped", var2x);
-            this.say(ModuleChat.body().danger("Stopped").text(": " + var2x));
+         }, throwable -> {
+            LOGGER.error("[EFN] Panic Pay stopped", throwable);
+            this.say(ModuleChat.body().danger("Stopped").text(": " + throwable));
             this.finish(var1);
          });
       }
    }
 
-   private void finish(MinecraftClient var1) {
-      var1.execute(() -> {
+   private void finish(MinecraftClient minecraftClient) {
+      minecraftClient.execute(() -> {
          if (this.running && this.isEnabled()) {
             this.setEnabled(false);
          }
@@ -132,19 +132,19 @@ public final class PanicPayModule extends ClientModule {
       boolean var1 = this.running;
       this.running = false;
       this.worker.stop();
-      ClientPlayerEntity var2 = MinecraftClient.method_1551().field_1724;
-      if (var1 && var2 != null && var2.field_7512 != var2.field_7498) {
-         var2.method_7346();
+      ClientPlayerEntity var2 = MinecraftClient.getInstance().player;
+      if (var1 && var2 != null && var2.currentScreenHandler != var2.playerScreenHandler) {
+         var2.closeHandledScreen();
       }
    }
 
    @EventHandler
-   public void onPacket(PacketReceiveNettyEvent var1) {
+   public void onPacket(PacketReceiveNettyEvent packetReceiveNettyEvent) {
       if (this.running) {
-         Packet var3 = var1.packet;
+         Packet var3 = packetReceiveNettyEvent.packet;
          GameMessageS2CPacket var2;
-         if (var1.packet instanceof GameMessageS2CPacket && (var2 = (GameMessageS2CPacket)var3).comp_763() != null) {
-            String var4 = var2.comp_763().getString();
+         if (packetReceiveNettyEvent.packet instanceof GameMessageS2CPacket && (var2 = (GameMessageS2CPacket)var3).content() != null) {
+            String var4 = var2.content().getString();
             String var5 = ServerText.normalize(var4);
             long var6 = System.currentTimeMillis();
             Matcher var8 = RATE_LIMIT.matcher(var5);
@@ -191,69 +191,69 @@ public final class PanicPayModule extends ClientModule {
       }
    }
 
-   private void run(Gui var1, String var2, boolean var3, boolean var4) {
-      var1.closeAll();
+   private void run(Gui gui, String string, boolean bl, boolean bl2) {
+      gui.closeAll();
       HashMap var5 = new HashMap();
       int var6 = 0;
 
       try {
-         if (var3 || var4) {
-            this.takeOff(var1, var3, var4, true);
+         if (bl || bl2) {
+            this.takeOff(gui, bl, bl2, true);
          }
 
-         var6 = this.sellRounds(var1, var5);
-         if ((var3 || var4) && this.takeOff(var1, var3, var4, false)) {
-            var6 += this.sellRounds(var1, var5);
+         var6 = this.sellRounds(gui, var5);
+         if ((bl || bl2) && this.takeOff(gui, bl, bl2, false)) {
+            var6 += this.sellRounds(gui, var5);
          }
       } catch (AuctionHouse.Problem var8) {
          this.say(ModuleChat.body().warn(var8.getMessage()).text(", paying what you have."));
-         var1.closeAll();
+         gui.closeAll();
       }
 
-      this.say(ModuleChat.body().text("Sold ").value(var6).text(var6 == 1 ? " item" : " items").text(", paying ").name(var2).text("."));
-      this.payBalance(var2);
+      this.say(ModuleChat.body().text("Sold ").value(var6).text(var6 == 1 ? " item" : " items").text(", paying ").name(string).text("."));
+      this.payBalance(string);
    }
 
-   private int sellRounds(Gui var1, Map<Item, Integer> var2) {
+   private int sellRounds(Gui gui, Map<Item, Integer> map) {
       int var4 = 0;
 
       Map var3;
-      for (int var5 = 0; var5 < 6 && !(var3 = this.worker.call(() -> inventoryCounts(var2))).isEmpty(); var5++) {
-         this.openSell(var1);
+      for (int var5 = 0; var5 < 6 && !(var3 = this.worker.call(() -> inventoryCounts(map))).isEmpty(); var5++) {
+         this.openSell(gui);
          int var6 = this.worker
             .call(
                () -> {
-                  ClientPlayerEntity var1x = Gui.player();
-                  ArrayList var2x = new ArrayList();
+                  ClientPlayerEntity var1 = Gui.player();
+                  ArrayList var2 = new ArrayList();
 
-                  for (Slot var4x : var1x.field_7512.field_7761) {
-                     if (var4x.field_7871 instanceof PlayerInventory
-                        && var4x.method_7681()
-                        && var4x.method_34266() < 36
-                        && var2.getOrDefault(var4x.method_7677().method_7909(), 0) < 2) {
-                        var2x.add(var4x.field_7874);
+                  for (Slot var4x : var1.currentScreenHandler.slots) {
+                     if (var4x.inventory instanceof PlayerInventory
+                        && var4x.hasStack()
+                        && var4x.getIndex() < 36
+                        && map.getOrDefault(var4x.getStack().getItem(), 0) < 2) {
+                        var2.add(var4x.id);
                      }
                   }
 
-                  for (int var6x : var2x) {
-                     Gui.mc().field_1761.method_2906(var1x.field_7512.field_7763, var6x, 0, SlotActionType.field_7794, var1x);
+                  for (int var6x : var2) {
+                     Gui.mc().interactionManager.clickSlot(var1.currentScreenHandler.syncId, var6x, 0, SlotActionType.QUICK_MOVE, var1);
                   }
 
-                  return var2x.size();
+                  return var2.size();
                }
             );
          this.worker.ticks(2);
          Map var7 = var6 > 0 ? this.worker.call(PanicPayModule::waitingItems) : Map.of();
-         Map var8 = var7.isEmpty() ? var7 : this.confirm(var1, var7);
-         var1.closeAll();
+         Map var8 = var7.isEmpty() ? var7 : this.confirm(gui, var7);
+         gui.closeAll();
          if (var8 == null) {
             this.worker.sleep(600L);
          } else if (!var8.isEmpty()) {
             int var9 = total(var3) - total(var7) + total(var8);
-            this.worker.waitFor(() -> total(inventoryCounts(var2)) >= var9, 600L);
+            this.worker.waitFor(() -> total(inventoryCounts(map)) >= var9, 600L);
          }
 
-         Map var14 = this.worker.call(() -> inventoryCounts(var2));
+         Map var14 = this.worker.call(() -> inventoryCounts(map));
          int var10 = 0;
 
          for (Entry var12 : var3.entrySet()) {
@@ -264,13 +264,13 @@ public final class PanicPayModule extends ClientModule {
 
          for (Entry var16 : var3.entrySet()) {
             if (var14.getOrDefault(var16.getKey(), 0) >= (Integer)var16.getValue()) {
-               int var13 = var10 > 0 ? 2 : var2.getOrDefault(var16.getKey(), 0) + 1;
-               var2.put((Item)var16.getKey(), var13);
+               int var13 = var10 > 0 ? 2 : map.getOrDefault(var16.getKey(), 0) + 1;
+               map.put((Item)var16.getKey(), var13);
                if (var13 == 2) {
                   this.say(
                      ModuleChat.body()
                         .warn("Could not sell ")
-                        .name(new ItemStack((ItemConvertible)var16.getKey()).method_7964().getString())
+                        .name(new ItemStack((ItemConvertible)var16.getKey()).getName().getString())
                         .text(", skipping it.")
                   );
                }
@@ -281,15 +281,15 @@ public final class PanicPayModule extends ClientModule {
       return var4;
    }
 
-   private Map<Item, Integer> confirm(Gui var1, Map<Item, Integer> var2) {
-      Map var3 = var2;
+   private Map<Item, Integer> confirm(Gui gui, Map<Item, Integer> map) {
+      Map var3 = map;
 
-      for (int var4 = 0; var4 < 2 && var3.equals(var2); var4++) {
+      for (int var4 = 0; var4 < 2 && var3.equals(map); var4++) {
          if (!this.worker.call(PanicPayModule::sellMenuOpen)) {
             return null;
          }
 
-         var1.click(53, 0, SlotActionType.field_7790);
+         gui.click(53, 0, SlotActionType.PICKUP);
          Map var5 = var3;
          this.worker.waitFor(() -> !sellMenuOpen() || !waitingItems().equals(var5), var4 == 0 ? 700L : 900L);
          var3 = this.worker.call(() -> sellMenuOpen() ? waitingItems() : null);
@@ -304,40 +304,40 @@ public final class PanicPayModule extends ClientModule {
    private static Map<Item, Integer> waitingItems() {
       HashMap var0 = new HashMap();
 
-      for (Slot var2 : Gui.player().field_7512.field_7761) {
-         if (!(var2.field_7871 instanceof PlayerInventory) && var2.field_7874 != 53 && var2.method_7681()) {
-            var0.merge(var2.method_7677().method_7909(), var2.method_7677().method_7947(), Integer::sum);
+      for (Slot var2 : Gui.player().currentScreenHandler.slots) {
+         if (!(var2.inventory instanceof PlayerInventory) && var2.id != 53 && var2.hasStack()) {
+            var0.merge(var2.getStack().getItem(), var2.getStack().getCount(), Integer::sum);
          }
       }
 
       return var0;
    }
 
-   private static int total(Map<Item, Integer> var0) {
+   private static int total(Map<Item, Integer> map) {
       int var1 = 0;
 
-      for (int var3 : var0.values()) {
+      for (int var3 : map.values()) {
          var1 += var3;
       }
 
       return var1;
    }
 
-   private static Map<Item, Integer> inventoryCounts(Map<Item, Integer> var0) {
+   private static Map<Item, Integer> inventoryCounts(Map<Item, Integer> map) {
       HashMap var1 = new HashMap();
-      PlayerInventory var2 = Gui.player().method_31548();
+      PlayerInventory var2 = Gui.player().getInventory();
 
       for (int var3 = 0; var3 < 36; var3++) {
-         ItemStack var4 = var2.method_5438(var3);
-         if (!var4.method_7960() && var0.getOrDefault(var4.method_7909(), 0) < 2) {
-            var1.merge(var4.method_7909(), var4.method_7947(), Integer::sum);
+         ItemStack var4 = var2.getStack(var3);
+         if (!var4.isEmpty() && map.getOrDefault(var4.getItem(), 0) < 2) {
+            var1.merge(var4.getItem(), var4.getCount(), Integer::sum);
          }
       }
 
       return var1;
    }
 
-   private void openSell(Gui var1) {
+   private void openSell(Gui gui) {
       for (int var2 = 0; var2 < 3; var2++) {
          long var3 = this.command("sell");
          this.worker.waitFor(() -> sellMenuOpen() || this.limitedAt >= var3, 8000L);
@@ -346,19 +346,19 @@ public final class PanicPayModule extends ClientModule {
             return;
          }
 
-         var1.closeAll();
+         gui.closeAll();
       }
 
       throw new AuctionHouse.Problem("The sell menu did not open");
    }
 
    private static boolean sellMenuOpen() {
-      ClientPlayerEntity var0 = Gui.mc().field_1724;
-      if (var0 != null && var0.field_7512 != var0.field_7498 && Gui.mc().field_1755 instanceof HandledScreen) {
+      ClientPlayerEntity var0 = Gui.mc().player;
+      if (var0 != null && var0.currentScreenHandler != var0.playerScreenHandler && Gui.mc().currentScreen instanceof HandledScreen) {
          int var1 = 0;
 
-         for (Slot var3 : var0.field_7512.field_7761) {
-            if (!(var3.field_7871 instanceof PlayerInventory)) {
+         for (Slot var3 : var0.currentScreenHandler.slots) {
+            if (!(var3.inventory instanceof PlayerInventory)) {
                var1++;
             }
          }
@@ -369,35 +369,35 @@ public final class PanicPayModule extends ClientModule {
       }
    }
 
-   private boolean takeOff(Gui var1, boolean var2, boolean var3, boolean var4) {
-      var1.closeAll();
+   private boolean takeOff(Gui gui, boolean bl, boolean bl2, boolean bl3) {
+      gui.closeAll();
       boolean var5 = this.worker.call(() -> {
-         ClientPlayerEntity var3x = Gui.player();
-         ArrayList var4x = new ArrayList();
-         if (var2) {
+         ClientPlayerEntity var3 = Gui.player();
+         ArrayList var4 = new ArrayList();
+         if (bl) {
             for (int var8 : ARMOR_MENU_SLOTS) {
-               if (var3x.field_7498.method_7611(var8).method_7681()) {
-                  var4x.add(var8);
+               if (var3.playerScreenHandler.getSlot(var8).hasStack()) {
+                  var4.add(var8);
                }
             }
          }
 
-         if (var3 && var3x.field_7498.method_7611(45).method_7681()) {
-            var4x.add(45);
+         if (bl2 && var3.playerScreenHandler.getSlot(45).hasStack()) {
+            var4.add(45);
          }
 
          int var9 = 0;
 
          for (int var10 = 0; var10 < 36; var10++) {
-            if (var3x.method_31548().method_5438(var10).method_7960()) {
+            if (var3.getInventory().getStack(var10).isEmpty()) {
                var9++;
             }
          }
 
-         int var11 = var4 ? Math.min(var9, var4x.size()) : var4x.size();
+         int var11 = bl3 ? Math.min(var9, var4.size()) : var4.size();
 
          for (int var12 = 0; var12 < var11; var12++) {
-            Gui.mc().field_1761.method_2906(var3x.field_7498.field_7763, (Integer)var4x.get(var12), 0, SlotActionType.field_7794, var3x);
+            Gui.mc().interactionManager.clickSlot(var3.playerScreenHandler.syncId, (Integer)var4.get(var12), 0, SlotActionType.QUICK_MOVE, var3);
          }
 
          return var11 > 0;
@@ -405,13 +405,13 @@ public final class PanicPayModule extends ClientModule {
       if (!var5) {
          return false;
       } else {
-         var1.closeInventory();
+         gui.closeInventory();
          this.worker.ticks(2);
          return true;
       }
    }
 
-   private void payBalance(String var1) {
+   private void payBalance(String string) {
       String var2 = this.readBalance();
       if (this.balance < 1.0) {
          this.say(ModuleChat.body().warn("You have no money to pay."));
@@ -420,10 +420,10 @@ public final class PanicPayModule extends ClientModule {
          int var5 = 0;
 
          for (int var6 = 0; var6 < 4; var6++) {
-            PanicPayModule.Payment var7 = this.pay(var1, var2);
+            PanicPayModule.Payment var7 = this.pay(string, var2);
             if (var7 == PanicPayModule.Payment.PAID) {
-               this.say(ModuleChat.body().good("Paid $" + var2).text(" to ").name(var1).text("."));
-               if (!mentions(this.paidText, var1)) {
+               this.say(ModuleChat.body().good("Paid $" + var2).text(" to ").name(string).text("."));
+               if (!mentions(this.paidText, string)) {
                   this.say(ModuleChat.body().danger("Check the payment").text(": the server said \"" + this.paidText + "\"."));
                }
 
@@ -434,7 +434,7 @@ public final class PanicPayModule extends ClientModule {
                var5++;
                long var8 = (long)Math.floor(this.balance - var3 * var5);
                if (var5 > 2 || var8 < 1L) {
-                  throw new AuctionHouse.Problem("/pay " + var1 + " " + var2 + " was refused: not enough money");
+                  throw new AuctionHouse.Problem("/pay " + string + " " + var2 + " was refused: not enough money");
                }
 
                var2 = Long.toString(var8);
@@ -443,7 +443,7 @@ public final class PanicPayModule extends ClientModule {
             }
          }
 
-         throw new AuctionHouse.Problem("No answer to /pay " + var1 + " " + var2);
+         throw new AuctionHouse.Problem("No answer to /pay " + string + " " + var2);
       }
    }
 
@@ -459,8 +459,8 @@ public final class PanicPayModule extends ClientModule {
       throw new AuctionHouse.Problem("Could not read your balance from /bal");
    }
 
-   private PanicPayModule.Payment pay(String var1, String var2) {
-      long var3 = this.command("pay " + var1 + " " + var2);
+   private PanicPayModule.Payment pay(String string, String string2) {
+      long var3 = this.command("pay " + string + " " + string2);
       Object[] var5 = new Object[]{null};
       long var6 = var3 + 6000L;
 
@@ -482,18 +482,18 @@ public final class PanicPayModule extends ClientModule {
          }
 
          boolean var8 = this.worker.call(() -> {
-            Dialogs.View var2x = Dialogs.current(Gui.mc());
-            if (var2x != null && var2x.dialog() != var5[0]) {
-               Dialogs.Button var3x = var2x.labelled("confirm", "yes", "pay");
+            Dialogs.View var2 = Dialogs.current(Gui.mc());
+            if (var2 != null && var2.dialog() != var5[0]) {
+               Dialogs.Button var3x = var2.labelled("confirm", "yes", "pay");
                if (var3x == null) {
                   return false;
-               } else if (namesOtherPlayer(var2x, var1)) {
+               } else if (namesOtherPlayer(var2, string)) {
                   Dialogs.close(Gui.mc());
-                  var5[0] = var2x.dialog();
+                  var5[0] = var2.dialog();
                   return true;
                } else {
-                  if (Dialogs.press(Gui.mc(), var2x, var3x, Map.of())) {
-                     var5[0] = var2x.dialog();
+                  if (Dialogs.press(Gui.mc(), var2, var3x, Map.of())) {
+                     var5[0] = var2.dialog();
                   }
 
                   return false;
@@ -503,7 +503,7 @@ public final class PanicPayModule extends ClientModule {
             }
          });
          if (var8) {
-            this.errorText = "the confirmation named a different player than " + var1;
+            this.errorText = "the confirmation named a different player than " + string;
             return PanicPayModule.Payment.FAILED;
          }
 
@@ -513,13 +513,13 @@ public final class PanicPayModule extends ClientModule {
       return PanicPayModule.Payment.RETRY;
    }
 
-   private static boolean mentions(String var0, String var1) {
-      String var2 = var1.toLowerCase(Locale.ROOT);
+   private static boolean mentions(String string, String string2) {
+      String var2 = string2.toLowerCase(Locale.ROOT);
       if (var2.startsWith(".")) {
          var2 = var2.substring(1);
       }
 
-      for (String var6 : var0.split("[^a-z0-9_]+")) {
+      for (String var6 : string.split("[^a-z0-9_]+")) {
          if (var6.equals(var2)) {
             return true;
          }
@@ -528,14 +528,14 @@ public final class PanicPayModule extends ClientModule {
       return false;
    }
 
-   private static boolean namesOtherPlayer(Dialogs.View var0, String var1) {
-      String var2 = var1.toLowerCase(Locale.ROOT);
+   private static boolean namesOtherPlayer(Dialogs.View view, String string) {
+      String var2 = string.toLowerCase(Locale.ROOT);
       if (var2.startsWith(".")) {
          var2 = var2.substring(1);
       }
 
-      ArrayList var3 = new ArrayList<>(var0.body());
-      var3.add(var0.title());
+      ArrayList var3 = new ArrayList<>(view.body());
+      var3.add(view.title());
 
       for (String var5 : var3) {
          for (String var9 : var5.split("[^a-z0-9_]+")) {
@@ -548,7 +548,7 @@ public final class PanicPayModule extends ClientModule {
       return false;
    }
 
-   private long command(String var1) {
+   private long command(String string) {
       long var2 = Math.max(this.holdUntil, this.lastCommandAt + 350L) - System.currentTimeMillis();
       if (var2 > 0L) {
          this.worker.sleep(var2);
@@ -556,15 +556,15 @@ public final class PanicPayModule extends ClientModule {
 
       long var4 = System.currentTimeMillis();
       this.worker.run(() -> {
-         PayGuard.allow(var1);
-         Gui.player().field_3944.method_45730(var1);
+         PayGuard.allow(string);
+         Gui.player().networkHandler.sendChatCommand(string);
       });
       this.lastCommandAt = var4;
       return var4;
    }
 
-   private void say(ModuleChat.Body var1) {
-      ModuleChat.send(this, var1);
+   private void say(ModuleChat.Body body) {
+      ModuleChat.send(this, body);
    }
 
    @Environment(EnvType.CLIENT)

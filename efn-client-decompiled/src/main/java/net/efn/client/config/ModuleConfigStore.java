@@ -43,8 +43,8 @@ public final class ModuleConfigStore {
    private static final int CONFIG_VERSION = 3;
    private static final long AUTOSAVE_DELAY_NANOS = 2000000000L;
    private static final long SHUTDOWN_WRITE_WAIT_SECONDS = 10L;
-   private static final ExecutorService WRITER = Executors.newSingleThreadExecutor(var0 -> {
-      Thread var1 = new Thread(var0, "EFN config writer");
+   private static final ExecutorService WRITER = Executors.newSingleThreadExecutor(runnable -> {
+      Thread var1 = new Thread(runnable, "EFN config writer");
       var1.setDaemon(true);
       return var1;
    });
@@ -114,7 +114,7 @@ public final class ModuleConfigStore {
                return;
             }
          } catch (RuntimeException | IOException var10) {
-            LOGGER.warn("[EFN] Failed to load module config; preserving the file", var10);
+            LOGGER.warn("[EFN] Failed to load module config; preserving the file", (Throwable)var10);
             this.orphanModules.clear();
             this.pendingEnabled.clear();
             this.readOnly = true;
@@ -126,11 +126,11 @@ public final class ModuleConfigStore {
       }
    }
 
-   private static Path backupPath(Path var0, int var1) {
-      return var0.resolveSibling(var0.getFileName() + ".v" + var1 + ".bak");
+   private static Path backupPath(Path path, int i) {
+      return path.resolveSibling(path.getFileName() + ".v" + i + ".bak");
    }
 
-   private static void scrubBackups(Path var0) {
+   private static void scrubBackups(Path path) {
       ArrayList var1 = new ArrayList();
 
       for (ClientModule var3 : ModuleRegistry.all()) {
@@ -143,7 +143,7 @@ public final class ModuleConfigStore {
       }
 
       for (int var11 = 0; var11 < 3; var11++) {
-         Path var12 = backupPath(var0, var11);
+         Path var12 = backupPath(path, var11);
          if (Files.isRegularFile(var12)) {
             try {
                String var6 = Files.readString(var12);
@@ -167,12 +167,12 @@ public final class ModuleConfigStore {
       }
    }
 
-   public static JsonObject withoutPrivateValues(JsonObject var0) {
-      return withoutSettings(var0, Setting::isPrivate);
+   public static JsonObject withoutPrivateValues(JsonObject jsonObject) {
+      return withoutSettings(jsonObject, Setting::isPrivate);
    }
 
-   private static JsonObject withoutSettings(JsonObject var0, Predicate<Setting> var1) {
-      JsonObject var2 = var0.deepCopy();
+   private static JsonObject withoutSettings(JsonObject jsonObject, Predicate<Setting> predicate) {
+      JsonObject var2 = jsonObject.deepCopy();
       if (!(var2.get("modules") instanceof JsonObject var4)) {
          return var2;
       } else {
@@ -197,7 +197,7 @@ public final class ModuleConfigStore {
                }
 
                if (var13 != null) {
-                  var4.add(var17, withoutSettings(var13, var11, var1));
+                  var4.add(var17, withoutSettings(var13, var11, predicate));
                }
             }
          }
@@ -206,8 +206,8 @@ public final class ModuleConfigStore {
       }
    }
 
-   public synchronized boolean enablesOnLoad(ClientModule var1) {
-      return Boolean.TRUE.equals(this.pendingEnabled.get(var1.id()));
+   public synchronized boolean enablesOnLoad(ClientModule clientModule) {
+      return Boolean.TRUE.equals(this.pendingEnabled.get(clientModule.id()));
    }
 
    public synchronized void applyPendingEnabled() {
@@ -238,7 +238,7 @@ public final class ModuleConfigStore {
       this.write(true);
    }
 
-   private void write(boolean var1) {
+   private void write(boolean bl) {
       this.ensureLoaded();
       if (!this.readOnly) {
          long var2 = ModuleRevision.current();
@@ -258,7 +258,7 @@ public final class ModuleConfigStore {
                   writeJson(var5, var4);
                } catch (RuntimeException | IOException var4x) {
                   this.writeFailed = true;
-                  LOGGER.warn("[EFN] Failed to save module config", var4x);
+                  LOGGER.warn("[EFN] Failed to save module config", (Throwable)var4x);
                }
             });
          } catch (RuntimeException var8) {
@@ -266,44 +266,44 @@ public final class ModuleConfigStore {
             return;
          }
 
-         if (var1) {
+         if (bl) {
             try {
                this.lastWrite.get(10L, TimeUnit.SECONDS);
             } catch (Exception var7) {
-               LOGGER.warn("[EFN] Module config was still being written at shutdown", var7);
+               LOGGER.warn("[EFN] Module config was still being written at shutdown", (Throwable)var7);
             }
          }
       }
    }
 
-   private static void writeJson(Path var0, JsonObject var1) throws IOException {
-      Path var2 = tmpPath(var0);
+   private static void writeJson(Path path, JsonObject jsonObject) throws IOException {
+      Path var2 = tmpPath(path);
 
       try {
          try (BufferedWriter var3 = Files.newBufferedWriter(var2)) {
-            GSON.toJson(var1, var3);
+            GSON.toJson((JsonElement)jsonObject, var3);
          }
 
          try {
-            Files.move(var2, var0, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            Files.move(var2, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
          } catch (IOException var12) {
-            Files.move(var2, var0, StandardCopyOption.REPLACE_EXISTING);
+            Files.move(var2, path, StandardCopyOption.REPLACE_EXISTING);
          }
       } finally {
          deleteQuietly(var2);
       }
    }
 
-   private static void deleteQuietly(Path var0) {
+   private static void deleteQuietly(Path path) {
       try {
-         Files.deleteIfExists(var0);
+         Files.deleteIfExists(path);
       } catch (IOException var2) {
-         LOGGER.warn("[EFN] Couldn't delete {}", var0.getFileName());
+         LOGGER.warn("[EFN] Couldn't delete {}", path.getFileName());
       }
    }
 
-   private static Path tmpPath(Path var0) {
-      return var0.resolveSibling(var0.getFileName() + ".tmp");
+   private static Path tmpPath(Path path) {
+      return path.resolveSibling(path.getFileName() + ".tmp");
    }
 
    public synchronized void tickAutosave() {
@@ -322,20 +322,20 @@ public final class ModuleConfigStore {
       }
    }
 
-   private boolean autosaveDue(long var1, long var3) {
+   private boolean autosaveDue(long l, long m) {
       if (!this.loaded || this.readOnly) {
          return false;
       } else if (this.savedRevision < 0L) {
-         this.savedRevision = this.observedRevision = var1;
+         this.savedRevision = this.observedRevision = l;
          return false;
-      } else if (var1 == this.savedRevision) {
+      } else if (l == this.savedRevision) {
          return false;
-      } else if (var1 != this.observedRevision) {
-         this.observedRevision = var1;
-         this.observedAt = var3;
+      } else if (l != this.observedRevision) {
+         this.observedRevision = l;
+         this.observedAt = m;
          return false;
       } else {
-         return var3 - this.observedAt >= 2000000000L;
+         return m - this.observedAt >= 2000000000L;
       }
    }
 
@@ -351,8 +351,8 @@ public final class ModuleConfigStore {
       return this.activeProfile;
    }
 
-   synchronized void setActiveProfile(String var1) {
-      this.activeProfile = var1;
+   synchronized void setActiveProfile(String string) {
+      this.activeProfile = string;
    }
 
    public synchronized JsonObject snapshot() {
@@ -371,14 +371,14 @@ public final class ModuleConfigStore {
       return var1;
    }
 
-   public synchronized boolean applyProfile(JsonObject var1) {
+   public synchronized boolean applyProfile(JsonObject jsonObject) {
       this.ensureLoaded();
-      int var2 = profileVersion(var1);
+      int var2 = profileVersion(jsonObject);
       if (var2 < 0) {
          return false;
       } else {
          List var3 = ModuleRegistry.all();
-         Map var4 = matchEntries(var1, var2, var3);
+         Map var4 = matchEntries(jsonObject, var2, var3);
          HashMap var5 = new HashMap();
          ModuleToggleEvent.silently(() -> {
             for (ClientModule var5x : var3) {
@@ -416,13 +416,13 @@ public final class ModuleConfigStore {
       }
    }
 
-   public synchronized JsonObject shareable(JsonObject var1) {
-      int var2 = profileVersion(var1);
+   public synchronized JsonObject shareable(JsonObject jsonObject) {
+      int var2 = profileVersion(jsonObject);
       if (var2 < 0) {
          return null;
       } else {
          List var3 = ModuleRegistry.all();
-         Map var4 = matchEntries(var1, var2, var3);
+         Map var4 = matchEntries(jsonObject, var2, var3);
          JsonObject var5 = new JsonObject();
 
          for (ClientModule var7 : var3) {
@@ -440,10 +440,10 @@ public final class ModuleConfigStore {
       }
    }
 
-   private static int profileVersion(JsonObject var0) {
-      if (var0 != null && var0.has("modules") && var0.get("modules").isJsonObject()) {
+   private static int profileVersion(JsonObject jsonObject) {
+      if (jsonObject != null && jsonObject.has("modules") && jsonObject.get("modules").isJsonObject()) {
          try {
-            int var1 = var0.has("version") ? var0.get("version").getAsInt() : 0;
+            int var1 = jsonObject.has("version") ? jsonObject.get("version").getAsInt() : 0;
             return var1 > 3 ? -1 : var1;
          } catch (RuntimeException var2) {
             return -1;
@@ -453,20 +453,20 @@ public final class ModuleConfigStore {
       }
    }
 
-   private static Map<ClientModule, JsonObject> matchEntries(JsonObject var0, int var1, List<ClientModule> var2) {
+   private static Map<ClientModule, JsonObject> matchEntries(JsonObject jsonObject, int i, List<ClientModule> list) {
       HashMap var3 = new HashMap();
 
-      for (ClientModule var5 : var2) {
+      for (ClientModule var5 : list) {
          var3.putIfAbsent(var5.name(), var5);
       }
 
-      for (ClientModule var11 : var2) {
+      for (ClientModule var11 : list) {
          var3.put(var11.id(), var11);
       }
 
       HashMap var10 = new HashMap();
 
-      for (Entry var6 : renameModules(var0.getAsJsonObject("modules"), var1).entrySet()) {
+      for (Entry var6 : renameModules(jsonObject.getAsJsonObject("modules"), i).entrySet()) {
          if (((JsonElement)var6.getValue()).isJsonObject()) {
             JsonObject var7 = ((JsonElement)var6.getValue()).getAsJsonObject();
             ClientModule var8 = (ClientModule)var3.get(var6.getKey());
@@ -483,25 +483,25 @@ public final class ModuleConfigStore {
       return var10;
    }
 
-   private static JsonObject shareableEntry(ClientModule var0, JsonObject var1) {
+   private static JsonObject shareableEntry(ClientModule clientModule, JsonObject jsonObject) {
       JsonObject var3 = new JsonObject();
-      if (var0.persistEnabled() && flag(var1, "enabled")) {
+      if (clientModule.persistEnabled() && flag(jsonObject, "enabled")) {
          var3.addProperty("enabled", true);
       }
 
       int var2;
-      if ((var2 = number(var1, "keybind", -1)) != -1 && ModuleKeybinds.isBindable(var2)) {
+      if ((var2 = number(jsonObject, "keybind", -1)) != -1 && ModuleKeybinds.isBindable(var2)) {
          var3.addProperty("keybind", var2);
       }
 
-      if (flag(var1, "holdMode")) {
+      if (flag(jsonObject, "holdMode")) {
          var3.addProperty("holdMode", true);
       }
 
-      JsonObject var4 = var1.has("settings") && var1.get("settings").isJsonObject() ? var1.getAsJsonObject("settings") : null;
+      JsonObject var4 = jsonObject.has("settings") && jsonObject.get("settings").isJsonObject() ? jsonObject.getAsJsonObject("settings") : null;
       JsonObject var5 = new JsonObject();
       if (var4 != null) {
-         for (Setting var7 : var0.settings()) {
+         for (Setting var7 : clientModule.settings()) {
             JsonElement var8;
             if (!var7.isPrivate()
                && (var8 = var4.has(var7.id()) ? var4.get(var7.id()) : var4.get(var7.name())) != null
@@ -519,7 +519,7 @@ public final class ModuleConfigStore {
       if (var3.size() == 0) {
          return null;
       } else {
-         int var9 = number(var1, "settingsVersion", 0);
+         int var9 = number(jsonObject, "settingsVersion", 0);
          if (var9 > 0) {
             var3.addProperty("settingsVersion", var9);
          }
@@ -528,15 +528,15 @@ public final class ModuleConfigStore {
       }
    }
 
-   private static JsonObject withoutPrivate(ClientModule var0, JsonObject var1) {
-      return withoutSettings(var0, var1, Setting::isPrivate);
+   private static JsonObject withoutPrivate(ClientModule clientModule, JsonObject jsonObject) {
+      return withoutSettings(clientModule, jsonObject, Setting::isPrivate);
    }
 
-   private static JsonObject withoutSettings(ClientModule var0, JsonObject var1, Predicate<Setting> var2) {
-      JsonObject var3 = var1.deepCopy();
+   private static JsonObject withoutSettings(ClientModule clientModule, JsonObject jsonObject, Predicate<Setting> predicate) {
+      JsonObject var3 = jsonObject.deepCopy();
       if (var3.get("settings") instanceof JsonObject var5) {
-         for (Setting var7 : var0.settings()) {
-            if (var2.test(var7)) {
+         for (Setting var7 : clientModule.settings()) {
+            if (predicate.test(var7)) {
                var5.remove(var7.id());
                var5.remove(var7.name());
                var5.remove(sealedKey(var7));
@@ -547,43 +547,43 @@ public final class ModuleConfigStore {
       return var3;
    }
 
-   private static JsonObject keepSealed(ClientModule var0, JsonObject var1, JsonObject var2) {
+   private static JsonObject keepSealed(ClientModule clientModule, JsonObject jsonObject, JsonObject jsonObject2) {
       JsonElement var3;
-      if (var1 != null && (var3 = var1.get("settings")) instanceof JsonObject) {
+      if (jsonObject != null && (var3 = jsonObject.get("settings")) instanceof JsonObject) {
          JsonObject var4 = (JsonObject)var3;
 
-         for (Setting var6 : var0.settings()) {
+         for (Setting var6 : clientModule.settings()) {
             JsonElement var10;
             if (var6.isSecret() && (var10 = var4.get(sealedKey(var6))) instanceof JsonPrimitive) {
                JsonPrimitive var11 = (JsonPrimitive)var10;
-               if (var2 == null) {
-                  var2 = new JsonObject();
+               if (jsonObject2 == null) {
+                  jsonObject2 = new JsonObject();
                }
 
                JsonObject var7;
                JsonElement var8;
-               JsonObject var9 = (var8 = var2.get("settings")) instanceof JsonObject ? (var7 = (JsonObject)var8) : null;
+               JsonObject var9 = (var8 = jsonObject2.get("settings")) instanceof JsonObject ? (var7 = (JsonObject)var8) : null;
                if (var9 == null) {
                   var9 = new JsonObject();
-                  var2.add("settings", var9);
+                  jsonObject2.add("settings", var9);
                }
 
                var9.add(sealedKey(var6), var11.deepCopy());
             }
          }
 
-         return var2;
+         return jsonObject2;
       } else {
-         return var2;
+         return jsonObject2;
       }
    }
 
-   private static String sealedKey(Setting var0) {
-      return var0.id() + "#sealed";
+   private static String sealedKey(Setting setting) {
+      return setting.id() + "#sealed";
    }
 
-   private static boolean flag(JsonObject var0, String var1) {
-      JsonElement var2 = var0.get(var1);
+   private static boolean flag(JsonObject jsonObject, String string) {
+      JsonElement var2 = jsonObject.get(string);
       if (var2 != null && var2.isJsonPrimitive()) {
          try {
             return var2.getAsBoolean();
@@ -595,44 +595,44 @@ public final class ModuleConfigStore {
       }
    }
 
-   private static int number(JsonObject var0, String var1, int var2) {
-      JsonElement var3 = var0.get(var1);
+   private static int number(JsonObject jsonObject, String string, int i) {
+      JsonElement var3 = jsonObject.get(string);
       if (var3 != null && var3.isJsonPrimitive()) {
          try {
             return var3.getAsInt();
          } catch (RuntimeException var5) {
-            return var2;
+            return i;
          }
       } else {
-         return var2;
+         return i;
       }
    }
 
-   public synchronized void adopt(ClientModule var1) {
+   public synchronized void adopt(ClientModule clientModule) {
       if (this.loaded) {
-         JsonObject var2 = this.orphanModules.remove(var1.id());
+         JsonObject var2 = this.orphanModules.remove(clientModule.id());
          if (var2 != null) {
-            this.retainedEntries.put(var1.id(), var2.deepCopy());
-            this.applyModuleEntry(var1, var2, this.pendingEnabled);
+            this.retainedEntries.put(clientModule.id(), var2.deepCopy());
+            this.applyModuleEntry(clientModule, var2, this.pendingEnabled);
          }
       }
    }
 
-   public synchronized void release(ClientModule var1) {
+   public synchronized void release(ClientModule clientModule) {
       if (this.loaded) {
-         JsonObject var2 = this.serializeModule(var1);
-         if (Boolean.TRUE.equals(this.pendingEnabled.remove(var1.id()))) {
+         JsonObject var2 = this.serializeModule(clientModule);
+         if (Boolean.TRUE.equals(this.pendingEnabled.remove(clientModule.id()))) {
             var2.addProperty("enabled", true);
          }
 
-         this.orphanModules.put(var1.id(), var2);
-         this.retainedEntries.remove(var1.id());
+         this.orphanModules.put(clientModule.id(), var2);
+         this.retainedEntries.remove(clientModule.id());
       }
    }
 
-   public static String renamedModuleId(String var0) {
+   public static String renamedModuleId(String string) {
       for (Entry var2 : RENAMED_MODULES.entrySet()) {
-         if (((String)var2.getKey()).equalsIgnoreCase(var0)) {
+         if (((String)var2.getKey()).equalsIgnoreCase(string)) {
             return (String)var2.getValue();
          }
       }
@@ -640,14 +640,14 @@ public final class ModuleConfigStore {
       return null;
    }
 
-   private void applyConfigRoot(JsonObject var1) {
-      if (var1 != null) {
-         int var2 = var1.has("version") ? var1.get("version").getAsInt() : 0;
+   private void applyConfigRoot(JsonObject jsonObject) {
+      if (jsonObject != null) {
+         int var2 = jsonObject.has("version") ? jsonObject.get("version").getAsInt() : 0;
          if (var2 > 3) {
             this.readOnly = true;
             LOGGER.warn("[EFN] Module config version {} is newer than supported {}; skipping load", var2, 3);
-         } else if (var1.has("modules") && var1.get("modules").isJsonObject()) {
-            JsonObject var4 = renameModules(var1.getAsJsonObject("modules"), var2);
+         } else if (jsonObject.has("modules") && jsonObject.get("modules").isJsonObject()) {
+            JsonObject var4 = renameModules(jsonObject.getAsJsonObject("modules"), var2);
 
             for (Entry var6 : var4.entrySet()) {
                String var7 = (String)var6.getKey();
@@ -699,28 +699,28 @@ public final class ModuleConfigStore {
       return FabricLoader.getInstance().getConfigDir().resolve("efn").resolve("modules.json");
    }
 
-   private void applyModuleEntry(ClientModule var1, JsonObject var2, Map<String, Boolean> var3) {
-      if (var2.has("keybind") && var2.get("keybind").isJsonPrimitive()) {
+   private void applyModuleEntry(ClientModule clientModule, JsonObject jsonObject, Map<String, Boolean> map) {
+      if (jsonObject.has("keybind") && jsonObject.get("keybind").isJsonPrimitive()) {
          try {
-            int var5 = var2.get("keybind").getAsInt();
+            int var5 = jsonObject.get("keybind").getAsInt();
             if (var5 == -1 || ModuleKeybinds.isBindable(var5)) {
-               var1.setKeybind(var5);
+               clientModule.setKeybind(var5);
             }
          } catch (RuntimeException var11) {
          }
       }
 
-      if (var2.has("holdMode") && var2.get("holdMode").isJsonPrimitive()) {
+      if (jsonObject.has("holdMode") && jsonObject.get("holdMode").isJsonPrimitive()) {
          try {
-            var1.setHoldMode(var2.get("holdMode").getAsBoolean());
+            clientModule.setHoldMode(jsonObject.get("holdMode").getAsBoolean());
          } catch (RuntimeException var10) {
          }
       }
 
-      if (var2.has("settings") && var2.get("settings").isJsonObject()) {
-         JsonObject var12 = var2.getAsJsonObject("settings");
+      if (jsonObject.has("settings") && jsonObject.get("settings").isJsonObject()) {
+         JsonObject var12 = jsonObject.getAsJsonObject("settings");
 
-         for (Setting var7 : var1.settings()) {
+         for (Setting var7 : clientModule.settings()) {
             JsonElement var8;
             if (!var7.isSessionOnly() && (var8 = var12.has(var7.id()) ? var12.get(var7.id()) : var12.get(var7.name())) != null) {
                var7.deserialize(var8);
@@ -728,58 +728,58 @@ public final class ModuleConfigStore {
          }
       }
 
-      migrateSettings(var1, var2);
-      if (var2.has("enabled") && var2.get("enabled").isJsonPrimitive()) {
+      migrateSettings(clientModule, jsonObject);
+      if (jsonObject.has("enabled") && jsonObject.get("enabled").isJsonPrimitive()) {
          boolean var4;
          try {
-            var4 = var2.get("enabled").getAsBoolean();
+            var4 = jsonObject.get("enabled").getAsBoolean();
          } catch (RuntimeException var9) {
             return;
          }
 
-         if (var1.persistEnabled()) {
-            String var13 = var1.id();
+         if (clientModule.persistEnabled()) {
+            String var13 = clientModule.id();
             if (var4) {
-               var3.put(var13, true);
+               map.put(var13, true);
             } else {
-               var1.setEnabled(false);
+               clientModule.setEnabled(false);
             }
          }
       }
    }
 
-   private static void migrateSettings(ClientModule var0, JsonObject var1) {
-      int var2 = var0.settingsVersion();
+   private static void migrateSettings(ClientModule clientModule, JsonObject jsonObject) {
+      int var2 = clientModule.settingsVersion();
       if (var2 > 0) {
          int var3 = 0;
-         if (var1.has("settingsVersion") && var1.get("settingsVersion").isJsonPrimitive()) {
+         if (jsonObject.has("settingsVersion") && jsonObject.get("settingsVersion").isJsonPrimitive()) {
             try {
-               var3 = var1.get("settingsVersion").getAsInt();
+               var3 = jsonObject.get("settingsVersion").getAsInt();
             } catch (RuntimeException var6) {
             }
          }
 
          if (var3 < var2) {
             try {
-               var0.migrateSettings(var3);
+               clientModule.migrateSettings(var3);
             } catch (RuntimeException var5) {
-               LOGGER.warn("[EFN] Failed to migrate settings of '{}' from version {}", new Object[]{var0.id(), var3, var5});
+               LOGGER.warn("[EFN] Failed to migrate settings of '{}' from version {}", clientModule.id(), var3, var5);
             }
          }
       }
    }
 
-   private static JsonObject renameModules(JsonObject var0, int var1) {
-      if (var1 >= 3) {
-         return var0;
+   private static JsonObject renameModules(JsonObject jsonObject, int i) {
+      if (i >= 3) {
+         return jsonObject;
       } else {
          JsonObject var2 = new JsonObject();
 
-         for (Entry var4 : var0.entrySet()) {
+         for (Entry var4 : jsonObject.entrySet()) {
             String var5 = RENAMED_MODULES.get(var4.getKey());
             if (var5 == null) {
                var2.add((String)var4.getKey(), (JsonElement)var4.getValue());
-            } else if (!var0.has(var5) && !var2.has(var5)) {
+            } else if (!jsonObject.has(var5) && !var2.has(var5)) {
                var2.add(var5, (JsonElement)var4.getValue());
             }
          }
@@ -788,20 +788,20 @@ public final class ModuleConfigStore {
       }
    }
 
-   private JsonObject serializeModule(ClientModule var1) {
-      JsonObject var2 = this.retainedEntries.get(var1.id());
+   private JsonObject serializeModule(ClientModule clientModule) {
+      JsonObject var2 = this.retainedEntries.get(clientModule.id());
       JsonObject var3 = var2 == null ? new JsonObject() : var2.deepCopy();
-      var3.addProperty("name", var1.name());
-      var3.addProperty("enabled", var1.isEnabled());
-      var3.addProperty("keybind", var1.keybind());
-      var3.addProperty("holdMode", var1.isHoldMode());
-      if (var1.settingsVersion() > 0) {
-         var3.addProperty("settingsVersion", var1.settingsVersion());
+      var3.addProperty("name", clientModule.name());
+      var3.addProperty("enabled", clientModule.isEnabled());
+      var3.addProperty("keybind", clientModule.keybind());
+      var3.addProperty("holdMode", clientModule.isHoldMode());
+      if (clientModule.settingsVersion() > 0) {
+         var3.addProperty("settingsVersion", clientModule.settingsVersion());
       }
 
       JsonObject var4 = var3.has("settings") && var3.get("settings").isJsonObject() ? var3.getAsJsonObject("settings").deepCopy() : new JsonObject();
 
-      for (Setting var6 : var1.settings()) {
+      for (Setting var6 : clientModule.settings()) {
          var4.remove(var6.name());
          var4.remove(sealedKey(var6));
          if (var6.isSessionOnly()) {

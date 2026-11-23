@@ -13,16 +13,16 @@ public final class HopperPlacementHandler {
    public HopperPlacementHandler() {
    }
 
-   public boolean isHopper(BlockState var1) {
-      return var1.method_26204() instanceof HopperBlock;
+   public boolean isHopper(BlockState blockState) {
+      return blockState.getBlock() instanceof HopperBlock;
    }
 
-   public boolean faceCanProduceExpectedFacing(BlockState var1, Direction var2) {
-      if (this.isHopper(var1) && var1.method_28498(Properties.field_12545)) {
-         Direction var3 = (Direction)var1.method_11654(Properties.field_12545);
-         Direction var4 = var2.method_10153();
-         if (var4.method_10166() == Axis.field_11052) {
-            var4 = Direction.field_11033;
+   public boolean faceCanProduceExpectedFacing(BlockState blockState, Direction direction) {
+      if (this.isHopper(blockState) && blockState.contains(Properties.HOPPER_FACING)) {
+         Direction var3 = blockState.get(Properties.HOPPER_FACING);
+         Direction var4 = direction.getOpposite();
+         if (var4.getAxis() == Axis.Y) {
+            var4 = Direction.DOWN;
          }
 
          return var4 == var3;
@@ -31,7 +31,7 @@ public final class HopperPlacementHandler {
       }
    }
 
-   public int facingScore(BlockState var1, Direction var2) {
-      return this.faceCanProduceExpectedFacing(var1, var2) ? 1000 : -1000;
+   public int facingScore(BlockState blockState, Direction direction) {
+      return this.faceCanProduceExpectedFacing(blockState, direction) ? 1000 : -1000;
    }
 }

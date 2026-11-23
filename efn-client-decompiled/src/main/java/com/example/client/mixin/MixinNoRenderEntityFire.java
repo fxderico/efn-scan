@@ -18,13 +18,13 @@ public abstract class MixinNoRenderEntityFire {
    }
 
    @Inject(
-      method = {"method_72914"},
+      method = {"getAndUpdateRenderState"},
       at = {@At("RETURN")}
    )
-   private void efn$hideEntityFire(Entity var1, float var2, CallbackInfoReturnable<EntityRenderState> var3) {
-      EntityRenderState var4 = (EntityRenderState)var3.getReturnValue();
+   private void efn$hideEntityFire(Entity entity, float f, CallbackInfoReturnable<EntityRenderState> callbackInfoReturnable) {
+      EntityRenderState var4 = (EntityRenderState)callbackInfoReturnable.getReturnValue();
       if (var4 != null && NoRenderModule.hideEntityFire()) {
-         var4.field_53335 = false;
+         var4.onFire = false;
       }
    }
 }

@@ -9,16 +9,16 @@ public final class StableId {
    private StableId() {
    }
 
-   public static String validate(String var0) {
-      if (!isValid(var0)) {
-         throw new IllegalArgumentException("Invalid stable id: " + var0);
+   public static String validate(String string) {
+      if (!isValid(string)) {
+         throw new IllegalArgumentException("Invalid stable id: " + string);
       } else {
-         return var0;
+         return string;
       }
    }
 
-   public static String legacy(String var0) {
-      String var1 = var0.toLowerCase(Locale.ROOT);
+   public static String legacy(String string) {
+      String var1 = string.toLowerCase(Locale.ROOT);
       StringBuilder var2 = new StringBuilder(var1.length());
       boolean var3 = false;
 
@@ -39,12 +39,12 @@ public final class StableId {
       return validate(var2.toString());
    }
 
-   private static boolean isValid(String var0) {
-      if (var0 != null && !var0.isEmpty()) {
+   private static boolean isValid(String string) {
+      if (string != null && !string.isEmpty()) {
          boolean var1 = true;
 
-         for (int var2 = 0; var2 < var0.length(); var2++) {
-            char var3 = var0.charAt(var2);
+         for (int var2 = 0; var2 < string.length(); var2++) {
+            char var3 = string.charAt(var2);
             if ((var3 < 'a' || var3 > 'z') && (var3 < '0' || var3 > '9')) {
                if (var3 != '.' && var3 != '_' && var3 != '-') {
                   return false;

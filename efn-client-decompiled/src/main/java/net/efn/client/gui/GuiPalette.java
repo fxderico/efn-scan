@@ -49,8 +49,8 @@ public final class GuiPalette {
       return tabBarBg;
    }
 
-   public static int fill(Surface var0) {
-      return abgr(ThemeTint.surface(var0.color.argbWithAlpha(Math.round(var0.opacity.get() * 255.0F))));
+   public static int fill(Surface surface) {
+      return abgr(ThemeTint.surface(surface.color.argbWithAlpha(Math.round(surface.opacity.get() * 255.0F))));
    }
 
    public static float rounding() {
@@ -61,7 +61,7 @@ public final class GuiPalette {
       return animationSpeed;
    }
 
-   public static int abgr(int var0) {
-      return var0 & -16711936 | var0 >> 16 & 0xFF | (var0 & 0xFF) << 16;
+   public static int abgr(int i) {
+      return i & -16711936 | i >> 16 & 0xFF | (i & 0xFF) << 16;
    }
 }

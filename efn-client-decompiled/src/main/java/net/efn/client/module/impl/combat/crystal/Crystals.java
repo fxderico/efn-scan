@@ -42,7 +42,6 @@ import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.decoration.EndCrystalEntity;
-import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
@@ -73,14 +72,7 @@ public final class Crystals {
    private static final float RTT_SMOOTHING = 0.25F;
    private static final double RESERVE_RANGE = 12.0;
    private static final Set<Block> USABLE_BLOCKS = Set.of(
-      Blocks.field_23152,
-      Blocks.field_10179,
-      Blocks.field_10363,
-      Blocks.field_10450,
-      Blocks.field_10091,
-      Blocks.field_10183,
-      Blocks.field_17563,
-      Blocks.field_10081
+      Blocks.RESPAWN_ANCHOR, Blocks.NOTE_BLOCK, Blocks.LEVER, Blocks.REPEATER, Blocks.REDSTONE_WIRE, Blocks.CAKE, Blocks.COMPOSTER, Blocks.DRAGON_EGG
    );
    private static final Long2IntOpenHashMap PLACED_AT = new Long2IntOpenHashMap();
    private static float measuredRtt;
@@ -88,23 +80,23 @@ public final class Crystals {
    private Crystals() {
    }
 
-   public static boolean isBase(BlockState var0) {
-      return var0.method_27852(Blocks.field_10540) || var0.method_27852(Blocks.field_9987);
+   public static boolean isBase(BlockState blockState) {
+      return blockState.isOf(Blocks.OBSIDIAN) || blockState.isOf(Blocks.BEDROCK);
    }
 
-   public static Vec3d explosionAt(BlockPos var0) {
-      return Vec3d.method_24955(var0.method_10084());
+   public static Vec3d explosionAt(BlockPos blockPos) {
+      return Vec3d.ofBottomCenter(blockPos.up());
    }
 
-   public static Box boxOn(BlockPos var0) {
-      return EntityType.field_6110.method_18386().method_30757(explosionAt(var0));
+   public static Box boxOn(BlockPos blockPos) {
+      return EntityType.END_CRYSTAL.getDimensions().getBoxAt(explosionAt(blockPos));
    }
 
-   public static boolean hasCrystal(World var0, BlockPos var1, Entity var2) {
-      BlockPos var3 = var1.method_10084();
+   public static boolean hasCrystal(World world, BlockPos blockPos, Entity entity) {
+      BlockPos var3 = blockPos.up();
 
-      for (EndCrystalEntity var5 : var0.method_18467(EndCrystalEntity.class, new Box(var3))) {
-         if (var5 != var2 && var5.method_24515().equals(var3)) {
+      for (EndCrystalEntity var5 : world.getNonSpectatingEntities(EndCrystalEntity.class, new Box(var3))) {
+         if (var5 != entity && var5.getBlockPos().equals(var3)) {
             return true;
          }
       }
@@ -112,17 +104,15 @@ public final class Crystals {
       return false;
    }
 
-   public static boolean canHost(World var0, BlockPos var1, Entity var2) {
-      BlockPos var3 = var1.method_10084();
-      if (!var0.method_22347(var3)) {
+   public static boolean canHost(World world, BlockPos blockPos, Entity entity) {
+      BlockPos var3 = blockPos.up();
+      if (!world.isAir(var3)) {
          return false;
       } else {
-         Box var4 = new Box(
-            var3.method_10263(), var3.method_10264(), var3.method_10260(), var3.method_10263() + 1.0, var3.method_10264() + 2.0, var3.method_10260() + 1.0
-         );
+         Box var4 = new Box(var3.getX(), var3.getY(), var3.getZ(), var3.getX() + 1.0, var3.getY() + 2.0, var3.getZ() + 1.0);
 
-         for (Entity var6 : var0.method_8335(var2, var4)) {
-            if (var6.method_5805()) {
+         for (Entity var6 : world.getOtherEntities(entity, var4)) {
+            if (var6.isAlive()) {
                return false;
             }
          }
@@ -131,66 +121,66 @@ public final class Crystals {
       }
    }
 
-   public static BlockPos obsidianTarget(ClientWorld var0, ClientPlayerEntity var1, BlockHitResult var2, BlockState var3) {
-      BlockPos var4 = placedObsidian(var0, var1, var2, var3);
-      return var4 != null && canHost(var0, var4, null) ? var4 : null;
+   public static BlockPos obsidianTarget(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, BlockHitResult blockHitResult, BlockState blockState) {
+      BlockPos var4 = placedObsidian(clientWorld, clientPlayerEntity, blockHitResult, blockState);
+      return var4 != null && canHost(clientWorld, var4, null) ? var4 : null;
    }
 
-   public static BlockPos placedObsidian(ClientWorld var0, ClientPlayerEntity var1, BlockHitResult var2, BlockState var3) {
-      if (!var1.method_21823() && reactsToUse(var0, var2.method_17777(), var3)) {
+   public static BlockPos placedObsidian(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, BlockHitResult blockHitResult, BlockState blockState) {
+      if (!clientPlayerEntity.shouldCancelInteraction() && reactsToUse(clientWorld, blockHitResult.getBlockPos(), blockState)) {
          return null;
       } else {
-         ItemPlacementContext var4 = new ItemPlacementContext(var1, Hand.field_5808, new ItemStack(Items.field_8281), var2);
-         if (!var4.method_7716()) {
+         ItemPlacementContext var4 = new ItemPlacementContext(clientPlayerEntity, Hand.MAIN_HAND, new ItemStack(Items.OBSIDIAN), blockHitResult);
+         if (!var4.canPlace()) {
             return null;
          } else {
-            BlockPos var5 = var4.method_8037();
-            if (var0.method_31606(var5) || !var0.method_8621().method_11952(var5)) {
+            BlockPos var5 = var4.getBlockPos();
+            if (clientWorld.isOutOfHeightLimit(var5) || !clientWorld.getWorldBorder().contains(var5)) {
                return null;
             } else {
-               return !var0.method_8628(Blocks.field_10540.method_9564(), var5, ShapeContext.method_67715(var1)) ? null : var5;
+               return !clientWorld.canPlace(Blocks.OBSIDIAN.getDefaultState(), var5, ShapeContext.ofPlacement(clientPlayerEntity)) ? null : var5;
             }
          }
       }
    }
 
-   private static boolean reactsToUse(World var0, BlockPos var1, BlockState var2) {
-      Block var3 = var2.method_26204();
+   private static boolean reactsToUse(World world, BlockPos blockPos, BlockState blockState) {
+      Block var3 = blockState.getBlock();
       if (var3 instanceof BlockEntityProvider || USABLE_BLOCKS.contains(var3)) {
          return true;
       } else {
-         return !var2.method_26164(BlockTags.field_15495)
-               && !var2.method_26164(BlockTags.field_15487)
-               && !var2.method_26164(BlockTags.field_25147)
-               && !var2.method_26164(BlockTags.field_15493)
-               && !var2.method_26164(BlockTags.field_26985)
-               && !var2.method_26164(BlockTags.field_26984)
-               && !var2.method_26164(BlockTags.field_15470)
-            ? var2.method_26196(var0, var1) != null
+         return !blockState.isIn(BlockTags.DOORS)
+               && !blockState.isIn(BlockTags.TRAPDOORS)
+               && !blockState.isIn(BlockTags.FENCE_GATES)
+               && !blockState.isIn(BlockTags.BUTTONS)
+               && !blockState.isIn(BlockTags.CAULDRONS)
+               && !blockState.isIn(BlockTags.CANDLE_CAKES)
+               && !blockState.isIn(BlockTags.FLOWER_POTS)
+            ? blockState.createScreenHandlerFactory(world, blockPos) != null
             : true;
       }
    }
 
-   public static int route(ClientPlayerEntity var0, Item var1, BlockState var2, int var3) {
-      ItemStack var4 = var0.method_6047();
-      if (var4.method_31574(var1)) {
+   public static int route(ClientPlayerEntity clientPlayerEntity, Item item, BlockState blockState, int i) {
+      ItemStack var4 = clientPlayerEntity.getMainHandStack();
+      if (var4.isOf(item)) {
          return -2;
       } else {
-         boolean var5 = var0.method_6079().method_31574(var1);
-         if (var5 && letsClickThrough(var4, var2)) {
+         boolean var5 = clientPlayerEntity.getOffHandStack().isOf(item);
+         if (var5 && letsClickThrough(var4, blockState)) {
             return -2;
          } else {
-            PlayerInventory var6 = var0.method_31548();
-            int var7 = hotbarSlotOf(var6, var1);
+            PlayerInventory var6 = clientPlayerEntity.getInventory();
+            int var7 = hotbarSlotOf(var6, item);
             if (var7 != -1) {
                return var7;
             } else if (!var5) {
                return -1;
-            } else if (PlayerInventory.method_7380(var3) && letsClickThrough(var6.method_5438(var3), var2)) {
-               return var3;
+            } else if (PlayerInventory.isValidHotbarIndex(i) && letsClickThrough(var6.getStack(i), blockState)) {
+               return i;
             } else {
-               for (int var8 = 0; var8 < PlayerInventory.method_7368(); var8++) {
-                  if (letsClickThrough(var6.method_5438(var8), var2)) {
+               for (int var8 = 0; var8 < PlayerInventory.getHotbarSize(); var8++) {
+                  if (letsClickThrough(var6.getStack(var8), blockState)) {
                      return var8;
                   }
                }
@@ -201,35 +191,35 @@ public final class Crystals {
       }
    }
 
-   public static boolean letsClickThrough(ItemStack var0, BlockState var1) {
-      if (var0.method_7960()) {
+   public static boolean letsClickThrough(ItemStack itemStack, BlockState blockState) {
+      if (itemStack.isEmpty()) {
          return true;
-      } else if (!var0.method_57826(DataComponentTypes.field_53964)
-         && !var0.method_57826(DataComponentTypes.field_56396)
-         && !var0.method_57826(DataComponentTypes.field_63632)) {
-         EquippableComponent var2 = (EquippableComponent)var0.method_58694(DataComponentTypes.field_54196);
-         return var2 != null && var2.comp_3213()
+      } else if (!itemStack.contains(DataComponentTypes.CONSUMABLE)
+         && !itemStack.contains(DataComponentTypes.BLOCKS_ATTACKS)
+         && !itemStack.contains(DataComponentTypes.KINETIC_WEAPON)) {
+         EquippableComponent var2 = itemStack.get(DataComponentTypes.EQUIPPABLE);
+         return var2 != null && var2.swappable()
             ? false
-            : var0.method_31573(ItemTags.field_42611)
-               || var0.method_31574(Items.field_49814)
-               || var0.method_31574(Items.field_8288)
-               || var0.method_31573(ItemTags.field_42612) && isBase(var1);
+            : itemStack.isIn(ItemTags.SWORDS)
+               || itemStack.isOf(Items.MACE)
+               || itemStack.isOf(Items.TOTEM_OF_UNDYING)
+               || itemStack.isIn(ItemTags.AXES) && isBase(blockState);
       } else {
          return false;
       }
    }
 
-   public static boolean isCombatItem(ItemStack var0) {
-      return var0.method_7960()
-         || var0.method_31573(ItemTags.field_42611)
-         || var0.method_31573(ItemTags.field_42612)
-         || var0.method_31574(Items.field_49814)
-         || var0.method_31574(Items.field_8288);
+   public static boolean isCombatItem(ItemStack itemStack) {
+      return itemStack.isEmpty()
+         || itemStack.isIn(ItemTags.SWORDS)
+         || itemStack.isIn(ItemTags.AXES)
+         || itemStack.isOf(Items.MACE)
+         || itemStack.isOf(Items.TOTEM_OF_UNDYING);
    }
 
-   public static int hotbarSlotOf(PlayerInventory var0, Item var1) {
-      for (int var2 = 0; var2 < PlayerInventory.method_7368(); var2++) {
-         if (var0.method_5438(var2).method_31574(var1)) {
+   public static int hotbarSlotOf(PlayerInventory playerInventory, Item item) {
+      for (int var2 = 0; var2 < PlayerInventory.getHotbarSize(); var2++) {
+         if (playerInventory.getStack(var2).isOf(item)) {
             return var2;
          }
       }
@@ -237,11 +227,17 @@ public final class Crystals {
       return -1;
    }
 
-   public static boolean strike(MinecraftClient var0, ClientPlayerEntity var1, Entity var2) {
-      if (var1 != null && var0.field_1761 != null && var2 != null && !var2.method_31481() && !var1.method_7325()) {
-         if (!MeleeAttacks.actedThisTick(var1) && MeleeAttacks.handsFree(var0, var1) && var1.method_5624() == ((AccessorLocalPlayer)var1).efn$wasSprinting()) {
-            var0.field_1761.method_2918(var1, var2);
-            var1.method_6104(Hand.field_5808);
+   public static boolean strike(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, Entity entity) {
+      if (clientPlayerEntity != null
+         && minecraftClient.interactionManager != null
+         && entity != null
+         && !entity.isRemoved()
+         && !clientPlayerEntity.isSpectator()) {
+         if (!MeleeAttacks.actedThisTick(clientPlayerEntity)
+            && MeleeAttacks.handsFree(minecraftClient, clientPlayerEntity)
+            && clientPlayerEntity.isSprinting() == ((AccessorLocalPlayer)clientPlayerEntity).efn$wasSprinting()) {
+            minecraftClient.interactionManager.attackEntity(clientPlayerEntity, entity);
+            clientPlayerEntity.swingHand(Hand.MAIN_HAND);
             return true;
          } else {
             return false;
@@ -251,20 +247,22 @@ public final class Crystals {
       }
    }
 
-   public static boolean rightClick(MinecraftClient var0, ClientPlayerEntity var1, BlockHitResult var2) {
-      if (!MeleeAttacks.actedThisTick(var1) && MeleeAttacks.handsFree(var0, var1)) {
-         Hand var4 = letsClickThrough(var1.method_6047(), var0.field_1687.method_8320(var2.method_17777())) ? Hand.field_5810 : Hand.field_5808;
-         ItemStack var5 = var1.method_5998(var4);
-         if (!var5.method_45435(var0.field_1687.method_45162())) {
+   public static boolean rightClick(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, BlockHitResult blockHitResult) {
+      if (!MeleeAttacks.actedThisTick(clientPlayerEntity) && MeleeAttacks.handsFree(minecraftClient, clientPlayerEntity)) {
+         Hand var4 = letsClickThrough(clientPlayerEntity.getMainHandStack(), minecraftClient.world.getBlockState(blockHitResult.getBlockPos()))
+            ? Hand.OFF_HAND
+            : Hand.MAIN_HAND;
+         ItemStack var5 = clientPlayerEntity.getStackInHand(var4);
+         if (!var5.isItemEnabled(minecraftClient.world.getEnabledFeatures())) {
             return false;
          } else {
-            int var6 = var5.method_7947();
-            ActionResult var7 = var0.field_1761.method_2896(var1, var4, var2);
+            int var6 = var5.getCount();
+            ActionResult var7 = minecraftClient.interactionManager.interactBlock(clientPlayerEntity, var4, blockHitResult);
             Success var3;
-            if (var7 instanceof Success && (var3 = (Success)var7).comp_2909() == SwingSource.field_52427) {
-               var1.method_6104(var4);
-               if (!var5.method_7960() && (var5.method_7947() != var6 || var1.method_56992())) {
-                  var0.field_1773.field_4012.method_3215(var4);
+            if (var7 instanceof Success && (var3 = (Success)var7).swingSource() == SwingSource.CLIENT) {
+               clientPlayerEntity.swingHand(var4);
+               if (!var5.isEmpty() && (var5.getCount() != var6 || clientPlayerEntity.isInCreativeMode())) {
+                  minecraftClient.gameRenderer.firstPersonRenderer.resetEquipProgress(var4);
                }
             }
 
@@ -275,20 +273,20 @@ public final class Crystals {
       }
    }
 
-   public static int weaponRoute(ClientPlayerEntity var0) {
-      ItemStack var1 = var0.method_6047();
-      if (!swings(var0, var1) || !enchantsAddDamage(var1) && !dealsDamage(var0, var1)) {
-         PlayerInventory var2 = var0.method_31548();
+   public static int weaponRoute(ClientPlayerEntity clientPlayerEntity) {
+      ItemStack var1 = clientPlayerEntity.getMainHandStack();
+      if (!swings(clientPlayerEntity, var1) || !enchantsAddDamage(var1) && !dealsDamage(clientPlayerEntity, var1)) {
+         PlayerInventory var2 = clientPlayerEntity.getInventory();
          int var3 = -1;
 
-         for (int var4 = 0; var4 < PlayerInventory.method_7368(); var4++) {
-            ItemStack var5 = var2.method_5438(var4);
-            if (swings(var0, var5)) {
+         for (int var4 = 0; var4 < PlayerInventory.getHotbarSize(); var4++) {
+            ItemStack var5 = var2.getStack(var4);
+            if (swings(clientPlayerEntity, var5)) {
                if (enchantsAddDamage(var5)) {
                   return var4;
                }
 
-               if (var3 == -1 && dealsDamage(var0, var5)) {
+               if (var3 == -1 && dealsDamage(clientPlayerEntity, var5)) {
                   var3 = var4;
                }
             }
@@ -300,97 +298,101 @@ public final class Crystals {
       }
    }
 
-   private static boolean swings(ClientPlayerEntity var0, ItemStack var1) {
-      return !var1.method_57826(DataComponentTypes.field_63631) && !var0.method_75202(var1, 0);
+   private static boolean swings(ClientPlayerEntity clientPlayerEntity, ItemStack itemStack) {
+      return !itemStack.contains(DataComponentTypes.PIERCING_WEAPON) && !clientPlayerEntity.isBelowMinimumAttackCharge(itemStack, 0);
    }
 
-   public static boolean enchantsAddDamage(ItemStack var0) {
+   public static boolean enchantsAddDamage(ItemStack itemStack) {
       float var1 = 0.0F;
 
-      for (Entry var3 : var0.method_58657().method_57539()) {
-         Enchantment var4 = (Enchantment)((RegistryEntry)var3.getKey()).comp_349();
+      for (Entry var3 : itemStack.getEnchantments().getEnchantmentEntries()) {
+         Enchantment var4 = (Enchantment)((RegistryEntry)var3.getKey()).value();
 
-         for (EnchantmentEffectEntry var6 : var4.method_60034(EnchantmentEffectComponentTypes.field_51661)) {
+         for (EnchantmentEffectEntry var6 : var4.getEffect(EnchantmentEffectComponentTypes.DAMAGE)) {
             Object var7;
-            if (var6.comp_2681().isPresent() || !((var7 = var6.comp_2680()) instanceof AddEnchantmentEffect)) {
+            if (var6.requirements().isPresent() || !((var7 = var6.effect()) instanceof AddEnchantmentEffect)) {
                return false;
             }
 
             AddEnchantmentEffect var8 = (AddEnchantmentEffect)var7;
-            var1 += var8.comp_2704().method_60188(var3.getIntValue());
+            var1 += var8.value().getValue(var3.getIntValue());
          }
       }
 
       return var1 > 0.0F;
    }
 
-   public static boolean dealsDamage(LivingEntity var0, ItemStack var1) {
-      EntityAttributeInstance var2 = new EntityAttributeInstance(EntityAttributes.field_23721, var0x -> {});
-      var2.method_6192(var0.method_45326(EntityAttributes.field_23721));
+   public static boolean dealsDamage(LivingEntity livingEntity, ItemStack itemStack) {
+      EntityAttributeInstance var2 = new EntityAttributeInstance(EntityAttributes.ATTACK_DAMAGE, entityAttributeInstance -> {});
+      var2.setBaseValue(livingEntity.getAttributeBaseValue(EntityAttributes.ATTACK_DAMAGE));
 
-      for (StatusEffectInstance var4 : var0.method_6026()) {
-         ((StatusEffect)var4.method_5579().comp_349()).method_55650(var4.method_5578(), (var1x, var2x) -> include(var2, var1x, var2x));
+      for (StatusEffectInstance var4 : livingEntity.getStatusEffects()) {
+         var4.getEffectType()
+            .value()
+            .forEachAttributeModifier(var4.getAmplifier(), (registryEntry, entityAttributeModifier) -> include(var2, registryEntry, entityAttributeModifier));
       }
 
-      for (EquipmentSlot var7 : EquipmentSlot.field_54086) {
-         ItemStack var5 = var7 == EquipmentSlot.field_6173 ? var1 : var0.method_6118(var7);
-         if (!var5.method_7960() && !var5.method_61657()) {
-            var5.method_57354(var7, (var1x, var2x) -> include(var2, var1x, var2x));
+      for (EquipmentSlot var7 : EquipmentSlot.VALUES) {
+         ItemStack var5 = var7 == EquipmentSlot.MAINHAND ? itemStack : livingEntity.getEquippedStack(var7);
+         if (!var5.isEmpty() && !var5.shouldBreak()) {
+            var5.applyAttributeModifiers(var7, (registryEntry, entityAttributeModifier) -> include(var2, registryEntry, entityAttributeModifier));
          }
       }
 
-      return (float)var2.method_6194() > 0.0F;
+      return (float)var2.getValue() > 0.0F;
    }
 
-   private static void include(EntityAttributeInstance var0, RegistryEntry<EntityAttribute> var1, EntityAttributeModifier var2) {
-      if (EntityAttributes.field_23721.equals(var1)) {
-         var0.method_6200(var2.comp_2447());
-         var0.method_26835(var2);
+   private static void include(
+      EntityAttributeInstance entityAttributeInstance, RegistryEntry<EntityAttribute> registryEntry, EntityAttributeModifier entityAttributeModifier
+   ) {
+      if (EntityAttributes.ATTACK_DAMAGE.equals(registryEntry)) {
+         entityAttributeInstance.removeModifier(entityAttributeModifier.id());
+         entityAttributeInstance.addTemporaryModifier(entityAttributeModifier);
       }
    }
 
-   public static int confirmWindow(MinecraftClient var0, ClientPlayerEntity var1) {
-      return MathHelper.method_15340(rttTicks(var0, var1) + 2, 4, 20);
+   public static int confirmWindow(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      return MathHelper.clamp(rttTicks(minecraftClient, clientPlayerEntity) + 2, 4, 20);
    }
 
-   public static int rttTicks(MinecraftClient var0, ClientPlayerEntity var1) {
-      return measuredRtt > 0.0F ? Math.round(measuredRtt) : latencyMs(var0, var1) / 50 + 1;
+   public static int rttTicks(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      return measuredRtt > 0.0F ? Math.round(measuredRtt) : latencyMs(minecraftClient, clientPlayerEntity) / 50 + 1;
    }
 
-   public static void notePlace(ClientPlayerEntity var0, BlockPos var1) {
+   public static void notePlace(ClientPlayerEntity clientPlayerEntity, BlockPos blockPos) {
       ObjectIterator var2 = PLACED_AT.long2IntEntrySet().iterator();
 
       while (var2.hasNext()) {
-         int var3 = var0.field_6012 - ((it.unimi.dsi.fastutil.longs.Long2IntMap.Entry)var2.next()).getIntValue();
+         int var3 = clientPlayerEntity.age - ((it.unimi.dsi.fastutil.longs.Long2IntMap.Entry)var2.next()).getIntValue();
          if (var3 < 0 || var3 > 20) {
             var2.remove();
          }
       }
 
-      PLACED_AT.put(var1.method_10063(), var0.field_6012);
+      PLACED_AT.put(blockPos.asLong(), clientPlayerEntity.age);
    }
 
-   public static void noteSpawn(ClientPlayerEntity var0, BlockPos var1) {
-      long var2 = var1.method_10063();
+   public static void noteSpawn(ClientPlayerEntity clientPlayerEntity, BlockPos blockPos) {
+      long var2 = blockPos.asLong();
       if (PLACED_AT.containsKey(var2)) {
-         int var4 = var0.field_6012 - PLACED_AT.remove(var2);
+         int var4 = clientPlayerEntity.age - PLACED_AT.remove(var2);
          if (var4 > 0 && var4 <= 20) {
             measuredRtt = measuredRtt > 0.0F ? measuredRtt + (var4 - measuredRtt) * 0.25F : var4;
          }
       }
    }
 
-   public static boolean placing(ClientPlayerEntity var0, BlockPos var1, int var2) {
-      long var3 = var1.method_10063();
-      return PLACED_AT.containsKey(var3) && sent(var0, PLACED_AT.get(var3), var2);
+   public static boolean placing(ClientPlayerEntity clientPlayerEntity, BlockPos blockPos, int i) {
+      long var3 = blockPos.asLong();
+      return PLACED_AT.containsKey(var3) && sent(clientPlayerEntity, PLACED_AT.get(var3), i);
    }
 
-   public static boolean anyPlacing(ClientPlayerEntity var0, int var1) {
+   public static boolean anyPlacing(ClientPlayerEntity clientPlayerEntity, int i) {
       IntIterator var2 = PLACED_AT.values().iterator();
 
       while (var2.hasNext()) {
          int var3 = var2.next();
-         if (sent(var0, var3, var1)) {
+         if (sent(clientPlayerEntity, var3, i)) {
             return true;
          }
       }
@@ -398,30 +400,28 @@ public final class Crystals {
       return false;
    }
 
-   public static List<Box> reservedBoxes(ClientPlayerEntity var0, int var1) {
+   public static List<Box> reservedBoxes(ClientPlayerEntity clientPlayerEntity, int i) {
       ArrayList var2 = new ArrayList();
 
-      for (EndCrystalEntity var4 : var0.method_73183().method_18467(EndCrystalEntity.class, var0.method_5829().method_1014(12.0))) {
-         if (var4.method_5805()) {
-            var2.add(var4.method_5829());
+      for (EndCrystalEntity var4 : clientPlayerEntity.getEntityWorld()
+         .getNonSpectatingEntities(EndCrystalEntity.class, clientPlayerEntity.getBoundingBox().expand(12.0))) {
+         if (var4.isAlive()) {
+            var2.add(var4.getBoundingBox());
          }
       }
 
-      ObjectIterator var5 = PLACED_AT.long2IntEntrySet().iterator();
-
-      while (var5.hasNext()) {
-         it.unimi.dsi.fastutil.longs.Long2IntMap.Entry var6 = (it.unimi.dsi.fastutil.longs.Long2IntMap.Entry)var5.next();
-         if (sent(var0, var6.getIntValue(), var1)) {
-            var2.add(boxOn(BlockPos.method_10092(var6.getLongKey())));
+      for (it.unimi.dsi.fastutil.longs.Long2IntMap.Entry var6 : PLACED_AT.long2IntEntrySet()) {
+         if (sent(clientPlayerEntity, var6.getIntValue(), i)) {
+            var2.add(boxOn(BlockPos.fromLong(var6.getLongKey())));
          }
       }
 
       return var2;
    }
 
-   private static boolean sent(ClientPlayerEntity var0, int var1, int var2) {
-      int var3 = var0.field_6012 - var1;
-      return var3 >= 0 && var3 < var2;
+   private static boolean sent(ClientPlayerEntity clientPlayerEntity, int i, int j) {
+      int var3 = clientPlayerEntity.age - i;
+      return var3 >= 0 && var3 < j;
    }
 
    public static int humanGap() {
@@ -434,41 +434,41 @@ public final class Crystals {
       measuredRtt = 0.0F;
    }
 
-   private static int latencyMs(MinecraftClient var0, ClientPlayerEntity var1) {
-      ClientPlayNetworkHandler var2 = var0.method_1562();
+   private static int latencyMs(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      ClientPlayNetworkHandler var2 = minecraftClient.getNetworkHandler();
       if (var2 == null) {
          return 0;
       } else {
-         PlayerListEntry var3 = var2.method_2871(var1.method_5667());
-         return var3 == null ? 0 : Math.max(var3.method_2959(), 0);
+         PlayerListEntry var3 = var2.getPlayerListEntry(clientPlayerEntity.getUuid());
+         return var3 == null ? 0 : Math.max(var3.getLatency(), 0);
       }
    }
 
-   public static boolean isKeyDown(MinecraftClient var0, int var1) {
-      if (!ModuleKeybinds.isBindable(var1)) {
+   public static boolean isKeyDown(MinecraftClient minecraftClient, int i) {
+      if (!ModuleKeybinds.isBindable(i)) {
          return false;
       } else {
-         return var1 >= 1000
-            ? GLFW.glfwGetMouseButton(var0.method_22683().method_4490(), var1 - 1000) == 1
-            : EfnKeyPolling.isKeyDown(var0.method_22683(), var1);
+         return i >= 1000
+            ? GLFW.glfwGetMouseButton(minecraftClient.getWindow().getHandle(), i - 1000) == 1
+            : EfnKeyPolling.isKeyDown(minecraftClient.getWindow(), i);
       }
    }
 
-   public static boolean isPhysicallyDown(MinecraftClient var0, KeyBinding var1) {
+   public static boolean isPhysicallyDown(MinecraftClient minecraftClient, KeyBinding keyBinding) {
       Key var2;
       try {
-         var2 = InputUtil.method_15981(var1.method_1428());
+         var2 = InputUtil.fromTranslationKey(keyBinding.getBoundKeyTranslationKey());
       } catch (IllegalArgumentException var4) {
          return false;
       }
 
-      int var3 = var2.method_1444();
+      int var3 = var2.getCode();
       if (var3 < 0) {
          return false;
       } else {
-         return switch (var2.method_1442()) {
-            case field_1672 -> GLFW.glfwGetMouseButton(var0.method_22683().method_4490(), var3) == 1;
-            case field_1668 -> EfnKeyPolling.isKeyDown(var0.method_22683(), var3);
+         return switch (var2.getCategory()) {
+            case MOUSE -> GLFW.glfwGetMouseButton(minecraftClient.getWindow().getHandle(), var3) == 1;
+            case KEYSYM -> EfnKeyPolling.isKeyDown(minecraftClient.getWindow(), var3);
             default -> false;
          };
       }

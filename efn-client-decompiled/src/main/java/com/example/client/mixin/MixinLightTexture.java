@@ -24,41 +24,41 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MixinLightTexture {
    @Shadow
    @Final
-   private GpuTexture field_57927;
+   private GpuTexture glTexture;
 
    public MixinLightTexture() {
    }
 
    @Inject(
-      method = {"method_3313"},
+      method = {"update"},
       at = {@At(
          value = "FIELD",
-         target = "Lnet/minecraft/class_765;field_4135:Z",
+         target = "Lnet/minecraft/client/render/LightmapTextureManager;dirty:Z",
          opcode = 181,
          shift = Shift.AFTER
       )},
       cancellable = true
    )
-   private void efn$xrayFullbright(float var1, CallbackInfo var2) {
+   private void efn$xrayFullbright(float f, CallbackInfo callbackInfo) {
       if (XrayModule.active != null) {
-         RenderSystem.getDevice().createCommandEncoder().clearColorTexture(this.field_57927, -1);
-         var2.cancel();
+         RenderSystem.getDevice().createCommandEncoder().clearColorTexture(this.glTexture, -1);
+         callbackInfo.cancel();
       }
    }
 
    @ModifyExpressionValue(
-      method = {"method_3313"},
+      method = {"update"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_746;method_66279(Lnet/minecraft/class_6880;F)F"
+         target = "Lnet/minecraft/client/network/ClientPlayerEntity;getEffectFadeFactor(Lnet/minecraft/registry/entry/RegistryEntry;F)F"
       )}
    )
-   private float efn$hideDarknessPulse(float var1) {
-      return NoRenderModule.hideBlindnessDarkness() ? 0.0F : var1;
+   private float efn$hideDarknessPulse(float f) {
+      return NoRenderModule.hideBlindnessDarkness() ? 0.0F : f;
    }
 
    @ModifyArg(
-      method = {"method_3313"},
+      method = {"update"},
       at = {@At(
          value = "INVOKE",
          target = "Lcom/mojang/blaze3d/buffers/Std140Builder;putFloat(F)Lcom/mojang/blaze3d/buffers/Std140Builder;",
@@ -66,8 +66,8 @@ public abstract class MixinLightTexture {
       )},
       index = 0
    )
-   private float efn$fullbrightGamma(float var1) {
+   private float efn$fullbrightGamma(float f) {
       FullbrightModule var2 = ModuleRegistry.get(FullbrightModule.class);
-      return var2 != null && var2.isEnabled() ? var2.gamma() : var1;
+      return var2 != null && var2.isEnabled() ? var2.gamma() : f;
    }
 }

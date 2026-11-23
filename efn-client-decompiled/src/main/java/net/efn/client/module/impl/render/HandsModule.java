@@ -45,18 +45,18 @@ public final class HandsModule extends ClientModule {
       this.addSetting("reset-hand", new ActionSetting("Reset Hand", this::resetEdited));
    }
 
-   private NumberSetting[] axes(String var1, boolean var2) {
+   private NumberSetting[] axes(String string, boolean bl) {
       NumberSetting[] var3;
       for (NumberSetting var7 : var3 = new NumberSetting[]{
-         this.addSetting(var1 + "-x", new NumberSetting("Offset X", REST[0], -1.0F, 1.0F).step(0.01F)),
-         this.addSetting(var1 + "-y", new NumberSetting("Offset Y", REST[1], -1.0F, 1.0F).step(0.01F)),
-         this.addSetting(var1 + "-z", new NumberSetting("Offset Z", REST[2], -1.0F, 1.0F).step(0.01F)),
-         this.addSetting(var1 + "-pitch", new NumberSetting("Pitch", REST[3], -180.0F, 180.0F).step(1.0F)),
-         this.addSetting(var1 + "-yaw", new NumberSetting("Yaw", REST[4], -180.0F, 180.0F).step(1.0F)),
-         this.addSetting(var1 + "-roll", new NumberSetting("Roll", REST[5], -180.0F, 180.0F).step(1.0F)),
-         this.addSetting(var1 + "-scale", new NumberSetting("Scale", REST[6], 0.3F, 2.0F).step(0.05F))
+         this.addSetting(string + "-x", new NumberSetting("Offset X", REST[0], -1.0F, 1.0F).step(0.01F)),
+         this.addSetting(string + "-y", new NumberSetting("Offset Y", REST[1], -1.0F, 1.0F).step(0.01F)),
+         this.addSetting(string + "-z", new NumberSetting("Offset Z", REST[2], -1.0F, 1.0F).step(0.01F)),
+         this.addSetting(string + "-pitch", new NumberSetting("Pitch", REST[3], -180.0F, 180.0F).step(1.0F)),
+         this.addSetting(string + "-yaw", new NumberSetting("Yaw", REST[4], -180.0F, 180.0F).step(1.0F)),
+         this.addSetting(string + "-roll", new NumberSetting("Roll", REST[5], -180.0F, 180.0F).step(1.0F)),
+         this.addSetting(string + "-scale", new NumberSetting("Scale", REST[6], 0.3F, 2.0F).step(0.05F))
       }) {
-         var7.visibleWhen(var2 ? () -> this.link.get() || this.editing.is("Main Hand") : () -> !this.link.get() && this.editing.is("Offhand"));
+         var7.visibleWhen(bl ? () -> this.link.get() || this.editing.is("Main Hand") : () -> !this.link.get() && this.editing.is("Offhand"));
       }
 
       return var3;
@@ -77,27 +77,27 @@ public final class HandsModule extends ClientModule {
       }
    }
 
-   public static void shape(MatrixStack var0, boolean var1, int var2) {
+   public static void shape(MatrixStack matrixStack, boolean bl, int i) {
       HandsModule var3 = live;
       if (var3 != null) {
-         var3.shapeHand(var0, var1, var2);
+         var3.shapeHand(matrixStack, bl, i);
       }
    }
 
-   private void shapeHand(MatrixStack var1, boolean var2, int var3) {
+   private void shapeHand(MatrixStack matrixStack, boolean bl, int i) {
       boolean var4 = this.isEnabled();
-      HandsModule.HandState var5 = var2 ? this.mainState : this.offState;
-      var5.step(!var2 && !this.link.get() ? this.off : this.main, var4, this.follow());
+      HandsModule.HandState var5 = bl ? this.mainState : this.offState;
+      var5.step(!bl && !this.link.get() ? this.off : this.main, var4, this.follow());
       if (!var4 && this.mainState.rested && this.offState.rested) {
          live = null;
       } else if (!var5.rested) {
          float[] var6 = var5.value;
-         var1.method_46416(var3 * (0.56F + var6[0]), -0.52F + var6[1], -0.72F + var6[2]);
-         var1.method_22907(RotationAxis.field_40716.rotationDegrees(var3 * var6[4]));
-         var1.method_22907(RotationAxis.field_40714.rotationDegrees(var6[3]));
-         var1.method_22907(RotationAxis.field_40718.rotationDegrees(var3 * var6[5]));
-         var1.method_22905(var6[6], var6[6], var6[6]);
-         var1.method_46416(-var3 * 0.56F, 0.52F, 0.72F);
+         matrixStack.translate(i * (0.56F + var6[0]), -0.52F + var6[1], -0.72F + var6[2]);
+         matrixStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(i * var6[4]));
+         matrixStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(var6[3]));
+         matrixStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(i * var6[5]));
+         matrixStack.scale(var6[6], var6[6], var6[6]);
+         matrixStack.translate(-i * 0.56F, 0.52F, 0.72F);
       }
    }
 
@@ -115,15 +115,15 @@ public final class HandsModule extends ClientModule {
       private HandState() {
       }
 
-      void step(NumberSetting[] var1, boolean var2, float var3) {
+      void step(NumberSetting[] numberSettings, boolean bl, float f) {
          long var4 = System.nanoTime();
          float var6 = this.stamp == 0L ? 0.0F : Math.min(0.1F, (float)(var4 - this.stamp) / 1.0E9F);
          this.stamp = var4;
-         float var7 = var3 < 0.0F ? 1.0F : 1.0F - (float)Math.exp(-var3 * var6);
+         float var7 = f < 0.0F ? 1.0F : 1.0F - (float)Math.exp(-f * var6);
          boolean var8 = true;
 
          for (int var9 = 0; var9 < this.value.length; var9++) {
-            float var11 = var2 ? var1[var9].get() : HandsModule.REST[var9];
+            float var11 = bl ? numberSettings[var9].get() : HandsModule.REST[var9];
             float var10;
             if (Math.abs(var11 - (var10 = this.value[var9] + (var11 - this.value[var9]) * var7)) < 0.001F) {
                var10 = var11;

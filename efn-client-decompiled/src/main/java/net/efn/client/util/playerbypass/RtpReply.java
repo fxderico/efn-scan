@@ -76,12 +76,12 @@ public record RtpReply(RtpReply.Kind kind, long millis, long nextUseMs) {
    private static final String[] PROGRESS = new String[]{"teleporting", "searching", "looking for a", "finding a", "araniyor", "konum bul"};
    private static final String[] CANCEL = new String[]{"cancel", "iptal", "you moved", "hareket ettin", "aborted"};
 
-   public RtpReply(RtpReply.Kind var1, long var2) {
-      this(var1, var2, -1L);
+   public RtpReply(RtpReply.Kind kind, long l) {
+      this(kind, l, -1L);
    }
 
-   public static RtpReply parse(String var0) {
-      String var1 = normalize(var0);
+   public static RtpReply parse(String string) {
+      String var1 = normalize(string);
       if (var1.isEmpty()) {
          return NONE;
       } else if (containsAny(var1, UNKNOWN)) {
@@ -143,8 +143,8 @@ public record RtpReply(RtpReply.Kind kind, long millis, long nextUseMs) {
       }
    }
 
-   public static long durationMs(String var0) {
-      Matcher var1 = DURATION.matcher(var0);
+   public static long durationMs(String string) {
+      Matcher var1 = DURATION.matcher(string);
       double var2 = 0.0;
       boolean var4 = false;
 
@@ -163,25 +163,25 @@ public record RtpReply(RtpReply.Kind kind, long millis, long nextUseMs) {
       if (var4) {
          return Math.round(var2);
       } else {
-         Matcher var9 = CLOCK.matcher(var0);
+         Matcher var9 = CLOCK.matcher(string);
          return var9.find() ? (Integer.parseInt(var9.group(1)) * 60L + Integer.parseInt(var9.group(2))) * 1000L : -1L;
       }
    }
 
-   private static long unitMs(String var0) {
-      return switch (var0) {
+   private static long unitMs(String string) {
+      return switch (string) {
          case "h", "hr", "hrs", "hour", "hours", "saat" -> 3600000L;
          case "m", "min", "mins", "minute", "minutes", "dakika", "dk" -> 60000L;
          default -> 1000L;
       };
    }
 
-   public static boolean looksLikePlayerChat(String var0, Iterable<String> var1) {
-      String var2 = normalize(var0);
+   public static boolean looksLikePlayerChat(String string, Iterable<String> iterable) {
+      String var2 = normalize(string);
       if (var2.isEmpty()) {
          return false;
       } else {
-         for (String var4 : var1) {
+         for (String var4 : iterable) {
             if (var4 != null && !var4.isBlank()) {
                String var5 = var4.toLowerCase(Locale.ROOT);
 
@@ -198,32 +198,32 @@ public record RtpReply(RtpReply.Kind kind, long millis, long nextUseMs) {
       }
    }
 
-   private static boolean nameChar(char var0) {
-      return var0 >= 'a' && var0 <= 'z' || var0 >= '0' && var0 <= '9' || var0 == '_';
+   private static boolean nameChar(char c) {
+      return c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '_';
    }
 
-   private static boolean separatorAfter(String var0, int var1) {
-      int var2 = var1;
+   private static boolean separatorAfter(String string, int i) {
+      int var2 = i;
 
-      while (var2 < var0.length() && var2 - var1 < 3 && " ])}".indexOf(var0.charAt(var2)) >= 0) {
+      while (var2 < string.length() && var2 - i < 3 && " ])}".indexOf(string.charAt(var2)) >= 0) {
          var2++;
       }
 
-      if (var2 >= var0.length()) {
+      if (var2 >= string.length()) {
          return false;
       } else {
-         char var3 = var0.charAt(var2);
+         char var3 = string.charAt(var2);
          return ":>\u00bb\u203a\u226b\u27a4\u279c\u2192\u21d2|".indexOf(var3) >= 0
             ? true
-            : (var3 == '-' || var3 == '=') && var2 + 1 < var0.length() && var0.charAt(var2 + 1) == '>';
+            : (var3 == '-' || var3 == '=') && var2 + 1 < string.length() && string.charAt(var2 + 1) == '>';
       }
    }
 
-   public static String normalize(String var0) {
-      if (var0 == null) {
+   public static String normalize(String string) {
+      if (string == null) {
          return "";
       } else {
-         String var1 = FORMATTING.matcher(var0).replaceAll("");
+         String var1 = FORMATTING.matcher(string).replaceAll("");
          StringBuilder var2 = new StringBuilder(var1.length());
 
          for (int var3 = 0; var3 < var1.length(); var3++) {
@@ -246,9 +246,9 @@ public record RtpReply(RtpReply.Kind kind, long millis, long nextUseMs) {
       }
    }
 
-   private static boolean containsAny(String var0, String[] var1) {
-      for (String var5 : var1) {
-         if (var0.contains(var5)) {
+   private static boolean containsAny(String string, String[] strings) {
+      for (String var5 : strings) {
+         if (string.contains(var5)) {
             return true;
          }
       }

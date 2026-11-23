@@ -17,11 +17,11 @@ public abstract class MixinEntityControlEntity {
    }
 
    @ModifyVariable(
-      method = {"method_5784"},
+      method = {"move"},
       at = {@At("HEAD")},
       argsOnly = true
    )
-   private Vec3d efn$entityControlVehicleMove(Vec3d var1, MovementType var2) {
-      return !EntityControlVehicleHook.anyActive ? var1 : EntityControlVehicleHook.onEntityMove((Entity)this, var2, var1);
+   private Vec3d efn$entityControlVehicleMove(Vec3d vec3d, MovementType movementType) {
+      return !EntityControlVehicleHook.anyActive ? vec3d : EntityControlVehicleHook.onEntityMove((Entity)this, movementType, vec3d);
    }
 }

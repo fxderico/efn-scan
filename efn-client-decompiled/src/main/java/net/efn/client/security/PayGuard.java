@@ -25,8 +25,7 @@ public final class PayGuard {
    private static final long SCREEN_GAP_MS = 30000L;
    private static final long CHAT_GAP_MS = 3000L;
    private static final int SHOWN_CHARS = 64;
-   private static final Text TITLE = Text.method_43470("Blocked an automatic payment")
-      .method_27695(new Formatting[]{Formatting.field_1061, Formatting.field_1067});
+   private static final Text TITLE = Text.literal("Blocked an automatic payment").formatted(Formatting.RED, Formatting.BOLD);
    private static final ConcurrentLinkedQueue<PayGuard.Allowance> allowed = new ConcurrentLinkedQueue<>();
    private static volatile long lastScreenMs;
    private static volatile long lastChatMs;
@@ -35,30 +34,30 @@ public final class PayGuard {
    private PayGuard() {
    }
 
-   public static void allowTyped(String var0) {
-      if (var0 != null && var0.strip().startsWith("/")) {
-         allow(var0);
+   public static void allowTyped(String string) {
+      if (string != null && string.strip().startsWith("/")) {
+         allow(string);
       }
    }
 
-   public static void allow(String var0) {
-      if (isPay(var0)) {
+   public static void allow(String string) {
+      if (isPay(string)) {
          long var1 = System.currentTimeMillis();
-         allowed.removeIf(var2 -> var1 - var2.atMs() > 5000L);
-         allowed.offer(new PayGuard.Allowance(normalize(var0), var1));
+         allowed.removeIf(allowance -> var1 - allowance.atMs() > 5000L);
+         allowed.offer(new PayGuard.Allowance(normalize(string), var1));
       }
    }
 
-   public static boolean blocks(Packet<?> var0) {
+   public static boolean blocks(Packet<?> packet) {
       String var1;
-      if (var0 instanceof CommandExecutionC2SPacket var2) {
-         var1 = var2.comp_808();
+      if (packet instanceof CommandExecutionC2SPacket var2) {
+         var1 = var2.command();
       } else {
-         if (!(var0 instanceof ChatCommandSignedC2SPacket var3)) {
+         if (!(packet instanceof ChatCommandSignedC2SPacket var3)) {
             return false;
          }
 
-         var1 = var3.comp_2532();
+         var1 = var3.command();
       }
 
       if (isPay(var1) && !consume(var1)) {
@@ -69,16 +68,16 @@ public final class PayGuard {
       }
    }
 
-   public static boolean isPay(String var0) {
-      String var1 = normalize(var0);
+   public static boolean isPay(String string) {
+      String var1 = normalize(string);
       int var2 = var1.indexOf(32);
       String var3 = var2 < 0 ? var1 : var1.substring(0, var2);
       var3 = var3.substring(var3.indexOf(58) + 1);
       return var3.equals("pay") || var3.equals("epay");
    }
 
-   private static String normalize(String var0) {
-      String var1 = var0 == null ? "" : var0.strip();
+   private static String normalize(String string) {
+      String var1 = string == null ? "" : string.strip();
       if (var1.startsWith("/")) {
          var1 = var1.substring(1).strip();
       }
@@ -86,8 +85,8 @@ public final class PayGuard {
       return var1.replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
    }
 
-   private static boolean consume(String var0) {
-      String var1 = normalize(var0);
+   private static boolean consume(String string) {
+      String var1 = normalize(string);
       long var2 = System.currentTimeMillis();
       Iterator var4 = allowed.iterator();
 
@@ -104,57 +103,57 @@ public final class PayGuard {
       return false;
    }
 
-   private static void report(String var0) {
-      String var1 = var0.strip();
+   private static void report(String string) {
+      String var1 = string.strip();
       String var2 = "/" + (var1.length() > 64 ? var1.substring(0, 64) + "..." : var1);
       LOGGER.warn("[EFN] Pay Guard blocked \"{}\" sent by {}", var2, caller());
-      MinecraftClient var3 = MinecraftClient.method_1551();
+      MinecraftClient var3 = MinecraftClient.getInstance();
       var3.execute(() -> warn(var3, var2));
    }
 
    private static String caller() {
       return StackWalker.getInstance()
          .walk(
-            var0 -> var0.map(StackFrame::getClassName)
+            stream -> stream.map(StackFrame::getClassName)
                .filter(
-                  var0x -> !var0x.startsWith("net.efn.client.security.")
-                     && !var0x.startsWith("net.minecraft.")
-                     && !var0x.startsWith("com.mojang.")
-                     && !var0x.startsWith("io.netty.")
-                     && !var0x.startsWith("java.")
-                     && !var0x.startsWith("jdk.")
-                     && !var0x.startsWith("org.spongepowered.")
-                     && !var0x.startsWith("com.example.client.mixin.")
+                  string -> !string.startsWith("net.efn.client.security.")
+                     && !string.startsWith("net.minecraft.")
+                     && !string.startsWith("com.mojang.")
+                     && !string.startsWith("io.netty.")
+                     && !string.startsWith("java.")
+                     && !string.startsWith("jdk.")
+                     && !string.startsWith("org.spongepowered.")
+                     && !string.startsWith("com.example.client.mixin.")
                )
                .findFirst()
                .orElse("unknown code")
          );
    }
 
-   private static void warn(MinecraftClient var0, String var1) {
+   private static void warn(MinecraftClient minecraftClient, String string) {
       long var2 = System.currentTimeMillis();
-      if (var0.field_1705 != null && (var2 - lastChatMs >= 3000L || !var1.equals(lastChatShown))) {
+      if (minecraftClient.inGameHud != null && (var2 - lastChatMs >= 3000L || !string.equals(lastChatShown))) {
          lastChatMs = var2;
-         lastChatShown = var1;
-         var0.field_1705
-            .method_1743()
-            .method_1812(
-               Text.method_43473()
-                  .method_10852(Text.method_43470("[EFN] ").method_27695(new Formatting[]{Formatting.field_1079, Formatting.field_1067}))
-                  .method_10852(
-                     Text.method_43470(
+         lastChatShown = string;
+         minecraftClient.inGameHud
+            .getChatHud()
+            .addMessage(
+               Text.empty()
+                  .append(Text.literal("[EFN] ").formatted(Formatting.DARK_RED, Formatting.BOLD))
+                  .append(
+                     Text.literal(
                            "Blocked "
-                              + var1
+                              + string
                               + ". Something tried to send a payment command on its own without you typing it. If you didn't do this yourself, something else on your PC may be malicious."
                         )
-                        .method_27692(Formatting.field_1061)
+                        .formatted(Formatting.RED)
                   )
             );
       }
 
-      if (!(var0.field_1755 instanceof PayGuard.WarningScreen) && var2 - lastScreenMs >= 30000L) {
+      if (!(minecraftClient.currentScreen instanceof PayGuard.WarningScreen) && var2 - lastScreenMs >= 30000L) {
          lastScreenMs = var2;
-         var0.method_1507(new PayGuard.WarningScreen(var0.field_1755, var1));
+         minecraftClient.setScreen(new PayGuard.WarningScreen(minecraftClient.currentScreen, string));
       }
    }
 
@@ -164,23 +163,23 @@ public final class PayGuard {
 
    @Environment(EnvType.CLIENT)
    private static final class WarningScreen extends ConfirmScreen {
-      WarningScreen(Screen var1, String var2) {
+      WarningScreen(Screen screen, String string) {
          super(
-            var1x -> {
-               if (var1x) {
-                  Util.method_668().method_670("https://discord.gg/pxHtFp5b6h");
+            bl -> {
+               if (bl) {
+                  Util.getOperatingSystem().open("https://discord.gg/pxHtFp5b6h");
                }
 
-               MinecraftClient.method_1551().method_1507(var1);
+               MinecraftClient.getInstance().setScreen(screen);
             },
             PayGuard.TITLE,
-            Text.method_43470(
+            Text.literal(
                "Something on this PC tried to send "
-                  + var2
+                  + string
                   + " by itself, without you typing it. It was blocked.\n\nIf you didn't do this yourself, something else running on your computer may be malicious. Consider scanning your PC.\n\nIf you think this is a false positive, report it in the EFN Discord."
             ),
-            Text.method_43470("Open EFN Discord"),
-            Text.method_43470("Close")
+            Text.literal("Open EFN Discord"),
+            Text.literal("Close")
          );
       }
    }

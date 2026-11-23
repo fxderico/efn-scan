@@ -27,57 +27,57 @@ public abstract class MixinMouseHandler {
    }
 
    @Inject(
-      method = {"method_1601"},
+      method = {"onMouseButton"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$onMouseButton(long var1, MouseInput var3, int var4, CallbackInfo var5) {
-      if (MouseInputEvent.dispatch(var1, var3.comp_4801(), var4, var3.comp_4797())) {
-         var5.cancel();
+   private void efn$onMouseButton(long l, MouseInput mouseInput, int i, CallbackInfo callbackInfo) {
+      if (MouseInputEvent.dispatch(l, mouseInput.button(), i, mouseInput.modifiers())) {
+         callbackInfo.cancel();
       }
    }
 
    @Inject(
-      method = {"method_1598"},
+      method = {"onMouseScroll"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$wheel(long var1, double var3, double var5, CallbackInfo var7) {
-      MinecraftClient var8 = MinecraftClient.method_1551();
-      if (var5 != 0.0 && var1 == var8.method_22683().method_4490() && var8.field_1755 == null && var8.method_18506() == null) {
-         if (ZoomModule.scroll(var5) || FreecamModule.scroll(var5)) {
-            var7.cancel();
+   private void efn$wheel(long l, double d, double e, CallbackInfo callbackInfo) {
+      MinecraftClient var8 = MinecraftClient.getInstance();
+      if (e != 0.0 && l == var8.getWindow().getHandle() && var8.currentScreen == null && var8.getOverlay() == null) {
+         if (ZoomModule.scroll(e) || FreecamModule.scroll(e)) {
+            callbackInfo.cancel();
          }
       }
    }
 
    @WrapOperation(
-      method = {"method_1606"},
+      method = {"updateMouse"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_746;method_5872(DD)V"
+         target = "Lnet/minecraft/client/network/ClientPlayerEntity;changeLookDirection(DD)V"
       )}
    )
-   private void efn$cameraTurn(ClientPlayerEntity var1, double var2, double var4, Operation<Void> var6, @Local(argsOnly = true) double var7) {
+   private void efn$cameraTurn(ClientPlayerEntity clientPlayerEntity, double d, double e, Operation<Void> operation, @Local(argsOnly = true) double f) {
       double var9 = ZoomModule.turnScale();
-      var2 *= var9;
-      var4 *= var9;
+      d *= var9;
+      e *= var9;
       FreecamModule var11 = FreecamModule.active;
       if (var11 != null) {
-         var11.turn(var2, var4);
+         var11.turn(d, e);
       } else {
          FreelookModule var12 = ModuleRegistry.get(FreelookModule.class);
          if (var12 != null && var12.cameraMode()) {
-            var12.turnCamera(var2, var4);
+            var12.turnCamera(d, e);
          } else {
             AimAssistModule var13 = ModuleRegistry.get(AimAssistModule.class);
             if (var13 != null && var13.isEnabled()) {
-               double[] var14 = var13.nudge(var1, var2, var4, var7);
-               var2 += var14[0];
-               var4 += var14[1];
+               double[] var14 = var13.nudge(clientPlayerEntity, d, e, f);
+               d += var14[0];
+               e += var14[1];
             }
 
-            var6.call(new Object[]{var1, var2, var4});
+            operation.call(clientPlayerEntity, d, e);
          }
       }
    }

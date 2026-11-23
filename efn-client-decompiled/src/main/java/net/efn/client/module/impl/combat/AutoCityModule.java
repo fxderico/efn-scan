@@ -74,9 +74,9 @@ public final class AutoCityModule extends ClientModule {
    @Override
    protected void onDisable() {
       active = null;
-      MinecraftClient var1 = MinecraftClient.method_1551();
-      if (!this.broken && this.block != null && var1.field_1761 != null && var1.field_1761.method_2923()) {
-         var1.field_1761.method_2925();
+      MinecraftClient var1 = MinecraftClient.getInstance();
+      if (!this.broken && this.block != null && var1.interactionManager != null && var1.interactionManager.isBreakingBlock()) {
+         var1.interactionManager.cancelBlockBreaking();
       }
 
       this.slots.drop(var1, true);
@@ -91,47 +91,47 @@ public final class AutoCityModule extends ClientModule {
    }
 
    @EventHandler
-   public void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientPlayerEntity var3 = var2.field_1724;
-      if (var3 == null || var2.field_1687 == null || var2.field_1761 == null || var3.method_29504() || this.broken || userClicks(var2)) {
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientPlayerEntity var3 = var2.player;
+      if (var3 == null || var2.world == null || var2.interactionManager == null || var3.isDead() || this.broken || userClicks(var2)) {
          this.requestDisable();
       } else if (this.block == null && !this.pick(var2, var3)) {
          this.stop("No enemy in a hole within reach");
       } else {
-         ClientWorld var4 = var2.field_1687;
-         BlockState var5 = var4.method_8320(this.block);
-         if (var5.method_45474()) {
+         ClientWorld var4 = var2.world;
+         BlockState var5 = var4.getBlockState(this.block);
+         if (var5.isReplaceable()) {
             this.opened();
          } else {
             this.ticks++;
             String var6 = this.problem(var3, var5);
             if (var6 != null) {
                this.stop(var6);
-            } else if (MeleeAttacks.canAct(var2) && !AutoInvTotemModule.wantsHotbar() && !var3.method_6115() && !var3.method_3144()) {
-               if (CombatMacroLock.tryAcquire(this) && this.slots.take(var3, toolSlot(var3.method_31548(), var5))) {
+            } else if (MeleeAttacks.canAct(var2) && !AutoInvTotemModule.wantsHotbar() && !var3.isUsingItem() && !var3.isRiding()) {
+               if (CombatMacroLock.tryAcquire(this) && this.slots.take(var3, toolSlot(var3.getInventory(), var5))) {
                   BlockHitResult var7 = aim(var4, var3, this.block);
                   if (var7 == null) {
                      this.stop("Lost sight of the block");
                   } else {
-                     ServerRotation.request(RotationUtils.fromTo(var3.method_33571(), var7.method_17784()));
+                     ServerRotation.request(RotationUtils.fromTo(var3.getEyePos(), var7.getPos()));
                      BlockHitResult var8 = held(var4, var3, this.block);
                      if (var8 != null && !MeleeAttacks.actedThisTick(var3)) {
-                        if (var2.field_1761.method_2902(this.block, var8.method_17780())) {
-                           var3.method_6104(Hand.field_5808);
+                        if (var2.interactionManager.updateBlockBreakingProgress(this.block, var8.getSide())) {
+                           var3.swingHand(Hand.MAIN_HAND);
                         }
 
                         MeleeAttacks.noteAction(var3);
-                        if (var4.method_8320(this.block).method_45474()) {
+                        if (var4.getBlockState(this.block).isReplaceable()) {
                            this.opened();
-                           this.note(ModuleChat.body().text("Opened ").name(this.target.method_5477().getString()).text("'s surround"));
+                           this.note(ModuleChat.body().text("Opened ").name(this.target.getName().getString()).text("'s surround"));
                         }
                      }
                   }
                }
             } else {
-               if (var2.field_1761.method_2923()) {
-                  var2.field_1761.method_2925();
+               if (var2.interactionManager.isBreakingBlock()) {
+                  var2.interactionManager.cancelBlockBreaking();
                }
 
                CombatMacroLock.release(this);
@@ -145,40 +145,42 @@ public final class AutoCityModule extends ClientModule {
       CombatMacroLock.release(this);
    }
 
-   private void stop(String var1) {
-      this.note(ModuleChat.body().text(var1));
+   private void stop(String string) {
+      this.note(ModuleChat.body().text(string));
       this.requestDisable();
    }
 
-   private static boolean userClicks(MinecraftClient var0) {
-      return var0.field_1755 == null
+   private static boolean userClicks(MinecraftClient minecraftClient) {
+      return minecraftClient.currentScreen == null
          && (
-            Crystals.isPhysicallyDown(var0, var0.field_1690.field_1886)
-               || MeleeAttacks.clickPending(var0)
-               || Crystals.isPhysicallyDown(var0, var0.field_1690.field_1904)
+            Crystals.isPhysicallyDown(minecraftClient, minecraftClient.options.attackKey)
+               || MeleeAttacks.clickPending(minecraftClient)
+               || Crystals.isPhysicallyDown(minecraftClient, minecraftClient.options.useKey)
          );
    }
 
-   private boolean pick(MinecraftClient var1, ClientPlayerEntity var2) {
-      ClientWorld var3 = var1.field_1687;
+   private boolean pick(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      ClientWorld var3 = minecraftClient.world;
       float var4 = 0.0F;
 
-      for (LivingEntity var6 : Combo.enemies(var1, var2)) {
+      for (LivingEntity var6 : Combo.enemies(minecraftClient, clientPlayerEntity)) {
          if (Combo.inHole(var6)) {
-            BlockPos var7 = var6.method_24515();
+            BlockPos var7 = var6.getBlockPos();
 
-            for (Direction var9 : Type.field_11062) {
-               BlockPos var13 = var7.method_10093(var9);
-               BlockState var14 = var3.method_8320(var13);
+            for (Direction var9 : Type.HORIZONTAL) {
+               BlockPos var13 = var7.offset(var9);
+               BlockState var14 = var3.getBlockState(var13);
                float var10;
                Vec3d var11;
                float var12;
-               if (!(var14.method_26214(var3, var13) < 0.0F)
-                  && Crystals.isBase(var3.method_8320(var13.method_10074()))
-                  && var2.method_56093(var13, 0.0)
-                  && toolSlot(var2.method_31548(), var14) != -1
-                  && aim(var3, var2, var13) != null
-                  && !CrystalDamage.endangers(var2, var12 = CrystalDamage.estimate(var11 = Crystals.explosionAt(var13.method_10074()), var2, 6.0F, var13))
+               if (!(var14.getHardness(var3, var13) < 0.0F)
+                  && Crystals.isBase(var3.getBlockState(var13.down()))
+                  && clientPlayerEntity.canInteractWithBlockAt(var13, 0.0)
+                  && toolSlot(clientPlayerEntity.getInventory(), var14) != -1
+                  && aim(var3, clientPlayerEntity, var13) != null
+                  && !CrystalDamage.endangers(
+                     clientPlayerEntity, var12 = CrystalDamage.estimate(var11 = Crystals.explosionAt(var13.down()), clientPlayerEntity, 6.0F, var13)
+                  )
                   && !((var10 = CrystalDamage.estimate(var11, var6, 6.0F, var13) - 0.5F * var12) <= var4)) {
                   var4 = var10;
                   this.target = var6;
@@ -192,61 +194,58 @@ public final class AutoCityModule extends ClientModule {
       return this.block != null;
    }
 
-   private String problem(ClientPlayerEntity var1, BlockState var2) {
-      BlockPos var3 = this.target.method_24515();
-      if (!this.target.method_5805()
-         || var3.method_10263() != this.feet.method_10263()
-         || var3.method_10260() != this.feet.method_10260()
-         || Math.abs(var3.method_10264() - this.feet.method_10264()) > 1) {
+   private String problem(ClientPlayerEntity clientPlayerEntity, BlockState blockState) {
+      BlockPos var3 = this.target.getBlockPos();
+      if (!this.target.isAlive() || var3.getX() != this.feet.getX() || var3.getZ() != this.feet.getZ() || Math.abs(var3.getY() - this.feet.getY()) > 1) {
          return "Target left the hole";
-      } else if (!var1.method_56093(this.block, 0.0)) {
+      } else if (!clientPlayerEntity.canInteractWithBlockAt(this.block, 0.0)) {
          return "Block went out of reach";
-      } else if (toolSlot(var1.method_31548(), var2) == -1) {
+      } else if (toolSlot(clientPlayerEntity.getInventory(), blockState) == -1) {
          return "No pickaxe that can break it";
-      } else if (!ServerRotation.canRotate(var1)) {
+      } else if (!ServerRotation.canRotate(clientPlayerEntity)) {
          return "Can't aim while flying, swimming or riding";
       } else {
          return this.ticks > 200 ? "Gave up, the block took too long" : null;
       }
    }
 
-   private void note(ModuleChat.Body var1) {
+   private void note(ModuleChat.Body body) {
       if (this.notificationsOn()) {
-         ModuleChat.actionBar(this, var1);
+         ModuleChat.actionBar(this, body);
       }
    }
 
-   private static int toolSlot(PlayerInventory var0, BlockState var1) {
+   private static int toolSlot(PlayerInventory playerInventory, BlockState blockState) {
       int var2 = -1;
       float var3 = 0.0F;
 
-      for (int var4 = 0; var4 < PlayerInventory.method_7368(); var4++) {
-         ItemStack var5 = var0.method_5438(var4);
-         if (var5.method_7951(var1) && !(var5.method_7924(var1) <= var3)) {
+      for (int var4 = 0; var4 < PlayerInventory.getHotbarSize(); var4++) {
+         ItemStack var5 = playerInventory.getStack(var4);
+         if (var5.isSuitableFor(blockState) && !(var5.getMiningSpeedMultiplier(blockState) <= var3)) {
             var2 = var4;
-            var3 = var5.method_7924(var1);
+            var3 = var5.getMiningSpeedMultiplier(blockState);
          }
       }
 
       return var2;
    }
 
-   private static BlockHitResult aim(ClientWorld var0, ClientPlayerEntity var1, BlockPos var2) {
-      Vec3d var3 = var1.method_33571();
-      double var4 = var1.method_55754();
+   private static BlockHitResult aim(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, BlockPos blockPos) {
+      Vec3d var3 = clientPlayerEntity.getEyePos();
+      double var4 = clientPlayerEntity.getBlockInteractionRange();
       BlockHitResult var6 = null;
       double var7 = var4 * var4;
 
       for (Direction var12 : Direction.values()) {
-         Vec3d var14 = Vec3d.method_24953(var2).method_43206(var12, 0.5);
-         double var15 = var3.method_1025(var14);
+         Vec3d var14 = Vec3d.ofCenter(blockPos).offset(var12, 0.5);
+         double var15 = var3.squaredDistanceTo(var14);
          BlockHitResult var13;
          if (!(var15 > var7)
-            && (var13 = var0.method_17742(new RaycastContext(var3, var14.method_43206(var12, -0.05), ShapeType.field_17559, FluidHandling.field_1348, var1)))
-                  .method_17783()
-               == net.minecraft.util.hit.HitResult.Type.field_1332
-            && var13.method_17777().equals(var2)
-            && var13.method_17780() == var12) {
+            && (var13 = clientWorld.raycast(new RaycastContext(var3, var14.offset(var12, -0.05), ShapeType.OUTLINE, FluidHandling.NONE, clientPlayerEntity)))
+                  .getType()
+               == net.minecraft.util.hit.HitResult.Type.BLOCK
+            && var13.getBlockPos().equals(blockPos)
+            && var13.getSide() == var12) {
             var6 = var13;
             var7 = var15;
          }
@@ -255,22 +254,22 @@ public final class AutoCityModule extends ClientModule {
       return var6;
    }
 
-   private static BlockHitResult held(ClientWorld var0, ClientPlayerEntity var1, BlockPos var2) {
+   private static BlockHitResult held(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, BlockPos blockPos) {
       Rotation var4 = ServerRotation.sent();
       if (var4 == null) {
          return null;
       } else {
-         Vec3d var5 = var1.method_33571();
-         BlockHitResult var6 = var0.method_17742(
+         Vec3d var5 = clientPlayerEntity.getEyePos();
+         BlockHitResult var6 = clientWorld.raycast(
             new RaycastContext(
                var5,
-               var5.method_1019(Vec3d.method_1030(var4.pitch(), var4.yaw()).method_1021(var1.method_55754())),
-               ShapeType.field_17559,
-               FluidHandling.field_1348,
-               var1
+               var5.add(Vec3d.fromPolar(var4.pitch(), var4.yaw()).multiply(clientPlayerEntity.getBlockInteractionRange())),
+               ShapeType.OUTLINE,
+               FluidHandling.NONE,
+               clientPlayerEntity
             )
          );
-         return var6.method_17783() == net.minecraft.util.hit.HitResult.Type.field_1332 && var6.method_17777().equals(var2) ? var6 : null;
+         return var6.getType() == net.minecraft.util.hit.HitResult.Type.BLOCK && var6.getBlockPos().equals(blockPos) ? var6 : null;
       }
    }
 }

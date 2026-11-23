@@ -11,7 +11,7 @@ public final class EfnKeyPolling {
    private EfnKeyPolling() {
    }
 
-   public static boolean isKeyDown(Window var0, int var1) {
-      return EfnKeys.isAndroid() ? EfnKeys.getKey(var0.method_4490(), var1) == 1 : InputUtil.method_15987(var0, var1);
+   public static boolean isKeyDown(Window window, int i) {
+      return EfnKeys.isAndroid() ? EfnKeys.getKey(window.getHandle(), i) == 1 : InputUtil.isKeyPressed(window, i);
    }
 }

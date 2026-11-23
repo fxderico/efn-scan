@@ -1,0 +1,86 @@
+title: EFN Minecraft Mod Stealer - Detached Java Stage
+id: 5f1f6c2e-8d0b-4c1e-9a43-0e1a7d1c0001
+status: experimental
+description: >
+  javaw/java launched with the EFN stage-2 entry classes. LoaderInit spawns
+  "javaw.exe -cp <p.jar> net.efn.loader.RuntimeBridge <base64-json>"; a double-clicked
+  p.jar relaunches itself as "... net.efn.loader.ProcessRelay -restarted".
+references:
+  - efn-client-decompiled/README.md
+author: efn-scan analysis
+date: 2026-11-23
+tags:
+  - attack.execution
+  - attack.t1059
+  - attack.defense-evasion
+  - attack.t1027
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_img:
+    Image|endswith:
+      - '\javaw.exe'
+      - '\java.exe'
+  selection_cmd:
+    CommandLine|contains:
+      - 'net.efn.loader.RuntimeBridge'
+      - 'net.efn.loader.ProcessRelay'
+  condition: selection_img and selection_cmd
+falsepositives:
+  - None expected
+level: critical
+---
+title: EFN Minecraft Mod Stealer - Portable Python Stealer Execution
+id: 5f1f6c2e-8d0b-4c1e-9a43-0e1a7d1c0002
+status: experimental
+description: >
+  Stage 3: a portable python.exe dropped under %LOCALAPPDATA%\Microsoft\Windows\NtProfileIndex\
+  running AppHost\main.py with the EFN argument set (--mcInfo / --prefireId / --env / --tag).
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_path:
+    Image|contains: '\AppData\Local\Microsoft\Windows\NtProfileIndex\'
+    Image|endswith: '\python.exe'
+  selection_args:
+    Image|endswith: '\python.exe'
+    CommandLine|contains|all:
+      - 'main.py'
+      - '--env'
+      - '--prefireId'
+  condition: selection_path or selection_args
+falsepositives:
+  - None expected; NtProfileIndex is not a real Windows component
+level: critical
+---
+title: EFN Minecraft Mod Stealer - Staging Directory Activity
+id: 5f1f6c2e-8d0b-4c1e-9a43-0e1a7d1c0003
+status: experimental
+description: Files created in the fake Windows folder used for logs and the portable runtime.
+logsource:
+  category: file_event
+  product: windows
+detection:
+  selection:
+    TargetFilename|contains: '\AppData\Local\Microsoft\Windows\NtProfileIndex\'
+  condition: selection
+falsepositives:
+  - None expected
+level: high
+---
+title: EFN Minecraft Mod Stealer - C2 Domain Lookup
+id: 5f1f6c2e-8d0b-4c1e-9a43-0e1a7d1c0004
+status: experimental
+description: >
+  DNS for the current/fallback C2. Note the malware resolves via DNS-over-HTTPS to 1.1.1.1
+  (cloudflare-dns.com), so this only fires if DoH is blocked or for other tooling.
+logsource:
+  category: dns_query
+  product: windows
+detection:
+  selection:
+    QueryName|endswith: 'thisisafalsepositive.st'
+  condition: selection
+level: high

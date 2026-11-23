@@ -7,7 +7,7 @@ import net.minecraft.util.math.BlockPos;
 
 @Environment(EnvType.CLIENT)
 public record SchematicTarget(BlockPos pos, SchematicBlockState expected, BlockState actual, TargetStatus status, double distanceSquared) {
-   public SchematicTarget withActual(BlockState var1, TargetStatus var2) {
-      return new SchematicTarget(this.pos, this.expected, var1, var2, this.distanceSquared);
+   public SchematicTarget withActual(BlockState blockState, TargetStatus targetStatus) {
+      return new SchematicTarget(this.pos, this.expected, blockState, targetStatus, this.distanceSquared);
    }
 }

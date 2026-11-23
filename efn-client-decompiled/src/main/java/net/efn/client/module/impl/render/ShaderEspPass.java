@@ -4,7 +4,6 @@ import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.pipeline.RenderPipeline.Snippet;
 import com.mojang.blaze3d.platform.DepthTestFunction;
 import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.GpuDevice;
@@ -57,18 +56,18 @@ import org.slf4j.LoggerFactory;
 @Environment(EnvType.CLIENT)
 final class ShaderEspPass {
    private static final Logger LOGGER = LoggerFactory.getLogger("EFN");
-   private static final RenderPipeline PIPELINE = RenderPipeline.builder(new Snippet[0])
-      .withLocation(Identifier.method_60655("efn", "pipeline/glow_esp"))
+   private static final RenderPipeline PIPELINE = RenderPipeline.builder()
+      .withLocation(Identifier.of("efn", "pipeline/glow_esp"))
       .withVertexShader("core/screenquad")
-      .withFragmentShader(Identifier.method_60655("efn", "core/glow_esp"))
+      .withFragmentShader(Identifier.of("efn", "core/glow_esp"))
       .withSampler("SilhouetteSampler")
       .withSampler("HaloSampler")
-      .withUniform("GlowEspConfig", UniformType.field_60031)
+      .withUniform("GlowEspConfig", UniformType.UNIFORM_BUFFER)
       .withBlend(BlendFunction.TRANSLUCENT_PREMULTIPLIED_ALPHA)
       .withColorWrite(true, false)
       .withDepthWrite(false)
       .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
-      .withVertexFormat(VertexFormats.field_60033, DrawMode.field_27379)
+      .withVertexFormat(VertexFormats.EMPTY, DrawMode.TRIANGLES)
       .build();
    private static final Supplier<String> PASS_LABEL = () -> "EFN glow esp";
    private static final Supplier<String> CONFIG_LABEL = () -> "EFN glow esp config";
@@ -89,13 +88,13 @@ final class ShaderEspPass {
    private ShaderEspPass() {
    }
 
-   static void keep(Entity var0, EntityRenderState var1, long var2) {
-      if (keptFrame != var2) {
+   static void keep(Entity entity, EntityRenderState entityRenderState, long l) {
+      if (keptFrame != l) {
          KEPT.clear();
-         keptFrame = var2;
+         keptFrame = l;
       }
 
-      KEPT.put(var0, var1);
+      KEPT.put(entity, entityRenderState);
    }
 
    static void dropKept() {
@@ -103,24 +102,24 @@ final class ShaderEspPass {
       keptFrame = -9223372036854775808L;
    }
 
-   static boolean paint(Camera var0, Matrix4f var1, Matrix4f var2, Entity[] var3, int[] var4, int var5, long var6) {
-      MinecraftClient var8 = MinecraftClient.method_1551();
-      Framebuffer var9 = var8.method_1522();
-      if (var5 > 0
-         && var8.field_1687 != null
-         && var8.method_53466()
-         && !var8.field_1773.method_35765()
-         && var9.method_30277() != null
-         && var9.field_1482 > 0
-         && var9.field_1481 > 0) {
+   static boolean paint(Camera camera, Matrix4f matrix4f, Matrix4f matrix4f2, Entity[] entitys, int[] is, int i, long l) {
+      MinecraftClient var8 = MinecraftClient.getInstance();
+      Framebuffer var9 = var8.getFramebuffer();
+      if (i > 0
+         && var8.world != null
+         && var8.isFinishedLoading()
+         && !var8.gameRenderer.isRenderingPanorama()
+         && var9.getColorAttachment() != null
+         && var9.textureWidth > 0
+         && var9.textureHeight > 0) {
          GpuDevice var10 = RenderSystem.getDevice();
          if (!shaderReady(var10)) {
             return false;
          } else {
             if (mask == null) {
-               allocate(var9.field_1482, var9.field_1481);
-            } else if (mask.field_1482 != var9.field_1482 || mask.field_1481 != var9.field_1481) {
-               mask.method_1234(var9.field_1482, var9.field_1481);
+               allocate(var9.textureWidth, var9.textureHeight);
+            } else if (mask.textureWidth != var9.textureWidth || mask.textureHeight != var9.textureHeight) {
+               mask.resize(var9.textureWidth, var9.textureHeight);
             }
 
             if (rig == null) {
@@ -131,9 +130,9 @@ final class ShaderEspPass {
                projectionBuffer = new RawProjectionMatrix("efn glow esp");
             }
 
-            var10.createCommandEncoder().clearColorTexture(mask.method_30277(), 0);
-            submit(var8, var0, var3, var4, var5, var6);
-            flush(var1, var2);
+            var10.createCommandEncoder().clearColorTexture(mask.getColorAttachment(), 0);
+            submit(var8, camera, entitys, is, i, l);
+            flush(matrix4f, matrix4f2);
             return true;
          }
       } else {
@@ -141,117 +140,94 @@ final class ShaderEspPass {
       }
    }
 
-   private static void submit(MinecraftClient var0, Camera var1, Entity[] var2, int[] var3, int var4, long var5) {
-      EntityRenderManager var7 = var0.method_1561();
-      RenderTickCounter var8 = var0.method_61966();
-      TickManager var9 = var0.field_1687.method_54719();
-      Vec3d var10 = var1.method_71156();
-      Entity var11 = var1.method_19331();
-      boolean var12 = keptFrame == var5;
-      CAMERA.field_63079 = var1.method_19332();
-      CAMERA.field_63078 = var10;
-      CAMERA.field_63077 = var1.method_19328();
-      CAMERA.field_63080 = var11 == null ? var10 : var11.method_30950(var8.method_60637(true));
-      CAMERA.field_63081.set(var1.method_23767());
+   private static void submit(MinecraftClient minecraftClient, Camera camera, Entity[] entitys, int[] is, int i, long l) {
+      EntityRenderManager var7 = minecraftClient.getEntityRenderDispatcher();
+      RenderTickCounter var8 = minecraftClient.getRenderTickCounter();
+      TickManager var9 = minecraftClient.world.getTickManager();
+      Vec3d var10 = camera.getCameraPos();
+      Entity var11 = camera.getFocusedEntity();
+      boolean var12 = keptFrame == l;
+      CAMERA.initialized = camera.isReady();
+      CAMERA.pos = var10;
+      CAMERA.blockPos = camera.getBlockPos();
+      CAMERA.entityPos = var11 == null ? var10 : var11.getLerpedPos(var8.getTickProgress(true));
+      CAMERA.orientation.set(camera.getRotation());
 
-      for (int var13 = 0; var13 < var4; var13++) {
-         Entity var15 = var2[var13];
-         if (var15 != null && !var15.method_31481()) {
+      for (int var13 = 0; var13 < i; var13++) {
+         Entity var15 = entitys[var13];
+         if (var15 != null && !var15.isRemoved()) {
             EntityRenderState var14 = var12 ? KEPT.get(var15) : null;
             if (var14 == null) {
-               var14 = var7.method_72977(var15, var8.method_60637(!var9.method_54746(var15)));
+               var14 = var7.getAndUpdateRenderState(var15, var8.getTickProgress(!var9.shouldSkipTick(var15)));
             }
 
             silhouetteOnly(var14);
-            var14.field_61821 = var3[var13] | 0xFF000000;
-            var7.method_72976(
-               var14,
-               CAMERA,
-               var14.field_53325 - var10.field_1352,
-               var14.field_53326 - var10.field_1351,
-               var14.field_53327 - var10.field_1350,
-               POSE,
-               rig.storage
-            );
+            var14.outlineColor = is[var13] | 0xFF000000;
+            var7.render(var14, CAMERA, var14.x - var10.x, var14.y - var10.y, var14.z - var10.z, POSE, rig.storage);
          }
       }
    }
 
-   private static void silhouetteOnly(EntityRenderState var0) {
-      var0.field_53337 = null;
-      var0.field_60160 = null;
-      var0.field_53335 = false;
-      var0.field_61823.clear();
-      if (var0 instanceof PlayerEntityRenderState var1) {
-         var1.field_53525 = null;
+   private static void silhouetteOnly(EntityRenderState entityRenderState) {
+      entityRenderState.displayName = null;
+      entityRenderState.leashDatas = null;
+      entityRenderState.onFire = false;
+      entityRenderState.shadowPieces.clear();
+      if (entityRenderState instanceof PlayerEntityRenderState var1) {
+         var1.playerName = null;
       }
    }
 
-   private static void flush(Matrix4f var0, Matrix4f var1) {
+   private static void flush(Matrix4f matrix4f, Matrix4f matrix4f2) {
       GpuTextureView var2 = RenderSystem.outputColorTextureOverride;
       GpuTextureView var3 = RenderSystem.outputDepthTextureOverride;
       Matrix4fStack var4 = RenderSystem.getModelViewStack();
       RenderSystem.backupProjectionMatrix();
-      RenderSystem.setProjectionMatrix(projectionBuffer.method_71123(var1), ProjectionType.field_54953);
+      RenderSystem.setProjectionMatrix(projectionBuffer.set(matrix4f2), ProjectionType.PERSPECTIVE);
       var4.pushMatrix();
-      var4.mul(var0);
-      RenderSystem.outputColorTextureOverride = mask.method_71639();
+      var4.mul(matrix4f);
+      RenderSystem.outputColorTextureOverride = mask.getColorAttachmentView();
       RenderSystem.outputDepthTextureOverride = null;
 
       try {
-         rig.features.method_73002();
-         rig.outlines.method_23285();
+         rig.features.render();
+         rig.outlines.draw();
       } finally {
          RenderSystem.outputColorTextureOverride = var2;
          RenderSystem.outputDepthTextureOverride = var3;
          var4.popMatrix();
          RenderSystem.restoreProjectionMatrix();
-         rig.storage.method_72953();
+         rig.storage.clear();
       }
 
-      rig.storage.method_72954();
+      rig.storage.onNextFrame();
    }
 
-   static void compose(float var0, float var1, float var2, float var3, float var4, int var5, float var6) {
-      Framebuffer var7 = MinecraftClient.method_1551().method_1522();
+   static void compose(float f, float g, float h, float i, float j, int k, float l) {
+      Framebuffer var7 = MinecraftClient.getInstance().getFramebuffer();
       CommandEncoder var8 = RenderSystem.getDevice().createCommandEncoder();
-      GpuTextureView var9 = blur.spread(var8, mask.method_71639(), mask.field_1482, mask.field_1481, Math.max(var2, var0 + 2.0F));
-      configData.putFloat(0, var0);
-      configData.putFloat(4, var1);
-      configData.putFloat(8, var3);
-      configData.putFloat(12, var4);
-      configData.putFloat(16, (var5 >> 16 & 0xFF) / 255.0F);
-      configData.putFloat(20, (var5 >> 8 & 0xFF) / 255.0F);
-      configData.putFloat(24, (var5 & 0xFF) / 255.0F);
-      configData.putFloat(28, var6);
+      GpuTextureView var9 = blur.spread(var8, mask.getColorAttachmentView(), mask.textureWidth, mask.textureHeight, Math.max(h, f + 2.0F));
+      configData.putFloat(0, f);
+      configData.putFloat(4, g);
+      configData.putFloat(8, i);
+      configData.putFloat(12, j);
+      configData.putFloat(16, (k >> 16 & 0xFF) / 255.0F);
+      configData.putFloat(20, (k >> 8 & 0xFF) / 255.0F);
+      configData.putFloat(24, (k & 0xFF) / 255.0F);
+      configData.putFloat(28, l);
       var8.writeToBuffer(configSlice, configData);
-      RenderPass var10 = var8.createRenderPass(PASS_LABEL, var7.method_71639(), OptionalInt.empty());
 
-      try {
+      try (RenderPass var10 = var8.createRenderPass(PASS_LABEL, var7.getColorAttachmentView(), OptionalInt.empty())) {
          var10.setPipeline(PIPELINE);
          var10.setUniform("GlowEspConfig", configSlice);
-         var10.bindTexture("SilhouetteSampler", mask.method_71639(), RenderSystem.getSamplerCache().method_75294(FilterMode.LINEAR));
-         var10.bindTexture("HaloSampler", var9, RenderSystem.getSamplerCache().method_75294(FilterMode.LINEAR));
+         var10.bindTexture("SilhouetteSampler", mask.getColorAttachmentView(), RenderSystem.getSamplerCache().get(FilterMode.LINEAR));
+         var10.bindTexture("HaloSampler", var9, RenderSystem.getSamplerCache().get(FilterMode.LINEAR));
          var10.draw(0, 3);
-      } catch (Throwable var14) {
-         if (var10 != null) {
-            try {
-               var10.close();
-            } catch (Throwable var13) {
-               var14.addSuppressed(var13);
-            }
-         }
-
-         throw var14;
-      }
-
-      if (var10 != null) {
-         var10.close();
       }
    }
 
-   private static boolean shaderReady(GpuDevice var0) {
-      if (var0.precompilePipeline(PIPELINE).isValid() && AuraBlur.compiled(var0)) {
+   private static boolean shaderReady(GpuDevice gpuDevice) {
+      if (gpuDevice.precompilePipeline(PIPELINE).isValid() && AuraBlur.compiled(gpuDevice)) {
          invalidShaderLogged = false;
          return true;
       } else {
@@ -264,8 +240,8 @@ final class ShaderEspPass {
       }
    }
 
-   private static void allocate(int var0, int var1) {
-      mask = new SimpleFramebuffer("EFN glow esp mask", var0, var1, false);
+   private static void allocate(int i, int j) {
+      mask = new SimpleFramebuffer("EFN glow esp mask", i, j, false);
       blur = new AuraBlur("EFN glow esp aura");
       config = RenderSystem.getDevice().createBuffer(CONFIG_LABEL, 136, 32L);
       configSlice = config.slice();
@@ -280,7 +256,7 @@ final class ShaderEspPass {
       }
 
       if (mask != null) {
-         mask.method_1238();
+         mask.delete();
          mask = null;
       }
 
@@ -308,24 +284,28 @@ final class ShaderEspPass {
       private final Map<RenderLayer, VertexConsumer> sinks = new IdentityHashMap<>();
 
       Drain() {
-         super(new BufferAllocator(64), new LinkedHashMap());
+         super(new BufferAllocator(64), new LinkedHashMap<>());
       }
 
       void close() {
-         this.field_52156.close();
+         this.allocator.close();
       }
 
-      public VertexConsumer method_73477(RenderLayer var1) {
-         return this.sinks.computeIfAbsent(var1, var0 -> new ShaderEspPass.Nowhere());
+      @Override
+      public VertexConsumer getBuffer(RenderLayer layer) {
+         return this.sinks.computeIfAbsent(layer, renderLayer -> new ShaderEspPass.Nowhere());
       }
 
-      public void method_37104() {
+      @Override
+      public void drawCurrentLayer() {
       }
 
-      public void method_22993() {
+      @Override
+      public void draw() {
       }
 
-      public void method_22994(RenderLayer var1) {
+      @Override
+      public void draw(RenderLayer layer) {
       }
    }
 
@@ -334,44 +314,55 @@ final class ShaderEspPass {
       private Nowhere() {
       }
 
-      public VertexConsumer method_22912(float var1, float var2, float var3) {
+      @Override
+      public VertexConsumer vertex(float x, float y, float z) {
          return this;
       }
 
-      public void method_23919(float var1, float var2, float var3, int var4, float var5, float var6, int var7, int var8, float var9, float var10, float var11) {
+      @Override
+      public void vertex(float x, float y, float z, int color, float u, float v, int overlay, int light, float normalX, float normalY, float normalZ) {
       }
 
-      public void method_22919(Entry var1, BakedQuad var2, float var3, float var4, float var5, float var6, int var7, int var8) {
+      @Override
+      public void quad(Entry matrixEntry, BakedQuad quad, float red, float green, float blue, float alpha, int light, int overlay) {
       }
 
-      public void method_22920(Entry var1, BakedQuad var2, float[] var3, float var4, float var5, float var6, float var7, int[] var8, int var9) {
+      @Override
+      public void quad(Entry matrixEntry, BakedQuad quad, float[] brightnesses, float red, float green, float blue, float alpha, int[] lights, int overlay) {
       }
 
-      public VertexConsumer method_1336(int var1, int var2, int var3, int var4) {
+      @Override
+      public VertexConsumer color(int red, int green, int blue, int alpha) {
          return this;
       }
 
-      public VertexConsumer method_39415(int var1) {
+      @Override
+      public VertexConsumer color(int argb) {
          return this;
       }
 
-      public VertexConsumer method_22913(float var1, float var2) {
+      @Override
+      public VertexConsumer texture(float u, float v) {
          return this;
       }
 
-      public VertexConsumer method_60796(int var1, int var2) {
+      @Override
+      public VertexConsumer overlay(int u, int v) {
          return this;
       }
 
-      public VertexConsumer method_22921(int var1, int var2) {
+      @Override
+      public VertexConsumer light(int u, int v) {
          return this;
       }
 
-      public VertexConsumer method_22914(float var1, float var2, float var3) {
+      @Override
+      public VertexConsumer normal(float x, float y, float z) {
          return this;
       }
 
-      public VertexConsumer method_75298(float var1) {
+      @Override
+      public VertexConsumer lineWidth(float width) {
          return this;
       }
    }
@@ -383,9 +374,17 @@ final class ShaderEspPass {
       final OutlineVertexConsumerProvider outlines;
       final RenderDispatcher features;
 
-      Rig(MinecraftClient var1) {
-         this.outlines = var1.method_22940().method_23003();
-         this.features = new RenderDispatcher(this.storage, var1.method_1541(), this.drain, var1.method_72703(), this.outlines, this.drain, var1.field_1772);
+      Rig(MinecraftClient minecraftClient) {
+         this.outlines = minecraftClient.getBufferBuilders().getOutlineVertexConsumers();
+         this.features = new RenderDispatcher(
+            this.storage,
+            minecraftClient.getBlockRenderManager(),
+            this.drain,
+            minecraftClient.getAtlasManager(),
+            this.outlines,
+            this.drain,
+            minecraftClient.textRenderer
+         );
       }
 
       void close() {

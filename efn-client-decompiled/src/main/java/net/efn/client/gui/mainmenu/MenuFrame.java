@@ -30,17 +30,17 @@ public class MenuFrame {
    public MenuFrame() {
    }
 
-   public void begin(ImDrawList var1, ImDrawList var2, float var3, float var4, float var5, float var6, float var7, float var8, float var9, boolean var10) {
-      this.bg = var1;
-      this.fg = var2;
-      this.width = var3;
-      this.height = var4;
-      this.scale = var5;
-      this.time = var6;
-      this.dt = var7;
-      this.mouseX = var8;
-      this.mouseY = var9;
-      this.clicked = var10;
+   public void begin(ImDrawList imDrawList, ImDrawList imDrawList2, float f, float g, float h, float i, float j, float k, float l, boolean bl) {
+      this.bg = imDrawList;
+      this.fg = imDrawList2;
+      this.width = f;
+      this.height = g;
+      this.scale = h;
+      this.time = i;
+      this.dt = j;
+      this.mouseX = k;
+      this.mouseY = l;
+      this.clicked = bl;
       this.tooltip = null;
    }
 
@@ -64,8 +64,8 @@ public class MenuFrame {
       return this.scale;
    }
 
-   public float px(float var1) {
-      return var1 * this.scale;
+   public float px(float f) {
+      return f * this.scale;
    }
 
    public float time() {
@@ -88,18 +88,18 @@ public class MenuFrame {
       return this.clicked;
    }
 
-   public float intro(float var1) {
-      return HudDraw.intro(this.time, var1);
+   public float intro(float f) {
+      return HudDraw.intro(this.time, f);
    }
 
-   public boolean inside(float var1, float var2, float var3, float var4) {
-      return this.mouseX >= var1 && this.mouseX <= var1 + var3 && this.mouseY >= var2 && this.mouseY <= var2 + var4;
+   public boolean inside(float f, float g, float h, float i) {
+      return this.mouseX >= f && this.mouseX <= f + h && this.mouseY >= g && this.mouseY <= g + i;
    }
 
-   public void tooltip(String var1, float var2, float var3) {
-      this.tooltip = var1;
-      this.tooltipX = var2;
-      this.tooltipY = var3;
+   public void tooltip(String string, float f, float g) {
+      this.tooltip = string;
+      this.tooltipX = f;
+      this.tooltipY = g;
    }
 
    public String pendingTooltip() {
@@ -114,16 +114,16 @@ public class MenuFrame {
       return this.tooltipY;
    }
 
-   public static int col(int var0, float var1) {
-      return HudDraw.col(var0, var1);
+   public static int col(int i, float f) {
+      return HudDraw.col(i, f);
    }
 
-   public static int col(int var0) {
-      return HudDraw.col(var0, 1.0F);
+   public static int col(int i) {
+      return HudDraw.col(i, 1.0F);
    }
 
-   public static int mix(int var0, int var1, float var2) {
-      return HudDraw.mix(var0, var1, var2);
+   public static int mix(int i, int j, float f) {
+      return HudDraw.mix(i, j, f);
    }
 
    public ImFont menuFont() {
@@ -154,27 +154,27 @@ public class MenuFrame {
       return ImGuiManager.getInstance().hudLabelFont();
    }
 
-   public void text(ImDrawList var1, ImFont var2, float var3, float var4, int var5, float var6, String var7) {
-      HudDraw.text(var1, var2, var3, var4, var7, col(var5, var6));
+   public void text(ImDrawList imDrawList, ImFont imFont, float f, float g, int i, float h, String string) {
+      HudDraw.text(imDrawList, imFont, f, g, string, col(i, h));
    }
 
-   public float textWidth(ImFont var1, String var2) {
-      return HudDraw.textWidth(var1, var2);
+   public float textWidth(ImFont imFont, String string) {
+      return HudDraw.textWidth(imFont, string);
    }
 
-   public float textHeight(ImFont var1) {
-      return var1 != null ? var1.getFontSize() : this.px(15.0F);
+   public float textHeight(ImFont imFont) {
+      return imFont != null ? imFont.getFontSize() : this.px(15.0F);
    }
 
-   public float spacedWidth(ImFont var1, String var2, float var3) {
-      return HudDraw.spacedWidth(var1, var2, var3);
+   public float spacedWidth(ImFont imFont, String string, float f) {
+      return HudDraw.spacedWidth(imFont, string, f);
    }
 
-   public void spacedText(ImDrawList var1, ImFont var2, float var3, float var4, float var5, int var6, float var7, String var8) {
-      for (int var9 = 0; var9 < var8.length(); var9++) {
-         String var10 = String.valueOf(var8.charAt(var9));
-         HudDraw.text(var1, var2, var3, var4, var10, col(var6, var7));
-         var3 += this.textWidth(var2, var10) + var5;
+   public void spacedText(ImDrawList imDrawList, ImFont imFont, float f, float g, float h, int i, float j, String string) {
+      for (int var9 = 0; var9 < string.length(); var9++) {
+         String var10 = String.valueOf(string.charAt(var9));
+         HudDraw.text(imDrawList, imFont, f, g, var10, col(i, j));
+         f += this.textWidth(imFont, var10) + h;
       }
    }
 
@@ -186,17 +186,17 @@ public class MenuFrame {
       return MenuTextures.mask("/assets/efn/textures/gui/head.png");
    }
 
-   public ThemeImages.Texture headBlur(int var1) {
-      return MenuTextures.blurred("/assets/efn/textures/gui/head.png", var1);
+   public ThemeImages.Texture headBlur(int i) {
+      return MenuTextures.blurred("/assets/efn/textures/gui/head.png", i);
    }
 
-   public void image(ImDrawList var1, ThemeImages.Texture var2, float var3, float var4, float var5, float var6, int var7, float var8) {
-      if (var2 != null) {
-         var1.addImage(var2.id(), var3, var4, var5, var6, 0.0F, 0.0F, 1.0F, 1.0F, col(var7, var8));
+   public void image(ImDrawList imDrawList, ThemeImages.Texture texture, float f, float g, float h, float i, int j, float k) {
+      if (texture != null) {
+         imDrawList.addImage(texture.id(), f, g, h, i, 0.0F, 0.0F, 1.0F, 1.0F, col(j, k));
       }
    }
 
    public String displayName() {
-      return NameFilter.apply(MinecraftClient.method_1551().method_1548().method_1676());
+      return NameFilter.apply(MinecraftClient.getInstance().getSession().getUsername());
    }
 }

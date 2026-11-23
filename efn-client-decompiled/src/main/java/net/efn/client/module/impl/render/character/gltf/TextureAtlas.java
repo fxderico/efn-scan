@@ -24,24 +24,24 @@ final class TextureAtlas {
    private final Map<Integer, float[]> regions = new HashMap<>();
    private final Map<Integer, int[]> tiles = new HashMap<>();
 
-   private TextureAtlas(int var1, int var2) {
-      this.width = var1;
-      this.height = var2;
-      this.pixels = new int[var1 * var2];
+   private TextureAtlas(int i, int j) {
+      this.width = i;
+      this.height = j;
+      this.pixels = new int[i * j];
    }
 
-   static TextureAtlas pack(GltfFile var0, Map<Integer, float[]> var1, ImageDecoder var2) throws IOException {
+   static TextureAtlas pack(GltfFile gltfFile, Map<Integer, float[]> map, ImageDecoder imageDecoder) throws IOException {
       LinkedHashMap var3 = new LinkedHashMap();
       HashMap var4 = new HashMap();
       HashMap var5 = new HashMap();
 
-      for (Entry var7 : var1.entrySet()) {
+      for (Entry var7 : map.entrySet()) {
          float[] var8 = (float[])var7.getValue();
          int var9 = (int)Math.floor(var8[0] + 0.001F);
          int var10 = (int)Math.floor(var8[1] + 0.001F);
          int var11 = Math.min(8, Math.max(1, (int)Math.ceil(var8[2] - 0.001F) - var9));
          int var12 = Math.min(8, Math.max(1, (int)Math.ceil(var8[3] - 0.001F) - var10));
-         ImageDecoder.Picture var13 = tile(baseColor(var0, (Integer)var7.getKey(), var2), var11, var12);
+         ImageDecoder.Picture var13 = tile(baseColor(gltfFile, (Integer)var7.getKey(), imageDecoder), var11, var12);
          var5.put((Integer)var7.getKey(), new int[]{var9, var10, var11, var12});
          float var14 = (var8[0] - var9) / var11;
          float var15 = (var8[1] - var10) / var12;
@@ -75,10 +75,10 @@ final class TextureAtlas {
       return var26;
    }
 
-   private static ImageDecoder.Picture baseColor(GltfFile var0, int var1, ImageDecoder var2) throws IOException {
-      byte[] var3 = var0.baseColorImage(var1);
-      ImageDecoder.Picture var4 = var3 == null ? new ImageDecoder.Picture(4, 4, filled(16, -1)) : var2.decode(var3);
-      float[] var5 = var0.baseColorFactor(var1);
+   private static ImageDecoder.Picture baseColor(GltfFile gltfFile, int i, ImageDecoder imageDecoder) throws IOException {
+      byte[] var3 = gltfFile.baseColorImage(i);
+      ImageDecoder.Picture var4 = var3 == null ? new ImageDecoder.Picture(4, 4, filled(16, -1)) : imageDecoder.decode(var3);
+      float[] var5 = gltfFile.baseColorFactor(i);
       if (var5[0] == 1.0F && var5[1] == 1.0F && var5[2] == 1.0F && var5[3] == 1.0F) {
          return var4;
       } else {
@@ -101,27 +101,27 @@ final class TextureAtlas {
       }
    }
 
-   private static int[] filled(int var0, int var1) {
-      int[] var2 = new int[var0];
-      Arrays.fill(var2, var1);
+   private static int[] filled(int i, int j) {
+      int[] var2 = new int[i];
+      Arrays.fill(var2, j);
       return var2;
    }
 
-   private static ImageDecoder.Picture tile(ImageDecoder.Picture var0, int var1, int var2) {
-      if (var1 == 1 && var2 == 1) {
-         return var0;
+   private static ImageDecoder.Picture tile(ImageDecoder.Picture picture, int i, int j) {
+      if (i == 1 && j == 1) {
+         return picture;
       } else {
-         if (var0.width() * var1 > 8192 || var0.height() * var2 > 8192) {
-            var0 = resize(var0, Math.max(1, Math.min(var0.width(), 8192 / var1)), Math.max(1, Math.min(var0.height(), 8192 / var2)));
+         if (picture.width() * i > 8192 || picture.height() * j > 8192) {
+            picture = resize(picture, Math.max(1, Math.min(picture.width(), 8192 / i)), Math.max(1, Math.min(picture.height(), 8192 / j)));
          }
 
-         int var3 = var0.width() * var1;
-         int var4 = var0.height() * var2;
+         int var3 = picture.width() * i;
+         int var4 = picture.height() * j;
          int[] var5 = new int[var3 * var4];
 
          for (int var6 = 0; var6 < var4; var6++) {
             for (int var7 = 0; var7 < var3; var7++) {
-               var5[var6 * var3 + var7] = var0.argb()[var6 % var0.height() * var0.width() + var7 % var0.width()];
+               var5[var6 * var3 + var7] = picture.argb()[var6 % picture.height() * picture.width() + var7 % picture.width()];
             }
          }
 
@@ -129,21 +129,21 @@ final class TextureAtlas {
       }
    }
 
-   private static ImageDecoder.Picture crop(ImageDecoder.Picture var0, int var1, int var2, int var3, int var4) {
-      int var5 = var3 - var1;
-      int var6 = var4 - var2;
+   private static ImageDecoder.Picture crop(ImageDecoder.Picture picture, int i, int j, int k, int l) {
+      int var5 = k - i;
+      int var6 = l - j;
       int[] var7 = new int[var5 * var6];
 
       for (int var8 = 0; var8 < var6; var8++) {
-         System.arraycopy(var0.argb(), (var2 + var8) * var0.width() + var1, var7, var8 * var5, var5);
+         System.arraycopy(picture.argb(), (j + var8) * picture.width() + i, var7, var8 * var5, var5);
       }
 
       return new ImageDecoder.Picture(var5, var6, var7);
    }
 
-   private static TextureAtlas tryPack(Map<Integer, ImageDecoder.Picture> var0, Map<Integer, float[]> var1, double var2) {
-      ArrayList var4 = new ArrayList(var0.keySet());
-      var4.sort((var1x, var2x) -> Integer.compare(((ImageDecoder.Picture)var0.get(var2x)).height(), ((ImageDecoder.Picture)var0.get(var1x)).height()));
+   private static TextureAtlas tryPack(Map<Integer, ImageDecoder.Picture> map, Map<Integer, float[]> map2, double d) {
+      ArrayList var4 = new ArrayList(map.keySet());
+      var4.sort((integer, integer2) -> Integer.compare(((ImageDecoder.Picture)map.get(integer2)).height(), ((ImageDecoder.Picture)map.get(integer)).height()));
       int var5 = 0;
       int var6 = 0;
       int var7 = 0;
@@ -151,9 +151,9 @@ final class TextureAtlas {
       HashMap var9 = new HashMap();
 
       for (int var20 : var4) {
-         ImageDecoder.Picture var21 = (ImageDecoder.Picture)var0.get(var20);
-         int var22 = Math.max(1, (int)Math.round(var21.width() * var2));
-         int var23 = Math.max(1, (int)Math.round(var21.height() * var2));
+         ImageDecoder.Picture var21 = (ImageDecoder.Picture)map.get(var20);
+         int var22 = Math.max(1, (int)Math.round(var21.width() * d));
+         int var23 = Math.max(1, (int)Math.round(var21.height() * d));
          if (var5 + var22 + 8 > 2048) {
             var5 = 0;
             var6 += var7;
@@ -173,7 +173,7 @@ final class TextureAtlas {
 
       for (int var13 : var4) {
          int[] var14 = (int[])var9.get(var13);
-         ImageDecoder.Picture var15 = resize((ImageDecoder.Picture)var0.get(var13), var14[2], var14[3]);
+         ImageDecoder.Picture var15 = resize((ImageDecoder.Picture)map.get(var13), var14[2], var14[3]);
 
          for (int var16 = -4; var16 < var14[3] + 4; var16++) {
             for (int var17 = -4; var17 < var14[2] + 4; var17++) {
@@ -183,18 +183,18 @@ final class TextureAtlas {
             }
          }
 
-         float[] var24 = (float[])var1.get(var13);
+         float[] var24 = (float[])map2.get(var13);
          var11.regions.put(var13, new float[]{var24[0], var24[1], var24[2], var24[3], var14[0], var14[1], var14[2], var14[3]});
       }
 
       return var11;
    }
 
-   float[] map(int var1, float var2, float var3) {
-      float[] var4 = this.regions.get(var1);
-      int[] var5 = this.tiles.get(var1);
-      float var6 = (var2 - var5[0]) / var5[2];
-      float var7 = (var3 - var5[1]) / var5[3];
+   float[] map(int i, float f, float g) {
+      float[] var4 = this.regions.get(i);
+      int[] var5 = this.tiles.get(i);
+      float var6 = (f - var5[0]) / var5[2];
+      float var7 = (g - var5[1]) / var5[3];
       float var8 = (var6 - var4[0]) / (var4[2] - var4[0]);
       float var9 = (var7 - var4[1]) / (var4[3] - var4[1]);
       return new float[]{(var4[4] + var8 * var4[6]) / this.width, (var4[5] + var9 * var4[7]) / this.height};
@@ -220,60 +220,60 @@ final class TextureAtlas {
       return var8.toByteArray();
    }
 
-   private static ImageDecoder.Picture resize(ImageDecoder.Picture var0, int var1, int var2) {
-      ImageDecoder.Picture var3 = var0;
+   private static ImageDecoder.Picture resize(ImageDecoder.Picture picture, int i, int j) {
+      ImageDecoder.Picture var3 = picture;
 
-      while (var3.width() / 2 >= var1 && var3.height() / 2 >= var2) {
+      while (var3.width() / 2 >= i && var3.height() / 2 >= j) {
          var3 = half(var3);
       }
 
-      return var3.width() == var1 && var3.height() == var2 ? var3 : bilinear(var3, var1, var2);
+      return var3.width() == i && var3.height() == j ? var3 : bilinear(var3, i, j);
    }
 
-   private static ImageDecoder.Picture half(ImageDecoder.Picture var0) {
-      int var1 = var0.width() / 2;
-      int var2 = var0.height() / 2;
+   private static ImageDecoder.Picture half(ImageDecoder.Picture picture) {
+      int var1 = picture.width() / 2;
+      int var2 = picture.height() / 2;
       int[] var3 = new int[var1 * var2];
 
       for (int var4 = 0; var4 < var2; var4++) {
          for (int var5 = 0; var5 < var1; var5++) {
-            int[] var6 = var0.argb();
-            int var7 = var4 * 2 * var0.width() + var5 * 2;
-            var3[var4 * var1 + var5] = average(var6[var7], var6[var7 + 1], var6[var7 + var0.width()], var6[var7 + var0.width() + 1]);
+            int[] var6 = picture.argb();
+            int var7 = var4 * 2 * picture.width() + var5 * 2;
+            var3[var4 * var1 + var5] = average(var6[var7], var6[var7 + 1], var6[var7 + picture.width()], var6[var7 + picture.width() + 1]);
          }
       }
 
       return new ImageDecoder.Picture(var1, var2, var3);
    }
 
-   private static int average(int var0, int var1, int var2, int var3) {
+   private static int average(int i, int j, int k, int l) {
       int var4 = 0;
 
       for (byte var5 = 0; var5 < 32; var5 += 8) {
-         int var6 = (var0 >>> var5 & 0xFF) + (var1 >>> var5 & 0xFF) + (var2 >>> var5 & 0xFF) + (var3 >>> var5 & 0xFF);
+         int var6 = (i >>> var5 & 0xFF) + (j >>> var5 & 0xFF) + (k >>> var5 & 0xFF) + (l >>> var5 & 0xFF);
          var4 |= (var6 + 2) / 4 << var5;
       }
 
       return var4;
    }
 
-   private static ImageDecoder.Picture bilinear(ImageDecoder.Picture var0, int var1, int var2) {
-      int[] var3 = new int[var1 * var2];
-      int var4 = var0.width();
-      int var5 = var0.height();
+   private static ImageDecoder.Picture bilinear(ImageDecoder.Picture picture, int i, int j) {
+      int[] var3 = new int[i * j];
+      int var4 = picture.width();
+      int var5 = picture.height();
 
-      for (int var6 = 0; var6 < var2; var6++) {
-         float var7 = Math.max(0.0F, (var6 + 0.5F) * var5 / var2 - 0.5F);
+      for (int var6 = 0; var6 < j; var6++) {
+         float var7 = Math.max(0.0F, (var6 + 0.5F) * var5 / j - 0.5F);
          int var8 = Math.min(var5 - 1, (int)var7);
          int var9 = Math.min(var5 - 1, var8 + 1);
          float var10 = var7 - var8;
 
-         for (int var11 = 0; var11 < var1; var11++) {
-            float var12 = Math.max(0.0F, (var11 + 0.5F) * var4 / var1 - 0.5F);
+         for (int var11 = 0; var11 < i; var11++) {
+            float var12 = Math.max(0.0F, (var11 + 0.5F) * var4 / i - 0.5F);
             int var13 = Math.min(var4 - 1, (int)var12);
             int var14 = Math.min(var4 - 1, var13 + 1);
             float var15 = var12 - var13;
-            int[] var16 = var0.argb();
+            int[] var16 = picture.argb();
             int var17 = 0;
 
             for (byte var18 = 0; var18 < 32; var18 += 8) {
@@ -282,21 +282,21 @@ final class TextureAtlas {
                var17 |= Math.round(var19 * (1.0F - var10) + var20 * var10) << var18;
             }
 
-            var3[var6 * var1 + var11] = var17;
+            var3[var6 * i + var11] = var17;
          }
       }
 
-      return new ImageDecoder.Picture(var1, var2, var3);
+      return new ImageDecoder.Picture(i, j, var3);
    }
 
-   private static int clamp(int var0, int var1, int var2) {
-      return Math.max(var1, Math.min(var2, var0));
+   private static int clamp(int i, int j, int k) {
+      return Math.max(j, Math.min(k, i));
    }
 
-   private static int pow2(int var0) {
+   private static int pow2(int i) {
       byte var1 = 16;
 
-      while (var1 < var0) {
+      while (var1 < i) {
          var1 <<= 1;
       }
 

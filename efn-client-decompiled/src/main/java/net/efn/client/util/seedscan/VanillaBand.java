@@ -21,65 +21,65 @@ public final class VanillaBand {
    public final int chunkZ;
    private final byte[] cells;
 
-   private VanillaBand(int var1, int var2, byte[] var3) {
-      this.chunkX = var1;
-      this.chunkZ = var2;
-      this.cells = var3;
+   private VanillaBand(int i, int j, byte[] bs) {
+      this.chunkX = i;
+      this.chunkZ = j;
+      this.cells = bs;
    }
 
-   private static int index(int var0, int var1, int var2) {
-      return var1 - -16 << 8 | (var2 & 15) << 4 | var0 & 15;
+   private static int index(int i, int j, int k) {
+      return j - -16 << 8 | (k & 15) << 4 | i & 15;
    }
 
-   public static boolean inBand(int var0) {
-      return var0 >= -16 && var0 <= 63;
+   public static boolean inBand(int i) {
+      return i >= -16 && i <= 63;
    }
 
-   public byte certain(int var1, int var2, int var3) {
-      return (byte)(this.cells[index(var1, var2, var3)] & 15);
+   public byte certain(int i, int j, int k) {
+      return (byte)(this.cells[index(i, j, k)] & 15);
    }
 
-   public int families(int var1, int var2, int var3) {
-      return this.cells[index(var1, var2, var3)] >> 4 & 15;
+   public int families(int i, int j, int k) {
+      return this.cells[index(i, j, k)] >> 4 & 15;
    }
 
-   public static VanillaBand of(TerrainChunk var0, ChunkDecoration[] var1, DecorationOrder var2) {
+   public static VanillaBand of(TerrainChunk terrainChunk, ChunkDecoration[] chunkDecorations, DecorationOrder decorationOrder) {
       byte[] var3 = new byte[20480];
       ArrayList var4 = new ArrayList(9);
       long[] var5 = new long[9];
-      int var6 = var0.chunkX << 4;
-      int var7 = var0.chunkZ << 4;
+      int var6 = terrainChunk.chunkX << 4;
+      int var7 = terrainChunk.chunkZ << 4;
 
       for (int var8 = -16; var8 <= 63; var8++) {
          for (int var9 = var7; var9 < var7 + 16; var9++) {
             for (int var10 = var6; var10 < var6 + 16; var10++) {
-               byte var11 = var0.kind(var10, var8, var9);
+               byte var11 = terrainChunk.kind(var10, var8, var9);
                var4.clear();
-               long var12 = BlockPos.method_10064(var10, var8, var9);
+               long var12 = BlockPos.asLong(var10, var8, var9);
 
-               for (ChunkDecoration var17 : var1) {
+               for (ChunkDecoration var17 : chunkDecorations) {
                   short[] var18;
                   if (var17 != null && (var18 = sequence(var17, var12, var10, var8, var9)) != null) {
-                     var5[var4.size()] = ChunkPos.method_8331(var17.chunkX, var17.chunkZ);
+                     var5[var4.size()] = ChunkPos.toLong(var17.chunkX, var17.chunkZ);
                      var4.add(var18);
                   }
                }
 
-               var3[index(var10, var8, var9)] = play(var11, var4, var5, var2);
+               var3[index(var10, var8, var9)] = play(var11, var4, var5, decorationOrder);
             }
          }
       }
 
-      return new VanillaBand(var0.chunkX, var0.chunkZ, var3);
+      return new VanillaBand(terrainChunk.chunkX, terrainChunk.chunkZ, var3);
    }
 
-   private static short[] sequence(ChunkDecoration var0, long var1, int var3, int var4, int var5) {
-      int var6 = var0.find(var1);
-      int var7 = var6 >= 0 ? var0.writeCount(var6) : 0;
+   private static short[] sequence(ChunkDecoration chunkDecoration, long l, int i, int j, int k) {
+      int var6 = chunkDecoration.find(l);
+      int var7 = var6 >= 0 ? chunkDecoration.writeCount(var6) : 0;
       ArrayList var8 = null;
 
-      for (ChunkDecoration.Fog var10 : var0.fogs()) {
-         if (var10.contains(var3, var4, var5)) {
+      for (ChunkDecoration.Fog var10 : chunkDecoration.fogs()) {
+         if (var10.contains(i, j, k)) {
             if (var8 == null) {
                var8 = new ArrayList(2);
             }
@@ -94,7 +94,7 @@ public final class VanillaBand {
          short[] var13 = new short[var7 + (var8 == null ? 0 : var8.size())];
 
          for (int var14 = 0; var14 < var7; var14++) {
-            var13[var14] = var0.write(var6, var14);
+            var13[var14] = chunkDecoration.write(var6, var14);
          }
 
          if (var8 != null) {
@@ -111,12 +111,12 @@ public final class VanillaBand {
       }
    }
 
-   private static byte play(byte var0, List<short[]> var1, long[] var2, DecorationOrder var3) {
-      if (var1.isEmpty()) {
-         return (byte)(VBlock.familyBit(var0) << 4 | var0);
+   private static byte play(byte b, List<short[]> list, long[] ls, DecorationOrder decorationOrder) {
+      if (list.isEmpty()) {
+         return (byte)(VBlock.familyBit(b) << 4 | b);
       } else {
          int var4 = 0;
-         Iterator var5 = var1.iterator();
+         Iterator var5 = list.iterator();
 
          while (var5.hasNext()) {
             for (short var10 : (short[])var5.next()) {
@@ -126,17 +126,17 @@ public final class VanillaBand {
             }
          }
 
-         if (var1.size() <= 4 && var4 <= 10) {
+         if (list.size() <= 4 && var4 <= 10) {
             int var24 = 0;
 
-            for (int[] var35 : PERMUTATIONS[var1.size()]) {
-               if (var3 == null || fits(var35, var2, var3)) {
+            for (int[] var35 : PERMUTATIONS[list.size()]) {
+               if (decorationOrder == null || fits(var35, ls, decorationOrder)) {
                   for (int var36 = 0; var36 < 1 << var4; var36++) {
-                     byte var37 = var0;
+                     byte var37 = b;
                      int var13 = 0;
 
                      for (int var17 : var35) {
-                        for (short var21 : (short[])var1.get(var17)) {
+                        for (short var21 : (short[])list.get(var17)) {
                            boolean var22 = true;
                            if (ChunkDecoration.possible(var21)) {
                               var22 = (var36 >> var13++ & 1) != 0;
@@ -154,7 +154,7 @@ public final class VanillaBand {
             }
 
             if (var24 == 0) {
-               return play(var0, var1, var2, null);
+               return play(b, list, ls, null);
             } else {
                int var27 = 0;
 
@@ -168,9 +168,9 @@ public final class VanillaBand {
                return (byte)(var27 << 4 | var31);
             }
          } else {
-            int var6 = VBlock.familyBit(var0);
+            int var6 = VBlock.familyBit(b);
 
-            for (short[] var28 : var1) {
+            for (short[] var28 : list) {
                for (short var12 : var28) {
                   var6 |= VBlock.familyBit(ChunkDecoration.kind(var12));
                }
@@ -181,10 +181,10 @@ public final class VanillaBand {
       }
    }
 
-   private static boolean fits(int[] var0, long[] var1, DecorationOrder var2) {
-      for (int var3 = 0; var3 < var0.length; var3++) {
-         for (int var4 = var3 + 1; var4 < var0.length; var4++) {
-            if (var2.after(var1[var0[var3]], var1[var0[var4]])) {
+   private static boolean fits(int[] is, long[] ls, DecorationOrder decorationOrder) {
+      for (int var3 = 0; var3 < is.length; var3++) {
+         for (int var4 = var3 + 1; var4 < is.length; var4++) {
+            if (decorationOrder.after(ls[is[var3]], ls[is[var4]])) {
                return false;
             }
          }
@@ -193,10 +193,10 @@ public final class VanillaBand {
       return true;
    }
 
-   private static int[][][] permutations(int var0) {
-      int[][][] var1 = new int[var0 + 1][][];
+   private static int[][][] permutations(int i) {
+      int[][][] var1 = new int[i + 1][][];
 
-      for (int var2 = 0; var2 <= var0; var2++) {
+      for (int var2 = 0; var2 <= i; var2++) {
          ArrayList var3 = new ArrayList();
          permute(new int[var2], new boolean[var2], 0, var3);
          var1[var2] = var3.toArray(new int[0][]);
@@ -205,16 +205,16 @@ public final class VanillaBand {
       return var1;
    }
 
-   private static void permute(int[] var0, boolean[] var1, int var2, List<int[]> var3) {
-      if (var2 == var0.length) {
-         var3.add((int[])var0.clone());
+   private static void permute(int[] is, boolean[] bls, int i, List<int[]> list) {
+      if (i == is.length) {
+         list.add((int[])is.clone());
       } else {
-         for (int var4 = 0; var4 < var0.length; var4++) {
-            if (!var1[var4]) {
-               var1[var4] = true;
-               var0[var2] = var4;
-               permute(var0, var1, var2 + 1, var3);
-               var1[var4] = false;
+         for (int var4 = 0; var4 < is.length; var4++) {
+            if (!bls[var4]) {
+               bls[var4] = true;
+               is[i] = var4;
+               permute(is, bls, i + 1, list);
+               bls[var4] = false;
             }
          }
       }

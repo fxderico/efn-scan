@@ -10,10 +10,10 @@ final class Mesh {
    final int[] tris;
    final int triCount;
 
-   Mesh(float[] var1, int var2, int[] var3, int var4) {
-      this.pos = var1;
-      this.vertexCount = var2;
-      this.tris = var3;
-      this.triCount = var4;
+   Mesh(float[] fs, int i, int[] is, int j) {
+      this.pos = fs;
+      this.vertexCount = i;
+      this.tris = is;
+      this.triCount = j;
    }
 }

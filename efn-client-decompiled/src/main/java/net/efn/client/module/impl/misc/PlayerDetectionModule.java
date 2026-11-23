@@ -52,8 +52,8 @@ public final class PlayerDetectionModule extends ClientModule {
    private static final String WEBHOOK_TITLE = "\ud83d\udea8 Player Detection Alert";
    private static final int WEBHOOK_COLOR = 15158332;
    private static final Type TOAST_ID = new Type();
-   private static final ExecutorService WEBHOOK_EXECUTOR = Executors.newSingleThreadExecutor(var0 -> {
-      Thread var1 = new Thread(var0, "EFN-PlayerDetection-Webhook");
+   private static final ExecutorService WEBHOOK_EXECUTOR = Executors.newSingleThreadExecutor(runnable -> {
+      Thread var1 = new Thread(runnable, "EFN-PlayerDetection-Webhook");
       var1.setDaemon(true);
       return var1;
    });
@@ -105,27 +105,27 @@ public final class PlayerDetectionModule extends ClientModule {
       this.lastLevel = null;
    }
 
-   private void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientPlayerEntity var3 = var2.field_1724;
-      ClientWorld var4 = var2.field_1687;
+   private void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientPlayerEntity var3 = var2.player;
+      ClientWorld var4 = var2.world;
       if (var3 != null && var4 != null) {
          if (var4 != this.lastLevel) {
             this.detectedPlayers.clear();
             this.lastLevel = var4;
          }
 
-         String var5 = var3.method_7334().name();
-         UUID var6 = var3.method_5667();
+         String var5 = var3.getGameProfile().name();
+         UUID var6 = var3.getUuid();
          Set var7 = this.whitelist();
          LinkedHashSet var8 = null;
 
-         for (AbstractClientPlayerEntity var10 : var4.method_18456()) {
+         for (AbstractClientPlayerEntity var10 : var4.getPlayers()) {
             String var11;
             String var12;
             if (var10 != var3
-               && !var6.equals(var10.method_5667())
-               && (var12 = var10.method_7334().name()) != null
+               && !var6.equals(var10.getUuid())
+               && (var12 = var10.getGameProfile().name()) != null
                && !var12.equals(var5)
                && !PERMANENT_WHITELIST.contains(var11 = var12.toLowerCase(Locale.ROOT))
                && !var7.contains(var11)) {
@@ -150,18 +150,18 @@ public final class PlayerDetectionModule extends ClientModule {
       }
    }
 
-   private void handlePlayerDetection(Set<String> var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
+   private void handlePlayerDetection(Set<String> set) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
       String var3 = this.notificationMode.get();
       switch (var3) {
          case "Chat":
-            this.announceDetection(var1);
+            this.announceDetection(set);
             break;
          case "Toast":
             this.showToast(var2);
             break;
          default:
-            this.announceDetection(var1);
+            this.announceDetection(set);
             this.showToast(var2);
       }
 
@@ -174,7 +174,7 @@ public final class PlayerDetectionModule extends ClientModule {
       }
 
       if (this.enableWebhook.get()) {
-         this.sendWebhookNotification(var2, var1);
+         this.sendWebhookNotification(var2, set);
       }
 
       if (this.toggleOnPlayer.get()) {
@@ -182,31 +182,31 @@ public final class PlayerDetectionModule extends ClientModule {
       }
 
       if (this.enableDisconnect.get()) {
-         this.scheduleDisconnect(var2, var1);
+         this.scheduleDisconnect(var2, set);
       }
    }
 
-   private void announceDetection(Set<String> var1) {
-      ModuleChat.send(this, names(ModuleChat.body().danger(var1.size() == 1 ? "Player detected" : "Players detected").text(": "), var1));
+   private void announceDetection(Set<String> set) {
+      ModuleChat.send(this, names(ModuleChat.body().danger(set.size() == 1 ? "Player detected" : "Players detected").text(": "), set));
    }
 
-   private static ModuleChat.Body names(ModuleChat.Body var0, Collection<String> var1) {
+   private static ModuleChat.Body names(ModuleChat.Body body, Collection<String> collection) {
       boolean var2 = true;
 
-      for (String var4 : var1) {
+      for (String var4 : collection) {
          if (!var2) {
-            var0.text(", ");
+            body.text(", ");
          }
 
-         var0.name(var4);
+         body.name(var4);
          var2 = false;
       }
 
-      return var0;
+      return body;
    }
 
-   private void showToast(MinecraftClient var1) {
-      SystemToast.method_1990(var1.method_1566(), TOAST_ID, Text.method_43470(this.name()), Text.method_43470("Player Detected!"));
+   private void showToast(MinecraftClient minecraftClient) {
+      SystemToast.show(minecraftClient.getToastManager(), TOAST_ID, Text.literal(this.name()), Text.literal("Player Detected!"));
    }
 
    private List<ClientModule> resolveModulesToToggle() {
@@ -258,7 +258,7 @@ public final class PlayerDetectionModule extends ClientModule {
       return this.whitelist;
    }
 
-   private void panicPay(MinecraftClient var1) {
+   private void panicPay(MinecraftClient minecraftClient) {
       String var2 = this.panicPayTarget.get().trim();
       String var3 = this.panicPayAmount.get().trim();
       if (var2.isEmpty()) {
@@ -266,29 +266,29 @@ public final class PlayerDetectionModule extends ClientModule {
       } else if (var3.isEmpty()) {
          ModuleChat.send(this, ModuleChat.body().text("Panic pay amount is ").warn("not set"));
       } else {
-         ClientPlayNetworkHandler var4 = var1.method_1562();
+         ClientPlayNetworkHandler var4 = minecraftClient.getNetworkHandler();
          if (var4 != null) {
             String var5 = String.format("/pay %s %s", var2, var3);
-            if (var1.field_1705 != null) {
-               var1.field_1705.method_1743().method_1803(var5);
+            if (minecraftClient.inGameHud != null) {
+               minecraftClient.inGameHud.getChatHud().addToMessageHistory(var5);
             }
 
             PayGuard.allow(var5);
-            var4.method_45730(var5.substring(1));
+            var4.sendChatCommand(var5.substring(1));
             ModuleChat.send(this, ModuleChat.body().text("Panic pay ").good("sent").text(": ").value(var3).text(" to ").name(var2));
          }
       }
    }
 
-   private void sendWebhookNotification(MinecraftClient var1, Set<String> var2) {
+   private void sendWebhookNotification(MinecraftClient minecraftClient, Set<String> set) {
       String var3 = this.webhookUrl.get().trim();
       if (var3.isEmpty()) {
          ModuleChat.send(this, ModuleChat.body().text("Webhook URL is ").warn("not set"));
       } else if (!isValidWebhookUrl(var3)) {
          ModuleChat.send(this, ModuleChat.body().text("Webhook URL is ").danger("invalid"));
       } else {
-         ServerInfo var4 = var1.method_1558();
-         String var5 = var4 != null && var4.field_3752 != null ? var4.field_3752 : "Unknown Server";
+         ServerInfo var4 = minecraftClient.getCurrentServerEntry();
+         String var5 = var4 != null && var4.name != null ? var4.name : "Unknown Server";
          String var6 = this.discordId.get().trim();
          String var7 = this.selfPing.get() && !var6.isEmpty() ? "<@" + var6 + ">" : "";
          String var8 = this.panicPayTarget.get().trim();
@@ -296,7 +296,7 @@ public final class PlayerDetectionModule extends ClientModule {
          long var10 = System.currentTimeMillis() / 1000L;
          StringBuilder var12 = new StringBuilder("Player(s) detected on server!\n\n")
             .append("**Players:** ")
-            .append(escapeMarkdown(String.join(", ", var2)))
+            .append(escapeMarkdown(String.join(", ", set)))
             .append('\n')
             .append("**Server:** ")
             .append(escapeMarkdown(var5))
@@ -333,9 +333,9 @@ public final class PlayerDetectionModule extends ClientModule {
       }
    }
 
-   private static boolean isValidWebhookUrl(String var0) {
+   private static boolean isValidWebhookUrl(String string) {
       try {
-         URI var1 = new URI(var0);
+         URI var1 = new URI(string);
          String var2 = var1.getScheme();
          return var1.getHost() != null && ("https".equalsIgnoreCase(var2) || "http".equalsIgnoreCase(var2));
       } catch (URISyntaxException var3) {
@@ -343,11 +343,11 @@ public final class PlayerDetectionModule extends ClientModule {
       }
    }
 
-   private static String escapeMarkdown(String var0) {
-      StringBuilder var1 = new StringBuilder(var0.length() + 8);
+   private static String escapeMarkdown(String string) {
+      StringBuilder var1 = new StringBuilder(string.length() + 8);
 
-      for (int var2 = 0; var2 < var0.length(); var2++) {
-         char var3 = var0.charAt(var2);
+      for (int var2 = 0; var2 < string.length(); var2++) {
+         char var3 = string.charAt(var2);
          if (var3 == '\\' || var3 == '*' || var3 == '_' || var3 == '~' || var3 == '`' || var3 == '|') {
             var1.append('\\');
          }
@@ -358,22 +358,22 @@ public final class PlayerDetectionModule extends ClientModule {
       return var1.toString();
    }
 
-   private void scheduleDisconnect(MinecraftClient var1, Set<String> var2) {
-      ClientPlayNetworkHandler var3 = var1.method_1562();
+   private void scheduleDisconnect(MinecraftClient minecraftClient, Set<String> set) {
+      ClientPlayNetworkHandler var3 = minecraftClient.getNetworkHandler();
       if (var3 != null) {
-         ClientConnection var4 = var3.method_48296();
-         CompletableFuture.delayedExecutor(500L, TimeUnit.MILLISECONDS, var1).execute(() -> this.disconnectFromServer(var1, var4, var2));
+         ClientConnection var4 = var3.getConnection();
+         CompletableFuture.delayedExecutor(500L, TimeUnit.MILLISECONDS, minecraftClient).execute(() -> this.disconnectFromServer(minecraftClient, var4, set));
       }
    }
 
-   private void disconnectFromServer(MinecraftClient var1, ClientConnection var2, Set<String> var3) {
-      ClientPlayNetworkHandler var4 = var1.method_1562();
-      if (var1.field_1687 != null && var4 != null && var4.method_48296() == var2 && var2.method_10758()) {
+   private void disconnectFromServer(MinecraftClient minecraftClient, ClientConnection clientConnection, Set<String> set) {
+      ClientPlayNetworkHandler var4 = minecraftClient.getNetworkHandler();
+      if (minecraftClient.world != null && var4 != null && var4.getConnection() == clientConnection && clientConnection.isOpen()) {
          AutoReconnectModule.holdOff();
-         var2.method_10747(Text.method_43470("Player(s) detected: " + String.join(", ", var3)));
+         clientConnection.disconnect(Text.literal("Player(s) detected: " + String.join(", ", set)));
          ModuleChat.send(
             this,
-            names(ModuleChat.body().danger("Disconnected").text(" from the server (").text(var3.size() == 1 ? "player" : "players").text(" detected: "), var3)
+            names(ModuleChat.body().danger("Disconnected").text(" from the server (").text(set.size() == 1 ? "player" : "players").text(" detected: "), set)
                .text(")")
          );
       }

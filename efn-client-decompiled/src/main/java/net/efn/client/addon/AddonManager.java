@@ -33,20 +33,19 @@ public final class AddonManager {
    public static void init() {
       if (addons == null) {
          List var0 = create();
-         var0.removeIf(var0x -> !run(var0x, "register its categories", EfnAddon::onRegisterCategories));
-         var0.removeIf(var0x -> {
-            if (run(var0x, "initialise", EfnAddon::onInitialize)) {
+         var0.removeIf(efnAddon -> !run(efnAddon, "register its categories", EfnAddon::onRegisterCategories));
+         var0.removeIf(efnAddon -> {
+            if (run(efnAddon, "initialise", EfnAddon::onInitialize)) {
                return false;
             } else {
-               removeModules(var0x);
+               removeModules(efnAddon);
                return true;
             }
          });
 
          for (EfnAddon var2 : var0) {
             LOGGER.info(
-               "[EFN] Loaded addon {} v{} by {}",
-               new Object[]{var2.name(), var2.version(), var2.authors().isEmpty() ? "unknown" : String.join(", ", var2.authors())}
+               "[EFN] Loaded addon {} v{} by {}", var2.name(), var2.version(), var2.authors().isEmpty() ? "unknown" : String.join(", ", var2.authors())
             );
          }
 
@@ -58,11 +57,11 @@ public final class AddonManager {
       if (addons != null && !configLoaded) {
          configLoaded = true;
          ArrayList var0 = new ArrayList<>(addons);
-         var0.removeIf(var0x -> {
-            if (run(var0x, "start", EfnAddon::onConfigLoaded)) {
+         var0.removeIf(efnAddon -> {
+            if (run(efnAddon, "start", EfnAddon::onConfigLoaded)) {
                return false;
             } else {
-               removeModules(var0x);
+               removeModules(efnAddon);
                return true;
             }
          });
@@ -77,7 +76,7 @@ public final class AddonManager {
       try {
          var0 = FabricLoader.getInstance().getEntrypointContainers("efn", EfnAddon.class);
       } catch (RuntimeException | LinkageError var8) {
-         LOGGER.error("[EFN] Could not list addons; starting without them", var8);
+         LOGGER.error("[EFN] Could not list addons; starting without them", (Throwable)var8);
          return var1;
       }
 
@@ -90,7 +89,7 @@ public final class AddonManager {
             var5 = (EfnAddon)var3.getEntrypoint();
             var4 = var5.getPackage();
          } catch (RuntimeException | LinkageError var9) {
-            LOGGER.error("[EFN] Addon {} ({}) could not be created and is skipped", new Object[]{var6.getName(), var6.getId(), var9});
+            LOGGER.error("[EFN] Addon {} ({}) could not be created and is skipped", var6.getName(), var6.getId(), var9);
             continue;
          }
 
@@ -107,15 +106,15 @@ public final class AddonManager {
       return var1;
    }
 
-   private static String packageProblem(EfnAddon var0, String var1, List<EfnAddon> var2) {
-      if (var1 != null && var0.getClass().getName().startsWith(var1 + ".")) {
-         if (overlap(var1, "net.efn.client")) {
-            return "its package " + var1 + " overlaps EFN' own (net.efn.client)";
+   private static String packageProblem(EfnAddon efnAddon, String string, List<EfnAddon> list) {
+      if (string != null && efnAddon.getClass().getName().startsWith(string + ".")) {
+         if (overlap(string, "net.efn.client")) {
+            return "its package " + string + " overlaps EFN' own (net.efn.client)";
          } else {
-            for (EfnAddon var4 : var2) {
-               if (overlap(var1, var4.packageName)) {
+            for (EfnAddon var4 : list) {
+               if (overlap(string, var4.packageName)) {
                   return "its package "
-                     + var1
+                     + string
                      + " overlaps "
                      + var4.name()
                      + "'s ("
@@ -127,36 +126,36 @@ public final class AddonManager {
             return null;
          }
       } else {
-         return "getPackage() is \"" + var1 + "\", which doesn't hold its class " + var0.getClass().getName();
+         return "getPackage() is \"" + string + "\", which doesn't hold its class " + efnAddon.getClass().getName();
       }
    }
 
-   private static boolean overlap(String var0, String var1) {
-      return (var0 + ".").startsWith(var1 + ".") || (var1 + ".").startsWith(var0 + ".");
+   private static boolean overlap(String string, String string2) {
+      return (string + ".").startsWith(string2 + ".") || (string2 + ".").startsWith(string + ".");
    }
 
-   private static boolean run(EfnAddon var0, String var1, Consumer<EfnAddon> var2) {
+   private static boolean run(EfnAddon efnAddon, String string, Consumer<EfnAddon> consumer) {
       try {
-         var2.accept(var0);
+         consumer.accept(efnAddon);
          return true;
       } catch (RuntimeException | LinkageError var4) {
-         LOGGER.error("[EFN] Addon {} failed to {} and is skipped{}", new Object[]{var0.name(), var1, reportHint(var0), var4});
+         LOGGER.error("[EFN] Addon {} failed to {} and is skipped{}", efnAddon.name(), string, reportHint(efnAddon), var4);
          return false;
       }
    }
 
-   private static String reportHint(EfnAddon var0) {
+   private static String reportHint(EfnAddon efnAddon) {
       try {
-         EfnAddon.GithubRepo var1 = var0.getRepo();
-         String var2 = var1 != null ? var1.url() + "/issues" : var0.getWebsite();
+         EfnAddon.GithubRepo var1 = efnAddon.getRepo();
+         String var2 = var1 != null ? var1.url() + "/issues" : efnAddon.getWebsite();
          return var2 != null ? " - report it at " + var2 : "";
       } catch (RuntimeException | LinkageError var3) {
          return "";
       }
    }
 
-   private static void removeModules(EfnAddon var0) {
-      String var1 = var0.packageName + ".";
+   private static void removeModules(EfnAddon efnAddon) {
+      String var1 = efnAddon.packageName + ".";
 
       for (ClientModule var3 : ModuleRegistry.all()) {
          if (var3.getClass().getName().startsWith(var1)) {

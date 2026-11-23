@@ -24,47 +24,47 @@ final class DigitFont {
    private DigitFont() {
    }
 
-   static void decorations(DigitFont.Sink var0, ItemStack var1, int var2, int var3, int var4) {
-      if (var1.method_31578()) {
-         var0.rect(var2 + 2 * var4, var3 + 13 * var4, 13 * var4, 2 * var4, -16777216);
-         var0.rect(var2 + 2 * var4, var3 + 13 * var4, var1.method_31579() * var4, var4, 0xFF000000 | var1.method_31580());
+   static void decorations(DigitFont.Sink sink, ItemStack itemStack, int i, int j, int k) {
+      if (itemStack.isItemBarVisible()) {
+         sink.rect(i + 2 * k, j + 13 * k, 13 * k, 2 * k, -16777216);
+         sink.rect(i + 2 * k, j + 13 * k, itemStack.getItemBarStep() * k, k, 0xFF000000 | itemStack.getItemBarColor());
       }
 
-      if (var1.method_7947() != 1) {
-         count(var0, var1.method_7947(), var2, var3, var4);
+      if (itemStack.getCount() != 1) {
+         count(sink, itemStack.getCount(), i, j, k);
       }
    }
 
-   private static void count(DigitFont.Sink var0, int var1, int var2, int var3, int var4) {
-      String var5 = Integer.toString(var1);
-      int var6 = var2 + (17 - 6 * var5.length()) * var4;
-      int var7 = var3 + 9 * var4;
+   private static void count(DigitFont.Sink sink, int i, int j, int k, int l) {
+      String var5 = Integer.toString(i);
+      int var6 = j + (17 - 6 * var5.length()) * l;
+      int var7 = k + 9 * l;
 
       for (int var8 = 0; var8 < var5.length(); var8++) {
          int var9 = var5.charAt(var8) - '0';
          if (var9 >= 0 && var9 <= 9) {
-            int var10 = var6 + var8 * 6 * var4;
-            glyph(var0, DIGITS[var9], var10 + var4, var7 + var4, var4, -12632257);
-            glyph(var0, DIGITS[var9], var10, var7, var4, -1);
+            int var10 = var6 + var8 * 6 * l;
+            glyph(sink, DIGITS[var9], var10 + l, var7 + l, l, -12632257);
+            glyph(sink, DIGITS[var9], var10, var7, l, -1);
          }
       }
    }
 
-   private static void glyph(DigitFont.Sink var0, byte[] var1, int var2, int var3, int var4, int var5) {
-      for (int var6 = 0; var6 < var1.length; var6++) {
+   private static void glyph(DigitFont.Sink sink, byte[] bs, int i, int j, int k, int l) {
+      for (int var6 = 0; var6 < bs.length; var6++) {
          int var7 = 0;
 
          while (var7 < 5) {
-            if ((var1[var6] >> 4 - var7 & 1) == 0) {
+            if ((bs[var6] >> 4 - var7 & 1) == 0) {
                var7++;
             } else {
                int var8 = var7;
 
-               while (var7 < 5 && (var1[var6] >> 4 - var7 & 1) != 0) {
+               while (var7 < 5 && (bs[var6] >> 4 - var7 & 1) != 0) {
                   var7++;
                }
 
-               var0.rect(var2 + var8 * var4, var3 + var6 * var4, (var7 - var8) * var4, var4, var5);
+               sink.rect(i + var8 * k, j + var6 * k, (var7 - var8) * k, k, l);
             }
          }
       }
@@ -72,6 +72,6 @@ final class DigitFont {
 
    @Environment(EnvType.CLIENT)
    interface Sink {
-      void rect(int var1, int var2, int var3, int var4, int var5);
+      void rect(int i, int j, int k, int l, int m);
    }
 }

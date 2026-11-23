@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin({AtmosphericFogModifier.class})
 public abstract class MixinAtmosphereRainFog {
    @Shadow
-   private float field_60589;
+   private float fogMultiplier;
 
    public MixinAtmosphereRainFog() {
    }
@@ -26,10 +26,10 @@ public abstract class MixinAtmosphereRainFog {
       method = {"method_76304"},
       at = {@At("TAIL")}
    )
-   private void efn$keepClearInRain(Camera var1, ClientWorld var2, RenderTickCounter var3, CallbackInfo var4) {
+   private void efn$keepClearInRain(Camera camera, ClientWorld clientWorld, RenderTickCounter renderTickCounter, CallbackInfo callbackInfo) {
       AtmosphereModule var5 = AtmosphereModule.get();
       if (var5 != null && var5.keepsSkyInRain()) {
-         this.field_60589 = 0.0F;
+         this.fogMultiplier = 0.0F;
       }
    }
 }

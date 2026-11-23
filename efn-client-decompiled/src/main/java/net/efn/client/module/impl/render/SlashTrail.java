@@ -23,10 +23,10 @@ final class SlashTrail {
    SlashTrail() {
    }
 
-   void add(long var1, float[] var3, int var4) {
+   void add(long l, float[] fs, int i) {
       this.newest = (this.newest + 1) % 96;
-      System.arraycopy(var3, var4, this.points, this.newest * 6, 6);
-      this.times[this.newest] = var1;
+      System.arraycopy(fs, i, this.points, this.newest * 6, 6);
+      this.times[this.newest] = l;
       this.size = Math.min(this.size + 1, 96);
    }
 
@@ -35,21 +35,21 @@ final class SlashTrail {
       this.newest = -1;
    }
 
-   boolean isEmpty(long var1, long var3) {
-      return this.size == 0 || var1 - this.times[this.newest] > var3;
+   boolean isEmpty(long l, long m) {
+      return this.size == 0 || l - this.times[this.newest] > m;
    }
 
-   void emit(Entry var1, VertexConsumer var2, long var3, long var5, int var7, float var8) {
-      int var9 = var7 >> 16 & 0xFF;
-      int var10 = var7 >> 8 & 0xFF;
-      int var11 = var7 & 0xFF;
+   void emit(Entry entry, VertexConsumer vertexConsumer, long l, long m, int i, float f) {
+      int var9 = i >> 16 & 0xFF;
+      int var10 = i >> 8 & 0xFF;
+      int var11 = i & 0xFF;
 
       for (int var12 = 0; var12 + 1 < this.size; var12++) {
          int var20 = Math.floorMod(this.newest - var12, 96);
          int var21 = Math.floorMod(this.newest - var12 - 1, 96);
-         long var22 = var3 - this.times[var20];
-         long var24 = var3 - this.times[var21];
-         if (var24 > var5) {
+         long var22 = l - this.times[var20];
+         long var24 = l - this.times[var21];
+         if (var24 > m) {
             break;
          }
 
@@ -64,9 +64,9 @@ final class SlashTrail {
             && var26 <= 100000000L
             && !(
                (
-                     var19 = MathHelper.method_15363(
+                     var19 = MathHelper.clamp(
                         (
-                              MathHelper.method_15355(
+                              MathHelper.sqrt(
                                        (var17 = this.points[(var16 = var20 * 6) + 3] - this.points[(var15 = var21 * 6) + 3]) * var17
                                           + (var14 = this.points[var16 + 4] - this.points[var15 + 4]) * var14
                                           + (var13 = this.points[var16 + 5] - this.points[var15 + 5]) * var13
@@ -81,8 +81,8 @@ final class SlashTrail {
                   )
                   <= 0.0F
             )) {
-            float var29 = fade(var22, var5) * var19 * var8;
-            float var30 = fade(var24, var5) * var19 * var8;
+            float var29 = fade(var22, m) * var19 * f;
+            float var30 = fade(var24, m) * var19 * f;
             float[] var31 = new float[]{
                this.points[var15],
                this.points[var15 + 1],
@@ -103,66 +103,66 @@ final class SlashTrail {
             };
 
             for (int var28 = 0; var28 < 4; var28++) {
-               vertex(var1, var2, var31, var28, var9, var10, var11);
+               vertex(entry, vertexConsumer, var31, var28, var9, var10, var11);
             }
 
             for (int var32 = 3; var32 >= 0; var32--) {
-               vertex(var1, var2, var31, var32, var9, var10, var11);
+               vertex(entry, vertexConsumer, var31, var32, var9, var10, var11);
             }
          }
       }
    }
 
-   private static float fade(long var0, long var2) {
-      float var4 = 1.0F - MathHelper.method_15363((float)var0 / (float)var2, 0.0F, 1.0F);
+   private static float fade(long l, long m) {
+      float var4 = 1.0F - MathHelper.clamp((float)l / (float)m, 0.0F, 1.0F);
       return var4 * var4 * 0.6F;
    }
 
-   private static void vertex(Entry var0, VertexConsumer var1, float[] var2, int var3, int var4, int var5, int var6) {
-      int var7 = var3 * 4;
-      var1.method_56824(var0, var2[var7], var2[var7 + 1], var2[var7 + 2])
-         .method_1336(var4, var5, var6, Math.round(MathHelper.method_15363(var2[var7 + 3], 0.0F, 1.0F) * 255.0F))
-         .method_22913(0.5F, 0.5F)
-         .method_22922(OverlayTexture.field_21444)
-         .method_60803(15728880)
-         .method_60831(var0, 0.0F, 0.0F, 1.0F);
+   private static void vertex(Entry entry, VertexConsumer vertexConsumer, float[] fs, int i, int j, int k, int l) {
+      int var7 = i * 4;
+      vertexConsumer.vertex(entry, fs[var7], fs[var7 + 1], fs[var7 + 2])
+         .color(j, k, l, Math.round(MathHelper.clamp(fs[var7 + 3], 0.0F, 1.0F) * 255.0F))
+         .texture(0.5F, 0.5F)
+         .overlay(OverlayTexture.DEFAULT_UV)
+         .light(15728880)
+         .normal(entry, 0.0F, 0.0F, 1.0F);
    }
 
-   static void sparkle(Entry var0, VertexConsumer var1, float var2, float var3, float var4, float var5, float var6, int var7, float var8) {
-      int var9 = var7 >> 16 & 0xFF;
-      int var10 = var7 >> 8 & 0xFF;
-      int var11 = var7 & 0xFF;
-      int var12 = Math.round(MathHelper.method_15363(var8, 0.0F, 1.0F) * 255.0F);
+   static void sparkle(Entry entry, VertexConsumer vertexConsumer, float f, float g, float h, float i, float j, int k, float l) {
+      int var9 = k >> 16 & 0xFF;
+      int var10 = k >> 8 & 0xFF;
+      int var11 = k & 0xFF;
+      int var12 = Math.round(MathHelper.clamp(l, 0.0F, 1.0F) * 255.0F);
 
       for (int var13 = 0; var13 < 4; var13++) {
-         float var14 = var6 + var13 * 1.5707964F;
-         float var15 = MathHelper.method_15362(var14);
-         float var16 = MathHelper.method_15374(var14);
-         float var17 = var5 * (var13 % 2 == 0 ? 1.0F : 0.7F);
-         float var18 = var5 * 0.16F;
-         float var19 = var2 + var15 * var17;
-         float var20 = var3 + var16 * var17;
-         float var21 = var2 - var16 * var18;
-         float var22 = var3 + var15 * var18;
-         float var23 = var2 + var16 * var18;
-         float var24 = var3 - var15 * var18;
-         star(var0, var1, var2, var3, var4, var9, var10, var11, var12);
-         star(var0, var1, var21, var22, var4, var9, var10, var11, var12 / 3);
-         star(var0, var1, var19, var20, var4, var9, var10, var11, 0);
-         star(var0, var1, var23, var24, var4, var9, var10, var11, var12 / 3);
-         star(var0, var1, var23, var24, var4, var9, var10, var11, var12 / 3);
-         star(var0, var1, var19, var20, var4, var9, var10, var11, 0);
-         star(var0, var1, var21, var22, var4, var9, var10, var11, var12 / 3);
-         star(var0, var1, var2, var3, var4, var9, var10, var11, var12);
+         float var14 = j + var13 * 1.5707964F;
+         float var15 = MathHelper.cos(var14);
+         float var16 = MathHelper.sin(var14);
+         float var17 = i * (var13 % 2 == 0 ? 1.0F : 0.7F);
+         float var18 = i * 0.16F;
+         float var19 = f + var15 * var17;
+         float var20 = g + var16 * var17;
+         float var21 = f - var16 * var18;
+         float var22 = g + var15 * var18;
+         float var23 = f + var16 * var18;
+         float var24 = g - var15 * var18;
+         star(entry, vertexConsumer, f, g, h, var9, var10, var11, var12);
+         star(entry, vertexConsumer, var21, var22, h, var9, var10, var11, var12 / 3);
+         star(entry, vertexConsumer, var19, var20, h, var9, var10, var11, 0);
+         star(entry, vertexConsumer, var23, var24, h, var9, var10, var11, var12 / 3);
+         star(entry, vertexConsumer, var23, var24, h, var9, var10, var11, var12 / 3);
+         star(entry, vertexConsumer, var19, var20, h, var9, var10, var11, 0);
+         star(entry, vertexConsumer, var21, var22, h, var9, var10, var11, var12 / 3);
+         star(entry, vertexConsumer, f, g, h, var9, var10, var11, var12);
       }
    }
 
-   private static void star(Entry var0, VertexConsumer var1, float var2, float var3, float var4, int var5, int var6, int var7, int var8) {
-      var1.method_56824(var0, var2, var3, var4)
-         .method_1336(var5, var6, var7, var8)
-         .method_22913(0.5F, 0.5F)
-         .method_22922(OverlayTexture.field_21444)
-         .method_60803(15728880)
-         .method_60831(var0, 0.0F, 0.0F, 1.0F);
+   private static void star(Entry entry, VertexConsumer vertexConsumer, float f, float g, float h, int i, int j, int k, int l) {
+      vertexConsumer.vertex(entry, f, g, h)
+         .color(i, j, k, l)
+         .texture(0.5F, 0.5F)
+         .overlay(OverlayTexture.DEFAULT_UV)
+         .light(15728880)
+         .normal(entry, 0.0F, 0.0F, 1.0F);
    }
 }

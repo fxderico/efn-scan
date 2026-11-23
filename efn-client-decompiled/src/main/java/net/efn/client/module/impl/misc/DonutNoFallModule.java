@@ -35,47 +35,45 @@ public final class DonutNoFallModule extends ClientModule {
    }
 
    @EventHandler
-   public void onTick(TickEvent var1) {
-      ClientPlayerEntity var2 = MinecraftClient.method_1551().field_1724;
+   public void onTick(TickEvent tickEvent) {
+      ClientPlayerEntity var2 = MinecraftClient.getInstance().player;
       if (var2 != null) {
          if (this.noFall) {
-            var2.method_24830(false);
+            var2.setOnGround(false);
          }
 
          if (this.lastFallDistance > 3.0) {
             this.noFall = true;
          }
 
-         this.lastFallDistance = var2.field_6017;
+         this.lastFallDistance = var2.fallDistance;
       }
    }
 
    @EventHandler
-   public void onPacketSend(PacketSendEvent var1) {
+   public void onPacketSend(PacketSendEvent packetSendEvent) {
       if (!this.sendingReplacement) {
-         Packet var2 = var1.packet;
-         if (var1.packet instanceof PlayerMoveC2SPacket) {
+         Packet var2 = packetSendEvent.packet;
+         if (packetSendEvent.packet instanceof PlayerMoveC2SPacket) {
             PlayerMoveC2SPacket var3 = (PlayerMoveC2SPacket)var2;
-            MinecraftClient var4 = MinecraftClient.method_1551();
-            ClientPlayerEntity var5 = var4.field_1724;
-            ClientPlayNetworkHandler var6 = var4.method_1562();
+            MinecraftClient var4 = MinecraftClient.getInstance();
+            ClientPlayerEntity var5 = var4.player;
+            ClientPlayNetworkHandler var6 = var4.getNetworkHandler();
             if (var5 != null && var6 != null) {
-               var1.setCancelled(true);
-               if (this.noFall && var3.method_12273()) {
+               packetSendEvent.setCancelled(true);
+               if (this.noFall && var3.isOnGround()) {
                   this.groundTicks++;
                }
 
                if (this.groundTicks % 2 == 1) {
-                  var5.method_23327(var5.method_23317(), var5.method_23318() + 1.0E-8, var5.method_23321());
+                  var5.setPos(var5.getX(), var5.getY() + 1.0E-8, var5.getZ());
                }
 
-               boolean var7 = !this.noFall && var5.method_24828();
+               boolean var7 = !this.noFall && var5.isOnGround();
                this.sendingReplacement = true;
 
                try {
-                  var6.method_52787(
-                     new Full(var5.method_23317(), var5.method_23318(), var5.method_23321(), var5.method_36454(), var5.method_36455(), var7, false)
-                  );
+                  var6.sendPacket(new Full(var5.getX(), var5.getY(), var5.getZ(), var5.getYaw(), var5.getPitch(), var7, false));
                } finally {
                   this.sendingReplacement = false;
                }

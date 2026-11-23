@@ -23,7 +23,6 @@ import net.efn.client.module.impl.client.PerformanceModule;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.EndTick;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
@@ -63,7 +62,7 @@ public final class ThemeImages {
    private volatile boolean dialogOpen;
 
    private ThemeImages() {
-      ClientTickEvents.END_CLIENT_TICK.register((EndTick)var1 -> {
+      ClientTickEvents.END_CLIENT_TICK.register(minecraftClient -> {
          if (++this.ticks % 20 == 0) {
             this.sweep();
          }
@@ -113,19 +112,19 @@ public final class ThemeImages {
       return this.optimized;
    }
 
-   public void onImageProfileChange(Runnable var1) {
-      this.profileListeners.add(var1);
+   public void onImageProfileChange(Runnable runnable) {
+      this.profileListeners.add(runnable);
    }
 
-   private void markUsed(String var1, String var2) {
+   private void markUsed(String string, String string2) {
       if (this.optimized) {
-         this.lastUsed.put(var1 + var2, this.frame);
+         this.lastUsed.put(string + string2, this.frame);
       }
    }
 
-   public void retireTexture(ThemeImages.Texture var1) {
-      if (var1 != null) {
-         this.pendingFrees.add(() -> GL11.glDeleteTextures(var1.id()));
+   public void retireTexture(ThemeImages.Texture texture) {
+      if (texture != null) {
+         this.pendingFrees.add(() -> GL11.glDeleteTextures(texture.id()));
       }
    }
 
@@ -140,8 +139,8 @@ public final class ThemeImages {
    private void retireAll() {
       this.textures.values().forEach(this::retireTexture);
       this.previews.values().forEach(this::retireTexture);
-      this.animations.values().forEach(var1 -> this.pendingFrees.add(var1::free));
-      this.posters.values().forEach(var1 -> this.pendingFrees.add(var1::free));
+      this.animations.values().forEach(gifAnimation -> this.pendingFrees.add(gifAnimation::free));
+      this.posters.values().forEach(gifAnimation -> this.pendingFrees.add(gifAnimation::free));
       this.textures.clear();
       this.previews.clear();
       this.animations.clear();
@@ -149,8 +148,8 @@ public final class ThemeImages {
       this.lastUsed.clear();
    }
 
-   private static long textureBytes(ThemeImages.Texture var0) {
-      return var0 == null ? 0L : (long)var0.width() * var0.height() * 16L / 3L;
+   private static long textureBytes(ThemeImages.Texture texture) {
+      return texture == null ? 0L : (long)texture.width() * texture.height() * 16L / 3L;
    }
 
    private long cacheBytes() {
@@ -175,11 +174,11 @@ public final class ThemeImages {
       return var1;
    }
 
-   private long retire(String var1) {
-      String var2 = var1.substring(2);
-      this.lastUsed.remove(var1);
-      if (!var1.startsWith("t:") && !var1.startsWith("p:")) {
-         GifAnimation var6 = (var1.startsWith("a:") ? this.animations : this.posters).remove(var2);
+   private long retire(String string) {
+      String var2 = string.substring(2);
+      this.lastUsed.remove(string);
+      if (!string.startsWith("t:") && !string.startsWith("p:")) {
+         GifAnimation var6 = (string.startsWith("a:") ? this.animations : this.posters).remove(var2);
          if (var6 == null) {
             return 0L;
          } else {
@@ -188,19 +187,19 @@ public final class ThemeImages {
             return var4;
          }
       } else {
-         ThemeImages.Texture var3 = (var1.startsWith("t:") ? this.textures : this.previews).remove(var2);
+         ThemeImages.Texture var3 = (string.startsWith("t:") ? this.textures : this.previews).remove(var2);
          this.retireTexture(var3);
          return textureBytes(var3);
       }
    }
 
-   public static boolean isImage(Path var0) {
-      String var1 = var0.getFileName().toString().toLowerCase(Locale.ROOT);
+   public static boolean isImage(Path path) {
+      String var1 = path.getFileName().toString().toLowerCase(Locale.ROOT);
       return var1.endsWith(".png") || var1.endsWith(".jpg") || var1.endsWith(".jpeg") || isGif(var1);
    }
 
-   public static boolean isGif(String var0) {
-      return var0.toLowerCase(Locale.ROOT).endsWith(".gif");
+   public static boolean isGif(String string) {
+      return string.toLowerCase(Locale.ROOT).endsWith(".gif");
    }
 
    public List<String> files() {
@@ -217,20 +216,20 @@ public final class ThemeImages {
       return this.files;
    }
 
-   public ThemeImages.Texture texture(String var1) {
-      if (var1 == null || var1.isBlank() || this.failed.contains(var1)) {
+   public ThemeImages.Texture texture(String string) {
+      if (string == null || string.isBlank() || this.failed.contains(string)) {
          return null;
-      } else if (isGif(var1)) {
-         return this.frame(this.animations, var1, false);
+      } else if (isGif(string)) {
+         return this.frame(this.animations, string, false);
       } else {
-         this.markUsed("t:", var1);
-         ThemeImages.Texture var2 = this.textures.get(var1);
+         this.markUsed("t:", string);
+         ThemeImages.Texture var2 = this.textures.get(string);
          if (var2 == null) {
-            var2 = upload(ThemeStore.backgroundsDir().resolve(var1), this.optimized ? 2048 : 8192);
+            var2 = upload(ThemeStore.backgroundsDir().resolve(string), this.optimized ? 2048 : 8192);
             if (var2 == null) {
-               this.failed.add(var1);
+               this.failed.add(string);
             } else {
-               this.textures.put(var1, var2);
+               this.textures.put(string, var2);
             }
          }
 
@@ -238,28 +237,28 @@ public final class ThemeImages {
       }
    }
 
-   public ThemeImages.Texture preview(String var1) {
-      if (var1 == null || var1.isBlank() || this.failed.contains(var1)) {
+   public ThemeImages.Texture preview(String string) {
+      if (string == null || string.isBlank() || this.failed.contains(string)) {
          return null;
-      } else if (isGif(var1)) {
-         GifAnimation var4 = this.animations.get(var1);
+      } else if (isGif(string)) {
+         GifAnimation var4 = this.animations.get(string);
          if (var4 != null) {
-            this.markUsed("a:", var1);
+            this.markUsed("a:", string);
          }
 
          ThemeImages.Texture var3 = var4 != null ? var4.current() : null;
-         return var3 != null ? var3 : this.frame(this.posters, var1, true);
+         return var3 != null ? var3 : this.frame(this.posters, string, true);
       } else if (!this.optimized) {
-         return this.texture(var1);
+         return this.texture(string);
       } else {
-         this.markUsed("p:", var1);
-         ThemeImages.Texture var2 = this.previews.get(var1);
+         this.markUsed("p:", string);
+         ThemeImages.Texture var2 = this.previews.get(string);
          if (var2 == null) {
-            var2 = upload(ThemeStore.backgroundsDir().resolve(var1), 384);
+            var2 = upload(ThemeStore.backgroundsDir().resolve(string), 384);
             if (var2 == null) {
-               this.failed.add(var1);
+               this.failed.add(string);
             } else {
-               this.previews.put(var1, var2);
+               this.previews.put(string, var2);
             }
          }
 
@@ -267,25 +266,25 @@ public final class ThemeImages {
       }
    }
 
-   public boolean isBroken(String var1) {
-      return this.failed.contains(var1);
+   public boolean isBroken(String string) {
+      return this.failed.contains(string);
    }
 
-   public String importFile(Path var1) {
-      if (var1 != null && Files.isRegularFile(var1) && isImage(var1)) {
+   public String importFile(Path path) {
+      if (path != null && Files.isRegularFile(path) && isImage(path)) {
          try {
             Path var2 = ThemeStore.backgroundsDir();
             Files.createDirectories(var2);
-            if (var2.toAbsolutePath().normalize().equals(var1.toAbsolutePath().normalize().getParent())) {
-               return var1.getFileName().toString();
+            if (var2.toAbsolutePath().normalize().equals(path.toAbsolutePath().normalize().getParent())) {
+               return path.getFileName().toString();
             } else {
-               String var3 = uniqueName(var2, var1.getFileName().toString());
-               Files.copy(var1, var2.resolve(var3));
+               String var3 = uniqueName(var2, path.getFileName().toString());
+               Files.copy(path, var2.resolve(var3));
                this.lastScan = 0L;
                return var3;
             }
          } catch (RuntimeException | IOException var4) {
-            LOGGER.warn("[EFN] Failed to import header image {}", var1, var4);
+            LOGGER.warn("[EFN] Failed to import header image {}", path, var4);
             return null;
          }
       } else {
@@ -293,38 +292,38 @@ public final class ThemeImages {
       }
    }
 
-   public boolean delete(String var1) {
-      if (var1 != null && this.files.contains(var1)) {
+   public boolean delete(String string) {
+      if (string != null && this.files.contains(string)) {
          try {
-            Files.deleteIfExists(ThemeStore.backgroundsDir().resolve(var1));
+            Files.deleteIfExists(ThemeStore.backgroundsDir().resolve(string));
          } catch (RuntimeException | IOException var8) {
-            LOGGER.warn("[EFN] Failed to delete header image {}", var1, var8);
+            LOGGER.warn("[EFN] Failed to delete header image {}", string, var8);
             return false;
          }
 
-         ThemeImages.Texture var3 = this.textures.remove(var1);
+         ThemeImages.Texture var3 = this.textures.remove(string);
          this.retireTexture(var3);
-         this.retireTexture(this.previews.remove(var1));
-         GifAnimation var4 = this.animations.remove(var1);
+         this.retireTexture(this.previews.remove(string));
+         GifAnimation var4 = this.animations.remove(string);
          if (var4 != null) {
             this.pendingFrees.add(var4::free);
          }
 
          GifAnimation var2;
-         if ((var2 = this.posters.remove(var1)) != null) {
+         if ((var2 = this.posters.remove(string)) != null) {
             this.pendingFrees.add(var2::free);
          }
 
          for (String var6 : List.of("t:", "p:", "a:", "g:")) {
-            this.lastUsed.remove(var6 + var1);
+            this.lastUsed.remove(var6 + string);
          }
 
-         this.failed.remove(var1);
+         this.failed.remove(string);
          ArrayList var9 = new ArrayList<>(ThemeStore.get().surfaces());
          var9.addAll(HudTheme.get().surfaces());
 
          for (Surface var7 : var9) {
-            if (var1.equals(var7.image.get())) {
+            if (string.equals(var7.image.get())) {
                var7.image.set("");
                if (var7.isImage()) {
                   var7.background.set("None");
@@ -345,30 +344,12 @@ public final class ThemeImages {
       } else if (!this.dialogOpen) {
          this.dialogOpen = true;
          Thread var1 = new Thread(() -> {
-            try {
-               MemoryStack var1x = MemoryStack.stackPush();
-
-               try {
-                  PointerBuffer var2 = var1x.mallocPointer(4);
-                  var2.put(var1x.UTF8("*.png")).put(var1x.UTF8("*.jpg")).put(var1x.UTF8("*.jpeg")).put(var1x.UTF8("*.gif")).flip();
-                  String var3 = TinyFileDialogs.tinyfd_openFileDialog("Choose a header image", null, var2, "Images (png, jpg, gif)", false);
-                  if (var3 != null) {
-                     this.pendingImport = Path.of(var3);
-                  }
-               } catch (Throwable var10) {
-                  if (var1x != null) {
-                     try {
-                        var1x.close();
-                     } catch (Throwable var9) {
-                        var10.addSuppressed(var9);
-                     }
-                  }
-
-                  throw var10;
-               }
-
-               if (var1x != null) {
-                  var1x.close();
+            try (MemoryStack var1x = MemoryStack.stackPush()) {
+               PointerBuffer var2 = var1x.mallocPointer(4);
+               var2.put(var1x.UTF8("*.png")).put(var1x.UTF8("*.jpg")).put(var1x.UTF8("*.jpeg")).put(var1x.UTF8("*.gif")).flip();
+               String var3 = TinyFileDialogs.tinyfd_openFileDialog("Choose a header image", null, var2, "Images (png, jpg, gif)", false);
+               if (var3 != null) {
+                  this.pendingImport = Path.of(var3);
                }
             } catch (Throwable var11) {
                LOGGER.warn("[EFN] File dialog failed", var11);
@@ -395,14 +376,14 @@ public final class ThemeImages {
       this.browseAsync();
    }
 
-   private ThemeImages.Texture frame(Map<String, GifAnimation> var1, String var2, boolean var3) {
-      this.markUsed(var3 ? "g:" : "a:", var2);
-      GifAnimation var4 = var1.computeIfAbsent(var2, var2x -> GifAnimation.load(ThemeStore.backgroundsDir().resolve(var2x), var3, this.optimized));
+   private ThemeImages.Texture frame(Map<String, GifAnimation> map, String string, boolean bl) {
+      this.markUsed(bl ? "g:" : "a:", string);
+      GifAnimation var4 = map.computeIfAbsent(string, stringx -> GifAnimation.load(ThemeStore.backgroundsDir().resolve(stringx), bl, this.optimized));
       ThemeImages.Texture var5 = var4.current();
       if (var5 == null && var4.failed()) {
-         var1.remove(var2);
-         this.lastUsed.remove((var3 ? "g:" : "a:") + var2);
-         this.failed.add(var2);
+         map.remove(string);
+         this.lastUsed.remove((bl ? "g:" : "a:") + string);
+         this.failed.add(string);
       }
 
       return var5;
@@ -446,13 +427,13 @@ public final class ThemeImages {
       }
    }
 
-   private void freeAllBut(Map<String, GifAnimation> var1, Set<String> var2, String var3) {
-      var1.entrySet().removeIf(var3x -> {
-         if (var2.contains(var3x.getKey())) {
+   private void freeAllBut(Map<String, GifAnimation> map, Set<String> set, String string) {
+      map.entrySet().removeIf(entry -> {
+         if (set.contains(entry.getKey())) {
             return false;
          } else {
-            this.pendingFrees.add(((GifAnimation)var3x.getValue())::free);
-            this.lastUsed.remove(var3 + (String)var3x.getKey());
+            this.pendingFrees.add(((GifAnimation)entry.getValue())::free);
+            this.lastUsed.remove(string + (String)entry.getKey());
             return true;
          }
       });
@@ -466,9 +447,9 @@ public final class ThemeImages {
          try {
             List var2;
             try (Stream var1 = Files.list(var0)) {
-               var2 = var1.filter(var0x -> Files.isRegularFile(var0x))
+               var2 = var1.filter(path -> Files.isRegularFile(path))
                   .filter(ThemeImages::isImage)
-                  .map(var0x -> var0x.getFileName().toString())
+                  .map(path -> path.getFileName().toString())
                   .sorted(String.CASE_INSENSITIVE_ORDER)
                   .toList();
             }
@@ -480,124 +461,74 @@ public final class ThemeImages {
       }
    }
 
-   private static String uniqueName(Path var0, String var1) {
-      String var2 = var1.replaceAll("[^A-Za-z0-9._-]", "_");
+   private static String uniqueName(Path path, String string) {
+      String var2 = string.replaceAll("[^A-Za-z0-9._-]", "_");
       int var3 = var2.lastIndexOf(46);
       String var4 = var3 > 0 ? var2.substring(0, var3) : var2;
       String var5 = var3 > 0 ? var2.substring(var3) : "";
       String var6 = var2;
 
-      for (int var7 = 2; Files.exists(var0.resolve(var6)); var7++) {
+      for (int var7 = 2; Files.exists(path.resolve(var6)); var7++) {
          var6 = var4 + "-" + var7 + var5;
       }
 
       return var6;
    }
 
-   private static ThemeImages.Texture upload(Path var0, int var1) {
-      if (!Files.isRegularFile(var0)) {
+   private static ThemeImages.Texture upload(Path path, int i) {
+      if (!Files.isRegularFile(path)) {
          return null;
       } else {
          try {
-            return decode(Files.readAllBytes(var0), var0.getFileName().toString(), false, var1);
+            return decode(Files.readAllBytes(path), path.getFileName().toString(), false, i);
          } catch (RuntimeException | IOException var3) {
-            LOGGER.warn("[EFN] Failed to load {}", var0.getFileName(), var3);
+            LOGGER.warn("[EFN] Failed to load {}", path.getFileName(), var3);
             return null;
          }
       }
    }
 
-   static ThemeImages.Texture decode(byte[] var0, String var1, boolean var2) {
-      return decode(var0, var1, var2, 8192);
+   static ThemeImages.Texture decode(byte[] bs, String string, boolean bl) {
+      return decode(bs, string, bl, 8192);
    }
 
-   private static ThemeImages.Texture decode(byte[] var0, String var1, boolean var2, int var3) {
+   private static ThemeImages.Texture decode(byte[] bs, String string, boolean bl, int i) {
       ByteBuffer var4 = null;
       ByteBuffer var5 = null;
 
-      try {
-         MemoryStack var6 = MemoryStack.stackPush();
-
-         Object var29;
-         label300: {
-            ThemeImages.Texture var31;
-            label301: {
-               ThemeImages.Texture var14;
-               label302: {
-                  Object var12;
-                  try {
-                     var4 = MemoryUtil.memAlloc(var0.length);
-                     var4.put(var0).flip();
-                     IntBuffer var7 = var6.mallocInt(1);
-                     IntBuffer var8 = var6.mallocInt(1);
-                     IntBuffer var9 = var6.mallocInt(1);
-                     var5 = STBImage.stbi_load_from_memory(var4, var7, var8, var9, 4);
-                     if (var5 == null) {
-                        LOGGER.warn("[EFN] Can't decode {}: {}", var1, STBImage.stbi_failure_reason());
-                        var29 = null;
-                        break label300;
-                     }
-
-                     int var10 = var7.get(0);
-                     int var11 = var8.get(0);
-                     if (var10 <= 8192 && var11 <= 8192) {
-                        int[] var30 = ImageDownsampler.dimensions(var10, var11, var3);
-                        if (var30[0] == var10 && var30[1] == var11) {
-                           var31 = fromPixels(var5, var10, var11, var2);
-                           break label301;
-                        }
-
-                        ByteBuffer var13 = MemoryUtil.memAlloc(var30[0] * var30[1] * 4);
-
-                        try {
-                           ImageDownsampler.rgba(var5, var10, var11, var13, var30[0], var30[1]);
-                           var14 = fromPixels(var13, var30[0], var30[1], var2);
-                           break label302;
-                        } finally {
-                           MemoryUtil.memFree(var13);
-                        }
-                     }
-
-                     LOGGER.warn("[EFN] {} is larger than {}px", var1, 8192);
-                     var12 = null;
-                  } catch (Throwable var27) {
-                     if (var6 != null) {
-                        try {
-                           var6.close();
-                        } catch (Throwable var25) {
-                           var27.addSuppressed(var25);
-                        }
-                     }
-
-                     throw var27;
-                  }
-
-                  if (var6 != null) {
-                     var6.close();
-                  }
-
-                  return (ThemeImages.Texture)var12;
-               }
-
-               if (var6 != null) {
-                  var6.close();
-               }
-
-               return var14;
-            }
-
-            if (var6 != null) {
-               var6.close();
-            }
-
-            return var31;
+      Object var12;
+      try (MemoryStack var6 = MemoryStack.stackPush()) {
+         var4 = MemoryUtil.memAlloc(bs.length);
+         var4.put(bs).flip();
+         IntBuffer var7 = var6.mallocInt(1);
+         IntBuffer var8 = var6.mallocInt(1);
+         IntBuffer var9 = var6.mallocInt(1);
+         var5 = STBImage.stbi_load_from_memory(var4, var7, var8, var9, 4);
+         if (var5 == null) {
+            LOGGER.warn("[EFN] Can't decode {}: {}", string, STBImage.stbi_failure_reason());
+            return null;
          }
 
-         if (var6 != null) {
-            var6.close();
+         int var10 = var7.get(0);
+         int var11 = var8.get(0);
+         if (var10 <= 8192 && var11 <= 8192) {
+            int[] var30 = ImageDownsampler.dimensions(var10, var11, i);
+            if (var30[0] == var10 && var30[1] == var11) {
+               return fromPixels(var5, var10, var11, bl);
+            }
+
+            ByteBuffer var13 = MemoryUtil.memAlloc(var30[0] * var30[1] * 4);
+
+            try {
+               ImageDownsampler.rgba(var5, var10, var11, var13, var30[0], var30[1]);
+               return fromPixels(var13, var30[0], var30[1], bl);
+            } finally {
+               MemoryUtil.memFree(var13);
+            }
          }
 
-         return (ThemeImages.Texture)var29;
+         LOGGER.warn("[EFN] {} is larger than {}px", string, 8192);
+         var12 = null;
       } finally {
          if (var5 != null) {
             STBImage.stbi_image_free(var5);
@@ -607,13 +538,15 @@ public final class ThemeImages {
             MemoryUtil.memFree(var4);
          }
       }
+
+      return (ThemeImages.Texture)var12;
    }
 
-   public static ThemeImages.Texture fromPixels(ByteBuffer var0, int var1, int var2, boolean var3) {
-      return new ThemeImages.Texture(createTexture(var0, var1, var2, var3), var1, var2);
+   public static ThemeImages.Texture fromPixels(ByteBuffer byteBuffer, int i, int j, boolean bl) {
+      return new ThemeImages.Texture(createTexture(byteBuffer, i, j, bl), i, j);
    }
 
-   private static int createTexture(ByteBuffer var0, int var1, int var2, boolean var3) {
+   private static int createTexture(ByteBuffer byteBuffer, int i, int j, boolean bl) {
       int var4 = GL11.glGetInteger(32873);
       int var5 = GL11.glGetInteger(35055);
       int var6 = GL11.glGetInteger(3317);
@@ -630,12 +563,12 @@ public final class ThemeImages {
          GL11.glPixelStorei(3315, 0);
          int var10 = GL11.glGenTextures();
          GL11.glBindTexture(3553, var10);
-         GL11.glTexParameteri(3553, 10241, var3 ? 9728 : 9987);
-         GL11.glTexParameteri(3553, 10240, var3 ? 9728 : 9729);
+         GL11.glTexParameteri(3553, 10241, bl ? 9728 : 9987);
+         GL11.glTexParameteri(3553, 10240, bl ? 9728 : 9729);
          GL11.glTexParameteri(3553, 10242, 33071);
          GL11.glTexParameteri(3553, 10243, 33071);
-         GL11.glTexImage2D(3553, 0, 32856, var1, var2, 0, 6408, 5121, var0);
-         if (!var3) {
+         GL11.glTexImage2D(3553, 0, 32856, i, j, 0, 6408, 5121, byteBuffer);
+         if (!bl) {
             GL30.glGenerateMipmap(3553);
          }
 

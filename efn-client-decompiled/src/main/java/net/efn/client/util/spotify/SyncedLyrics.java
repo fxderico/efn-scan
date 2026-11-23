@@ -23,22 +23,22 @@ public final class SyncedLyrics {
    private final SyncedLyrics.Line[] lines;
    private final long[] times;
 
-   private SyncedLyrics(SyncedLyrics.Line[] var1) {
-      this.lines = var1;
-      this.times = new long[var1.length];
+   private SyncedLyrics(SyncedLyrics.Line[] lines) {
+      this.lines = lines;
+      this.times = new long[lines.length];
 
-      for (int var2 = 0; var2 < var1.length; var2++) {
-         this.times[var2] = var1[var2].timeMs();
+      for (int var2 = 0; var2 < lines.length; var2++) {
+         this.times[var2] = lines[var2].timeMs();
       }
    }
 
-   public static SyncedLyrics parse(String var0) {
-      if (var0 != null && !var0.isBlank()) {
+   public static SyncedLyrics parse(String string) {
+      if (string != null && !string.isBlank()) {
          ArrayList var1 = new ArrayList();
          ArrayList var2 = new ArrayList(4);
          int var3 = 0;
 
-         for (String var7 : var0.split("\r\n|\r|\n")) {
+         for (String var7 : string.split("\r\n|\r|\n")) {
             String var9 = var7.strip();
             if (!var9.isEmpty() && var9.charAt(0) == '\ufeff') {
                var9 = var9.substring(1).strip();
@@ -102,13 +102,13 @@ public final class SyncedLyrics {
       }
    }
 
-   public int indexAt(long var1) {
+   public int indexAt(long l) {
       int var3 = 0;
       int var4 = this.times.length;
 
       while (var3 < var4) {
          int var5 = var3 + var4 >>> 1;
-         if (this.times[var5] <= var1) {
+         if (this.times[var5] <= l) {
             var3 = var5 + 1;
          } else {
             var4 = var5;
@@ -118,36 +118,36 @@ public final class SyncedLyrics {
       return var3 - 1;
    }
 
-   public int firstWithTimeOf(int var1) {
-      if (var1 >= 0 && var1 < this.times.length) {
-         long var2 = this.times[var1];
+   public int firstWithTimeOf(int i) {
+      if (i >= 0 && i < this.times.length) {
+         long var2 = this.times[i];
 
-         while (var1 > 0 && this.times[var1 - 1] == var2) {
-            var1--;
+         while (i > 0 && this.times[i - 1] == var2) {
+            i--;
          }
 
-         return var1;
+         return i;
       } else {
-         return var1;
+         return i;
       }
    }
 
-   public int lastWithTimeOf(int var1) {
-      if (var1 >= 0 && var1 < this.times.length) {
-         long var2 = this.times[var1];
+   public int lastWithTimeOf(int i) {
+      if (i >= 0 && i < this.times.length) {
+         long var2 = this.times[i];
 
-         while (var1 + 1 < this.times.length && this.times[var1 + 1] == var2) {
-            var1++;
+         while (i + 1 < this.times.length && this.times[i + 1] == var2) {
+            i++;
          }
 
-         return var1;
+         return i;
       } else {
-         return var1;
+         return i;
       }
    }
 
-   public SyncedLyrics.Line line(int var1) {
-      return this.lines[var1];
+   public SyncedLyrics.Line line(int i) {
+      return this.lines[i];
    }
 
    public int size() {
@@ -170,10 +170,10 @@ public final class SyncedLyrics {
       return List.copyOf(var1);
    }
 
-   private static long toMillis(Matcher var0) {
-      long var1 = Long.parseLong(var0.group(1));
-      long var3 = Long.parseLong(var0.group(2));
-      String var5 = var0.group(3);
+   private static long toMillis(Matcher matcher) {
+      long var1 = Long.parseLong(matcher.group(1));
+      long var3 = Long.parseLong(matcher.group(2));
+      String var5 = matcher.group(3);
       long var6 = 0L;
       if (var5 != null) {
          var6 = Long.parseLong(var5);
@@ -187,30 +187,30 @@ public final class SyncedLyrics {
       return var1 * 60000L + var3 * 1000L + var6;
    }
 
-   private static String cleanText(String var0) {
-      if (var0.indexOf(60) >= 0) {
-         var0 = WORD_TIMESTAMP.matcher(var0).replaceAll("");
+   private static String cleanText(String string) {
+      if (string.indexOf(60) >= 0) {
+         string = WORD_TIMESTAMP.matcher(string).replaceAll("");
       }
 
-      return WHITESPACE.matcher(var0).replaceAll(" ").strip();
+      return WHITESPACE.matcher(string).replaceAll(" ").strip();
    }
 
-   private static List<Long> wordTimes(String var0, String var1, long var2) {
-      if (var0.indexOf(60) >= 0 && !var1.isEmpty()) {
+   private static List<Long> wordTimes(String string, String string2, long l) {
+      if (string.indexOf(60) >= 0 && !string2.isEmpty()) {
          ArrayList var4 = new ArrayList();
-         Matcher var5 = WORD_TIMESTAMP.matcher(var0);
+         Matcher var5 = WORD_TIMESTAMP.matcher(string);
          long var6 = -1L;
          boolean var8 = false;
          int var9 = 0;
 
-         while (var9 < var0.length()) {
-            if (var0.charAt(var9) == '<' && var5.region(var9, var0.length()).lookingAt()) {
+         while (var9 < string.length()) {
+            if (string.charAt(var9) == '<' && var5.region(var9, string.length()).lookingAt()) {
                var9 = var5.end();
-               boolean var11 = var8 && var9 < var0.length() && var0.charAt(var9) > ' ';
+               boolean var11 = var8 && var9 < string.length() && string.charAt(var9) > ' ';
                if (!var11) {
                   var6 = toMillis(var5);
                }
-            } else if (var0.charAt(var9++) <= ' ') {
+            } else if (string.charAt(var9++) <= ' ') {
                var8 = false;
             } else if (!var8) {
                var8 = true;
@@ -218,7 +218,7 @@ public final class SyncedLyrics {
                   return List.of();
                }
 
-               if (var4.isEmpty() ? var6 < var2 - 1000L : var6 < (Long)var4.getLast()) {
+               if (var4.isEmpty() ? var6 < l - 1000L : var6 < (Long)var4.getLast()) {
                   return List.of();
                }
 
@@ -229,8 +229,8 @@ public final class SyncedLyrics {
 
          int var10 = 1;
 
-         for (int var12 = 0; var12 < var1.length(); var12++) {
-            if (var1.charAt(var12) == ' ') {
+         for (int var12 = 0; var12 < string2.length(); var12++) {
+            if (string2.charAt(var12) == ' ') {
                var10++;
             }
          }
@@ -241,17 +241,17 @@ public final class SyncedLyrics {
       }
    }
 
-   private static List<Long> shift(List<Long> var0, long var1) {
-      if (var1 != 0L && !var0.isEmpty()) {
-         ArrayList var3 = new ArrayList(var0.size());
+   private static List<Long> shift(List<Long> list, long l) {
+      if (l != 0L && !list.isEmpty()) {
+         ArrayList var3 = new ArrayList(list.size());
 
-         for (long var5 : var0) {
-            var3.add(Math.max(0L, var5 + var1));
+         for (long var5 : list) {
+            var3.add(Math.max(0L, var5 + l));
          }
 
          return var3;
       } else {
-         return var0;
+         return list;
       }
    }
 

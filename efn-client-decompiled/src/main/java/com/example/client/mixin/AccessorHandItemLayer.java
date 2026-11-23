@@ -12,9 +12,9 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Environment(EnvType.CLIENT)
 @Mixin({LayerRenderState.class})
 public interface AccessorHandItemLayer {
-   @Accessor("field_56967")
+   @Accessor("transform")
    Transformation efn$handTransform();
 
-   @Accessor("field_56968")
+   @Accessor("vertices")
    Supplier<Vector3fc[]> efn$handExtents();
 }

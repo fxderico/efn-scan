@@ -22,23 +22,23 @@ final class ChunkEntryGuard {
       this.waiting.clear();
    }
 
-   void update(long var1, LongPredicate var3, LongPredicate var4, ProtectedChunkStore var5) {
-      if (!this.inChunk || var1 != this.chunk) {
+   void update(long l, LongPredicate longPredicate, LongPredicate longPredicate2, ProtectedChunkStore protectedChunkStore) {
+      if (!this.inChunk || l != this.chunk) {
          this.inChunk = true;
-         this.chunk = var1;
+         this.chunk = l;
          this.entryPending = true;
          this.waiting.clear();
       }
 
       if (this.entryPending) {
-         if (var3.test(var1)) {
+         if (longPredicate.test(l)) {
             this.entryPending = false;
-            if (!var4.test(var1)) {
-               ProtectedChunkStore.forEachInArea(ProtectedChunkStore.chunkX(var1), ProtectedChunkStore.chunkZ(var1), var4x -> {
-                  if (!var3.test(var4x)) {
-                     this.waiting.add(var4x);
-                  } else if (!var4.test(var4x)) {
-                     var5.protect(var4x);
+            if (!longPredicate2.test(l)) {
+               ProtectedChunkStore.forEachInArea(ProtectedChunkStore.chunkX(l), ProtectedChunkStore.chunkZ(l), lx -> {
+                  if (!longPredicate.test(lx)) {
+                     this.waiting.add(lx);
+                  } else if (!longPredicate2.test(lx)) {
+                     protectedChunkStore.protect(lx);
                   }
                });
             }
@@ -48,10 +48,10 @@ final class ChunkEntryGuard {
 
          while (var6.hasNext()) {
             long var7 = var6.nextLong();
-            if (var3.test(var7)) {
+            if (longPredicate.test(var7)) {
                var6.remove();
-               if (!var4.test(var7)) {
-                  var5.protect(var7);
+               if (!longPredicate2.test(var7)) {
+                  protectedChunkStore.protect(var7);
                }
             }
          }

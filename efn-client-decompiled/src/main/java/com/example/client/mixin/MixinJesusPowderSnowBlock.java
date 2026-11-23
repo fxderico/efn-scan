@@ -17,15 +17,15 @@ public abstract class MixinJesusPowderSnowBlock {
    }
 
    @ModifyReturnValue(
-      method = {"method_32355"},
+      method = {"canWalkOnPowderSnow"},
       at = {@At("RETURN")}
    )
-   private static boolean efn$jesusWalkOnPowderSnow(boolean var0, Entity var1) {
-      if (var0) {
+   private static boolean efn$jesusWalkOnPowderSnow(boolean bl, Entity entity) {
+      if (bl) {
          return true;
       } else {
          JesusModule var2 = JesusModule.active;
-         return var2 != null && var1 == MinecraftClient.method_1551().field_1724 && var2.canWalkOnPowderSnow();
+         return var2 != null && entity == MinecraftClient.getInstance().player && var2.canWalkOnPowderSnow();
       }
    }
 }

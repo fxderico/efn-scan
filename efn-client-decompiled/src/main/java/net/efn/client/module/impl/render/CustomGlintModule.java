@@ -37,8 +37,8 @@ public final class CustomGlintModule extends ClientModule {
    private final NumberSetting intensity = this.addSetting("intensity", new NumberSetting("Intensity", 1.0F, 0.05F, 1.0F).step(0.05F));
    private final NumberSetting speed = this.addSetting("speed", new NumberSetting("Speed", 1.0F, 0.1F, 4.0F).step(0.1F));
    private final NumberSetting patternSize = this.addSetting("pattern-size", new NumberSetting("Pattern Size", 1.0F, 0.25F, 4.0F).step(0.25F));
-   private final CustomGlintModule.GlintTexture items = new CustomGlintModule.GlintTexture(ItemRenderer.field_43087);
-   private final CustomGlintModule.GlintTexture armor = new CustomGlintModule.GlintTexture(ItemRenderer.field_43086);
+   private final CustomGlintModule.GlintTexture items = new CustomGlintModule.GlintTexture(ItemRenderer.ITEM_ENCHANTMENT_GLINT);
+   private final CustomGlintModule.GlintTexture armor = new CustomGlintModule.GlintTexture(ItemRenderer.ENTITY_ENCHANTMENT_GLINT);
    private double glintClock = 0.0 / 0.0;
    private long glintClockReal;
 
@@ -53,14 +53,14 @@ public final class CustomGlintModule extends ClientModule {
    protected void onEnable() {
       this.glintClock = 0.0 / 0.0;
       active = this;
-      this.on(TickEvent.TYPE, var1 -> this.refresh());
+      this.on(TickEvent.TYPE, tickEvent -> this.refresh());
    }
 
    @Override
    protected void onDisable() {
       active = null;
-      MinecraftClient var1 = MinecraftClient.method_1551();
-      if (var1.method_18854()) {
+      MinecraftClient var1 = MinecraftClient.getInstance();
+      if (var1.isOnThread()) {
          this.restore();
       } else {
          var1.execute(() -> {
@@ -71,11 +71,11 @@ public final class CustomGlintModule extends ClientModule {
       }
    }
 
-   public long glintMillis(long var1) {
+   public long glintMillis(long l) {
       this.glintClock = Double.isNaN(this.glintClock)
-         ? var1
-         : (this.glintClock = this.glintClock + (double)Math.max(0L, var1 - this.glintClockReal) * this.speed.get());
-      this.glintClockReal = var1;
+         ? l
+         : (this.glintClock = this.glintClock + (double)Math.max(0L, l - this.glintClockReal) * this.speed.get());
+      this.glintClockReal = l;
       return (long)this.glintClock;
    }
 
@@ -84,8 +84,8 @@ public final class CustomGlintModule extends ClientModule {
    }
 
    private void refresh() {
-      MinecraftClient var1 = MinecraftClient.method_1551();
-      if (var1.field_1687 != null && var1.method_18506() == null && RenderSystem.tryGetDevice() != null) {
+      MinecraftClient var1 = MinecraftClient.getInstance();
+      if (var1.world != null && var1.getOverlay() == null && RenderSystem.tryGetDevice() != null) {
          int var2 = this.colorMode.is("Accent") ? CosmeticAccent.argb() & 16777215 : this.itemColor.rgb();
          int var3 = this.colorMode.is("Custom") && this.separateArmor.get() ? this.armorColor.rgb() : var2;
          float var4 = this.intensity.get();
@@ -95,7 +95,7 @@ public final class CustomGlintModule extends ClientModule {
    }
 
    private void restore() {
-      MinecraftClient var1 = MinecraftClient.method_1551();
+      MinecraftClient var1 = MinecraftClient.getInstance();
       this.items.restore(var1);
       this.armor.restore(var1);
    }
@@ -111,24 +111,24 @@ public final class CustomGlintModule extends ClientModule {
       private long writtenKey;
       private GpuTexture unusable;
 
-      GlintTexture(Identifier var1) {
-         this.id = var1;
+      GlintTexture(Identifier identifier) {
+         this.id = identifier;
       }
 
-      void tint(MinecraftClient var1, int var2, float var3) {
-         GpuTexture var4 = this.gpuTexture(var1);
+      void tint(MinecraftClient minecraftClient, int i, float f) {
+         GpuTexture var4 = this.gpuTexture(minecraftClient);
          if (var4 != null && !var4.isClosed() && var4 != this.unusable) {
-            long var5 = (long)(var2 & 16777215) << 8 | Math.round(var3 * 255.0F);
+            long var5 = (long)(i & 16777215) << 8 | Math.round(f * 255.0F);
             if (var4 != this.written || var5 != this.writtenKey) {
                if (var4 != this.written) {
                   this.written = null;
-                  if ((var4.usage() & 1) == 0 || !this.readShipped(var1, var4)) {
+                  if ((var4.usage() & 1) == 0 || !this.readShipped(minecraftClient, var4)) {
                      this.unusable = var4;
                      return;
                   }
                }
 
-               if (!this.upload(var4, this.tinted(var2, var3))) {
+               if (!this.upload(var4, this.tinted(i, f))) {
                   this.unusable = var4;
                } else {
                   this.written = var4;
@@ -138,8 +138,8 @@ public final class CustomGlintModule extends ClientModule {
          }
       }
 
-      void restore(MinecraftClient var1) {
-         GpuTexture var2 = this.written != null ? this.gpuTexture(var1) : null;
+      void restore(MinecraftClient minecraftClient) {
+         GpuTexture var2 = this.written != null ? this.gpuTexture(minecraftClient) : null;
          if (var2 != null && var2 == this.written && !var2.isClosed() && this.original != null) {
             this.upload(var2, this.original);
          }
@@ -150,27 +150,27 @@ public final class CustomGlintModule extends ClientModule {
          this.pattern = null;
       }
 
-      private GpuTexture gpuTexture(MinecraftClient var1) {
+      private GpuTexture gpuTexture(MinecraftClient minecraftClient) {
          try {
-            AbstractTexture var2 = var1.method_1531().method_4619(this.id);
-            return var2 == null ? null : var2.method_68004();
+            AbstractTexture var2 = minecraftClient.getTextureManager().getTexture(this.id);
+            return var2 == null ? null : var2.getGlTexture();
          } catch (IllegalStateException var3) {
             return null;
          }
       }
 
-      private boolean readShipped(MinecraftClient var1, GpuTexture var2) {
-         Optional var3 = var1.method_1478().method_14486(this.id);
+      private boolean readShipped(MinecraftClient minecraftClient, GpuTexture gpuTexture) {
+         Optional var3 = minecraftClient.getResourceManager().getResource(this.id);
          if (var3.isEmpty()) {
             return false;
          } else {
             try {
                boolean var10;
-               try (InputStream var4 = ((Resource)var3.get()).method_14482()) {
-                  NativeImage var8 = NativeImage.method_4309(var4);
-                  int var7 = var8.method_4307();
-                  int var6 = var8.method_4323();
-                  if (var7 == var2.getWidth(0) && var6 == var2.getHeight(0)) {
+               try (InputStream var4 = ((Resource)var3.get()).getInputStream()) {
+                  NativeImage var8 = NativeImage.read(var4);
+                  int var7 = var8.getWidth();
+                  int var6 = var8.getHeight();
+                  if (var7 == gpuTexture.getWidth(0) && var6 == gpuTexture.getHeight(0)) {
                      boolean var5;
                      try {
                         int[] var21 = new int[var7 * var6];
@@ -180,10 +180,8 @@ public final class CustomGlintModule extends ClientModule {
                         for (int var12 = 0; var12 < var6; var12++) {
                            for (int var13 = 0; var13 < var7; var11++) {
                               int var14;
-                              var21[var11] = var14 = var8.method_61940(var13, var12);
-                              var22[var11] = Math.max(
-                                 ColorHelper.method_61327(var14), Math.max(ColorHelper.method_61329(var14), ColorHelper.method_61331(var14))
-                              );
+                              var21[var11] = var14 = var8.getColorArgb(var13, var12);
+                              var22[var11] = Math.max(ColorHelper.getRed(var14), Math.max(ColorHelper.getGreen(var14), ColorHelper.getBlue(var14)));
                               var13++;
                            }
                         }
@@ -228,23 +226,23 @@ public final class CustomGlintModule extends ClientModule {
          }
       }
 
-      private int[] tinted(int var1, float var2) {
-         float var3 = ColorHelper.method_61327(var1) * var2 / 255.0F;
-         float var4 = ColorHelper.method_61329(var1) * var2 / 255.0F;
-         float var5 = ColorHelper.method_61331(var1) * var2 / 255.0F;
+      private int[] tinted(int i, float f) {
+         float var3 = ColorHelper.getRed(i) * f / 255.0F;
+         float var4 = ColorHelper.getGreen(i) * f / 255.0F;
+         float var5 = ColorHelper.getBlue(i) * f / 255.0F;
          int[] var6 = new int[this.pattern.length];
 
          for (int var7 = 0; var7 < var6.length; var7++) {
             int var8 = this.pattern[var7];
-            var6[var7] = ColorHelper.method_61324(
-               ColorHelper.method_61320(this.original[var7]), Math.round(var8 * var3), Math.round(var8 * var4), Math.round(var8 * var5)
+            var6[var7] = ColorHelper.getArgb(
+               ColorHelper.getAlpha(this.original[var7]), Math.round(var8 * var3), Math.round(var8 * var4), Math.round(var8 * var5)
             );
          }
 
          return var6;
       }
 
-      private boolean upload(GpuTexture var1, int[] var2) {
+      private boolean upload(GpuTexture gpuTexture, int[] is) {
          NativeImage var4 = new NativeImage(this.width, this.height, false);
 
          boolean var3;
@@ -253,12 +251,12 @@ public final class CustomGlintModule extends ClientModule {
 
             for (int var6 = 0; var6 < this.height; var6++) {
                for (int var7 = 0; var7 < this.width; var11++) {
-                  var4.method_61941(var7, var6, var2[var11]);
+                  var4.setColorArgb(var7, var6, is[var11]);
                   var7++;
                }
             }
 
-            RenderSystem.getDevice().createCommandEncoder().writeToTexture(var1, var4);
+            RenderSystem.getDevice().createCommandEncoder().writeToTexture(gpuTexture, var4);
             var3 = true;
          } catch (Throwable var10) {
             Throwable var5 = var10;

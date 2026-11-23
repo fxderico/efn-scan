@@ -3,7 +3,6 @@ package net.efn.client.esp;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -40,33 +39,33 @@ public final class BlockLayer {
    private final Supplier<Object> dimension;
    private final Map<Object, BlockLayer.World> worlds = new HashMap<>();
 
-   public BlockLayer(BlockLayer.Palette var1, Supplier<Object> var2) {
-      this.palette = var1;
-      this.dimension = var2;
+   public BlockLayer(BlockLayer.Palette palette, Supplier<Object> supplier) {
+      this.palette = palette;
+      this.dimension = supplier;
    }
 
-   public void put(long var1, Object var3) {
+   public void put(long l, Object object) {
       BlockLayer.World var4 = this.world(true);
       if (var4 != null) {
-         BlockLayer.Found var5 = (BlockLayer.Found)var4.positions.get(var1);
-         if (var5 == null || !Objects.equals(var5.kind(), var3)) {
-            var4.positions.put(var1, new BlockLayer.Found(var3, System.nanoTime()));
-            ((LongOpenHashSet)var4.byChunk.computeIfAbsent(chunkOf(var1), var0 -> new LongOpenHashSet())).add(var1);
-            markDirty(var4, var1);
+         BlockLayer.Found var5 = var4.positions.get(l);
+         if (var5 == null || !Objects.equals(var5.kind(), object)) {
+            var4.positions.put(l, new BlockLayer.Found(object, System.nanoTime()));
+            var4.byChunk.computeIfAbsent(chunkOf(l), lx -> new LongOpenHashSet()).add(l);
+            markDirty(var4, l);
          }
       }
    }
 
-   public void remove(long var1) {
+   public void remove(long l) {
       BlockLayer.World var3 = this.world(false);
-      if (var3 != null && var3.positions.remove(var1) != null) {
-         long var4 = chunkOf(var1);
-         LongOpenHashSet var6 = (LongOpenHashSet)var3.byChunk.get(var4);
-         if (var6 != null && var6.remove(var1) && var6.isEmpty()) {
+      if (var3 != null && var3.positions.remove(l) != null) {
+         long var4 = chunkOf(l);
+         LongOpenHashSet var6 = var3.byChunk.get(var4);
+         if (var6 != null && var6.remove(l) && var6.isEmpty()) {
             var3.byChunk.remove(var4);
          }
 
-         markDirty(var3, var1);
+         markDirty(var3, l);
       }
    }
 
@@ -74,13 +73,13 @@ public final class BlockLayer {
       this.worlds.clear();
    }
 
-   public void retainChunk(long var1, LongPredicate var3) {
+   public void retainChunk(long l, LongPredicate longPredicate) {
       BlockLayer.World var4 = this.world(false);
       if (var4 != null) {
-         LongOpenHashSet var5 = (LongOpenHashSet)var4.byChunk.get(var1);
+         LongOpenHashSet var5 = var4.byChunk.get(l);
          if (var5 != null) {
             for (long var9 : var5.toLongArray()) {
-               if (!var3.test(var9)) {
+               if (!longPredicate.test(var9)) {
                   this.remove(var9);
                }
             }
@@ -103,41 +102,41 @@ public final class BlockLayer {
       }
    }
 
-   private BlockLayer.World world(boolean var1) {
+   private BlockLayer.World world(boolean bl) {
       Object var2 = this.dimension.get();
       if (var2 == null) {
          return null;
       } else {
-         return var1 ? this.worlds.computeIfAbsent(var2, var0 -> new BlockLayer.World()) : this.worlds.get(var2);
+         return bl ? this.worlds.computeIfAbsent(var2, object -> new BlockLayer.World()) : this.worlds.get(var2);
       }
    }
 
-   private static long chunkKey(int var0, int var1) {
-      return var0 & 4294967295L | (long)var1 << 32;
+   private static long chunkKey(int i, int j) {
+      return i & 4294967295L | (long)j << 32;
    }
 
-   private static long chunkOf(long var0) {
-      return chunkKey(BlockPos.method_10061(var0) >> 4, BlockPos.method_10083(var0) >> 4);
+   private static long chunkOf(long l) {
+      return chunkKey(BlockPos.unpackLongX(l) >> 4, BlockPos.unpackLongZ(l) >> 4);
    }
 
-   private static long regionOf(long var0) {
-      return chunkKey((int)var0 >> 4, (int)(var0 >> 32) >> 4);
+   private static long regionOf(long l) {
+      return chunkKey((int)l >> 4, (int)(l >> 32) >> 4);
    }
 
-   private static void markDirty(BlockLayer.World var0, long var1) {
+   private static void markDirty(BlockLayer.World world, long l) {
       ChunkScanner.ScanBatch var3 = ChunkScanner.deliveryBatch();
-      LongOpenHashSet var4 = var0.dirty;
+      LongOpenHashSet var4 = world.dirty;
       if (var3 != null && !var3.finished) {
-         if (var0.scanBatch != var3) {
-            flushScanDirty(var0);
+         if (world.scanBatch != var3) {
+            flushScanDirty(world);
          }
 
-         var0.scanBatch = var3;
-         var4 = var0.scanDirty;
+         world.scanBatch = var3;
+         var4 = world.scanDirty;
       }
 
-      int var5 = BlockPos.method_10061(var1);
-      int var6 = BlockPos.method_10083(var1);
+      int var5 = BlockPos.unpackLongX(l);
+      int var6 = BlockPos.unpackLongZ(l);
       int var7 = var5 >> 4;
       int var8 = var6 >> 4;
       var4.add(chunkKey(var7, var8));
@@ -158,40 +157,40 @@ public final class BlockLayer {
       }
    }
 
-   private static void flushScanDirty(BlockLayer.World var0) {
-      var0.dirty.addAll(var0.scanDirty);
-      var0.scanDirty.clear();
-      var0.scanBatch = null;
+   private static void flushScanDirty(BlockLayer.World world) {
+      world.dirty.addAll(world.scanDirty);
+      world.scanDirty.clear();
+      world.scanBatch = null;
    }
 
-   private void rebuildDirty(BlockLayer.World var1) {
-      if (var1.scanBatch != null && (var1.scanBatch.finished || !PerformanceModule.optimizationsEnabled())) {
-         flushScanDirty(var1);
+   private void rebuildDirty(BlockLayer.World world) {
+      if (world.scanBatch != null && (world.scanBatch.finished || !PerformanceModule.optimizationsEnabled())) {
+         flushScanDirty(world);
       }
 
-      if (!var1.dirty.isEmpty()) {
-         LongIterator var2 = var1.dirty.iterator();
+      if (!world.dirty.isEmpty()) {
+         LongIterator var2 = world.dirty.iterator();
 
          while (var2.hasNext()) {
             long var3 = var2.next();
-            this.rebuildChunk(var1, var3);
+            this.rebuildChunk(world, var3);
          }
 
-         var1.dirty.clear();
-         var1.veinsDirty = true;
+         world.dirty.clear();
+         world.veinsDirty = true;
       }
    }
 
-   private void rebuildChunk(BlockLayer.World var1, long var2) {
-      LongOpenHashSet var4 = (LongOpenHashSet)var1.byChunk.get(var2);
+   private void rebuildChunk(BlockLayer.World world, long l) {
+      LongOpenHashSet var4 = world.byChunk.get(l);
       if (var4 == null) {
-         if (var1.shapes.remove(var2) != null) {
-            LongOpenHashSet var22 = (LongOpenHashSet)var1.shapeRegions.get(regionOf(var2));
-            if (var22 != null && var22.remove(var2) && var22.isEmpty()) {
-               var1.shapeRegions.remove(regionOf(var2));
+         if (world.shapes.remove(l) != null) {
+            LongOpenHashSet var22 = world.shapeRegions.get(regionOf(l));
+            if (var22 != null && var22.remove(l) && var22.isEmpty()) {
+               world.shapeRegions.remove(regionOf(l));
             }
 
-            var1.shapeRevision++;
+            world.shapeRevision++;
          }
       } else {
          LinkedHashMap var5 = new LinkedHashMap();
@@ -205,53 +204,53 @@ public final class BlockLayer {
 
          while (var12.hasNext()) {
             long var13 = var12.next();
-            BlockPos var15 = BlockPos.method_10092(var13);
-            var5.computeIfAbsent(((BlockLayer.Found)var1.positions.get(var13)).kind(), var0 -> new ArrayList<>()).add(var15);
-            var6 = Math.min(var6, var15.method_10263());
-            var9 = Math.max(var9, var15.method_10263());
-            var7 = Math.min(var7, var15.method_10264());
-            var10 = Math.max(var10, var15.method_10264());
-            var8 = Math.min(var8, var15.method_10260());
-            var11 = Math.max(var11, var15.method_10260());
+            BlockPos var15 = BlockPos.fromLong(var13);
+            var5.computeIfAbsent(world.positions.get(var13).kind(), object -> new ArrayList<>()).add(var15);
+            var6 = Math.min(var6, var15.getX());
+            var9 = Math.max(var9, var15.getX());
+            var7 = Math.min(var7, var15.getY());
+            var10 = Math.max(var10, var15.getY());
+            var8 = Math.min(var8, var15.getZ());
+            var11 = Math.max(var11, var15.getZ());
          }
 
-         int var23 = (int)var2;
-         int var14 = (int)(var2 >> 32);
+         int var23 = (int)l;
+         int var14 = (int)(l >> 32);
          ArrayList var24 = new ArrayList();
 
          for (Entry var17 : var5.entrySet()) {
             Object var18 = var17.getKey();
-            BlockClusterGeometry.Membership var19 = (var2x, var3, var4x) -> {
-               BlockLayer.Found var5x = (BlockLayer.Found)var1.positions.get(BlockPos.method_10064(var2x, var3, var4x));
+            BlockClusterGeometry.Membership var19 = (i, j, k) -> {
+               BlockLayer.Found var5x = world.positions.get(BlockPos.asLong(i, j, k));
                return var5x != null && Objects.equals(var5x.kind(), var18);
             };
 
             for (List var21 : BlockClusterGeometry.connectedComponents((Collection<BlockPos>)var17.getValue())) {
-               var24.add(buildCluster(var1, var18, var21, var19, var23, var14));
+               var24.add(buildCluster(world, var18, var21, var19, var23, var14));
             }
          }
 
-         var1.shapes.put(var2, new BlockLayer.Shapes(var24, new Box(var6 - 1, var7 - 1, var8 - 1, var9 + 2, var10 + 2, var11 + 2)));
-         ((LongOpenHashSet)var1.shapeRegions.computeIfAbsent(regionOf(var2), var0 -> new LongOpenHashSet())).add(var2);
-         var1.shapeRevision++;
+         world.shapes.put(l, new BlockLayer.Shapes(var24, new Box(var6 - 1, var7 - 1, var8 - 1, var9 + 2, var10 + 2, var11 + 2)));
+         world.shapeRegions.computeIfAbsent(regionOf(l), lx -> new LongOpenHashSet()).add(l);
+         world.shapeRevision++;
       }
    }
 
-   private static Iterable<BlockLayer.Shapes> nearbyShapes(BlockLayer.World var0, Vec3d var1, double var2) {
+   private static Iterable<BlockLayer.Shapes> nearbyShapes(BlockLayer.World world, Vec3d vec3d, double d) {
       if (!PerformanceModule.optimizationsEnabled()) {
-         return var0.shapes.values();
+         return world.shapes.values();
       } else {
-         int var4 = (int)Math.floor(var1.field_1352) >> 4;
-         int var5 = (int)Math.floor(var1.field_1350) >> 4;
-         if (var0.candidateRevision == var0.shapeRevision && var0.candidateX == var4 && var0.candidateZ == var5 && var0.candidateRange == var2) {
-            return var0.candidates;
+         int var4 = (int)Math.floor(vec3d.x) >> 4;
+         int var5 = (int)Math.floor(vec3d.z) >> 4;
+         if (world.candidateRevision == world.shapeRevision && world.candidateX == var4 && world.candidateZ == var5 && world.candidateRange == d) {
+            return world.candidates;
          } else {
-            var0.candidates.clear();
-            int var6 = (int)Math.ceil(var2 / 16.0) + 1;
+            world.candidates.clear();
+            int var6 = (int)Math.ceil(d / 16.0) + 1;
 
             for (int var7 = var4 - var6 >> 4; var7 <= var4 + var6 >> 4; var7++) {
                for (int var8 = var5 - var6 >> 4; var8 <= var5 + var6 >> 4; var8++) {
-                  LongOpenHashSet var9 = (LongOpenHashSet)var0.shapeRegions.get(chunkKey(var7, var8));
+                  LongOpenHashSet var9 = world.shapeRegions.get(chunkKey(var7, var8));
                   if (var9 != null) {
                      LongIterator var10 = var9.iterator();
 
@@ -260,27 +259,27 @@ public final class BlockLayer {
                         BlockLayer.Shapes var11;
                         if (Math.abs((long)((int)var12) - var4) <= var6
                            && Math.abs((long)((int)(var12 >> 32)) - var5) <= var6
-                           && (var11 = (BlockLayer.Shapes)var0.shapes.get(var12)) != null) {
-                           var0.candidates.add(var11);
+                           && (var11 = world.shapes.get(var12)) != null) {
+                           world.candidates.add(var11);
                         }
                      }
                   }
                }
             }
 
-            var0.candidateRevision = var0.shapeRevision;
-            var0.candidateX = var4;
-            var0.candidateZ = var5;
-            var0.candidateRange = var2;
-            return var0.candidates;
+            world.candidateRevision = world.shapeRevision;
+            world.candidateX = var4;
+            world.candidateZ = var5;
+            world.candidateRange = d;
+            return world.candidates;
          }
       }
    }
 
    private static BlockLayer.Cluster buildCluster(
-      BlockLayer.World var0, Object var1, List<BlockPos> var2, BlockClusterGeometry.Membership var3, int var4, int var5
+      BlockLayer.World world, Object object, List<BlockPos> list, BlockClusterGeometry.Membership membership, int i, int j
    ) {
-      long[] var6 = new long[var2.size()];
+      long[] var6 = new long[list.size()];
       ArrayList var7 = new ArrayList();
       double var8 = 0.0;
       double var10 = 0.0;
@@ -288,46 +287,42 @@ public final class BlockLayer {
       long var14 = 9223372036854775807L;
 
       for (int var16 = 0; var16 < var6.length; var16++) {
-         BlockPos var17 = (BlockPos)var2.get(var16);
-         var6[var16] = var17.method_10063();
-         var8 += var17.method_10263() + 0.5;
-         var10 += var17.method_10264() + 0.5;
-         var12 += var17.method_10260() + 0.5;
-         var14 = Math.min(var14, ((BlockLayer.Found)var0.positions.get(var6[var16])).bornAt());
+         BlockPos var17 = (BlockPos)list.get(var16);
+         var6[var16] = var17.asLong();
+         var8 += var17.getX() + 0.5;
+         var10 += var17.getY() + 0.5;
+         var12 += var17.getZ() + 0.5;
+         var14 = Math.min(var14, world.positions.get(var6[var16]).bornAt());
 
-         for (BlockPos var21 : new BlockPos[]{var17.method_10078(), var17.method_10067(), var17.method_10072(), var17.method_10095()}) {
-            if ((var21.method_10263() >> 4 != var4 || var21.method_10260() >> 4 != var5)
-               && var3.contains(var21.method_10263(), var21.method_10264(), var21.method_10260())) {
-               var7.add(var21.method_10063());
+         for (BlockPos var21 : new BlockPos[]{var17.east(), var17.west(), var17.south(), var17.north()}) {
+            if ((var21.getX() >> 4 != i || var21.getZ() >> 4 != j) && membership.contains(var21.getX(), var21.getY(), var21.getZ())) {
+               var7.add(var21.asLong());
             }
          }
       }
 
       int var22 = var6.length;
       return new BlockLayer.Cluster(
-         var1,
+         object,
          var6,
          new Vec3d(var8 / var22, var10 / var22, var12 / var22),
          var14,
-         BlockClusterGeometry.build(var2, var3),
+         BlockClusterGeometry.build(list, membership),
          var7.stream().mapToLong(Long::longValue).toArray()
       );
    }
 
-   private static List<BlockLayer.Vein> joinVeins(BlockLayer.World var0) {
+   private static List<BlockLayer.Vein> joinVeins(BlockLayer.World world) {
       ArrayList var1 = new ArrayList();
       Long2ObjectOpenHashMap var2 = new Long2ObjectOpenHashMap();
-      ObjectIterator var3 = var0.shapes.values().iterator();
 
-      while (var3.hasNext()) {
-         BlockLayer.Shapes var4 = (BlockLayer.Shapes)var3.next();
-
+      for (BlockLayer.Shapes var4 : world.shapes.values()) {
          for (BlockLayer.Cluster var6 : var4.clusters()) {
             var1.add(var6);
             if (var6.links().length != 0) {
                for (long var10 : var6.positions()) {
-                  int var12 = BlockPos.method_10061(var10) & 15;
-                  int var13 = BlockPos.method_10083(var10) & 15;
+                  int var12 = BlockPos.unpackLongX(var10) & 15;
+                  int var13 = BlockPos.unpackLongZ(var10) & 15;
                   if (var12 == 0 || var12 == 15 || var13 == 0 || var13 == 15) {
                      var2.put(var10, var6);
                   }
@@ -354,11 +349,11 @@ public final class BlockLayer {
       IdentityHashMap var17 = new IdentityHashMap();
 
       for (BlockLayer.Cluster var23 : var1) {
-         double[] var26 = var17.computeIfAbsent(find(var14, var23), var0x -> new double[4]);
+         double[] var26 = var17.computeIfAbsent(find(var14, var23), cluster -> new double[4]);
          int var29 = var23.positions().length;
-         var26[0] += var23.center().field_1352 * var29;
-         var26[1] += var23.center().field_1351 * var29;
-         var26[2] += var23.center().field_1350 * var29;
+         var26[0] += var23.center().x * var29;
+         var26[1] += var23.center().y * var29;
+         var26[2] += var23.center().z * var29;
          var26[3] += var29;
       }
 
@@ -372,43 +367,43 @@ public final class BlockLayer {
       return var21;
    }
 
-   private static BlockLayer.Cluster find(Map<BlockLayer.Cluster, BlockLayer.Cluster> var0, BlockLayer.Cluster var1) {
-      BlockLayer.Cluster var2 = var1;
+   private static BlockLayer.Cluster find(Map<BlockLayer.Cluster, BlockLayer.Cluster> map, BlockLayer.Cluster cluster) {
+      BlockLayer.Cluster var2 = cluster;
 
-      while (var0.get(var2) != var2) {
-         var2 = (BlockLayer.Cluster)var0.get(var2);
+      while (map.get(var2) != var2) {
+         var2 = (BlockLayer.Cluster)map.get(var2);
       }
 
-      while (var0.get(var1) != var2) {
-         BlockLayer.Cluster var3 = (BlockLayer.Cluster)var0.get(var1);
-         var0.put(var1, var2);
-         var1 = var3;
+      while (map.get(cluster) != var2) {
+         BlockLayer.Cluster var3 = (BlockLayer.Cluster)map.get(cluster);
+         map.put(cluster, var2);
+         cluster = var3;
       }
 
       return var2;
    }
 
-   public void render(Render3DEvent var1, EspStyle var2) {
-      MinecraftClient var3 = MinecraftClient.method_1551();
+   public void render(Render3DEvent render3DEvent, EspStyle espStyle) {
+      MinecraftClient var3 = MinecraftClient.getInstance();
       BlockLayer.World var4 = this.world(false);
-      if (var3.field_1724 != null && var4 != null) {
+      if (var3.player != null && var4 != null) {
          this.rebuildDirty(var4);
-         Frustum var5 = PerformanceModule.frustumCulling() ? var1.frustum : null;
+         Frustum var5 = PerformanceModule.frustumCulling() ? render3DEvent.frustum : null;
          long var6 = System.nanoTime();
-         Vec3d var8 = var3.field_1724.method_5836(var1.partialTick);
-         boolean var9 = var2.outline();
-         boolean var10 = var2.glow.get();
-         boolean var11 = var2.fade.get();
-         boolean var12 = var2.reveal.get();
-         float var13 = var2.lineWidth.get();
-         float var14 = var2.fillAlpha.get();
-         float var15 = var2.boxSize.get();
-         double var16 = var2.range.get();
+         Vec3d var8 = var3.player.getCameraPosVec(render3DEvent.partialTick);
+         boolean var9 = espStyle.outline();
+         boolean var10 = espStyle.glow.get();
+         boolean var11 = espStyle.fade.get();
+         boolean var12 = espStyle.reveal.get();
+         float var13 = espStyle.lineWidth.get();
+         float var14 = espStyle.fillAlpha.get();
+         float var15 = espStyle.boxSize.get();
+         double var16 = espStyle.range.get();
 
          for (BlockLayer.Shapes var19 : nearbyShapes(var4, var8, var16)) {
-            if (var5 == null || var5.method_23093(var19.bounds())) {
+            if (var5 == null || var5.isVisible(var19.bounds())) {
                for (BlockLayer.Cluster var21 : var19.clusters()) {
-                  double var23 = var8.method_1022(var21.center());
+                  double var23 = var8.distanceTo(var21.center());
                   if (!(var23 > var16)) {
                      float var25 = var11 ? distanceFade(var23) : 1.0F;
                      float var26 = var12 ? Math.min(1.0F, (float)(var6 - var21.bornAt()) / 3.8E8F) : 1.0F;
@@ -431,86 +426,85 @@ public final class BlockLayer {
       }
    }
 
-   private static void drawOutline(BlockLayer.Cluster var0, int var1, int var2, float var3, boolean var4, float var5) {
-      Vec3d var6 = var0.center();
-      BlockClusterGeometry.Mesh var7 = var0.mesh();
-      if (var2 >>> 24 > 0) {
-         DrawStyle var8 = DrawStyle.method_75539(var2);
+   private static void drawOutline(BlockLayer.Cluster cluster, int i, int j, float f, boolean bl, float g) {
+      Vec3d var6 = cluster.center();
+      BlockClusterGeometry.Mesh var7 = cluster.mesh();
+      if (j >>> 24 > 0) {
+         DrawStyle var8 = DrawStyle.filled(j);
 
          for (BlockClusterGeometry.Face var10 : var7.faces()) {
-            GizmoDrawing.method_75547(grow(var10.a(), var6, var5), grow(var10.b(), var6, var5), grow(var10.c(), var6, var5), grow(var10.d(), var6, var5), var8)
-               .method_75533();
+            GizmoDrawing.quad(grow(var10.a(), var6, g), grow(var10.b(), var6, g), grow(var10.c(), var6, g), grow(var10.d(), var6, g), var8).ignoreOcclusion();
          }
       }
 
-      int var13 = var4 ? scaleAlpha(var1, 0.18F) : 0;
+      int var13 = bl ? scaleAlpha(i, 0.18F) : 0;
 
       for (BlockClusterGeometry.Segment var15 : var7.edges()) {
-         Vec3d var11 = grow(var15.a(), var6, var5);
-         Vec3d var12 = grow(var15.b(), var6, var5);
-         if (var4) {
-            GizmoDrawing.method_75546(var11, var12, var13, var3 * 3.0F).method_75533();
+         Vec3d var11 = grow(var15.a(), var6, g);
+         Vec3d var12 = grow(var15.b(), var6, g);
+         if (bl) {
+            GizmoDrawing.line(var11, var12, var13, f * 3.0F).ignoreOcclusion();
          }
 
-         GizmoDrawing.method_75546(var11, var12, var1, var3).method_75533();
+         GizmoDrawing.line(var11, var12, i, f).ignoreOcclusion();
       }
    }
 
-   private static void drawBoxes(BlockLayer.Cluster var0, int var1, int var2, float var3, float var4) {
-      DrawStyle var5 = var2 >>> 24 > 0 ? DrawStyle.method_75537(var1, var3, var2) : DrawStyle.method_75536(var1, var3);
+   private static void drawBoxes(BlockLayer.Cluster cluster, int i, int j, float f, float g) {
+      DrawStyle var5 = j >>> 24 > 0 ? DrawStyle.filledAndStroked(i, f, j) : DrawStyle.stroked(i, f);
 
-      for (long var9 : var0.positions()) {
-         Box var11 = BlockBoxHelper.scaledBlockBox(BlockPos.method_10092(var9), var4);
-         GizmoDrawing.method_75541(var11, var5).method_75533();
+      for (long var9 : cluster.positions()) {
+         Box var11 = BlockBoxHelper.scaledBlockBox(BlockPos.fromLong(var9), g);
+         GizmoDrawing.box(var11, var5).ignoreOcclusion();
       }
    }
 
-   private static Vec3d grow(Vec3d var0, Vec3d var1, float var2) {
-      return var2 == 1.0F ? var0 : var1.method_1019(var0.method_1020(var1).method_1021(var2));
+   private static Vec3d grow(Vec3d vec3d, Vec3d vec3d2, float f) {
+      return f == 1.0F ? vec3d : vec3d2.add(vec3d.subtract(vec3d2).multiply(f));
    }
 
-   private static float distanceFade(double var0) {
-      if (var0 <= 64.0) {
+   private static float distanceFade(double d) {
+      if (d <= 64.0) {
          return 1.0F;
       } else {
-         float var2 = (float)Math.min(1.0, (var0 - 64.0) / 192.0);
+         float var2 = (float)Math.min(1.0, (d - 64.0) / 192.0);
          return 1.0F - 0.55F * var2 * var2;
       }
    }
 
-   public void renderTracers(EspStyle var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      if (var2.field_1724 != null) {
-         Vec3d var3 = var2.field_1724.method_5836(1.0F);
-         double var4 = (double)var1.range.get() * var1.range.get();
+   public void renderTracers(EspStyle espStyle) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      if (var2.player != null) {
+         Vec3d var3 = var2.player.getCameraPosVec(1.0F);
+         double var4 = (double)espStyle.range.get() * espStyle.range.get();
 
          for (BlockLayer.Vein var7 : this.veins()) {
             int var8;
-            if (!(var3.method_1025(var7.center()) > var4) && (var8 = this.palette.tracerColor(var7.kind())) >>> 24 != 0) {
+            if (!(var3.squaredDistanceTo(var7.center()) > var4) && (var8 = this.palette.tracerColor(var7.kind())) >>> 24 != 0) {
                TracerEngine.draw(var7.center(), var8);
             }
          }
       }
    }
 
-   private static int withAlpha(int var0, float var1) {
-      return Math.round(255.0F * Math.max(0.0F, Math.min(1.0F, var1))) << 24 | var0 & 16777215;
+   private static int withAlpha(int i, float f) {
+      return Math.round(255.0F * Math.max(0.0F, Math.min(1.0F, f))) << 24 | i & 16777215;
    }
 
-   private static int scaleAlpha(int var0, float var1) {
-      int var2 = Math.round((var0 >>> 24) * Math.max(0.0F, Math.min(1.0F, var1)));
-      return var2 << 24 | var0 & 16777215;
+   private static int scaleAlpha(int i, float f) {
+      int var2 = Math.round((i >>> 24) * Math.max(0.0F, Math.min(1.0F, f)));
+      return var2 << 24 | i & 16777215;
    }
 
-   private static float easeOutCubic(float var0) {
-      float var1 = 1.0F - var0;
+   private static float easeOutCubic(float f) {
+      float var1 = 1.0F - f;
       return 1.0F - var1 * var1 * var1;
    }
 
-   private static float easeOutBack(float var0) {
+   private static float easeOutBack(float f) {
       float var1 = 1.70158F;
       float var2 = var1 + 1.0F;
-      float var3 = var0 - 1.0F;
+      float var3 = f - 1.0F;
       return 1.0F + var2 * var3 * var3 * var3 + var1 * var3 * var3;
    }
 
@@ -524,9 +518,9 @@ public final class BlockLayer {
 
    @Environment(EnvType.CLIENT)
    public interface Palette {
-      int color(Object var1);
+      int color(Object object);
 
-      int tracerColor(Object var1);
+      int tracerColor(Object object);
    }
 
    @Environment(EnvType.CLIENT)
@@ -539,10 +533,10 @@ public final class BlockLayer {
 
    @Environment(EnvType.CLIENT)
    private static final class World {
-      final Long2ObjectOpenHashMap<BlockLayer.Found> positions = new Long2ObjectOpenHashMap();
-      final Long2ObjectOpenHashMap<LongOpenHashSet> byChunk = new Long2ObjectOpenHashMap();
-      final Long2ObjectOpenHashMap<BlockLayer.Shapes> shapes = new Long2ObjectOpenHashMap();
-      final Long2ObjectOpenHashMap<LongOpenHashSet> shapeRegions = new Long2ObjectOpenHashMap();
+      final Long2ObjectOpenHashMap<BlockLayer.Found> positions = new Long2ObjectOpenHashMap<>();
+      final Long2ObjectOpenHashMap<LongOpenHashSet> byChunk = new Long2ObjectOpenHashMap<>();
+      final Long2ObjectOpenHashMap<BlockLayer.Shapes> shapes = new Long2ObjectOpenHashMap<>();
+      final Long2ObjectOpenHashMap<LongOpenHashSet> shapeRegions = new Long2ObjectOpenHashMap<>();
       final LongOpenHashSet dirty = new LongOpenHashSet();
       final LongOpenHashSet scanDirty = new LongOpenHashSet();
       ChunkScanner.ScanBatch scanBatch;

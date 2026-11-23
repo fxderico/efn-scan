@@ -234,14 +234,14 @@ public final class DonutGoliathMapData {
    private DonutGoliathMapData() {
    }
 
-   public static int goliathAt(double var0, double var2) {
-      int var4 = (int)Math.floor((var0 + 225000.0) / 12500.0);
-      int var5 = (int)Math.floor((var2 + 225000.0) / 12500.0);
+   public static int goliathAt(double d, double e) {
+      int var4 = (int)Math.floor((d + 225000.0) / 12500.0);
+      int var5 = (int)Math.floor((e + 225000.0) / 12500.0);
       return var4 >= 0 && var5 >= 0 && var4 < 36 && var5 < 36 ? CELLS[var5 * 36 + var4] : -1;
    }
 
-   public static String name(int var0) {
-      return var0 >= 0 && var0 < NAMES.length ? NAMES[var0] : "Unknown";
+   public static String name(int i) {
+      return i >= 0 && i < NAMES.length ? NAMES[i] : "Unknown";
    }
 
    static {

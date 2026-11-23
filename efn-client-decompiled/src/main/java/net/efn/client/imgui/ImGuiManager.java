@@ -51,38 +51,38 @@ public final class ImGuiManager {
    private static final String EXTENDED_LATIN_GLYPHS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789\u00c7\u011e\u0130\u00d6\u015e\u00dc\u00e7\u011f\u0131\u00f6\u015f\u00fc\u00c2\u00e2\u00ca\u00ea\u00ce\u00ee\u00d4\u00f4\u00db\u00fb\u00c0\u00c1\u00c4\u00c8\u00c9\u00cb\u00cc\u00cd\u00cf\u00d2\u00d3\u00d6\u00d9\u00da\u00dc\u00dd\u00e0\u00e1\u00e4\u00e8\u00e9\u00eb\u00ec\u00ed\u00ef\u00f2\u00f3\u00f6\u00f9\u00fa\u00fc\u00fd\u00ff\u2212\u221e";
    private static final float REFERENCE_HEIGHT = 1080.0F;
    private final EfnGlfw glfw = new EfnGlfw() {
-      public void keyCallback(long var1, int var3, int var4, int var5, int var6) {
-         EfnKeys.record(var1, var3, var5);
-         boolean var8 = var3 >= 0 && var3 < ImGuiManager.this.imguiKeysDown.length;
-         boolean var7 = var5 == 0 ? var8 && ImGuiManager.this.imguiKeysDown[var3] : ImGuiManager.this.feedsKeyPress(var3, var6);
+      public void keyCallback(long l, int i, int j, int k, int m) {
+         EfnKeys.record(l, i, k);
+         boolean var8 = i >= 0 && i < ImGuiManager.this.imguiKeysDown.length;
+         boolean var7 = k == 0 ? var8 && ImGuiManager.this.imguiKeysDown[i] : ImGuiManager.this.feedsKeyPress(i, m);
          if (!var7) {
             if (ImGuiManager.this.minecraftKeys != null) {
-               ImGuiManager.this.minecraftKeys.invoke(var1, var3, var4, var5, var6);
+               ImGuiManager.this.minecraftKeys.invoke(l, i, j, k, m);
             }
          } else {
             if (var8) {
-               ImGuiManager.this.imguiKeysDown[var3] = var5 != 0;
+               ImGuiManager.this.imguiKeysDown[i] = k != 0;
             }
 
-            super.keyCallback(var1, var3, var4, var5, var6);
+            super.keyCallback(l, i, j, k, m);
          }
       }
 
-      public void monitorCallback(long var1, int var3) {
-         super.monitorCallback(var1, var3);
+      public void monitorCallback(long l, int i) {
+         super.monitorCallback(l, i);
          if (ImGuiManager.this.minecraftMonitors != null) {
-            ImGuiManager.this.minecraftMonitors.invoke(var1, var3);
+            ImGuiManager.this.minecraftMonitors.invoke(l, i);
          }
       }
 
-      public void cursorPosCallback(long var1, double var3, double var5) {
-         super.cursorPosCallback(var1, var3, var5);
-         ImGuiManager.feedScaledCursor(var3, var5);
+      public void cursorPosCallback(long l, double d, double e) {
+         super.cursorPosCallback(l, d, e);
+         ImGuiManager.feedScaledCursor(d, e);
       }
 
       protected void updateMouseData() {
          super.updateMouseData();
-         long var1 = MinecraftClient.method_1551().method_22683().method_4490();
+         long var1 = MinecraftClient.getInstance().getWindow().getHandle();
          if (GLFW.glfwGetWindowAttrib(var1, 131073) != 0) {
             double[] var3 = new double[1];
             double[] var4 = new double[1];
@@ -128,22 +128,22 @@ public final class ImGuiManager {
    private ImFont menuItemFont;
    private short[] glyphRanges;
 
-   private static void feedScaledCursor(double var0, double var2) {
+   private static void feedScaledCursor(double d, double e) {
       float var4 = pixelsPerPointX();
       float var5 = pixelsPerPointY();
       if (var4 != 1.0F || var5 != 1.0F) {
-         ImGui.getIO().addMousePosEvent((float)(var0 * var4), (float)(var2 * var5));
+         ImGui.getIO().addMousePosEvent((float)(d * var4), (float)(e * var5));
       }
    }
 
    private static float pixelsPerPointX() {
-      Window var0 = MinecraftClient.method_1551().method_22683();
-      return var0.method_4480() > 0 ? (float)var0.method_4489() / var0.method_4480() : 1.0F;
+      Window var0 = MinecraftClient.getInstance().getWindow();
+      return var0.getWidth() > 0 ? (float)var0.getFramebufferWidth() / var0.getWidth() : 1.0F;
    }
 
    private static float pixelsPerPointY() {
-      Window var0 = MinecraftClient.method_1551().method_22683();
-      return var0.method_4507() > 0 ? (float)var0.method_4506() / var0.method_4507() : 1.0F;
+      Window var0 = MinecraftClient.getInstance().getWindow();
+      return var0.getHeight() > 0 ? (float)var0.getFramebufferHeight() / var0.getHeight() : 1.0F;
    }
 
    private ImGuiManager() {
@@ -213,33 +213,33 @@ public final class ImGuiManager {
       return this.frameDelta;
    }
 
-   public void activate(Runnable var1) {
-      this.activeRenderer = var1;
+   public void activate(Runnable runnable) {
+      this.activeRenderer = runnable;
    }
 
    public boolean typing() {
       return this.initialized && ImGui.getIO().getWantTextInput();
    }
 
-   public void requestCursor(DrawContext var1) {
+   public void requestCursor(DrawContext drawContext) {
       if (this.initialized) {
          Cursor var2 = switch (ImGui.getMouseCursor()) {
-            case 1 -> StandardCursors.field_62453;
-            case 2 -> StandardCursors.field_62458;
-            case 3 -> StandardCursors.field_62456;
-            case 4 -> StandardCursors.field_62457;
+            case 1 -> StandardCursors.IBEAM;
+            case 2 -> StandardCursors.RESIZE_ALL;
+            case 3 -> StandardCursors.RESIZE_NS;
+            case 4 -> StandardCursors.RESIZE_EW;
             default -> null;
-            case 7 -> StandardCursors.field_62455;
-            case 8 -> StandardCursors.field_62459;
+            case 7 -> StandardCursors.POINTING_HAND;
+            case 8 -> StandardCursors.NOT_ALLOWED;
          };
          if (var2 != null) {
-            var1.method_74037(var2);
+            drawContext.setCursor(var2);
          }
       }
    }
 
-   private boolean feedsKeyPress(int var1, int var2) {
-      return this.activeRenderer != null && (var1 != 258 || (var2 & 2) == 0);
+   private boolean feedsKeyPress(int i, int j) {
+      return this.activeRenderer != null && (i != 258 || (j & 2) == 0);
    }
 
    public void deactivate() {
@@ -250,29 +250,29 @@ public final class ImGuiManager {
       }
    }
 
-   public void setHudRenderer(Runnable var1, BooleanSupplier var2) {
-      this.hudRenderer = var1;
-      this.hudHasWork = var2;
+   public void setHudRenderer(Runnable runnable, BooleanSupplier booleanSupplier) {
+      this.hudRenderer = runnable;
+      this.hudHasWork = booleanSupplier;
    }
 
-   public void setToastRenderer(Runnable var1, BooleanSupplier var2) {
-      this.toastRenderer = var1;
-      this.toastHasWork = var2;
+   public void setToastRenderer(Runnable runnable, BooleanSupplier booleanSupplier) {
+      this.toastRenderer = runnable;
+      this.toastHasWork = booleanSupplier;
    }
 
-   public void setStreamRenderer(Runnable var1, BooleanSupplier var2) {
-      this.streamRenderer = var1;
-      this.streamHasWork = var2;
+   public void setStreamRenderer(Runnable runnable, BooleanSupplier booleanSupplier) {
+      this.streamRenderer = runnable;
+      this.streamHasWork = booleanSupplier;
    }
 
-   public void setOverlayRenderer(Runnable var1, BooleanSupplier var2) {
-      this.overlayRenderer = var1;
-      this.overlayHasWork = var2;
+   public void setOverlayRenderer(Runnable runnable, BooleanSupplier booleanSupplier) {
+      this.overlayRenderer = runnable;
+      this.overlayHasWork = booleanSupplier;
    }
 
-   public void setAlertRenderer(Runnable var1, BooleanSupplier var2) {
-      this.alertRenderer = var1;
-      this.alertHasWork = var2;
+   public void setAlertRenderer(Runnable runnable, BooleanSupplier booleanSupplier) {
+      this.alertRenderer = runnable;
+      this.alertHasWork = booleanSupplier;
    }
 
    public void renderIfActive() {
@@ -297,9 +297,9 @@ public final class ImGuiManager {
             this.idleSkipped = false;
          }
 
-         MinecraftClient var25 = MinecraftClient.method_1551();
-         int var8 = var25.method_22683().method_4489();
-         int var9 = var25.method_22683().method_4506();
+         MinecraftClient var25 = MinecraftClient.getInstance();
+         int var8 = var25.getWindow().getFramebufferWidth();
+         int var9 = var25.getWindow().getFramebufferHeight();
          GL30.glBindFramebuffer(36160, 0);
          GL11.glViewport(0, 0, var8, var9);
          GlStateManager._viewport(0, 0, var8, var9);
@@ -378,7 +378,7 @@ public final class ImGuiManager {
 
    private void initIfNeeded() {
       if (!this.initialized) {
-         long var1 = MinecraftClient.method_1551().method_22683().method_4490();
+         long var1 = MinecraftClient.getInstance().getWindow().getHandle();
          ImGui.createContext();
          ImGuiIO var3 = ImGui.getIO();
          var3.setIniFilename(iniPath());
@@ -423,10 +423,10 @@ public final class ImGuiManager {
       return UiFont.of(HudTheme.get().font.get());
    }
 
-   private float computeScale(float var1) {
-      int var2 = MinecraftClient.method_1551().method_22683().method_4506();
+   private float computeScale(float f) {
+      int var2 = MinecraftClient.getInstance().getWindow().getFramebufferHeight();
       if (var2 < 200) {
-         return var1;
+         return f;
       } else {
          if (!this.initialized || !ImGui.getIO().getMouseDown(0)) {
             this.userScale = ThemeStore.get().uiScale.get();
@@ -449,30 +449,30 @@ public final class ImGuiManager {
    }
 
    private void updateDisplayMetrics() {
-      MinecraftClient var1 = MinecraftClient.method_1551();
-      int var2 = Math.max(1, var1.method_22683().method_4489());
-      int var3 = Math.max(1, var1.method_22683().method_4506());
+      MinecraftClient var1 = MinecraftClient.getInstance();
+      int var2 = Math.max(1, var1.getWindow().getFramebufferWidth());
+      int var3 = Math.max(1, var1.getWindow().getFramebufferHeight());
       ImGuiIO var4 = ImGui.getIO();
       var4.setDisplaySize(var2, var3);
       var4.setDisplayFramebufferScale(1.0F, 1.0F);
    }
 
-   private void loadFonts(ImGuiIO var1) {
+   private void loadFonts(ImGuiIO imGuiIO) {
       if (this.glyphRanges == null) {
-         this.glyphRanges = buildGlyphRanges(var1);
+         this.glyphRanges = buildGlyphRanges(imGuiIO);
       }
 
       try {
-         var1.getFonts().setFreeTypeRenderer(true);
+         imGuiIO.getFonts().setFreeTypeRenderer(true);
       } catch (Throwable var3) {
          System.err.println("[EFN] FreeType unavailable, using stb_truetype: " + var3.getMessage());
       }
 
-      if (!this.buildFonts(var1, this.uiFont, this.hudFont)) {
+      if (!this.buildFonts(imGuiIO, this.uiFont, this.hudFont)) {
          if (this.uiFont != UiFont.GEIST || this.hudFont != UiFont.GEIST) {
             System.err.println("[EFN] Couldn't build " + this.uiFont.label + " / " + this.hudFont.label + " fonts, using Geist");
-            var1.getFonts().clear();
-            if (this.buildFonts(var1, UiFont.GEIST, UiFont.GEIST)) {
+            imGuiIO.getFonts().clear();
+            if (this.buildFonts(imGuiIO, UiFont.GEIST, UiFont.GEIST)) {
                return;
             }
          }
@@ -481,64 +481,64 @@ public final class ImGuiManager {
       }
    }
 
-   private boolean buildFonts(ImGuiIO var1, UiFont var2, UiFont var3) {
+   private boolean buildFonts(ImGuiIO imGuiIO, UiFont uiFont, UiFont uiFont2) {
       float var4 = this.uiScale;
-      this.moduleFont = this.loadFont(var1, var2, false, 16.0F * var4);
-      this.categoryFont = this.loadFont(var1, var2, true, 17.0F * var4);
-      this.titleFont = this.loadFont(var1, var2, true, 24.0F * var4);
-      this.smallFont = this.loadFont(var1, var2, false, 13.0F * var4);
-      this.hudValueFont = this.loadFont(var1, var3, true, 18.0F * var4);
-      this.hudTextFont = this.loadFont(var1, var3, true, 17.0F * var4);
-      this.hudLabelFont = this.loadFont(var1, var3, false, 14.0F * var4);
-      this.menuFont = loadFont(var1, "/assets/efn/fonts/rajdhani-bold.ttf", 24.0F * var4, this.glyphRanges);
-      this.menuTagFont = loadFont(var1, "/assets/efn/fonts/rajdhani-bold.ttf", 15.0F * var4, this.glyphRanges);
-      this.menuBodyFont = loadFont(var1, "/assets/efn/fonts/geist-medium.ttf", 18.0F * var4, this.glyphRanges);
-      this.menuNameFont = loadFont(var1, "/assets/efn/fonts/rajdhani-bold.ttf", 20.0F * var4, this.glyphRanges);
-      this.menuItemFont = loadFont(var1, "/assets/efn/fonts/rajdhani-bold.ttf", 32.0F * var4, this.glyphRanges);
+      this.moduleFont = this.loadFont(imGuiIO, uiFont, false, 16.0F * var4);
+      this.categoryFont = this.loadFont(imGuiIO, uiFont, true, 17.0F * var4);
+      this.titleFont = this.loadFont(imGuiIO, uiFont, true, 24.0F * var4);
+      this.smallFont = this.loadFont(imGuiIO, uiFont, false, 13.0F * var4);
+      this.hudValueFont = this.loadFont(imGuiIO, uiFont2, true, 18.0F * var4);
+      this.hudTextFont = this.loadFont(imGuiIO, uiFont2, true, 17.0F * var4);
+      this.hudLabelFont = this.loadFont(imGuiIO, uiFont2, false, 14.0F * var4);
+      this.menuFont = loadFont(imGuiIO, "/assets/efn/fonts/rajdhani-bold.ttf", 24.0F * var4, this.glyphRanges);
+      this.menuTagFont = loadFont(imGuiIO, "/assets/efn/fonts/rajdhani-bold.ttf", 15.0F * var4, this.glyphRanges);
+      this.menuBodyFont = loadFont(imGuiIO, "/assets/efn/fonts/geist-medium.ttf", 18.0F * var4, this.glyphRanges);
+      this.menuNameFont = loadFont(imGuiIO, "/assets/efn/fonts/rajdhani-bold.ttf", 20.0F * var4, this.glyphRanges);
+      this.menuItemFont = loadFont(imGuiIO, "/assets/efn/fonts/rajdhani-bold.ttf", 32.0F * var4, this.glyphRanges);
       if (this.moduleFont == null && this.categoryFont == null) {
-         var1.getFonts().addFontDefault();
+         imGuiIO.getFonts().addFontDefault();
       } else if (this.moduleFont != null) {
-         var1.setFontDefault(this.moduleFont);
+         imGuiIO.setFontDefault(this.moduleFont);
       }
 
-      return var1.getFonts().build();
+      return imGuiIO.getFonts().build();
    }
 
-   private static short[] buildGlyphRanges(ImGuiIO var0) {
+   private static short[] buildGlyphRanges(ImGuiIO imGuiIO) {
       ImFontGlyphRangesBuilder var1 = new ImFontGlyphRangesBuilder();
-      var1.addRanges(var0.getFonts().getGlyphRangesDefault());
-      var1.addRanges(var0.getFonts().getGlyphRangesVietnamese());
+      var1.addRanges(imGuiIO.getFonts().getGlyphRangesDefault());
+      var1.addRanges(imGuiIO.getFonts().getGlyphRangesVietnamese());
       var1.addText(
          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789\u00c7\u011e\u0130\u00d6\u015e\u00dc\u00e7\u011f\u0131\u00f6\u015f\u00fc\u00c2\u00e2\u00ca\u00ea\u00ce\u00ee\u00d4\u00f4\u00db\u00fb\u00c0\u00c1\u00c4\u00c8\u00c9\u00cb\u00cc\u00cd\u00cf\u00d2\u00d3\u00d6\u00d9\u00da\u00dc\u00dd\u00e0\u00e1\u00e4\u00e8\u00e9\u00eb\u00ec\u00ed\u00ef\u00f2\u00f3\u00f6\u00f9\u00fa\u00fc\u00fd\u00ff\u2212\u221e"
       );
       return var1.buildRanges();
    }
 
-   private ImFont loadFont(ImGuiIO var1, UiFont var2, boolean var3, float var4) {
-      float var5 = var2.size(var4);
-      float var6 = var2.offsetY(var5);
-      ImFont var7 = loadFont(var1, var2.resource(var3), var5, this.glyphRanges, var2.flags(), var6, false);
+   private ImFont loadFont(ImGuiIO imGuiIO, UiFont uiFont, boolean bl, float f) {
+      float var5 = uiFont.size(f);
+      float var6 = uiFont.offsetY(var5);
+      ImFont var7 = loadFont(imGuiIO, uiFont.resource(bl), var5, this.glyphRanges, uiFont.flags(), var6, false);
       if (var7 == null) {
-         return var2 == UiFont.GEIST ? null : this.loadFont(var1, UiFont.GEIST, var3, var4);
+         return uiFont == UiFont.GEIST ? null : this.loadFont(imGuiIO, UiFont.GEIST, bl, f);
       } else {
-         if (var2 != UiFont.GEIST) {
-            loadFont(var1, UiFont.GEIST.resource(var3), var2.fallbackSize(var5), this.glyphRanges, UiFont.GEIST.flags(), var6, true);
+         if (uiFont != UiFont.GEIST) {
+            loadFont(imGuiIO, UiFont.GEIST.resource(bl), uiFont.fallbackSize(var5), this.glyphRanges, UiFont.GEIST.flags(), var6, true);
          }
 
          return var7;
       }
    }
 
-   private static ImFont loadFont(ImGuiIO var0, String var1, float var2, short[] var3) {
-      return loadFont(var0, var1, var2, var3, 8, 0.0F, false);
+   private static ImFont loadFont(ImGuiIO imGuiIO, String string, float f, short[] ss) {
+      return loadFont(imGuiIO, string, f, ss, 8, 0.0F, false);
    }
 
-   private static ImFont loadFont(ImGuiIO var0, String var1, float var2, short[] var3, int var4, float var5, boolean var6) {
+   private static ImFont loadFont(ImGuiIO imGuiIO, String string, float f, short[] ss, int i, float g, boolean bl) {
       try {
          ImFont var11;
-         try (InputStream var7 = ImGuiManager.class.getResourceAsStream(var1)) {
+         try (InputStream var7 = ImGuiManager.class.getResourceAsStream(string)) {
             if (var7 == null) {
-               System.err.println("[EFN] Font resource not found: " + var1);
+               System.err.println("[EFN] Font resource not found: " + string);
                return null;
             }
 
@@ -550,10 +550,10 @@ public final class ImGuiManager {
                var10.setOversampleH(3);
                var10.setOversampleV(1);
                var10.setPixelSnapH(true);
-               var10.setFontBuilderFlags(var4);
-               var10.setGlyphOffset(0.0F, var5);
-               var10.setMergeMode(var6);
-               var8 = var0.getFonts().addFontFromMemoryTTF(var9, Math.round(var2), var10, var3);
+               var10.setFontBuilderFlags(i);
+               var10.setGlyphOffset(0.0F, g);
+               var10.setMergeMode(bl);
+               var8 = imGuiIO.getFonts().addFontFromMemoryTTF(var9, Math.round(f), var10, ss);
             } catch (Throwable var13) {
                var10.destroy();
                throw var13;
@@ -565,7 +565,7 @@ public final class ImGuiManager {
 
          return var11;
       } catch (RuntimeException | IOException var15) {
-         System.err.println("[EFN] Failed to load font " + var1 + ": " + var15.getMessage());
+         System.err.println("[EFN] Failed to load font " + string + ": " + var15.getMessage());
          return null;
       }
    }

@@ -13,6 +13,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Environment(EnvType.CLIENT)
 @Mixin({EntityRenderManager.class})
 public interface AccessorSkinChangeEntityRenderDispatcher {
-   @Accessor("field_4687")
+   @Accessor("playerRenderers")
    Map<PlayerSkinType, PlayerEntityRenderer<AbstractClientPlayerEntity>> efn$skinChangePlayerRenderers();
 }

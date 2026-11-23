@@ -10,9 +10,9 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Environment(EnvType.CLIENT)
 @Mixin({MobSpawnerLogic.class})
 public interface AccessorSpawnerNametagsBaseSpawner {
-   @Accessor("field_9155")
+   @Accessor("spawnEntry")
    MobSpawnerEntry efn$spawnerNametagsNextSpawnData();
 
-   @Accessor("field_9158")
+   @Accessor("requiredPlayerRange")
    int efn$spawnerNametagsRequiredPlayerRange();
 }

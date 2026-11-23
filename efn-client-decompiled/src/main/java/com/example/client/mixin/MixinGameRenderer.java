@@ -17,10 +17,10 @@ public abstract class MixinGameRenderer {
    }
 
    @Inject(
-      method = {"method_15998"},
+      method = {"swapBuffers"},
       at = {@At("HEAD")}
    )
-   private void efn$beforeSwap(CallbackInfo var1) {
+   private void efn$beforeSwap(CallbackInfo callbackInfo) {
       StreamOverlay.endFrame();
       ImGuiManager.getInstance().renderIfActive();
    }

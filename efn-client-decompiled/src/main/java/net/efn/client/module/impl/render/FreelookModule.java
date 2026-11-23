@@ -44,15 +44,15 @@ public final class FreelookModule extends ClientModule {
 
    @Override
    protected void onEnable() {
-      MinecraftClient var1 = MinecraftClient.method_1551();
-      if (var1.field_1724 == null) {
+      MinecraftClient var1 = MinecraftClient.getInstance();
+      if (var1.player == null) {
          this.requestDisable();
       } else {
-         this.cameraYaw = var1.field_1724.method_36454();
-         this.cameraPitch = var1.field_1724.method_36455();
-         this.previousView = var1.field_1690.method_31044();
-         if (this.previousView != Perspective.field_26665 && this.togglePerspective.get()) {
-            var1.field_1690.method_31043(Perspective.field_26665);
+         this.cameraYaw = var1.player.getYaw();
+         this.cameraPitch = var1.player.getPitch();
+         this.previousView = var1.options.getPerspective();
+         if (this.previousView != Perspective.THIRD_PERSON_BACK && this.togglePerspective.get()) {
+            var1.options.setPerspective(Perspective.THIRD_PERSON_BACK);
          }
 
          this.on(TickEvent.TYPE, Stage.POST, this::onTick);
@@ -61,19 +61,19 @@ public final class FreelookModule extends ClientModule {
 
    @Override
    protected void onDisable() {
-      MinecraftClient var1 = MinecraftClient.method_1551();
-      if (this.previousView != null && var1.field_1690.method_31044() != this.previousView && this.togglePerspective.get()) {
-         var1.field_1690.method_31043(this.previousView);
+      MinecraftClient var1 = MinecraftClient.getInstance();
+      if (this.previousView != null && var1.options.getPerspective() != this.previousView && this.togglePerspective.get()) {
+         var1.options.setPerspective(this.previousView);
       }
 
       this.previousView = null;
    }
 
-   private void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientPlayerEntity var3 = var2.field_1724;
+   private void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientPlayerEntity var3 = var2.player;
       if (var3 != null) {
-         if (this.arrows.get() && var2.field_1755 == null) {
+         if (this.arrows.get() && var2.currentScreen == null) {
             float var4 = this.arrowSpeed.get();
             float var5 = (held(var2, 262) ? var4 : 0.0F) - (held(var2, 263) ? var4 : 0.0F);
             float var6 = (held(var2, 264) ? var4 : 0.0F) - (held(var2, 265) ? var4 : 0.0F);
@@ -81,17 +81,17 @@ public final class FreelookModule extends ClientModule {
                this.cameraYaw += var5;
                this.cameraPitch += var6;
             } else if (var5 != 0.0F || var6 != 0.0F) {
-               var3.method_36456(var3.method_36454() + var5);
-               var3.method_36457(var3.method_36455() + var6);
+               var3.setYaw(var3.getYaw() + var5);
+               var3.setPitch(var3.getPitch() + var6);
             }
          }
 
-         this.cameraPitch = MathHelper.method_15363(this.cameraPitch, -90.0F, 90.0F);
+         this.cameraPitch = MathHelper.clamp(this.cameraPitch, -90.0F, 90.0F);
       }
    }
 
-   private static boolean held(MinecraftClient var0, int var1) {
-      return EfnKeyPolling.isKeyDown(var0.method_22683(), var1);
+   private static boolean held(MinecraftClient minecraftClient, int i) {
+      return EfnKeyPolling.isKeyDown(minecraftClient.getWindow(), i);
    }
 
    public boolean cameraMode() {
@@ -103,10 +103,10 @@ public final class FreelookModule extends ClientModule {
       return var0 != null && var0.isEnabled() && FreecamModule.active == null;
    }
 
-   public void turnCamera(double var1, double var3) {
+   public void turnCamera(double d, double e) {
       float var5 = Math.max(this.sensitivity.get(), 0.1F);
-      this.cameraYaw += (float)(var1 / var5);
-      this.cameraPitch += (float)(var3 / var5);
+      this.cameraYaw += (float)(d / var5);
+      this.cameraPitch += (float)(e / var5);
       if (Math.abs(this.cameraPitch) > 90.0F) {
          this.cameraPitch = this.cameraPitch > 0.0F ? 90.0F : -90.0F;
       }

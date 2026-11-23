@@ -20,17 +20,17 @@ public final class ShardTracker {
    public ShardTracker() {
    }
 
-   public boolean moved(MinecraftClient var1) {
-      ClientWorld var2 = var1.field_1687;
-      ClientPlayerEntity var3 = var1.field_1724;
+   public boolean moved(MinecraftClient minecraftClient) {
+      ClientWorld var2 = minecraftClient.world;
+      ClientPlayerEntity var3 = minecraftClient.player;
       if (var2 != null && var3 != null) {
-         ClientPlayNetworkHandler var4 = var1.method_1562();
-         String var5 = var4 == null ? null : var4.method_52790();
+         ClientPlayNetworkHandler var4 = minecraftClient.getNetworkHandler();
+         String var5 = var4 == null ? null : var4.getBrand();
          int var6 = goliath(var2, var3);
          boolean var7 = this.level != null
             && (
                var2 != this.level
-                  || var3 != this.self && !this.self.method_29504()
+                  || var3 != this.self && !this.self.isDead()
                   || var6 != this.goliath
                   || var5 != null && this.brand != null && !var5.equals(this.brand)
             );
@@ -52,7 +52,9 @@ public final class ShardTracker {
       this.goliath = -2147483648;
    }
 
-   private static int goliath(ClientWorld var0, ClientPlayerEntity var1) {
-      return var0.method_27983() != World.field_25179 ? -2147483648 : DonutGoliathMapData.goliathAt(var1.method_23317(), var1.method_23321());
+   private static int goliath(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity) {
+      return clientWorld.getRegistryKey() != World.OVERWORLD
+         ? -2147483648
+         : DonutGoliathMapData.goliathAt(clientPlayerEntity.getX(), clientPlayerEntity.getZ());
    }
 }

@@ -16,23 +16,23 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin({Screen.class})
 public abstract class MixinMenuBackdropScreen {
    @Shadow
-   public int field_22789;
+   public int width;
    @Shadow
-   public int field_22790;
+   public int height;
 
    public MixinMenuBackdropScreen() {
    }
 
    @Inject(
-      method = {"method_57728"},
+      method = {"renderPanoramaBackground"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$menuBackdrop(DrawContext var1, float var2, CallbackInfo var3) {
+   private void efn$menuBackdrop(DrawContext drawContext, float f, CallbackInfo callbackInfo) {
       if (EfnTitleScreen.enabled()) {
-         var3.cancel();
-         MenuBackdrop.draw(var1, this.field_22789, this.field_22790);
-         var1.method_71048();
+         callbackInfo.cancel();
+         MenuBackdrop.draw(drawContext, this.width, this.height);
+         drawContext.createNewRootLayer();
       }
    }
 }

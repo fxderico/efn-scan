@@ -63,14 +63,14 @@ public final class StaffMatcher {
    private final Set<String> knownNames;
    private final Set<String> ignoredNames;
 
-   public StaffMatcher(String var1, String var2, String var3, boolean var4, int var5, String var6, String var7) {
-      this.useRanks = "Ranks + Markers + Team".equals(var1) || "Ranks".equals(var1);
-      this.useMarkers = "Ranks + Markers + Team".equals(var1) || "Markers".equals(var1);
-      this.useTeamRank = "Ranks + Markers + Team".equals(var1) || "Team Rank".equals(var1);
-      this.teamRankMax = var5;
-      this.iconGlyphs = var4;
+   public StaffMatcher(String string, String string2, String string3, boolean bl, int i, String string4, String string5) {
+      this.useRanks = "Ranks + Markers + Team".equals(string) || "Ranks".equals(string);
+      this.useMarkers = "Ranks + Markers + Team".equals(string) || "Markers".equals(string);
+      this.useTeamRank = "Ranks + Markers + Team".equals(string) || "Team Rank".equals(string);
+      this.teamRankMax = i;
+      this.iconGlyphs = bl;
 
-      for (String var11 : var2.split(",")) {
+      for (String var11 : string2.split(",")) {
          String var12 = var11.trim();
          String var13 = fold(var12).replace(" ", "");
          if (!var13.isEmpty() && !this.wordIndex.containsKey(var13)) {
@@ -79,35 +79,35 @@ public final class StaffMatcher {
          }
       }
 
-      this.markers = parseMarkers(var3);
-      this.knownNames = parseNames(var6);
-      this.ignoredNames = parseNames(var7);
+      this.markers = parseMarkers(string3);
+      this.knownNames = parseNames(string4);
+      this.ignoredNames = parseNames(string5);
    }
 
-   public StaffMatcher.Match match(String var1, String var2, String... var3) {
-      if (var1 != null && !var1.isEmpty()) {
-         String var6 = var1.toLowerCase(Locale.ROOT);
+   public StaffMatcher.Match match(String string, String string2, String... strings) {
+      if (string != null && !string.isEmpty()) {
+         String var6 = string.toLowerCase(Locale.ROOT);
          if (this.ignoredNames.contains(var6)) {
             return null;
          } else {
             StringBuilder var7 = new StringBuilder();
 
-            for (String var11 : var3) {
+            for (String var11 : strings) {
                if (var11 != null && !var11.isEmpty()) {
                   var7.append(var11).append(' ');
                }
             }
 
-            if (var2 != null && !var2.isEmpty()) {
-               var7.append(var2).append(' ');
+            if (string2 != null && !string2.isEmpty()) {
+               var7.append(string2).append(' ');
             }
 
-            String var12 = withoutName(stripLegacyCodes(var7.toString()), var1);
+            String var12 = withoutName(stripLegacyCodes(var7.toString()), string);
             StaffMatcher.Word var5 = this.useRanks ? this.bestRank(var12) : null;
             if (var5 != null) {
                return new StaffMatcher.Match(var5.label(), this.wordIndex.get(var5.folded()));
             } else {
-               int var4 = this.useTeamRank ? teamRank(var2) : -1;
+               int var4 = this.useTeamRank ? teamRank(string2) : -1;
                if (var4 >= 0 && var4 <= this.teamRankMax) {
                   return new StaffMatcher.Match(teamRankLabel(var4), this.words.size() + var4);
                } else {
@@ -122,24 +122,24 @@ public final class StaffMatcher {
       }
    }
 
-   public static int teamRank(String var0) {
-      if (var0 != null && var0.length() >= 3) {
-         Matcher var1 = TEAM_RANK.matcher(var0);
+   public static int teamRank(String string) {
+      if (string != null && string.length() >= 3) {
+         Matcher var1 = TEAM_RANK.matcher(string);
          return var1.lookingAt() ? Integer.parseInt(var1.group(1)) : -1;
       } else {
          return -1;
       }
    }
 
-   public static String teamRankLabel(int var0) {
-      return var0 < 10 ? "0" + var0 : Integer.toString(var0);
+   public static String teamRankLabel(int i) {
+      return i < 10 ? "0" + i : Integer.toString(i);
    }
 
-   private StaffMatcher.Word bestRank(String var1) {
+   private StaffMatcher.Word bestRank(String string) {
       if (this.words.isEmpty()) {
          return null;
       } else {
-         List var3 = tokens(var1);
+         List var3 = tokens(string);
          int var4 = 2147483647;
          int var5 = 0;
 
@@ -162,8 +162,8 @@ public final class StaffMatcher {
       }
    }
 
-   static List<String> tokens(String var0) {
-      String var1 = fold(var0);
+   static List<String> tokens(String string) {
+      String var1 = fold(string);
       ArrayList var2 = new ArrayList();
       StringBuilder var3 = new StringBuilder();
 
@@ -184,14 +184,14 @@ public final class StaffMatcher {
       return var2;
    }
 
-   static String stripLegacyCodes(String var0) {
-      if (var0.indexOf(167) < 0) {
-         return var0;
+   static String stripLegacyCodes(String string) {
+      if (string.indexOf(167) < 0) {
+         return string;
       } else {
-         StringBuilder var1 = new StringBuilder(var0.length());
+         StringBuilder var1 = new StringBuilder(string.length());
 
-         for (int var2 = 0; var2 < var0.length(); var2++) {
-            char var3 = var0.charAt(var2);
+         for (int var2 = 0; var2 < string.length(); var2++) {
+            char var3 = string.charAt(var2);
             if (var3 == 167) {
                var2++;
             } else {
@@ -203,8 +203,8 @@ public final class StaffMatcher {
       }
    }
 
-   static String fold(String var0) {
-      String var2 = Normalizer.normalize(var0.replace('\u01eb', 'q'), Form.NFKD);
+   static String fold(String string) {
+      String var2 = Normalizer.normalize(string.replace('\u01eb', 'q'), Form.NFKD);
       StringBuilder var3 = new StringBuilder(var2.length());
       int var4 = 0;
 
@@ -226,11 +226,11 @@ public final class StaffMatcher {
       return var3.toString();
    }
 
-   private boolean hasMarker(String var1) {
+   private boolean hasMarker(String string) {
       int var3 = 0;
 
-      while (var3 < var1.length()) {
-         int var2 = var1.codePointAt(var3);
+      while (var3 < string.length()) {
+         int var2 = string.codePointAt(var3);
          if (this.markers.contains(var2) || this.iconGlyphs && isPrivateUse(var2)) {
             return true;
          }
@@ -241,14 +241,14 @@ public final class StaffMatcher {
       return false;
    }
 
-   public static boolean isPrivateUse(int var0) {
-      return var0 >= 57344 && var0 <= 63743 || var0 >= 983040 && var0 <= 1048573 || var0 >= 1048576 && var0 <= 1114109;
+   public static boolean isPrivateUse(int i) {
+      return i >= 57344 && i <= 63743 || i >= 983040 && i <= 1048573 || i >= 1048576 && i <= 1114109;
    }
 
-   static Set<Integer> parseMarkers(String var0) {
+   static Set<Integer> parseMarkers(String string) {
       HashSet var1 = new HashSet();
 
-      for (String var5 : var0.split("[,\\s]+")) {
+      for (String var5 : string.split("[,\\s]+")) {
          if (!var5.isEmpty()) {
             Matcher var6 = CODEPOINT.matcher(var5);
             if (var6.matches()) {
@@ -265,10 +265,10 @@ public final class StaffMatcher {
       return var1;
    }
 
-   private static Set<String> parseNames(String var0) {
+   private static Set<String> parseNames(String string) {
       HashSet var1 = new HashSet();
 
-      for (String var5 : var0.split("[,\\s]+")) {
+      for (String var5 : string.split("[,\\s]+")) {
          if (!var5.isEmpty()) {
             var1.add(var5.toLowerCase(Locale.ROOT));
          }
@@ -277,26 +277,26 @@ public final class StaffMatcher {
       return var1;
    }
 
-   private static String withoutName(String var0, String var1) {
-      String var3 = var0.toLowerCase(Locale.ROOT);
+   private static String withoutName(String string, String string2) {
+      String var3 = string.toLowerCase(Locale.ROOT);
       String var2;
-      if (!var3.contains(var2 = var1.toLowerCase(Locale.ROOT))) {
-         return var0;
+      if (!var3.contains(var2 = string2.toLowerCase(Locale.ROOT))) {
+         return string;
       } else {
-         StringBuilder var4 = new StringBuilder(var0.length());
+         StringBuilder var4 = new StringBuilder(string.length());
          int var5 = 0;
 
          for (int var6 = var3.indexOf(var2); var6 >= 0; var6 = var3.indexOf(var2, var5)) {
-            var4.append(var0, var5, var6).append(' ');
+            var4.append(string, var5, var6).append(' ');
             var5 = var6 + var2.length();
          }
 
-         return var4.append(var0, var5, var0.length()).toString();
+         return var4.append(string, var5, string.length()).toString();
       }
    }
 
-   private static String capitalize(String var0) {
-      String var1 = var0.trim();
+   private static String capitalize(String string) {
+      String var1 = string.trim();
       return var1.isEmpty() ? "Staff" : var1.substring(0, 1).toUpperCase(Locale.ROOT) + var1.substring(1);
    }
 

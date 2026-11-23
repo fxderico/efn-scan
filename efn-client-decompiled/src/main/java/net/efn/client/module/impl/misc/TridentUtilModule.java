@@ -27,8 +27,8 @@ public final class TridentUtilModule extends ClientModule {
       return var0 != null && var0.noWater.get();
    }
 
-   public static int minChargeTicks(int var0) {
+   public static int minChargeTicks(int i) {
       TridentUtilModule var1 = active();
-      return var1 == null ? var0 : Math.max(1, Math.round(var0 * var1.chargeScale.get()));
+      return var1 == null ? i : Math.max(1, Math.round(i * var1.chargeScale.get()));
    }
 }

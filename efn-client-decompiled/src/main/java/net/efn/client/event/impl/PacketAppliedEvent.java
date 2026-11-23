@@ -15,9 +15,9 @@ public final class PacketAppliedEvent extends Event {
    private PacketAppliedEvent() {
    }
 
-   public static void dispatch(Packet<?> var0) {
+   public static void dispatch(Packet<?> packet) {
       if (TYPE.hasPreListeners()) {
-         INSTANCE.packet = var0;
+         INSTANCE.packet = packet;
          TYPE.dispatch(INSTANCE);
          INSTANCE.packet = null;
       }

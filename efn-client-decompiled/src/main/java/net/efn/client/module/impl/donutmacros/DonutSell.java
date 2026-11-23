@@ -28,23 +28,23 @@ public final class DonutSell {
    private boolean done;
    private int ticks;
 
-   private DonutSell(ClientModule var1, Map<Integer, Item> var2) {
-      Map var3 = Map.copyOf(var2);
+   private DonutSell(ClientModule clientModule, Map<Integer, Item> map) {
+      Map var3 = Map.copyOf(map);
       this.routine = new SellRoutine(
-         var1,
+         clientModule,
          new StringListSetting("Never Sell"),
-         (var1x, var2x) -> var3.get(var1x) == null || !var2x.method_31574((Item)var3.get(var1x)),
+         (integer, itemStack) -> var3.get(integer) == null || !itemStack.isOf((Item)var3.get(integer)),
          () -> this.sent = true
       );
-      this.chat = PacketReceiveNettyEvent.TYPE.listen(this, Stage.PRE, EventPriority.NORMAL, var1x -> {
-         Packet var3x = var1x.packet;
-         GameMessageS2CPacket var2x;
-         if (var3x instanceof GameMessageS2CPacket && (var2x = (GameMessageS2CPacket)var3x).comp_763() != null) {
-            Matcher var4 = RATE_LIMIT.matcher(ServerText.normalize(var2x.comp_763().getString()));
+      this.chat = PacketReceiveNettyEvent.TYPE.listen(this, Stage.PRE, EventPriority.NORMAL, packetReceiveNettyEvent -> {
+         Packet var3x = packetReceiveNettyEvent.packet;
+         GameMessageS2CPacket var2;
+         if (var3x instanceof GameMessageS2CPacket && (var2 = (GameMessageS2CPacket)var3x).content() != null) {
+            Matcher var4 = RATE_LIMIT.matcher(ServerText.normalize(var2.content().getString()));
             if (var4.find()) {
                try {
                   long var5 = System.currentTimeMillis() + (long)Math.ceil(Double.parseDouble(var4.group(1)) * 1000.0) + 100L;
-                  MinecraftClient.method_1551().execute(() -> this.routine.commandRejected(var5));
+                  MinecraftClient.getInstance().execute(() -> this.routine.commandRejected(var5));
                } catch (NumberFormatException var7) {
                }
             }
@@ -52,19 +52,19 @@ public final class DonutSell {
       });
    }
 
-   public static DonutSell start(ClientModule var0, Map<Integer, Item> var1) {
-      return new DonutSell(var0, var1);
+   public static DonutSell start(ClientModule clientModule, Map<Integer, Item> map) {
+      return new DonutSell(clientModule, map);
    }
 
    public boolean tick() {
       if (this.done) {
          return false;
       } else {
-         MinecraftClient var1 = MinecraftClient.method_1551();
-         ClientPlayerEntity var2 = var1.field_1724;
-         if (var2 != null && var1.method_1562() != null && var1.field_1761 != null) {
+         MinecraftClient var1 = MinecraftClient.getInstance();
+         ClientPlayerEntity var2 = var1.player;
+         if (var2 != null && var1.getNetworkHandler() != null && var1.interactionManager != null) {
             long var3 = System.currentTimeMillis();
-            boolean var5 = this.routine.step(var1, var2, var1.method_1562(), var3, true);
+            boolean var5 = this.routine.step(var1, var2, var1.getNetworkHandler(), var3, true);
             this.ticks++;
             if (!var5 && !this.routine.active()) {
                if (this.sent || this.ticks > 3 || var3 - this.started > 45000L) {
@@ -88,7 +88,7 @@ public final class DonutSell {
 
    public void cancel() {
       if (!this.done) {
-         this.routine.abort(MinecraftClient.method_1551());
+         this.routine.abort(MinecraftClient.getInstance());
          this.finish();
       }
    }

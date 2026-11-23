@@ -9,6 +9,6 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 @Environment(EnvType.CLIENT)
 @Mixin({MultiplayerScreen.class})
 public interface AccessorMenusJoinMultiplayerScreen {
-   @Invoker("method_2534")
+   @Invoker("refresh")
    void efn$refreshServerList();
 }

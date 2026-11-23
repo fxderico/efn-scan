@@ -14,21 +14,21 @@ final class StableWidth {
    StableWidth() {
    }
 
-   float update(float var1, float var2) {
-      if (!(this.current < 0.0F) && !(var1 >= this.current)) {
-         this.narrowerFor += var2;
+   float update(float f, float g) {
+      if (!(this.current < 0.0F) && !(f >= this.current)) {
+         this.narrowerFor += g;
          if (this.narrowerFor < 1.5F) {
             return this.current;
          } else {
-            this.current = this.current + (var1 - this.current) * (1.0F - (float)Math.exp(-12.0F * var2));
-            if (Math.abs(this.current - var1) < 0.25F) {
-               this.current = var1;
+            this.current = this.current + (f - this.current) * (1.0F - (float)Math.exp(-12.0F * g));
+            if (Math.abs(this.current - f) < 0.25F) {
+               this.current = f;
             }
 
             return this.current;
          }
       } else {
-         this.current = var1;
+         this.current = f;
          this.narrowerFor = 0.0F;
          return this.current;
       }

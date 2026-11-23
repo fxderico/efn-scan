@@ -25,26 +25,27 @@ final class BotKit {
    BotKit() {
    }
 
-   boolean needed(ClientPlayerEntity var1, boolean var2) {
-      return next(var1, wants(var2)) != null;
+   boolean needed(ClientPlayerEntity clientPlayerEntity, boolean bl) {
+      return next(clientPlayerEntity, wants(bl)) != null;
    }
 
-   boolean refill(MinecraftClient var1, ClientPlayerEntity var2, boolean var3) {
-      if (var1.field_1761 != null
-         && var1.field_1755 == null
-         && var2.field_7512 == var2.field_7498
-         && var2.field_7498.method_34255().method_7960()
+   boolean refill(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, boolean bl) {
+      if (minecraftClient.interactionManager != null
+         && minecraftClient.currentScreen == null
+         && clientPlayerEntity.currentScreenHandler == clientPlayerEntity.playerScreenHandler
+         && clientPlayerEntity.playerScreenHandler.getCursorStack().isEmpty()
          && !AutoInvTotemModule.busy()
-         && !var2.method_6115()) {
-         int[] var4 = next(var2, wants(var3));
+         && !clientPlayerEntity.isUsingItem()) {
+         int[] var4 = next(clientPlayerEntity, wants(bl));
          if (var4 == null) {
             return false;
          } else {
-            int var5 = var2.field_6012;
-            if (InventoryCalm.settle(var1, var2) && (var5 < this.lastClick || var5 - this.lastClick >= 4)) {
-               var1.field_1761.method_2906(var2.field_7498.field_7763, var4[0], var4[1], SlotActionType.field_7791, var2);
-               var2.field_3944.method_52787(new CloseHandledScreenC2SPacket(var2.field_7498.field_7763));
-               MeleeAttacks.noteAction(var2);
+            int var5 = clientPlayerEntity.age;
+            if (InventoryCalm.settle(minecraftClient, clientPlayerEntity) && (var5 < this.lastClick || var5 - this.lastClick >= 4)) {
+               minecraftClient.interactionManager
+                  .clickSlot(clientPlayerEntity.playerScreenHandler.syncId, var4[0], var4[1], SlotActionType.SWAP, clientPlayerEntity);
+               clientPlayerEntity.networkHandler.sendPacket(new CloseHandledScreenC2SPacket(clientPlayerEntity.playerScreenHandler.syncId));
+               MeleeAttacks.noteAction(clientPlayerEntity);
                this.lastClick = var5;
                return true;
             } else {
@@ -56,35 +57,35 @@ final class BotKit {
       }
    }
 
-   private static List<BotKit.Want> wants(boolean var0) {
+   private static List<BotKit.Want> wants(boolean bl) {
       ArrayList var1 = new ArrayList();
-      var1.add(new BotKit.Want(var0x -> var0x.method_31574(Items.field_8301), 16, 32));
-      var1.add(new BotKit.Want(var0x -> var0x.method_31574(Items.field_8281), 8, 16));
+      var1.add(new BotKit.Want(itemStack -> itemStack.isOf(Items.END_CRYSTAL), 16, 32));
+      var1.add(new BotKit.Want(itemStack -> itemStack.isOf(Items.OBSIDIAN), 8, 16));
       var1.add(new BotKit.Want(MeleeAttacks::isMeleeWeapon, 1, 1));
-      var1.add(new BotKit.Want(var0x -> var0x.method_31574(Items.field_8367) || var0x.method_31574(Items.field_8463), 1, 1));
-      var1.add(new BotKit.Want(var0x -> var0x.method_31574(Items.field_8634), 1, 1));
-      var1.add(new BotKit.Want(var0x -> var0x.method_31573(ItemTags.field_42614), 1, 1));
-      var1.add(new BotKit.Want(var0x -> var0x.method_31574(Items.field_8287), 1, 1));
-      if (var0) {
-         var1.add(new BotKit.Want(var0x -> var0x.method_31574(Items.field_23141), 2, 4));
-         var1.add(new BotKit.Want(var0x -> var0x.method_31574(Items.field_8801), 2, 4));
+      var1.add(new BotKit.Want(itemStack -> itemStack.isOf(Items.ENCHANTED_GOLDEN_APPLE) || itemStack.isOf(Items.GOLDEN_APPLE), 1, 1));
+      var1.add(new BotKit.Want(itemStack -> itemStack.isOf(Items.ENDER_PEARL), 1, 1));
+      var1.add(new BotKit.Want(itemStack -> itemStack.isIn(ItemTags.PICKAXES), 1, 1));
+      var1.add(new BotKit.Want(itemStack -> itemStack.isOf(Items.EXPERIENCE_BOTTLE), 1, 1));
+      if (bl) {
+         var1.add(new BotKit.Want(itemStack -> itemStack.isOf(Items.RESPAWN_ANCHOR), 2, 4));
+         var1.add(new BotKit.Want(itemStack -> itemStack.isOf(Items.GLOWSTONE), 2, 4));
       }
 
       return var1;
    }
 
-   private static int[] next(ClientPlayerEntity var0, List<BotKit.Want> var1) {
-      PlayerInventory var2 = var0.method_31548();
+   private static int[] next(ClientPlayerEntity clientPlayerEntity, List<BotKit.Want> list) {
+      PlayerInventory var2 = clientPlayerEntity.getInventory();
 
-      for (BotKit.Want var4 : var1) {
+      for (BotKit.Want var4 : list) {
          int var6 = 0;
          int var7 = -1;
 
          for (int var8 = 0; var8 < 9; var8++) {
-            ItemStack var9 = var2.method_5438(var8);
+            ItemStack var9 = var2.getStack(var8);
             if (var4.item().test(var9)) {
-               var6 += var9.method_7947();
-               if (var7 < 0 || var9.method_7947() < var2.method_5438(var7).method_7947()) {
+               var6 += var9.getCount();
+               if (var7 < 0 || var9.getCount() < var2.getStack(var7).getCount()) {
                   var7 = var8;
                }
             }
@@ -94,20 +95,20 @@ final class BotKit {
             int var11 = -1;
 
             for (int var12 = 9; var12 < 36; var12++) {
-               ItemStack var10 = var2.method_5438(var12);
-               if (var4.item().test(var10) && (var11 < 0 || var10.method_7947() > var2.method_5438(var11).method_7947())) {
+               ItemStack var10 = var2.getStack(var12);
+               if (var4.item().test(var10) && (var11 < 0 || var10.getCount() > var2.getStack(var11).getCount())) {
                   var11 = var12;
                }
             }
 
             if (var11 >= 0) {
-               int var13 = var2.method_5438(var11).method_7947();
+               int var13 = var2.getStack(var11).getCount();
                if (var7 >= 0 && var13 > var6 && (var6 < var4.topUp() || var13 >= var6 + 8)) {
                   return new int[]{var11, var7};
                }
 
                int var5;
-               if (var7 < 0 && (var5 = freeSlot(var2, var1)) >= 0) {
+               if (var7 < 0 && (var5 = freeSlot(var2, list)) >= 0) {
                   return new int[]{var11, var5};
                }
             }
@@ -117,19 +118,19 @@ final class BotKit {
       return null;
    }
 
-   private static int freeSlot(PlayerInventory var0, List<BotKit.Want> var1) {
+   private static int freeSlot(PlayerInventory playerInventory, List<BotKit.Want> list) {
       for (int var2 = 0; var2 < 9; var2++) {
-         if (var0.method_5438(var2).method_7960()) {
+         if (playerInventory.getStack(var2).isEmpty()) {
             return var2;
          }
       }
 
       for (int var7 = 8; var7 >= 0; var7--) {
-         ItemStack var3 = var0.method_5438(var7);
-         if (!var3.method_31574(Items.field_8288)) {
+         ItemStack var3 = playerInventory.getStack(var7);
+         if (!var3.isOf(Items.TOTEM_OF_UNDYING)) {
             boolean var4 = false;
 
-            for (BotKit.Want var6 : var1) {
+            for (BotKit.Want var6 : list) {
                var4 |= var6.item().test(var3);
             }
 

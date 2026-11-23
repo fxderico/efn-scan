@@ -14,11 +14,11 @@ public final class ChatSendEvent extends CancellableEvent {
    private ChatSendEvent() {
    }
 
-   public static boolean dispatch(String var0) {
+   public static boolean dispatch(String string) {
       if (!TYPE.hasPreListeners()) {
          return false;
       } else {
-         INSTANCE.message = var0;
+         INSTANCE.message = string;
          INSTANCE.resetCancellation();
          TYPE.dispatch(INSTANCE);
          boolean var1 = INSTANCE.isCancelled();

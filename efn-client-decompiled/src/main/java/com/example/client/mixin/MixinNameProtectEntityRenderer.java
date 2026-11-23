@@ -16,13 +16,13 @@ public abstract class MixinNameProtectEntityRenderer {
    }
 
    @ModifyExpressionValue(
-      method = {"method_62354"},
+      method = {"updateRenderState"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_897;method_62426(Lnet/minecraft/class_1297;)Lnet/minecraft/class_2561;"
+         target = "Lnet/minecraft/client/render/entity/EntityRenderer;getDisplayName(Lnet/minecraft/entity/Entity;)Lnet/minecraft/text/Text;"
       )}
    )
-   private Text efn$nameProtectNameTag(Text var1) {
-      return NameProtectModule.protect(var1);
+   private Text efn$nameProtectNameTag(Text text) {
+      return NameProtectModule.protect(text);
    }
 }

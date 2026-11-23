@@ -66,25 +66,25 @@ public final class SpeedModule extends ClientModule {
       return (SpeedMode)(this.mode.is("Strafe") ? new StrafeSpeedMode(this) : new VanillaSpeedMode(this));
    }
 
-   private void onPreTick(TickEvent var1) {
+   private void onPreTick(TickEvent tickEvent) {
       if (this.rubberband) {
          this.rubberband = false;
          this.currentMode.onRubberband();
       }
 
       ClientPlayerEntity var2;
-      if ((var2 = MinecraftClient.method_1551().field_1724) == null) {
+      if ((var2 = MinecraftClient.getInstance().player) == null) {
          timerMultiplier = 1.0F;
       } else if (!this.stopSpeed(var2)) {
          this.currentMode.onTick(var2);
       }
    }
 
-   private void onPacketReceive(PacketReceiveNettyEvent var1) {
-      if (var1.packet instanceof PlayerPositionLookS2CPacket) {
+   private void onPacketReceive(PacketReceiveNettyEvent packetReceiveNettyEvent) {
+      if (packetReceiveNettyEvent.packet instanceof PlayerPositionLookS2CPacket) {
          this.rubberband = true;
-      } else if (var1.packet instanceof BundleS2CPacket var3) {
-         for (Packet var5 : var3.method_48324()) {
+      } else if (packetReceiveNettyEvent.packet instanceof BundleS2CPacket var3) {
+         for (Packet var5 : var3.getPackets()) {
             if (var5 instanceof PlayerPositionLookS2CPacket) {
                this.rubberband = true;
                break;
@@ -93,35 +93,35 @@ public final class SpeedModule extends ClientModule {
       }
    }
 
-   public Vec3d onSelfMove(ClientPlayerEntity var1, Vec3d var2) {
-      if (var1 == MinecraftClient.method_1551().field_1724 && !this.stopSpeed(var1)) {
+   public Vec3d onSelfMove(ClientPlayerEntity clientPlayerEntity, Vec3d vec3d) {
+      if (clientPlayerEntity == MinecraftClient.getInstance().player && !this.stopSpeed(clientPlayerEntity)) {
          float var3 = this.timer.get();
-         timerMultiplier = var3 != 1.0F && isMoving(var1) ? var3 : 1.0F;
-         Vec3d var4 = this.currentMode.onMove(var1, var2);
-         if (var4 != var2 && var2 == var1.method_18798()) {
-            var1.method_18799(var4);
+         timerMultiplier = var3 != 1.0F && isMoving(clientPlayerEntity) ? var3 : 1.0F;
+         Vec3d var4 = this.currentMode.onMove(clientPlayerEntity, vec3d);
+         if (var4 != vec3d && vec3d == clientPlayerEntity.getVelocity()) {
+            clientPlayerEntity.setVelocity(var4);
          }
 
          return var4;
       } else {
-         return var2;
+         return vec3d;
       }
    }
 
-   private boolean stopSpeed(ClientPlayerEntity var1) {
-      if (var1.method_6128() || var1.method_6101() || var1.method_5854() != null) {
+   private boolean stopSpeed(ClientPlayerEntity clientPlayerEntity) {
+      if (clientPlayerEntity.isGliding() || clientPlayerEntity.isClimbing() || clientPlayerEntity.getVehicle() != null) {
          return true;
-      } else if (!this.whenSneaking.get() && var1.method_5715()) {
+      } else if (!this.whenSneaking.get() && clientPlayerEntity.isSneaking()) {
          return true;
       } else {
-         return this.onlyOnGround.get() && !var1.method_24828() && this.mode.is("Vanilla")
+         return this.onlyOnGround.get() && !clientPlayerEntity.isOnGround() && this.mode.is("Vanilla")
             ? true
-            : !this.inLiquids.get() && (var1.method_5799() || var1.method_5771());
+            : !this.inLiquids.get() && (clientPlayerEntity.isTouchingWater() || clientPlayerEntity.isInLava());
       }
    }
 
-   public static boolean isMoving(ClientPlayerEntity var0) {
-      return var0.field_6250 != 0.0F || var0.field_6212 != 0.0F;
+   public static boolean isMoving(ClientPlayerEntity clientPlayerEntity) {
+      return clientPlayerEntity.forwardSpeed != 0.0F || clientPlayerEntity.sidewaysSpeed != 0.0F;
    }
 
    public double vanillaSpeed() {

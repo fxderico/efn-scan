@@ -79,9 +79,9 @@ public final class ThemeStore {
       this.settings = List.copyOf(var1);
       this.defaults = snapshot(this.settings, true);
       this.customMainMenu.onChange(() -> {
-         MinecraftClient var0 = MinecraftClient.method_1551();
-         if (var0 != null && var0.method_22683() != null) {
-            var0.method_24288();
+         MinecraftClient var0 = MinecraftClient.getInstance();
+         if (var0 != null && var0.getWindow() != null) {
+            var0.updateWindowTitle();
          }
       });
    }
@@ -95,17 +95,17 @@ public final class ThemeStore {
       return this.surfaces;
    }
 
-   public void applyPreset(ThemeStore.Preset var1) {
-      this.accent.setArgb(var1.accent());
-      this.panels.color.setArgb(var1.panel());
-      this.cards.color.setArgb(var1.card());
-      this.tabBar.color.setArgb(var1.card());
+   public void applyPreset(ThemeStore.Preset preset) {
+      this.accent.setArgb(preset.accent());
+      this.panels.color.setArgb(preset.panel());
+      this.cards.color.setArgb(preset.card());
+      this.tabBar.color.setArgb(preset.card());
    }
 
-   public boolean matchesPreset(ThemeStore.Preset var1) {
-      return this.accent.rgb() == (var1.accent() & 16777215)
-         && this.panels.color.rgb() == (var1.panel() & 16777215)
-         && this.cards.color.rgb() == (var1.card() & 16777215);
+   public boolean matchesPreset(ThemeStore.Preset preset) {
+      return this.accent.rgb() == (preset.accent() & 16777215)
+         && this.panels.color.rgb() == (preset.panel() & 16777215)
+         && this.cards.color.rgb() == (preset.card() & 16777215);
    }
 
    public void resetToDefaults() {
@@ -122,10 +122,10 @@ public final class ThemeStore {
       return var1.toString();
    }
 
-   public boolean importString(String var1) {
-      if (var1 != null && !var1.isBlank()) {
+   public boolean importString(String string) {
+      if (string != null && !string.isBlank()) {
          try {
-            JsonElement var2 = JsonParser.parseString(var1.trim());
+            JsonElement var2 = JsonParser.parseString(string.trim());
             if (var2.isJsonObject() && var2.getAsJsonObject().has("efnTheme")) {
                JsonElement var3 = var2.getAsJsonObject().get("efnTheme");
                if (!var3.isJsonObject()) {
@@ -149,9 +149,9 @@ public final class ThemeStore {
       return snapshot(this.shared, true);
    }
 
-   public void applyProfile(JsonObject var1) {
+   public void applyProfile(JsonObject jsonObject) {
       for (Setting var3 : this.shared) {
-         JsonElement var4 = var1.get(var3.id());
+         JsonElement var4 = jsonObject.get(var3.id());
          if (var4 == null && !var3.isPrivate()) {
             var4 = this.defaults.get(var3.id());
          }
@@ -162,11 +162,11 @@ public final class ThemeStore {
       }
    }
 
-   public JsonObject shareable(JsonObject var1) {
+   public JsonObject shareable(JsonObject jsonObject) {
       JsonObject var2 = new JsonObject();
 
       for (Setting var4 : this.shared) {
-         JsonElement var5 = var1.get(var4.id());
+         JsonElement var5 = jsonObject.get(var4.id());
          if (var5 != null && !var4.isPrivate() && !Setting.sameValue(var5, this.defaults.get(var4.id()))) {
             var2.add(var4.id(), var5.deepCopy());
          }
@@ -200,7 +200,7 @@ public final class ThemeStore {
                   LOGGER.warn("[EFN] Theme version {} is newer than supported {}; skipping load", var3, 3);
                }
             } catch (RuntimeException | IOException var8) {
-               LOGGER.warn("[EFN] Failed to load theme; preserving the file", var8);
+               LOGGER.warn("[EFN] Failed to load theme; preserving the file", (Throwable)var8);
                this.readOnly = true;
             }
          }
@@ -235,7 +235,7 @@ public final class ThemeStore {
             Path var3 = var2.resolveSibling(var2.getFileName().toString() + ".tmp");
 
             try (BufferedWriter var4 = Files.newBufferedWriter(var3)) {
-               GSON.toJson(var1, var4);
+               GSON.toJson((JsonElement)var1, var4);
             }
 
             try {
@@ -244,16 +244,16 @@ public final class ThemeStore {
                Files.move(var3, var2, StandardCopyOption.REPLACE_EXISTING);
             }
          } catch (IOException var10) {
-            LOGGER.warn("[EFN] Failed to save theme", var10);
+            LOGGER.warn("[EFN] Failed to save theme", (Throwable)var10);
          }
       }
    }
 
-   private static JsonObject snapshot(List<Setting> var0, boolean var1) {
+   private static JsonObject snapshot(List<Setting> list, boolean bl) {
       JsonObject var2 = new JsonObject();
 
-      for (Setting var4 : var0) {
-         if (var1 || !var4.isPrivate()) {
+      for (Setting var4 : list) {
+         if (bl || !var4.isPrivate()) {
             var2.add(var4.id(), var4.serialize());
          }
       }
@@ -261,10 +261,10 @@ public final class ThemeStore {
       return var2;
    }
 
-   private static void apply(List<Setting> var0, JsonObject var1, boolean var2) {
-      for (Setting var4 : var0) {
-         if ((var2 || !var4.isPrivate()) && var1.has(var4.id())) {
-            var4.deserialize(var1.get(var4.id()));
+   private static void apply(List<Setting> list, JsonObject jsonObject, boolean bl) {
+      for (Setting var4 : list) {
+         if ((bl || !var4.isPrivate()) && jsonObject.has(var4.id())) {
+            var4.deserialize(jsonObject.get(var4.id()));
          }
       }
    }

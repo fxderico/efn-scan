@@ -28,7 +28,7 @@ public final class MotionBlurModule extends ClientModule {
       if (RenderSystem.isOnRenderThread()) {
          MotionBlurPass.release();
       } else {
-         MinecraftClient.method_1551().execute(MotionBlurModule::releaseIfOff);
+         MinecraftClient.getInstance().execute(MotionBlurModule::releaseIfOff);
       }
    }
 
@@ -38,10 +38,10 @@ public final class MotionBlurModule extends ClientModule {
       }
    }
 
-   public static void afterWorld(boolean var0) {
+   public static void afterWorld(boolean bl) {
       MotionBlurModule var1 = active;
       if (var1 != null) {
-         MotionBlurPass.apply(var0, var1.strength.get() / 100.0F);
+         MotionBlurPass.apply(bl, var1.strength.get() / 100.0F);
       }
    }
 }

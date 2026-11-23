@@ -80,23 +80,21 @@ public final class SimulationSignals {
    private static final int MIN_Y = 0;
    private static final int BLOCK_SPILL = 1;
    private static final Set<Block> GROWS_FROM_AIR = Set.of(
-      Blocks.field_10424,
-      Blocks.field_10029,
-      Blocks.field_10211,
-      Blocks.field_10108,
-      Blocks.field_46283,
-      Blocks.field_46282,
-      Blocks.field_10477,
-      Blocks.field_10036,
-      Blocks.field_22089,
-      Blocks.field_10251,
-      Blocks.field_10559,
-      Blocks.field_10021,
-      Blocks.field_10528
+      Blocks.SUGAR_CANE,
+      Blocks.CACTUS,
+      Blocks.BAMBOO,
+      Blocks.BAMBOO_SAPLING,
+      Blocks.MELON,
+      Blocks.PUMPKIN,
+      Blocks.SNOW,
+      Blocks.FIRE,
+      Blocks.SOUL_FIRE,
+      Blocks.BROWN_MUSHROOM,
+      Blocks.RED_MUSHROOM,
+      Blocks.CHORUS_PLANT,
+      Blocks.CHORUS_FLOWER
    );
-   private static final Set<Block> GONE_TO_AIR = Set.of(
-      Blocks.field_10477, Blocks.field_10036, Blocks.field_22089, Blocks.field_10195, Blocks.field_43230, Blocks.field_37575
-   );
+   private static final Set<Block> GONE_TO_AIR = Set.of(Blocks.SNOW, Blocks.FIRE, Blocks.SOUL_FIRE, Blocks.TURTLE_EGG, Blocks.SNIFFER_EGG, Blocks.FROGSPAWN);
    private static boolean active;
    private static int serverSim = -1;
    private static int serverView = -1;
@@ -117,16 +115,16 @@ public final class SimulationSignals {
    private static boolean hasSample;
    private static long passedCenter = -9223372036854775808L;
    private static int passedRadius = -1;
-   private static final Long2ObjectOpenHashMap<SimulationSignals.ChunkSignal> CHUNKS = new Long2ObjectOpenHashMap();
-   private static final Int2ObjectOpenHashMap<SimulationSignals.Share> ENTITY_SHARES = new Int2ObjectOpenHashMap();
-   private static final Long2ObjectOpenHashMap<SimulationSignals.Share> BLOCK_SHARES = new Long2ObjectOpenHashMap();
+   private static final Long2ObjectOpenHashMap<SimulationSignals.ChunkSignal> CHUNKS = new Long2ObjectOpenHashMap<>();
+   private static final Int2ObjectOpenHashMap<SimulationSignals.Share> ENTITY_SHARES = new Int2ObjectOpenHashMap<>();
+   private static final Long2ObjectOpenHashMap<SimulationSignals.Share> BLOCK_SHARES = new Long2ObjectOpenHashMap<>();
    private static final Long2LongOpenHashMap CHUNK_LOADED = new Long2LongOpenHashMap();
    private static final Int2LongOpenHashMap ENTITY_ADDED = new Int2LongOpenHashMap();
    private static final Int2LongOpenHashMap ENTITY_INSIDE = new Int2LongOpenHashMap();
    private static final Map<RegistryKey<World>, LongOpenHashSet> PASSED_BY_DIMENSION = new HashMap<>();
    private static LongOpenHashSet passed = new LongOpenHashSet();
    private static final Int2DoubleOpenHashMap TRACKED_RANGE = new Int2DoubleOpenHashMap();
-   private static final Int2ObjectOpenHashMap<long[]> LIGHTNING_PENDING = new Int2ObjectOpenHashMap();
+   private static final Int2ObjectOpenHashMap<long[]> LIGHTNING_PENDING = new Int2ObjectOpenHashMap<>();
    private static final Int2LongOpenHashMap LAST_ACTIVE = new Int2LongOpenHashMap();
    private static final LongOpenHashSet FROZEN = new LongOpenHashSet();
    private static final ArrayDeque<SimulationSignals.Pin> PINS = new ArrayDeque<>();
@@ -134,16 +132,16 @@ public final class SimulationSignals {
    private SimulationSignals() {
    }
 
-   public static void configure(boolean var0, int var1, int var2, boolean var3, int var4) {
-      if (active && !var0) {
+   public static void configure(boolean bl, int i, int j, boolean bl2, int k) {
+      if (active && !bl) {
          clear();
       }
 
-      active = var0;
-      simOverride = var1;
-      margin = var2;
-      ignoreVisiblePlayers = var3;
-      memoryNanos = Math.max(1, var4) * 1000000000L;
+      active = bl;
+      simOverride = i;
+      margin = j;
+      ignoreVisiblePlayers = bl2;
+      memoryNanos = Math.max(1, k) * 1000000000L;
    }
 
    public static void clear() {
@@ -186,7 +184,7 @@ public final class SimulationSignals {
    }
 
    public static int view() {
-      int var0 = MinecraftClient.method_1551().field_1690.method_38521();
+      int var0 = MinecraftClient.getInstance().options.getClampedViewDistance();
       return serverView > 0 ? Math.min(serverView, var0) : var0;
    }
 
@@ -211,35 +209,35 @@ public final class SimulationSignals {
    }
 
    public static boolean holding() {
-      ClientPlayerEntity var0 = MinecraftClient.method_1551().field_1724;
-      return now() < undergroundUntil || var0 != null && var0.method_23318() < 0.0;
+      ClientPlayerEntity var0 = MinecraftClient.getInstance().player;
+      return now() < undergroundUntil || var0 != null && var0.getY() < 0.0;
    }
 
    public static long now() {
       return System.nanoTime();
    }
 
-   static float decay(long var0) {
-      return (float)Math.exp(-var0 / memoryNanos);
+   static float decay(long l) {
+      return (float)Math.exp(-l / memoryNanos);
    }
 
-   public static void onLogin(int var0, int var1, RegistryKey<World> var2) {
-      serverSim = var0;
-      serverView = var1;
+   public static void onLogin(int i, int j, RegistryKey<World> registryKey) {
+      serverSim = i;
+      serverView = j;
       session++;
-      dimension = var2;
+      dimension = registryKey;
       CHUNK_LOADED.clear();
       clear();
       startQuiet();
    }
 
-   public static void onRespawn(RegistryKey<World> var0) {
+   public static void onRespawn(RegistryKey<World> registryKey) {
       startQuiet();
-      if (!var0.equals(dimension)) {
-         dimension = var0;
+      if (!registryKey.equals(dimension)) {
+         dimension = registryKey;
          CHUNK_LOADED.clear();
          resetLevel();
-         passed = PASSED_BY_DIMENSION.computeIfAbsent(var0, var0x -> new LongOpenHashSet());
+         passed = PASSED_BY_DIMENSION.computeIfAbsent(registryKey, registryKeyx -> new LongOpenHashSet());
       }
    }
 
@@ -247,34 +245,35 @@ public final class SimulationSignals {
       startQuiet();
    }
 
-   public static void onSimulationDistance(int var0) {
-      serverSim = var0;
+   public static void onSimulationDistance(int i) {
+      serverSim = i;
    }
 
-   public static void onViewDistance(int var0) {
-      serverView = var0;
+   public static void onViewDistance(int i) {
+      serverView = i;
    }
 
-   public static void onChunk(int var0, int var1) {
+   public static void onChunk(int i, int j) {
       if (active) {
-         CHUNK_LOADED.put(ChunkPos.method_8331(var0, var1), now());
+         CHUNK_LOADED.put(ChunkPos.toLong(i, j), now());
       }
    }
 
-   public static void onMove(EntityS2CPacket var0) {
+   public static void onMove(EntityS2CPacket entityS2CPacket) {
       if (active) {
-         ClientWorld var2 = MinecraftClient.method_1551().field_1687;
+         ClientWorld var2 = MinecraftClient.getInstance().world;
          if (var2 != null) {
-            Entity var3 = var0.method_11645(var2);
+            Entity var3 = entityS2CPacket.getEntity(var2);
             if (var3 != null) {
-               boolean var1 = var0.method_22826() && (var0.method_36150() != 0 || var0.method_36151() != 0 || var0.method_36152() != 0);
-               if (var1 || var0.method_11652()) {
-                  LAST_ACTIVE.put(var3.method_5628(), now());
+               boolean var1 = entityS2CPacket.isPositionChanged()
+                  && (entityS2CPacket.getDeltaX() != 0 || entityS2CPacket.getDeltaY() != 0 || entityS2CPacket.getDeltaZ() != 0);
+               if (var1 || entityS2CPacket.hasRotation()) {
+                  LAST_ACTIVE.put(var3.getId(), now());
                }
 
                if (var1) {
                   entitySignal(var3, SimulationSignals.Kind.MOVE, 0);
-               } else if (var0.method_11652()) {
+               } else if (entityS2CPacket.hasRotation()) {
                   entitySignal(var3, SimulationSignals.Kind.HEAD, 0);
                }
             }
@@ -282,14 +281,14 @@ public final class SimulationSignals {
       }
    }
 
-   public static void onPositionSync(EntityPositionSyncS2CPacket var0) {
+   public static void onPositionSync(EntityPositionSyncS2CPacket entityPositionSyncS2CPacket) {
       if (active) {
-         ClientWorld var1 = MinecraftClient.method_1551().field_1687;
+         ClientWorld var1 = MinecraftClient.getInstance().world;
          if (var1 != null) {
-            Entity var2 = var1.method_8469(var0.comp_3223());
+            Entity var2 = var1.getEntityById(entityPositionSyncS2CPacket.id());
             if (var2 instanceof LivingEntity) {
-               if (!(var2.method_73189().method_1025(var0.comp_3224().comp_3148()) < 1.0E-4)) {
-                  LAST_ACTIVE.put(var2.method_5628(), now());
+               if (!(var2.getEntityPos().squaredDistanceTo(entityPositionSyncS2CPacket.values().position()) < 1.0E-4)) {
+                  LAST_ACTIVE.put(var2.getId(), now());
                   entitySignal(var2, SimulationSignals.Kind.MOVE, 0);
                }
             }
@@ -297,27 +296,27 @@ public final class SimulationSignals {
       }
    }
 
-   public static void onHeadRotation(EntitySetHeadYawS2CPacket var0) {
+   public static void onHeadRotation(EntitySetHeadYawS2CPacket entitySetHeadYawS2CPacket) {
       if (active) {
-         ClientWorld var1 = MinecraftClient.method_1551().field_1687;
+         ClientWorld var1 = MinecraftClient.getInstance().world;
          if (var1 != null) {
-            Entity var2 = var0.method_11786(var1);
+            Entity var2 = entitySetHeadYawS2CPacket.getEntity(var1);
             if (var2 != null) {
-               LAST_ACTIVE.put(var2.method_5628(), now());
+               LAST_ACTIVE.put(var2.getId(), now());
                entitySignal(var2, SimulationSignals.Kind.HEAD, 0);
             }
          }
       }
    }
 
-   public static void onEntityData(EntityTrackerUpdateS2CPacket var0) {
+   public static void onEntityData(EntityTrackerUpdateS2CPacket entityTrackerUpdateS2CPacket) {
       if (active) {
-         ClientWorld var1 = MinecraftClient.method_1551().field_1687;
+         ClientWorld var1 = MinecraftClient.getInstance().world;
          if (var1 != null) {
-            if (now() - ENTITY_ADDED.getOrDefault(var0.comp_1127(), -4611686018427387904L) >= 2000000000L) {
-               Entity var2 = var1.method_8469(var0.comp_1127());
+            if (now() - ENTITY_ADDED.getOrDefault(entityTrackerUpdateS2CPacket.id(), -4611686018427387904L) >= 2000000000L) {
+               Entity var2 = var1.getEntityById(entityTrackerUpdateS2CPacket.id());
                if (var2 != null) {
-                  LAST_ACTIVE.put(var2.method_5628(), now());
+                  LAST_ACTIVE.put(var2.getId(), now());
                   entitySignal(var2, SimulationSignals.Kind.STATE, 0);
                }
             }
@@ -325,27 +324,27 @@ public final class SimulationSignals {
       }
    }
 
-   public static void onEntityEvent(EntityStatusS2CPacket var0) {
+   public static void onEntityEvent(EntityStatusS2CPacket entityStatusS2CPacket) {
       if (active) {
-         ClientWorld var1 = MinecraftClient.method_1551().field_1687;
+         ClientWorld var1 = MinecraftClient.getInstance().world;
          if (var1 != null) {
-            Entity var2 = var0.method_11469(var1);
+            Entity var2 = entityStatusS2CPacket.getEntity(var1);
             if (var2 != null) {
-               LAST_ACTIVE.put(var2.method_5628(), now());
+               LAST_ACTIVE.put(var2.getId(), now());
                entitySignal(var2, SimulationSignals.Kind.EVENT, 0);
             }
          }
       }
    }
 
-   public static void onEquipment(EntityEquipmentUpdateS2CPacket var0) {
+   public static void onEquipment(EntityEquipmentUpdateS2CPacket entityEquipmentUpdateS2CPacket) {
       if (active) {
-         ClientWorld var1 = MinecraftClient.method_1551().field_1687;
+         ClientWorld var1 = MinecraftClient.getInstance().world;
          if (var1 != null) {
-            if (now() - ENTITY_ADDED.getOrDefault(var0.method_11820(), -4611686018427387904L) >= 2000000000L) {
-               Entity var2 = var1.method_8469(var0.method_11820());
+            if (now() - ENTITY_ADDED.getOrDefault(entityEquipmentUpdateS2CPacket.getEntityId(), -4611686018427387904L) >= 2000000000L) {
+               Entity var2 = var1.getEntityById(entityEquipmentUpdateS2CPacket.getEntityId());
                if (var2 != null) {
-                  LAST_ACTIVE.put(var2.method_5628(), now());
+                  LAST_ACTIVE.put(var2.getId(), now());
                   entitySignal(var2, SimulationSignals.Kind.EQUIP, 0);
                }
             }
@@ -353,22 +352,22 @@ public final class SimulationSignals {
       }
    }
 
-   public static void onDamage(EntityDamageS2CPacket var0) {
+   public static void onDamage(EntityDamageS2CPacket entityDamageS2CPacket) {
       if (active) {
-         MinecraftClient var1 = MinecraftClient.method_1551();
-         ClientWorld var2 = var1.field_1687;
-         ClientPlayerEntity var3 = var1.field_1724;
+         MinecraftClient var1 = MinecraftClient.getInstance();
+         ClientWorld var2 = var1.world;
+         ClientPlayerEntity var3 = var1.player;
          if (var2 != null && var3 != null) {
-            RegistryEntry var4 = var0.comp_1268();
-            if (!var4.method_40225(DamageTypes.field_42353) && !var4.method_40225(DamageTypes.field_42355) && !var4.method_40225(DamageTypes.field_42358)) {
-               Entity var5 = var2.method_8469(var0.comp_1267());
+            RegistryEntry var4 = entityDamageS2CPacket.sourceType();
+            if (!var4.matchesKey(DamageTypes.SWEET_BERRY_BUSH) && !var4.matchesKey(DamageTypes.STALAGMITE) && !var4.matchesKey(DamageTypes.FALLING_STALACTITE)) {
+               Entity var5 = var2.getEntityById(entityDamageS2CPacket.entityId());
                if (var5 != null) {
-                  int var6 = var0.comp_1269();
-                  if (var4.method_40225(DamageTypes.field_42320) && var6 >= 0 && var6 != var3.method_5628() && var2.method_8469(var6) == null) {
-                     pin(var5.method_24515(), "Hidden Attacker hit " + name(var5.method_5864()));
+                  int var6 = entityDamageS2CPacket.sourceCauseId();
+                  if (var4.matchesKey(DamageTypes.PLAYER_ATTACK) && var6 >= 0 && var6 != var3.getId() && var2.getEntityById(var6) == null) {
+                     pin(var5.getBlockPos(), "Hidden Attacker hit " + name(var5.getType()));
                   }
 
-                  LAST_ACTIVE.put(var5.method_5628(), now());
+                  LAST_ACTIVE.put(var5.getId(), now());
                   entitySignal(var5, SimulationSignals.Kind.HURT, 0);
                }
             }
@@ -376,28 +375,28 @@ public final class SimulationSignals {
       }
    }
 
-   public static void onTakeItem(ItemPickupAnimationS2CPacket var0) {
+   public static void onTakeItem(ItemPickupAnimationS2CPacket itemPickupAnimationS2CPacket) {
       if (active) {
-         MinecraftClient var1 = MinecraftClient.method_1551();
-         ClientWorld var2 = var1.field_1687;
-         ClientPlayerEntity var3 = var1.field_1724;
+         MinecraftClient var1 = MinecraftClient.getInstance();
+         ClientWorld var2 = var1.world;
+         ClientPlayerEntity var3 = var1.player;
          if (var2 != null && var3 != null) {
-            int var4 = var0.method_11912();
-            if (var4 != var3.method_5628()) {
-               Entity var5 = var2.method_8469(var0.method_11915());
+            int var4 = itemPickupAnimationS2CPacket.getCollectorEntityId();
+            if (var4 != var3.getId()) {
+               Entity var5 = var2.getEntityById(itemPickupAnimationS2CPacket.getEntityId());
                if (var5 != null) {
-                  Entity var6 = var2.method_8469(var4);
+                  Entity var6 = var2.getEntityById(var4);
                   if (var6 == null) {
                      String var7;
                      if (var5 instanceof ItemEntity var8) {
-                        var7 = Registries.field_41178.method_10221(var8.method_6983().method_7909()).method_12832();
+                        var7 = Registries.ITEM.getId(var8.getStack().getItem()).getPath();
                      } else {
-                        var7 = name(var5.method_5864());
+                        var7 = name(var5.getType());
                      }
 
-                     pin(var5.method_24515(), "Hidden Pickup " + var7);
+                     pin(var5.getBlockPos(), "Hidden Pickup " + var7);
                   } else if (!(var6 instanceof PlayerEntity)) {
-                     LAST_ACTIVE.put(var6.method_5628(), now());
+                     LAST_ACTIVE.put(var6.getId(), now());
                      entitySignal(var6, SimulationSignals.Kind.EVENT, 0);
                   }
                }
@@ -406,20 +405,20 @@ public final class SimulationSignals {
       }
    }
 
-   public static void onAddEntity(EntitySpawnS2CPacket var0) {
+   public static void onAddEntity(EntitySpawnS2CPacket entitySpawnS2CPacket) {
       if (active) {
          long var1 = now();
-         ENTITY_ADDED.put(var0.method_11167(), var1);
-         LAST_ACTIVE.put(var0.method_11167(), var1);
-         EntityType var3 = var0.method_11169();
-         if (var3 != EntityType.field_6097) {
-            BlockPos var4 = BlockPos.method_49637(var0.method_11175(), var0.method_11174(), var0.method_11176());
-            if (var3 == EntityType.field_6112) {
-               LIGHTNING_PENDING.put(var0.method_11167(), new long[]{var4.method_10063(), var1});
+         ENTITY_ADDED.put(entitySpawnS2CPacket.getEntityId(), var1);
+         LAST_ACTIVE.put(entitySpawnS2CPacket.getEntityId(), var1);
+         EntityType var3 = entitySpawnS2CPacket.getEntityType();
+         if (var3 != EntityType.PLAYER) {
+            BlockPos var4 = BlockPos.ofFloored(entitySpawnS2CPacket.getX(), entitySpawnS2CPacket.getY(), entitySpawnS2CPacket.getZ());
+            if (var3 == EntityType.LIGHTNING_BOLT) {
+               LIGHTNING_PENDING.put(entitySpawnS2CPacket.getEntityId(), new long[]{var4.asLong(), var1});
             } else if (spawnable(var3) && !isQuiet()) {
-               if (wellInsideTracking(var0.method_11175(), var0.method_11176(), var3)) {
+               if (wellInsideTracking(entitySpawnS2CPacket.getX(), entitySpawnS2CPacket.getZ(), var3)) {
                   if (settled(var4)) {
-                     int var5 = var0.method_11167();
+                     int var5 = entitySpawnS2CPacket.getEntityId();
                      signal(var4, SimulationSignals.Kind.SPAWN, spill(var3), () -> entityShare(var5), () -> name(var3));
                   }
                }
@@ -428,30 +427,30 @@ public final class SimulationSignals {
       }
    }
 
-   public static void onRemoveEntities(IntList var0) {
+   public static void onRemoveEntities(IntList intList) {
       if (active) {
-         ClientWorld var1 = MinecraftClient.method_1551().field_1687;
+         ClientWorld var1 = MinecraftClient.getInstance().world;
          if (var1 != null) {
             long var2 = now();
             boolean var4 = isQuiet();
 
-            for (int var5 = 0; var5 < var0.size(); var5++) {
-               int var7 = var0.getInt(var5);
-               long[] var8 = (long[])LIGHTNING_PENDING.remove(var7);
+            for (int var5 = 0; var5 < intList.size(); var5++) {
+               int var7 = intList.getInt(var5);
+               long[] var8 = LIGHTNING_PENDING.remove(var7);
                if (var8 != null) {
                   if (!var4 && var2 - var8[1] < 3000000000L) {
-                     signal(BlockPos.method_10092(var8[0]), SimulationSignals.Kind.LIGHTNING, 0, () -> entityShare(var7), () -> "lightning_bolt");
+                     signal(BlockPos.fromLong(var8[0]), SimulationSignals.Kind.LIGHTNING, 0, () -> entityShare(var7), () -> "lightning_bolt");
                   }
                } else {
                   Entity var6;
                   if (!var4
-                     && (var6 = var1.method_8469(var7)) != null
+                     && (var6 = var1.getEntityById(var7)) != null
                      && !(var6 instanceof PlayerEntity)
                      && var2 - ENTITY_ADDED.getOrDefault(var7, -4611686018427387904L) >= 2000000000L
-                     && spawnable(var6.method_5864())
-                     && wellInsideTracking(var6.method_23317(), var6.method_23321(), var6.method_5864())
-                     && settled(var6.method_24515())) {
-                     entitySignal(var6, SimulationSignals.Kind.REMOVE, spill(var6.method_5864()));
+                     && spawnable(var6.getType())
+                     && wellInsideTracking(var6.getX(), var6.getZ(), var6.getType())
+                     && settled(var6.getBlockPos())) {
+                     entitySignal(var6, SimulationSignals.Kind.REMOVE, spill(var6.getType()));
                   }
                }
             }
@@ -459,58 +458,60 @@ public final class SimulationSignals {
       }
    }
 
-   public static void onBlockUpdate(BlockUpdateS2CPacket var0) {
+   public static void onBlockUpdate(BlockUpdateS2CPacket blockUpdateS2CPacket) {
       if (active) {
-         block(var0.method_11309(), var0.method_11308());
+         block(blockUpdateS2CPacket.getPos(), blockUpdateS2CPacket.getState());
       }
    }
 
-   public static void onSectionUpdate(ChunkDeltaUpdateS2CPacket var0) {
+   public static void onSectionUpdate(ChunkDeltaUpdateS2CPacket chunkDeltaUpdateS2CPacket) {
       if (active) {
-         var0.method_30621(SimulationSignals::block);
+         chunkDeltaUpdateS2CPacket.visitUpdates(SimulationSignals::block);
       }
    }
 
-   private static void block(BlockPos var0, BlockState var1) {
-      ClientWorld var2 = MinecraftClient.method_1551().field_1687;
+   private static void block(BlockPos blockPos, BlockState blockState) {
+      ClientWorld var2 = MinecraftClient.getInstance().world;
       if (var2 != null) {
-         BlockState var3 = var2.method_8320(var0);
-         if (var3 != var1) {
-            if (!ignored(var3) && !ignored(var1)) {
-               if (settled(var0)) {
-                  SimulationSignals.Kind var4 = ticked(var3, var1) ? SimulationSignals.Kind.TICK : SimulationSignals.Kind.BLOCK;
-                  signal(var0, var4, 1, () -> blockShare(var0), () -> describe(var3) + " -> " + describe(var1));
+         BlockState var3 = var2.getBlockState(blockPos);
+         if (var3 != blockState) {
+            if (!ignored(var3) && !ignored(blockState)) {
+               if (settled(blockPos)) {
+                  SimulationSignals.Kind var4 = ticked(var3, blockState) ? SimulationSignals.Kind.TICK : SimulationSignals.Kind.BLOCK;
+                  signal(blockPos, var4, 1, () -> blockShare(blockPos), () -> describe(var3) + " -> " + describe(blockState));
                }
             }
          }
       }
    }
 
-   static boolean ticked(BlockState var0, BlockState var1) {
-      Block var3 = var0.method_26204();
+   static boolean ticked(BlockState blockState, BlockState blockState2) {
+      Block var3 = blockState.getBlock();
       Block var2;
-      if (var3 == (var2 = var1.method_26204())) {
+      if (var3 == (var2 = blockState2.getBlock())) {
          return true;
-      } else if (!var0.method_26227().method_15769() || !var1.method_26227().method_15769()) {
+      } else if (!blockState.getFluidState().isEmpty() || !blockState2.getFluidState().isEmpty()) {
          return true;
-      } else if (var0.method_26164(BlockTags.field_15503) && var1.method_26215()) {
+      } else if (blockState.isIn(BlockTags.LEAVES) && blockState2.isAir()) {
          return true;
-      } else if (var0.method_26215() && var1.method_26164(BlockTags.field_15503) && !(Boolean)var1.method_61767(Properties.field_12514, true)) {
+      } else if (blockState.isAir() && blockState2.isIn(BlockTags.LEAVES) && !blockState2.get(Properties.PERSISTENT, true)) {
          return true;
-      } else if (!var0.method_26164(BlockTags.field_15462) || !var1.method_26164(BlockTags.field_15475) && !var1.method_26164(BlockTags.field_15503)) {
-         if (var0.method_26164(BlockTags.field_20341) && var1.method_26215()) {
+      } else if (!blockState.isIn(BlockTags.SAPLINGS) || !blockState2.isIn(BlockTags.LOGS) && !blockState2.isIn(BlockTags.LEAVES)) {
+         if (blockState.isIn(BlockTags.CROPS) && blockState2.isAir()) {
             return true;
-         } else if (var3 != Blocks.field_10566 || var2 != Blocks.field_10219 && var2 != Blocks.field_10402) {
-            if (var3 == Blocks.field_10362 && var2 == Blocks.field_10566) {
+         } else if (var3 != Blocks.DIRT || var2 != Blocks.GRASS_BLOCK && var2 != Blocks.MYCELIUM) {
+            if (var3 == Blocks.FARMLAND && var2 == Blocks.DIRT) {
                return true;
-            } else if (var3 == Blocks.field_46287 && var2 == Blocks.field_46285) {
+            } else if (var3 == Blocks.MELON_STEM && var2 == Blocks.ATTACHED_MELON_STEM) {
                return true;
-            } else if (var3 == Blocks.field_46286 && var2 == Blocks.field_46284) {
+            } else if (var3 == Blocks.PUMPKIN_STEM && var2 == Blocks.ATTACHED_PUMPKIN_STEM) {
                return true;
-            } else if (var0.method_26215() && GROWS_FROM_AIR.contains(var2)) {
+            } else if (blockState.isAir() && GROWS_FROM_AIR.contains(var2)) {
                return true;
             } else {
-               return var1.method_26215() && GONE_TO_AIR.contains(var3) ? true : Oxidizable.method_34737(var3).map(var1x -> var1x == var2).orElse(false);
+               return blockState2.isAir() && GONE_TO_AIR.contains(var3)
+                  ? true
+                  : Oxidizable.getIncreasedOxidationBlock(var3).map(block2 -> block2 == var2).orElse(false);
             }
          } else {
             return true;
@@ -520,32 +521,32 @@ public final class SimulationSignals {
       }
    }
 
-   private static boolean ignored(BlockState var0) {
-      return var0.method_27852(Blocks.field_28048)
-         || var0.method_27852(Blocks.field_28675)
-         || var0.method_27852(Blocks.field_28676)
-         || var0.method_27852(Blocks.field_16999)
-         || var0.method_27852(Blocks.field_20422)
-         || var0.method_27852(Blocks.field_20421)
-         || var0.method_27852(Blocks.field_10597)
-         || var0.method_27852(Blocks.field_22123)
-         || var0.method_27852(Blocks.field_22124)
-         || var0.method_27852(Blocks.field_23078)
-         || var0.method_27852(Blocks.field_23079);
+   private static boolean ignored(BlockState blockState) {
+      return blockState.isOf(Blocks.POINTED_DRIPSTONE)
+         || blockState.isOf(Blocks.CAVE_VINES)
+         || blockState.isOf(Blocks.CAVE_VINES_PLANT)
+         || blockState.isOf(Blocks.SWEET_BERRY_BUSH)
+         || blockState.isOf(Blocks.BEEHIVE)
+         || blockState.isOf(Blocks.BEE_NEST)
+         || blockState.isOf(Blocks.VINE)
+         || blockState.isOf(Blocks.WEEPING_VINES)
+         || blockState.isOf(Blocks.WEEPING_VINES_PLANT)
+         || blockState.isOf(Blocks.TWISTING_VINES)
+         || blockState.isOf(Blocks.TWISTING_VINES_PLANT);
    }
 
    public static void tick() {
       if (active) {
-         MinecraftClient var0 = MinecraftClient.method_1551();
-         ClientPlayerEntity var1 = var0.field_1724;
-         if (var0.field_1687 != null && var1 != null) {
+         MinecraftClient var0 = MinecraftClient.getInstance();
+         ClientPlayerEntity var1 = var0.player;
+         if (var0.world != null && var1 != null) {
             long var2 = now();
-            if (var1.method_23318() < 0.0) {
+            if (var1.getY() < 0.0) {
                undergroundUntil = var2 + 3000000000L;
             }
 
-            double var4 = var1.method_23317();
-            double var6 = var1.method_23321();
+            double var4 = var1.getX();
+            double var6 = var1.getZ();
             if (hasLast && square(var4 - lastX, var6 - lastZ) > 64.0) {
                startQuiet();
             }
@@ -555,8 +556,8 @@ public final class SimulationSignals {
             hasLast = true;
             refreshPassed(var1);
             if (++ticks % 10 == 0) {
-               int var8 = var1.method_24515().method_10263() >> 4;
-               int var9 = var1.method_24515().method_10260() >> 4;
+               int var8 = var1.getBlockPos().getX() >> 4;
+               int var9 = var1.getBlockPos().getZ() >> 4;
                int var10 = ringStart();
                boolean var11 = !isQuiet() && (!hasSample || square(var4 - sampleX, var6 - sampleZ) <= 900.0);
                sampleX = var4;
@@ -566,35 +567,34 @@ public final class SimulationSignals {
                int var13 = view();
                FROZEN.clear();
 
-               for (Entity var15 : var0.field_1687.method_18112()) {
+               for (Entity var15 : var0.world.getEntities()) {
                   if (!(var15 instanceof PlayerEntity)) {
-                     long var19 = LAST_ACTIVE.get(var15.method_5628());
+                     long var19 = LAST_ACTIVE.get(var15.getId());
                      if (var19 == 0L) {
-                        LAST_ACTIVE.put(var15.method_5628(), var2);
+                        LAST_ACTIVE.put(var15.getId(), var2);
                      } else {
                         int var16;
                         int var17;
                         int var18;
                         if (var2 - var19 > 40000000000L
                            && witness(var15)
-                           && (var18 = distance(var17 = var15.method_24515().method_10263() >> 4, var16 = var15.method_24515().method_10260() >> 4, var8, var9))
-                              >= var10
+                           && (var18 = distance(var17 = var15.getBlockPos().getX() >> 4, var16 = var15.getBlockPos().getZ() >> 4, var8, var9)) >= var10
                            && var18 <= var13
                            && !nearVisiblePlayer(var17, var16, var1, 0)) {
-                           FROZEN.add(ChunkPos.method_8331(var17, var16));
+                           FROZEN.add(ChunkPos.toLong(var17, var16));
                         }
                      }
 
-                     if (var11 && spawnable(var15.method_5864()) && !var15.method_5782() && !var15.method_5765()) {
-                        int var21 = var15.method_5864().method_18387();
-                        double var22 = Math.hypot(var15.method_23317() - var4, var15.method_23321() - var6);
+                     if (var11 && spawnable(var15.getType()) && !var15.hasPassengers() && !var15.hasVehicle()) {
+                        int var21 = var15.getType().getMaxTrackDistance();
+                        double var22 = Math.hypot(var15.getX() - var4, var15.getZ() - var6);
                         if (var22 > var12.get(var21)) {
                            var12.put(var21, var22);
                         }
                      }
 
-                     if (distance(var15.method_24515().method_10263() >> 4, var15.method_24515().method_10260() >> 4, var8, var9) < var10) {
-                        ENTITY_INSIDE.put(var15.method_5628(), var2);
+                     if (distance(var15.getBlockPos().getX() >> 4, var15.getBlockPos().getZ() >> 4, var8, var9) < var10) {
+                        ENTITY_INSIDE.put(var15.getId(), var2);
                      }
                   }
                }
@@ -604,10 +604,7 @@ public final class SimulationSignals {
                      TRACKED_RANGE.put(var31, Math.max(var12.get(var31), TRACKED_RANGE.get(var31) - 0.5));
                   }
 
-                  ObjectIterator var25 = var12.int2DoubleEntrySet().iterator();
-
-                  while (var25.hasNext()) {
-                     Entry var28 = (Entry)var25.next();
+                  for (Entry var28 : var12.int2DoubleEntrySet()) {
                      if (var28.getDoubleValue() > TRACKED_RANGE.get(var28.getIntKey())) {
                         TRACKED_RANGE.put(var28.getIntKey(), var28.getDoubleValue());
                      }
@@ -623,46 +620,46 @@ public final class SimulationSignals {
                      }
                   }
 
-                  ENTITY_SHARES.values().removeIf(var2x -> var2x.amount(var2) < 0.05F);
-                  BLOCK_SHARES.values().removeIf(var2x -> var2x.amount(var2) < 0.05F);
+                  ENTITY_SHARES.values().removeIf(share -> share.amount(var2) < 0.05F);
+                  BLOCK_SHARES.values().removeIf(share -> share.amount(var2) < 0.05F);
                   int var29 = view() + 4;
                   CHUNK_LOADED.long2LongEntrySet()
-                     .removeIf(var3 -> distance(ChunkPos.method_8325(var3.getLongKey()), ChunkPos.method_8332(var3.getLongKey()), var8, var9) > var29);
-                  ENTITY_ADDED.int2LongEntrySet().removeIf(var2x -> var2 - var2x.getLongValue() > 60000000000L);
-                  ENTITY_INSIDE.int2LongEntrySet().removeIf(var2x -> var2 - var2x.getLongValue() > 60000000000L);
-                  LIGHTNING_PENDING.values().removeIf(var2x -> var2 - var2x[1] > 3000000000L);
-                  LAST_ACTIVE.keySet().removeIf(var1x -> var0.field_1687.method_8469(var1x) == null);
+                     .removeIf(entry -> distance(ChunkPos.getPackedX(entry.getLongKey()), ChunkPos.getPackedZ(entry.getLongKey()), var8, var9) > var29);
+                  ENTITY_ADDED.int2LongEntrySet().removeIf(entry -> var2 - entry.getLongValue() > 60000000000L);
+                  ENTITY_INSIDE.int2LongEntrySet().removeIf(entry -> var2 - entry.getLongValue() > 60000000000L);
+                  LIGHTNING_PENDING.values().removeIf(ls -> var2 - ls[1] > 3000000000L);
+                  LAST_ACTIVE.keySet().removeIf(i -> var0.world.getEntityById(i) == null);
                }
             }
          }
       }
    }
 
-   private static boolean witness(Entity var0) {
+   private static boolean witness(Entity entity) {
       PathAwareEntity var1;
-      return var0 instanceof PathAwareEntity
-         && !((var1 = (PathAwareEntity)var0) instanceof ShulkerEntity)
-         && !var1.method_5987()
-         && !var1.method_5765()
-         && !var1.method_5782()
-         && !var1.method_6113();
+      return entity instanceof PathAwareEntity
+         && !((var1 = (PathAwareEntity)entity) instanceof ShulkerEntity)
+         && !var1.isAiDisabled()
+         && !var1.hasVehicle()
+         && !var1.hasPassengers()
+         && !var1.isSleeping();
    }
 
-   private static void pin(BlockPos var0, String var1) {
-      ClientPlayerEntity var2 = MinecraftClient.method_1551().field_1724;
-      if (var2 != null && !holding() && var0.method_10264() >= 0) {
+   private static void pin(BlockPos blockPos, String string) {
+      ClientPlayerEntity var2 = MinecraftClient.getInstance().player;
+      if (var2 != null && !holding() && blockPos.getY() >= 0) {
          if (PINS.size() >= 32) {
             PINS.poll();
          }
 
-         PINS.add(new SimulationSignals.Pin(var0.method_10062(), var1 + " @ " + var0.method_10263() + " " + var0.method_10264() + " " + var0.method_10260()));
+         PINS.add(new SimulationSignals.Pin(blockPos.toImmutable(), string + " @ " + blockPos.getX() + " " + blockPos.getY() + " " + blockPos.getZ()));
       }
    }
 
-   private static void refreshPassed(ClientPlayerEntity var0) {
-      int var1 = var0.method_24515().method_10263() >> 4;
-      int var2 = var0.method_24515().method_10260() >> 4;
-      long var3 = ChunkPos.method_8331(var1, var2);
+   private static void refreshPassed(ClientPlayerEntity clientPlayerEntity) {
+      int var1 = clientPlayerEntity.getBlockPos().getX() >> 4;
+      int var2 = clientPlayerEntity.getBlockPos().getZ() >> 4;
+      long var3 = ChunkPos.toLong(var1, var2);
       int var5 = ringStart() - 1 + 1;
       if (var3 != passedCenter || var5 != passedRadius) {
          passedCenter = var3;
@@ -670,7 +667,7 @@ public final class SimulationSignals {
 
          for (int var6 = -var5; var6 <= var5; var6++) {
             for (int var7 = -var5; var7 <= var5; var7++) {
-               long var8 = ChunkPos.method_8331(var1 + var6, var2 + var7);
+               long var8 = ChunkPos.toLong(var1 + var6, var2 + var7);
                if (passed.add(var8)) {
                   CHUNKS.remove(var8);
                }
@@ -679,20 +676,20 @@ public final class SimulationSignals {
       }
    }
 
-   private static void entitySignal(Entity var0, SimulationSignals.Kind var1, int var2) {
-      if (!(var0 instanceof PlayerEntity)) {
-         if (!(var0.method_31483() instanceof PlayerEntity)) {
+   private static void entitySignal(Entity entity, SimulationSignals.Kind kind, int i) {
+      if (!(entity instanceof PlayerEntity)) {
+         if (!(entity.getFirstPassenger() instanceof PlayerEntity)) {
             FallingBlockEntity var5;
-            if (!(var0 instanceof FallingBlockEntity) || !(var5 = (FallingBlockEntity)var0).method_6962().method_27852(Blocks.field_28048)) {
-               ClientPlayerEntity var6 = MinecraftClient.method_1551().field_1724;
+            if (!(entity instanceof FallingBlockEntity) || !(var5 = (FallingBlockEntity)entity).getBlockState().isOf(Blocks.POINTED_DRIPSTONE)) {
+               ClientPlayerEntity var6 = MinecraftClient.getInstance().player;
                if (var6 != null) {
                   Tameable var3;
                   LazyEntityReference var4;
-                  if (!(var0 instanceof Tameable) || (var4 = (var3 = (Tameable)var0).method_66287()) == null || !var6.method_5667().equals(var4.method_66263())
+                  if (!(entity instanceof Tameable) || (var4 = (var3 = (Tameable)entity).getOwnerReference()) == null || !var6.getUuid().equals(var4.getUuid())
                      )
                    {
-                     if (now() - ENTITY_INSIDE.getOrDefault(var0.method_5628(), -4611686018427387904L) >= 60000000000L) {
-                        signal(var0.method_24515(), var1, var2, () -> entityShare(var0.method_5628()), () -> name(var0.method_5864()));
+                     if (now() - ENTITY_INSIDE.getOrDefault(entity.getId(), -4611686018427387904L) >= 60000000000L) {
+                        signal(entity.getBlockPos(), kind, i, () -> entityShare(entity.getId()), () -> name(entity.getType()));
                      }
                   }
                }
@@ -701,47 +698,38 @@ public final class SimulationSignals {
       }
    }
 
-   private static SimulationSignals.Share entityShare(int var0) {
-      return (SimulationSignals.Share)ENTITY_SHARES.computeIfAbsent(var0, var0x -> new SimulationSignals.Share());
+   private static SimulationSignals.Share entityShare(int i) {
+      return ENTITY_SHARES.computeIfAbsent(i, ix -> new SimulationSignals.Share());
    }
 
-   private static SimulationSignals.Share blockShare(BlockPos var0) {
-      return (SimulationSignals.Share)BLOCK_SHARES.computeIfAbsent(var0.method_10063(), var0x -> new SimulationSignals.Share());
+   private static SimulationSignals.Share blockShare(BlockPos blockPos) {
+      return BLOCK_SHARES.computeIfAbsent(blockPos.asLong(), l -> new SimulationSignals.Share());
    }
 
-   private static String name(EntityType<?> var0) {
-      return Registries.field_41177.method_10221(var0).method_12832();
+   private static String name(EntityType<?> entityType) {
+      return Registries.ENTITY_TYPE.getId(entityType).getPath();
    }
 
-   private static String describe(BlockState var0) {
-      return var0.toString().replace("Block{minecraft:", "").replace("}", "");
+   private static String describe(BlockState blockState) {
+      return blockState.toString().replace("Block{minecraft:", "").replace("}", "");
    }
 
-   private static void signal(BlockPos var0, SimulationSignals.Kind var1, int var2, Supplier<SimulationSignals.Share> var3, Supplier<String> var4) {
-      ClientPlayerEntity var8 = MinecraftClient.method_1551().field_1724;
+   private static void signal(BlockPos blockPos, SimulationSignals.Kind kind, int i, Supplier<SimulationSignals.Share> supplier, Supplier<String> supplier2) {
+      ClientPlayerEntity var8 = MinecraftClient.getInstance().player;
       if (var8 != null) {
-         if (var0.method_10264() >= 0 && !holding()) {
-            int var9 = var0.method_10263() >> 4;
+         if (blockPos.getY() >= 0 && !holding()) {
+            int var9 = blockPos.getX() >> 4;
             int var7;
-            int var10 = distance(var9, var7 = var0.method_10260() >> 4, var8.method_24515().method_10263() >> 4, var8.method_24515().method_10260() >> 4);
-            if (var10 >= ringStart() + var2 && var10 <= view()) {
-               long var11 = ChunkPos.method_8331(var9, var7);
+            int var10 = distance(var9, var7 = blockPos.getZ() >> 4, var8.getBlockPos().getX() >> 4, var8.getBlockPos().getZ() >> 4);
+            if (var10 >= ringStart() + i && var10 <= view()) {
+               long var11 = ChunkPos.toLong(var9, var7);
                if (!passed.contains(var11)) {
-                  if (!ignoreVisiblePlayers || !nearVisiblePlayer(var9, var7, var8, var2)) {
+                  if (!ignoreVisiblePlayers || !nearVisiblePlayer(var9, var7, var8, i)) {
                      long var13 = now();
-                     float var15 = ((SimulationSignals.Share)var3.get()).take(var1.weight, var1.cap, var13);
+                     float var15 = ((SimulationSignals.Share)supplier.get()).take(kind.weight, kind.cap, var13);
                      if (!(var15 <= 0.0F)) {
-                        String var16 = var1.title
-                           + " "
-                           + (String)var4.get()
-                           + " @ "
-                           + var0.method_10263()
-                           + " "
-                           + var0.method_10264()
-                           + " "
-                           + var0.method_10260();
-                        ((SimulationSignals.ChunkSignal)CHUNKS.computeIfAbsent(var11, var0x -> new SimulationSignals.ChunkSignal()))
-                           .add(var1, var13, var15, var16);
+                        String var16 = kind.title + " " + (String)supplier2.get() + " @ " + blockPos.getX() + " " + blockPos.getY() + " " + blockPos.getZ();
+                        CHUNKS.computeIfAbsent(var11, l -> new SimulationSignals.ChunkSignal()).add(kind, var13, var15, var16);
                      }
                   }
                }
@@ -750,15 +738,15 @@ public final class SimulationSignals {
       }
    }
 
-   private static boolean nearVisiblePlayer(int var0, int var1, ClientPlayerEntity var2, int var3) {
-      ClientWorld var4 = MinecraftClient.method_1551().field_1687;
+   private static boolean nearVisiblePlayer(int i, int j, ClientPlayerEntity clientPlayerEntity, int k) {
+      ClientWorld var4 = MinecraftClient.getInstance().world;
       if (var4 == null) {
          return false;
       } else {
-         int var5 = simulation() + 1 + var3;
+         int var5 = simulation() + 1 + k;
 
-         for (PlayerEntity var7 : var4.method_18456()) {
-            if (var7 != var2 && distance(var0, var1, var7.method_24515().method_10263() >> 4, var7.method_24515().method_10260() >> 4) <= var5) {
+         for (PlayerEntity var7 : var4.getPlayers()) {
+            if (var7 != clientPlayerEntity && distance(i, j, var7.getBlockPos().getX() >> 4, var7.getBlockPos().getZ() >> 4) <= var5) {
                return true;
             }
          }
@@ -767,27 +755,27 @@ public final class SimulationSignals {
       }
    }
 
-   private static boolean settled(BlockPos var0) {
-      long var1 = CHUNK_LOADED.getOrDefault(ChunkPos.method_8331(var0.method_10263() >> 4, var0.method_10260() >> 4), -9223372036854775808L);
+   private static boolean settled(BlockPos blockPos) {
+      long var1 = CHUNK_LOADED.getOrDefault(ChunkPos.toLong(blockPos.getX() >> 4, blockPos.getZ() >> 4), -9223372036854775808L);
       return var1 == -9223372036854775808L || now() - var1 > 3000000000L;
    }
 
-   private static boolean wellInsideTracking(double var0, double var2, EntityType<?> var4) {
-      ClientPlayerEntity var5 = MinecraftClient.method_1551().field_1724;
+   private static boolean wellInsideTracking(double d, double e, EntityType<?> entityType) {
+      ClientPlayerEntity var5 = MinecraftClient.getInstance().player;
       if (var5 == null) {
          return false;
       } else {
-         double var6 = Math.min(TRACKED_RANGE.get(var4.method_18387()), view() * 16.0);
-         return Math.hypot(var0 - var5.method_23317(), var2 - var5.method_23321()) < var6 - 24.0;
+         double var6 = Math.min(TRACKED_RANGE.get(entityType.getMaxTrackDistance()), view() * 16.0);
+         return Math.hypot(d - var5.getX(), e - var5.getZ()) < var6 - 24.0;
       }
    }
 
-   private static boolean spawnable(EntityType<?> var0) {
-      return var0.method_5891() == SpawnGroup.field_6302 || var0 == EntityType.field_6052 || var0 == EntityType.field_6044;
+   private static boolean spawnable(EntityType<?> entityType) {
+      return entityType.getSpawnGroup() == SpawnGroup.MONSTER || entityType == EntityType.ITEM || entityType == EntityType.EXPERIENCE_ORB;
    }
 
-   private static int spill(EntityType<?> var0) {
-      return var0 != EntityType.field_6052 && var0 != EntityType.field_6044 ? 0 : 1;
+   private static int spill(EntityType<?> entityType) {
+      return entityType != EntityType.ITEM && entityType != EntityType.EXPERIENCE_ORB ? 0 : 1;
    }
 
    private static void startQuiet() {
@@ -798,12 +786,12 @@ public final class SimulationSignals {
       return now() < quietUntil;
    }
 
-   private static double square(double var0, double var2) {
-      return var0 * var0 + var2 * var2;
+   private static double square(double d, double e) {
+      return d * d + e * e;
    }
 
-   public static int distance(int var0, int var1, int var2, int var3) {
-      return Math.max(Math.abs(var0 - var2), Math.abs(var1 - var3));
+   public static int distance(int i, int j, int k, int l) {
+      return Math.max(Math.abs(i - k), Math.abs(j - l));
    }
 
    @Environment(EnvType.CLIENT)
@@ -817,32 +805,32 @@ public final class SimulationSignals {
       public ChunkSignal() {
       }
 
-      public float score(long var1) {
-         return this.score * SimulationSignals.decay(var1 - this.updated);
+      public float score(long l) {
+         return this.score * SimulationSignals.decay(l - this.updated);
       }
 
-      public boolean has(SimulationSignals.Kind var1) {
-         return (this.kinds & 1 << var1.ordinal()) != 0;
+      public boolean has(SimulationSignals.Kind kind) {
+         return (this.kinds & 1 << kind.ordinal()) != 0;
       }
 
-      public int count(SimulationSignals.Kind var1) {
-         return this.counts[var1.ordinal()];
+      public int count(SimulationSignals.Kind kind) {
+         return this.counts[kind.ordinal()];
       }
 
       public List<String> recent() {
          return List.copyOf(this.recent);
       }
 
-      void add(SimulationSignals.Kind var1, long var2, float var4, String var5) {
-         this.recent.addLast(var5);
+      void add(SimulationSignals.Kind kind, long l, float f, String string) {
+         this.recent.addLast(string);
          if (this.recent.size() > 6) {
             this.recent.removeFirst();
          }
 
-         this.score = this.score(var2) + var4;
-         this.updated = var2;
-         this.kinds = this.kinds | 1 << var1.ordinal();
-         int var6 = var1.ordinal();
+         this.score = this.score(l) + f;
+         this.updated = l;
+         this.kinds = this.kinds | 1 << kind.ordinal();
+         int var6 = kind.ordinal();
          this.counts[var6]++;
       }
    }
@@ -865,10 +853,10 @@ public final class SimulationSignals {
       final float weight;
       final float cap;
 
-      private Kind(String nullxx, float nullxxx, boolean nullxxxx) {
-         this.title = nullxx;
-         this.weight = nullxxx;
-         this.cap = nullxxxx ? 10.0F : 4.0F;
+      private Kind(String string2, float f, boolean bl) {
+         this.title = string2;
+         this.weight = f;
+         this.cap = bl ? 10.0F : 4.0F;
       }
    }
 
@@ -884,18 +872,18 @@ public final class SimulationSignals {
       private Share() {
       }
 
-      float amount(long var1) {
-         return this.amount * SimulationSignals.decay(var1 - this.updated);
+      float amount(long l) {
+         return this.amount * SimulationSignals.decay(l - this.updated);
       }
 
-      float take(float var1, float var2, long var3) {
-         float var5 = this.amount(var3);
-         float var6 = Math.min(var1, Math.max(var2, var1) - var5);
+      float take(float f, float g, long l) {
+         float var5 = this.amount(l);
+         float var6 = Math.min(f, Math.max(g, f) - var5);
          if (var6 <= 0.0F) {
             return 0.0F;
          } else {
             this.amount = var5 + var6;
-            this.updated = var3;
+            this.updated = l;
             return var6;
          }
       }

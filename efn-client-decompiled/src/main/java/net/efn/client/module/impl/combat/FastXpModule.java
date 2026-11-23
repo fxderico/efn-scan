@@ -29,11 +29,11 @@ public final class FastXpModule extends ClientModule {
    @EventHandler(
       priority = EventPriority.LOWEST
    )
-   public void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientPlayerEntity var3 = var2.field_1724;
-      if (var3 != null && var2.field_1755 == null && var2.field_1690.field_1904.method_1434()) {
-         if (!var3.method_6115() && holdsXp(var3)) {
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientPlayerEntity var3 = var2.player;
+      if (var3 != null && var2.currentScreen == null && var2.options.useKey.isPressed()) {
+         if (!var3.isUsingItem() && holdsXp(var3)) {
             AccessorCombatMinecraft var4 = (AccessorCombatMinecraft)var2;
             int var5 = var4.efn$rightClickDelay();
             if (!ServerRotation.pending() && !MeleeAttacks.actedThisTick(var3)) {
@@ -42,17 +42,17 @@ public final class FastXpModule extends ClientModule {
                }
             } else {
                var4.efn$setRightClickDelay(Math.max(var5, 2));
-               KeyBinding var6 = var2.field_1690.field_1904;
+               KeyBinding var6 = var2.options.useKey;
 
-               while (var6.method_1436()) {
+               while (var6.wasPressed()) {
                }
             }
          }
       }
    }
 
-   private static boolean holdsXp(ClientPlayerEntity var0) {
-      ItemStack var1 = var0.method_6047();
-      return var1.method_31574(Items.field_8287) || var0.method_6079().method_31574(Items.field_8287) && !(var1.method_7909() instanceof BlockItem);
+   private static boolean holdsXp(ClientPlayerEntity clientPlayerEntity) {
+      ItemStack var1 = clientPlayerEntity.getMainHandStack();
+      return var1.isOf(Items.EXPERIENCE_BOTTLE) || clientPlayerEntity.getOffHandStack().isOf(Items.EXPERIENCE_BOTTLE) && !(var1.getItem() instanceof BlockItem);
    }
 }

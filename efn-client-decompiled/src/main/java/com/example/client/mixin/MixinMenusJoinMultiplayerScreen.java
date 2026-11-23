@@ -22,15 +22,15 @@ public abstract class MixinMenusJoinMultiplayerScreen extends Screen {
    @Unique
    private MultiplayerOverlay efn$overlay;
 
-   protected MixinMenusJoinMultiplayerScreen(Text var1) {
-      super(var1);
+   protected MixinMenusJoinMultiplayerScreen(Text text) {
+      super(text);
    }
 
    @Inject(
-      method = {"method_25426"},
+      method = {"init"},
       at = {@At("TAIL")}
    )
-   private void efn$addOverlay(CallbackInfo var1) {
+   private void efn$addOverlay(CallbackInfo callbackInfo) {
       MultiplayerOverlay var2 = this.efn$overlay = EfnTitleScreen.enabled() ? new MultiplayerOverlay((MultiplayerScreen)this) : null;
       if (this.efn$overlay != null) {
          this.efn$overlay.show();
@@ -38,50 +38,54 @@ public abstract class MixinMenusJoinMultiplayerScreen extends Screen {
    }
 
    @Inject(
-      method = {"method_48640"},
+      method = {"refreshWidgetPositions"},
       at = {@At("TAIL")}
    )
-   private void efn$showOverlay(CallbackInfo var1) {
+   private void efn$showOverlay(CallbackInfo callbackInfo) {
       if (this.efn$overlay != null) {
          this.efn$overlay.show();
       }
    }
 
    @Inject(
-      method = {"method_25432"},
+      method = {"removed"},
       at = {@At("TAIL")}
    )
-   private void efn$hideOverlay(CallbackInfo var1) {
+   private void efn$hideOverlay(CallbackInfo callbackInfo) {
       if (this.efn$overlay != null) {
          this.efn$overlay.hide();
       }
    }
 
    @Inject(
-      method = {"method_25404"},
+      method = {"keyPressed"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$overlayKeys(KeyInput var1, CallbackInfoReturnable<Boolean> var2) {
-      if (this.efn$overlay != null && this.efn$overlay.keyPressed(var1.comp_4795())) {
-         var2.setReturnValue(true);
+   private void efn$overlayKeys(KeyInput keyInput, CallbackInfoReturnable<Boolean> callbackInfoReturnable) {
+      if (this.efn$overlay != null && this.efn$overlay.keyPressed(keyInput.key())) {
+         callbackInfoReturnable.setReturnValue(true);
       }
    }
 
-   public boolean method_25402(Click var1, boolean var2) {
-      return this.efn$takesPointer() || super.method_25402(var1, var2);
+   @Override
+   public boolean mouseClicked(Click click, boolean doubled) {
+      return this.efn$takesPointer() || super.mouseClicked(click, doubled);
    }
 
-   public boolean method_25406(Click var1) {
-      return this.efn$takesPointer() || super.method_25406(var1);
+   @Override
+   public boolean mouseReleased(Click click) {
+      return this.efn$takesPointer() || super.mouseReleased(click);
    }
 
-   public boolean method_25403(Click var1, double var2, double var4) {
-      return this.efn$takesPointer() || super.method_25403(var1, var2, var4);
+   @Override
+   public boolean mouseDragged(Click click, double offsetX, double offsetY) {
+      return this.efn$takesPointer() || super.mouseDragged(click, offsetX, offsetY);
    }
 
-   public boolean method_25401(double var1, double var3, double var5, double var7) {
-      return this.efn$takesPointer() || super.method_25401(var1, var3, var5, var7);
+   @Override
+   public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+      return this.efn$takesPointer() || super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
    }
 
    @Unique

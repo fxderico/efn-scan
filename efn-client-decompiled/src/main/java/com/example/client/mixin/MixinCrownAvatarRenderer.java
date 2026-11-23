@@ -17,15 +17,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Environment(EnvType.CLIENT)
 @Mixin({PlayerEntityRenderer.class})
 public abstract class MixinCrownAvatarRenderer<T extends PlayerLikeEntity> extends LivingEntityRenderer<T, PlayerEntityRenderState, PlayerEntityModel> {
-   protected MixinCrownAvatarRenderer(Context var1, PlayerEntityModel var2, float var3) {
-      super(var1, var2, var3);
+   protected MixinCrownAvatarRenderer(Context context, PlayerEntityModel playerEntityModel, float f) {
+      super(context, playerEntityModel, f);
    }
 
    @Inject(
       method = {"<init>"},
       at = {@At("TAIL")}
    )
-   private void efn$addHeadCosmetics(Context var1, boolean var2, CallbackInfo var3) {
-      this.method_4046(new CrownLayer(this));
+   private void efn$addHeadCosmetics(Context context, boolean bl, CallbackInfo callbackInfo) {
+      this.addFeature(new CrownLayer(this));
    }
 }

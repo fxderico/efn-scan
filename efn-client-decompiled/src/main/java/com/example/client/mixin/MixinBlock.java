@@ -18,14 +18,16 @@ public abstract class MixinBlock {
    }
 
    @Inject(
-      method = {"method_9607"},
+      method = {"shouldDrawSide"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private static void efn$xrayForceFace(BlockState var0, BlockState var1, Direction var2, CallbackInfoReturnable<Boolean> var3) {
+   private static void efn$xrayForceFace(
+      BlockState blockState, BlockState blockState2, Direction direction, CallbackInfoReturnable<Boolean> callbackInfoReturnable
+   ) {
       XrayModule.Snapshot var4 = XrayModule.active;
-      if (var4 != null && var4.isWhitelisted(var0.method_26204()) && XrayModule.CURRENT_ALPHA.get()[0] >= 1.0F) {
-         var3.setReturnValue(true);
+      if (var4 != null && var4.isWhitelisted(blockState.getBlock()) && XrayModule.CURRENT_ALPHA.get()[0] >= 1.0F) {
+         callbackInfoReturnable.setReturnValue(true);
       }
    }
 }

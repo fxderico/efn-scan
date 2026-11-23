@@ -18,13 +18,15 @@ public abstract class MixinFallingBlockRenderer {
    }
 
    @Inject(
-      method = {"method_62436"},
+      method = {"shouldRender"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$cancelFallingBlock(FallingBlockEntity var1, Frustum var2, double var3, double var5, double var7, CallbackInfoReturnable<Boolean> var9) {
+   private void efn$cancelFallingBlock(
+      FallingBlockEntity fallingBlockEntity, Frustum frustum, double d, double e, double f, CallbackInfoReturnable<Boolean> callbackInfoReturnable
+   ) {
       if (NoRenderModule.hideFallingBlocks()) {
-         var9.setReturnValue(false);
+         callbackInfoReturnable.setReturnValue(false);
       }
    }
 }

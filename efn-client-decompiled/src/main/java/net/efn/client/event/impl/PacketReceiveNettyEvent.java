@@ -16,12 +16,12 @@ public final class PacketReceiveNettyEvent extends CancellableEvent {
    private PacketReceiveNettyEvent() {
    }
 
-   public static boolean dispatchSync(Packet<?> var0) {
+   public static boolean dispatchSync(Packet<?> packet) {
       if (!TYPE.hasPreListeners()) {
          return false;
       } else {
          PacketReceiveNettyEvent var1 = TYPE.pool.acquire();
-         var1.packet = var0;
+         var1.packet = packet;
          var1.resetCancellation();
 
          boolean var3;

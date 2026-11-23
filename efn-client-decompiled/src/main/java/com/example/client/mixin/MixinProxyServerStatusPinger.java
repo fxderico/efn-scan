@@ -24,7 +24,7 @@ public abstract class MixinProxyServerStatusPinger {
    }
 
    @WrapOperation(
-      method = {"method_3001"},
+      method = {"ping"},
       at = {@At(
          value = "INVOKE",
          target = "Lio/netty/bootstrap/Bootstrap;handler(Lio/netty/channel/ChannelHandler;)Lio/netty/bootstrap/AbstractBootstrap;"
@@ -32,8 +32,11 @@ public abstract class MixinProxyServerStatusPinger {
       require = 0
    )
    private AbstractBootstrap<?, ?> efn$routeLegacyPing(
-      Bootstrap var1, ChannelHandler var2, Operation<AbstractBootstrap<?, ?>> var3, @Local(argsOnly = true) InetSocketAddress var4
+      Bootstrap bootstrap,
+      ChannelHandler channelHandler,
+      Operation<AbstractBootstrap<?, ?>> operation,
+      @Local(argsOnly = true) InetSocketAddress inetSocketAddress
    ) {
-      return (AbstractBootstrap<?, ?>)var3.call(new Object[]{var1, ProxyRouting.route(var4, var2)});
+      return (AbstractBootstrap<?, ?>)operation.call(bootstrap, ProxyRouting.route(inetSocketAddress, channelHandler));
    }
 }

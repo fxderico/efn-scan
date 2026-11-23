@@ -28,12 +28,12 @@ public final class JumpResetModule extends ClientModule {
    }
 
    @EventHandler
-   public void onPacketApplied(PacketAppliedEvent var1) {
-      if (var1.packet instanceof EntityVelocityUpdateS2CPacket var3) {
-         ClientPlayerEntity var4 = MinecraftClient.method_1551().field_1724;
-         if (var4 != null && var3.method_11818() == var4.method_5628()) {
-            Vec3d var5 = var3.method_73085();
-            if (var5.method_37267() >= 0.1 && var5.field_1351 > 0.0) {
+   public void onPacketApplied(PacketAppliedEvent packetAppliedEvent) {
+      if (packetAppliedEvent.packet instanceof EntityVelocityUpdateS2CPacket var3) {
+         ClientPlayerEntity var4 = MinecraftClient.getInstance().player;
+         if (var4 != null && var3.getEntityId() == var4.getId()) {
+            Vec3d var5 = var3.getVelocity();
+            if (var5.horizontalLength() >= 0.1 && var5.y > 0.0) {
                this.pending = true;
             }
          }
@@ -41,14 +41,14 @@ public final class JumpResetModule extends ClientModule {
    }
 
    @EventHandler
-   public void onTick(TickEvent var1) {
+   public void onTick(TickEvent tickEvent) {
       if (this.pending) {
          this.pending = false;
-         MinecraftClient var2 = MinecraftClient.method_1551();
-         ClientPlayerEntity var3 = var2.field_1724;
-         if (var3 != null && var2.field_1755 == null) {
-            if (var3.method_24828() && var3.method_5624() && var3.field_3913.field_54155.comp_3159()) {
-               if (!var3.method_5799() && !var3.method_5771() && !var3.method_6101() && !var3.method_5765() && !var3.method_6128()) {
+         MinecraftClient var2 = MinecraftClient.getInstance();
+         ClientPlayerEntity var3 = var2.player;
+         if (var3 != null && var2.currentScreen == null) {
+            if (var3.isOnGround() && var3.isSprinting() && var3.input.playerInput.forward()) {
+               if (!var3.isTouchingWater() && !var3.isInLava() && !var3.isClimbing() && !var3.hasVehicle() && !var3.isGliding()) {
                   InputControl.jump();
                }
             }

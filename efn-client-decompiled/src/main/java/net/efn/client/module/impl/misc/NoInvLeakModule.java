@@ -76,106 +76,106 @@ public final class NoInvLeakModule extends ClientModule {
       StreamOverlay.stop();
    }
 
-   public static ItemStack hotbar(ItemStack var0, int var1, int var2, int var3) {
+   public static ItemStack hotbar(ItemStack itemStack, int i, int j, int k) {
       NoInvLeakModule var5 = active;
-      if (var5 != null && var0 != null) {
-         int var4 = var3 == 10 ? 40 : (var3 >= 1 && var3 <= 9 ? var3 - 1 : 41);
+      if (var5 != null && itemStack != null) {
+         int var4 = k == 10 ? 40 : (k >= 1 && k <= 9 ? k - 1 : 41);
          if (var5.streamOverlaying() && StreamOverlay.recordsHotbar()) {
-            StreamOverlay.hotbar(var4, var1, var2, var0);
-            return ItemStack.field_8037;
+            StreamOverlay.hotbar(var4, i, j, itemStack);
+            return ItemStack.EMPTY;
          } else {
-            return var5.shown(var0, var4);
+            return var5.shown(itemStack, var4);
          }
       } else {
-         return var0;
+         return itemStack;
       }
    }
 
-   public static ItemStack container(ItemStack var0, Slot var1, int var2, int var3, boolean var4) {
+   public static ItemStack container(ItemStack itemStack, Slot slot, int i, int j, boolean bl) {
       NoInvLeakModule var5 = active;
-      if (var5 != null && var0 != null) {
-         int var6 = inventoryIndex(var1);
+      if (var5 != null && itemStack != null) {
+         int var6 = inventoryIndex(slot);
          if (var5.streamOverlaying()) {
-            StreamOverlay.container(var6, var2, var3, var0, var4);
-            return ItemStack.field_8037;
+            StreamOverlay.container(var6, i, j, itemStack, bl);
+            return ItemStack.EMPTY;
          } else {
-            return var5.shown(var0, var6);
+            return var5.shown(itemStack, var6);
          }
       } else {
-         return var0;
+         return itemStack;
       }
    }
 
-   private static int inventoryIndex(Slot var0) {
+   private static int inventoryIndex(Slot slot) {
       Slot var1;
-      if (var0 instanceof AccessorCreativeSlotWrapper var2) {
+      if (slot instanceof AccessorCreativeSlotWrapper var2) {
          var1 = var2.efn$target();
       } else {
-         var1 = var0;
+         var1 = slot;
       }
 
-      return var1.method_34266();
+      return var1.getIndex();
    }
 
-   public static ItemStack dragged(ItemStack var0) {
+   public static ItemStack dragged(ItemStack itemStack) {
       NoInvLeakModule var1 = active;
-      if (var1 != null && var0 != null && !var0.method_7960()) {
-         return var1.streamOverlaying() ? ItemStack.field_8037 : var1.fake(var0, 41);
+      if (var1 != null && itemStack != null && !itemStack.isEmpty()) {
+         return var1.streamOverlaying() ? ItemStack.EMPTY : var1.fake(itemStack, 41);
       } else {
-         return var0;
+         return itemStack;
       }
    }
 
-   public static boolean hidesModelOf(LivingEntity var0) {
-      return active != null && var0 != null && var0 == MinecraftClient.method_1551().field_1724;
+   public static boolean hidesModelOf(LivingEntity livingEntity) {
+      return active != null && livingEntity != null && livingEntity == MinecraftClient.getInstance().player;
    }
 
-   public static void bareModel(boolean var0) {
-      bareModel = var0;
+   public static void bareModel(boolean bl) {
+      bareModel = bl;
    }
 
-   public static ItemStack modelItem(LivingEntity var0, ItemStack var1) {
-      return bareModel && var1 != null && !var1.method_7960() && var0 == MinecraftClient.method_1551().field_1724 ? ItemStack.field_8037 : var1;
+   public static ItemStack modelItem(LivingEntity livingEntity, ItemStack itemStack) {
+      return bareModel && itemStack != null && !itemStack.isEmpty() && livingEntity == MinecraftClient.getInstance().player ? ItemStack.EMPTY : itemStack;
    }
 
-   public static int screenX(DrawContext var0, int var1, int var2, int var3) {
-      if (var0 != null && active != null) {
-         var0.method_51448().transformPosition(var1, var2, POINT);
+   public static int screenX(DrawContext drawContext, int i, int j, int k) {
+      if (drawContext != null && active != null) {
+         drawContext.getMatrices().transformPosition(i, j, POINT);
          return Math.round(POINT.x);
       } else {
-         return var3;
+         return k;
       }
    }
 
-   public static int screenY(DrawContext var0, int var1, int var2, int var3) {
-      if (var0 != null && active != null) {
-         var0.method_51448().transformPosition(var1, var2, POINT);
+   public static int screenY(DrawContext drawContext, int i, int j, int k) {
+      if (drawContext != null && active != null) {
+         drawContext.getMatrices().transformPosition(i, j, POINT);
          return Math.round(POINT.y);
       } else {
-         return var3;
+         return k;
       }
    }
 
-   public static ItemStack carried(ItemStack var0, int var1, int var2) {
+   public static ItemStack carried(ItemStack itemStack, int i, int j) {
       NoInvLeakModule var3 = active;
-      if (var3 == null || var0 == null || var0.method_7960()) {
-         return var0;
+      if (var3 == null || itemStack == null || itemStack.isEmpty()) {
+         return itemStack;
       } else if (var3.streamOverlaying()) {
-         StreamOverlay.carried(var0, var1, var2);
-         return ItemStack.field_8037;
+         StreamOverlay.carried(itemStack, i, j);
+         return ItemStack.EMPTY;
       } else {
-         return var3.fake(var0, 41);
+         return var3.fake(itemStack, 41);
       }
    }
 
-   public static ItemStack shownInHud(ItemStack var0, EquipmentSlot var1) {
+   public static ItemStack shownInHud(ItemStack itemStack, EquipmentSlot equipmentSlot) {
       NoInvLeakModule var2 = active;
-      return var2 != null && var2.hud.get() && var0 != null && !var0.method_7960() ? var2.fake(var0, inventorySlot(var1)) : var0;
+      return var2 != null && var2.hud.get() && itemStack != null && !itemStack.isEmpty() ? var2.fake(itemStack, inventorySlot(equipmentSlot)) : itemStack;
    }
 
-   public static ItemStack fakeFor(int var0) {
+   public static ItemStack fakeFor(int i) {
       NoInvLeakModule var1 = active;
-      return var1 == null ? ItemStack.field_8037 : var1.fake(ItemStack.field_8037, var0);
+      return var1 == null ? ItemStack.EMPTY : var1.fake(ItemStack.EMPTY, i);
    }
 
    public static boolean fillsEmpty() {
@@ -192,8 +192,8 @@ public final class NoInvLeakModule extends ClientModule {
       return this.streamOnly.get() && StreamOverlay.usable();
    }
 
-   public static boolean ownSlot(Slot var0) {
-      return active != null && var0 != null && var0.field_7871 instanceof PlayerInventory;
+   public static boolean ownSlot(Slot slot) {
+      return active != null && slot != null && slot.inventory instanceof PlayerInventory;
    }
 
    public static boolean hidesTooltips() {
@@ -216,10 +216,10 @@ public final class NoInvLeakModule extends ClientModule {
       return var0 != null && var0.streamOnly.get();
    }
 
-   public static void streamNotice(String var0, String var1) {
+   public static void streamNotice(String string, String string2) {
       NoInvLeakModule var2 = active;
       if (var2 != null) {
-         ModuleChat.send(var2, ModuleChat.body().warn(var0).text(var1));
+         ModuleChat.send(var2, ModuleChat.body().warn(string).text(string2));
       }
    }
 
@@ -228,35 +228,35 @@ public final class NoInvLeakModule extends ClientModule {
       return var0 != null && !var0.style.is("Empty");
    }
 
-   private ItemStack shown(ItemStack var1, int var2) {
-      return var1.method_7960() && !this.fillEmpty.get() ? var1 : this.fake(var1, var2);
+   private ItemStack shown(ItemStack itemStack, int i) {
+      return itemStack.isEmpty() && !this.fillEmpty.get() ? itemStack : this.fake(itemStack, i);
    }
 
-   private ItemStack fake(ItemStack var1, int var2) {
+   private ItemStack fake(ItemStack itemStack, int i) {
       if (this.style.is("Empty")) {
-         return ItemStack.field_8037;
+         return ItemStack.EMPTY;
       } else if (this.style.is("Random")) {
-         return this.loadout.get(var2);
+         return this.loadout.get(i);
       } else {
          ItemStack var3 = totem;
          if (var3 == null) {
-            totem = var3 = new ItemStack(Items.field_8288);
+            totem = var3 = new ItemStack(Items.TOTEM_OF_UNDYING);
          }
 
          return var3;
       }
    }
 
-   private static int inventorySlot(EquipmentSlot var0) {
-      return switch (var0) {
-         case field_6169 -> 39;
-         case field_6174 -> 38;
-         case field_6172 -> 37;
-         case field_6166 -> 36;
-         case field_6171 -> 40;
-         case field_6173 -> {
-            ClientPlayerEntity var1 = MinecraftClient.method_1551().field_1724;
-            yield var1 != null ? var1.method_31548().method_67532() : 41;
+   private static int inventorySlot(EquipmentSlot equipmentSlot) {
+      return switch (equipmentSlot) {
+         case HEAD -> 39;
+         case CHEST -> 38;
+         case LEGS -> 37;
+         case FEET -> 36;
+         case OFFHAND -> 40;
+         case MAINHAND -> {
+            ClientPlayerEntity var1 = MinecraftClient.getInstance().player;
+            yield var1 != null ? var1.getInventory().getSelectedSlot() : 41;
          }
          default -> 41;
       };

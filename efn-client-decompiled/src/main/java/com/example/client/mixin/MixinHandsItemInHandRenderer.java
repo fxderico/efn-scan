@@ -23,30 +23,30 @@ public abstract class MixinHandsItemInHandRenderer {
    }
 
    @Inject(
-      method = {"method_3228"},
+      method = {"renderFirstPersonItem"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_4587;method_22903()V",
+         target = "Lnet/minecraft/client/util/math/MatrixStack;push()V",
          shift = Shift.AFTER
       )}
    )
    private void efn$handsPose(
-      AbstractClientPlayerEntity var1,
-      float var2,
-      float var3,
-      Hand var4,
-      float var5,
-      ItemStack var6,
-      float var7,
-      MatrixStack var8,
-      OrderedRenderCommandQueue var9,
-      int var10,
-      CallbackInfo var11
+      AbstractClientPlayerEntity abstractClientPlayerEntity,
+      float f,
+      float g,
+      Hand hand,
+      float h,
+      ItemStack itemStack,
+      float i,
+      MatrixStack matrixStack,
+      OrderedRenderCommandQueue orderedRenderCommandQueue,
+      int j,
+      CallbackInfo callbackInfo
    ) {
       if (HandsModule.live != null) {
-         boolean var12 = var4 == Hand.field_5808;
-         Arm var13 = var12 ? var1.method_6068() : var1.method_6068().method_5928();
-         HandsModule.shape(var8, var12, var13 == Arm.field_6183 ? 1 : -1);
+         boolean var12 = hand == Hand.MAIN_HAND;
+         Arm var13 = var12 ? abstractClientPlayerEntity.getMainArm() : abstractClientPlayerEntity.getMainArm().getOpposite();
+         HandsModule.shape(matrixStack, var12, var13 == Arm.RIGHT ? 1 : -1);
       }
    }
 }

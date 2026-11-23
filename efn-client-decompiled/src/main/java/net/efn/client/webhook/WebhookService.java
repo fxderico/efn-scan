@@ -20,16 +20,16 @@ public final class WebhookService {
    public WebhookService() {
    }
 
-   public boolean send(WebhookConfig var1, WebhookPayloadBuilder var2) {
+   public boolean send(WebhookConfig webhookConfig, WebhookPayloadBuilder webhookPayloadBuilder) {
       JsonObject var3;
       try {
-         var3 = var2.build(var1);
+         var3 = webhookPayloadBuilder.build(webhookConfig);
       } catch (RuntimeException var7) {
-         EfnClientMod.LOGGER.warn("[EFN] Failed to build webhook payload", var7);
+         EfnClientMod.LOGGER.warn("[EFN] Failed to build webhook payload", (Throwable)var7);
          return false;
       }
 
-      HttpRequest var4 = HttpRequest.newBuilder(URI.create(var1.url()))
+      HttpRequest var4 = HttpRequest.newBuilder(URI.create(webhookConfig.url()))
          .timeout(Duration.ofSeconds(10L))
          .header("Content-Type", "application/json")
          .POST(BodyPublishers.ofString(var3.toString()))
@@ -48,7 +48,7 @@ public final class WebhookService {
             Thread.currentThread().interrupt();
          }
 
-         EfnClientMod.LOGGER.warn("[EFN] Webhook request failed", var8);
+         EfnClientMod.LOGGER.warn("[EFN] Webhook request failed", (Throwable)var8);
       }
 
       return false;

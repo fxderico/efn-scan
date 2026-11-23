@@ -37,7 +37,7 @@ final class OverlayWindow {
    private static final int WS_EX_TOOLWINDOW = 128;
    private static final int WS_EX_NOACTIVATE = 134217728;
    private static final int WDA_EXCLUDEFROMCAPTURE = 17;
-   private static final WindowProc PROC = (var0, var1, var2, var3) -> User32.INSTANCE.DefWindowProc(var0, var1, var2, var3);
+   private static final WindowProc PROC = (hWND, i, wPARAM, lPARAM) -> User32.INSTANCE.DefWindowProc(hWND, i, wPARAM, lPARAM);
    private static boolean classRegistered;
    private final POINT destination = new POINT();
    private final POINT source = new POINT(0, 0);
@@ -53,7 +53,7 @@ final class OverlayWindow {
    private int capacityHeight;
    private boolean visible;
 
-   OverlayWindow(long var1) {
+   OverlayWindow(long l) {
       int var3 = windowsBuild();
       if (var3 > 0 && var3 < 19041) {
          throw new OverlayWindow.Unsupported("Windows build " + var3 + " cannot hide a window from capture (needs 19041, Windows 10 2004, or newer)");
@@ -71,7 +71,7 @@ final class OverlayWindow {
             classRegistered = true;
          }
 
-         HWND var8 = new HWND(new Pointer(GLFWNativeWin32.glfwGetWin32Window(var1)));
+         HWND var8 = new HWND(new Pointer(GLFWNativeWin32.glfwGetWin32Window(l)));
          this.hwnd = User32.INSTANCE.CreateWindowEx(134742176, "EfnNoInvLeakOverlay", "", -2147483648, 0, 0, 1, 1, var8, null, var4, null);
          if (this.hwnd == null) {
             throw failure("CreateWindowEx");
@@ -94,10 +94,10 @@ final class OverlayWindow {
       }
    }
 
-   IntBuffer pixels(int var1, int var2) {
-      if (var1 > this.capacityWidth || var2 > this.capacityHeight) {
-         int var3 = Math.max(var1, this.capacityWidth);
-         int var4 = Math.max(var2, this.capacityHeight);
+   IntBuffer pixels(int i, int j) {
+      if (i > this.capacityWidth || j > this.capacityHeight) {
+         int var3 = Math.max(i, this.capacityWidth);
+         int var4 = Math.max(j, this.capacityHeight);
          this.releaseBitmap();
          BITMAPINFO var5 = new BITMAPINFO();
          var5.bmiHeader.biWidth = var3;
@@ -129,7 +129,7 @@ final class OverlayWindow {
          this.bits = this.bitsPointer.getByteBuffer(0L, (long)var3 * var4 * 4L).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer();
       }
 
-      this.bitsPointer.setMemory(0L, (long)this.capacityWidth * var2 * 4L, (byte)0);
+      this.bitsPointer.setMemory(0L, (long)this.capacityWidth * j * 4L, (byte)0);
       return this.bits;
    }
 
@@ -137,11 +137,11 @@ final class OverlayWindow {
       return this.capacityWidth;
    }
 
-   void present(int var1, int var2, int var3, int var4) {
-      this.destination.x = var1;
-      this.destination.y = var2;
-      this.size.cx = var3;
-      this.size.cy = var4;
+   void present(int i, int j, int k, int l) {
+      this.destination.x = i;
+      this.destination.y = j;
+      this.size.cx = k;
+      this.size.cy = l;
       if (!User32.INSTANCE.UpdateLayeredWindow(this.hwnd, null, this.destination, this.size, this.memory, this.source, 0, this.blend, 2)) {
          throw failure("UpdateLayeredWindow");
       } else {
@@ -152,8 +152,8 @@ final class OverlayWindow {
       }
    }
 
-   void move(int var1, int var2) {
-      User32.INSTANCE.SetWindowPos(this.hwnd, null, var1, var2, 0, 0, 21);
+   void move(int i, int j) {
+      User32.INSTANCE.SetWindowPos(this.hwnd, null, i, j, 0, 0, 21);
    }
 
    void hide() {
@@ -233,25 +233,25 @@ final class OverlayWindow {
       }
    }
 
-   private static RuntimeException failure(String var0) {
-      return new IllegalStateException(var0 + " failed with error " + Native.getLastError());
+   private static RuntimeException failure(String string) {
+      return new IllegalStateException(string + " failed with error " + Native.getLastError());
    }
 
    @Environment(EnvType.CLIENT)
    private interface Affinity extends StdCallLibrary {
-      OverlayWindow.Affinity INSTANCE = (OverlayWindow.Affinity)Native.load("user32", OverlayWindow.Affinity.class, W32APIOptions.DEFAULT_OPTIONS);
+      OverlayWindow.Affinity INSTANCE = Native.load("user32", OverlayWindow.Affinity.class, W32APIOptions.DEFAULT_OPTIONS);
 
-      boolean SetWindowDisplayAffinity(HWND var1, int var2);
+      boolean SetWindowDisplayAffinity(HWND hWND, int i);
 
-      boolean GetWindowDisplayAffinity(HWND var1, IntByReference var2);
+      boolean GetWindowDisplayAffinity(HWND hWND, IntByReference intByReference);
 
-      int GetDpiForWindow(HWND var1);
+      int GetDpiForWindow(HWND hWND);
    }
 
    @Environment(EnvType.CLIENT)
    static final class Unsupported extends RuntimeException {
-      Unsupported(String var1) {
-         super(var1);
+      Unsupported(String string) {
+         super(string);
       }
    }
 }

@@ -73,46 +73,45 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.BlockPos.Mutable;
-import net.minecraft.world.World;
 
 @Environment(EnvType.CLIENT)
 public final class TunnelMinerModule extends ClientModule implements ChunkScanner.Consumer {
    private static final String SIZE_3X3 = "3x3 Shard Pickaxe";
    private static final String SIZE_1X2 = "1x2";
-   private static final Predicate<ItemStack> TOTEM = var0 -> var0.method_31574(Items.field_8288);
-   private static final Predicate<ItemStack> XP = var0 -> var0.method_31574(Items.field_8287);
-   private static final Predicate<ItemStack> APPLE = var0 -> var0.method_31574(Items.field_8463);
-   private static final Predicate<ItemStack> PICKAXE = var0 -> var0.method_31573(ItemTags.field_42614);
-   private static final Predicate<ItemStack> SHARD = var0 -> PICKAXE.test(var0) && shardName(var0);
+   private static final Predicate<ItemStack> TOTEM = itemStack -> itemStack.isOf(Items.TOTEM_OF_UNDYING);
+   private static final Predicate<ItemStack> XP = itemStack -> itemStack.isOf(Items.EXPERIENCE_BOTTLE);
+   private static final Predicate<ItemStack> APPLE = itemStack -> itemStack.isOf(Items.GOLDEN_APPLE);
+   private static final Predicate<ItemStack> PICKAXE = itemStack -> itemStack.isIn(ItemTags.PICKAXES);
+   private static final Predicate<ItemStack> SHARD = itemStack -> PICKAXE.test(itemStack) && shardName(itemStack);
    private static final Set<Block> STORAGE = Set.of(
-      Blocks.field_10034,
-      Blocks.field_10380,
-      Blocks.field_16328,
-      Blocks.field_10443,
-      Blocks.field_10312,
-      Blocks.field_10181,
-      Blocks.field_16333,
-      Blocks.field_16334,
-      Blocks.field_10228,
-      Blocks.field_10200
+      Blocks.CHEST,
+      Blocks.TRAPPED_CHEST,
+      Blocks.BARREL,
+      Blocks.ENDER_CHEST,
+      Blocks.HOPPER,
+      Blocks.FURNACE,
+      Blocks.BLAST_FURNACE,
+      Blocks.SMOKER,
+      Blocks.DROPPER,
+      Blocks.DISPENSER
    );
    private static final Set<Item> JUNK = Set.of(
-      Items.field_20412,
-      Items.field_29025,
-      Items.field_28866,
-      Items.field_20391,
-      Items.field_27021,
-      Items.field_20394,
-      Items.field_20401,
-      Items.field_20407,
-      Items.field_8831,
-      Items.field_8110,
-      Items.field_8145,
-      Items.field_8328,
-      Items.field_27020,
-      Items.field_29024,
-      Items.field_22000,
-      Items.field_23843
+      Items.COBBLESTONE,
+      Items.COBBLED_DEEPSLATE,
+      Items.DEEPSLATE,
+      Items.STONE,
+      Items.TUFF,
+      Items.GRANITE,
+      Items.DIORITE,
+      Items.ANDESITE,
+      Items.DIRT,
+      Items.GRAVEL,
+      Items.FLINT,
+      Items.NETHERRACK,
+      Items.CALCITE,
+      Items.SMOOTH_BASALT,
+      Items.BASALT,
+      Items.BLACKSTONE
    );
    private static final int PLAN_AHEAD = 40;
    private static final int PLAN_SIDE = 15;
@@ -172,7 +171,7 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
    );
    private final NumberSetting refresh = this.addSetting("refresh", new NumberSetting("AH Refresh (ms)", 1000.0F, 300.0F, 3000.0F).step(100.0F));
    private final BooleanSetting chatFeedback = this.addSetting("chat-feedback", new BooleanSetting("Chat Feedback", true));
-   private final MinecraftClient mc = MinecraftClient.method_1551();
+   private final MinecraftClient mc = MinecraftClient.getInstance();
    private final Random random = new Random();
    private final Map<Long, Boolean> finds = new HashMap<>();
    private final Map<Long, Integer> breakFails = new HashMap<>();
@@ -259,8 +258,8 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
 
    @Override
    protected void onEnable() {
-      ClientPlayerEntity var1 = this.mc.field_1724;
-      if (var1 != null && this.mc.field_1687 != null) {
+      ClientPlayerEntity var1 = this.mc.player;
+      if (var1 != null && this.mc.world != null) {
          this.tick = 0L;
          this.finds.clear();
          this.breakFails.clear();
@@ -282,14 +281,14 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
          this.verifyUntil = 0L;
          this.stopped = false;
          this.mending = false;
-         this.heading = var1.method_5735();
-         this.axis = this.start = var1.method_24515();
+         this.heading = var1.getHorizontalFacing();
+         this.axis = this.start = var1.getBlockPos();
          this.drift = 0;
          this.nextDrift = 0L;
          this.noiseSeed = this.random.nextInt();
          this.restUntil = 0L;
          this.nextRest = this.nextGap();
-         this.seenFrom = this.routeFrom = var1.method_24515();
+         this.seenFrom = this.routeFrom = var1.getBlockPos();
          this.shuffle = null;
          this.standTarget = null;
          this.standSpot = null;
@@ -306,8 +305,8 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
             }
          }
 
-         this.originX = var1.method_31477() - this.cellSize / 2;
-         this.originZ = var1.method_31479() - this.cellSize / 2;
+         this.originX = var1.getBlockX() - this.cellSize / 2;
+         this.originZ = var1.getBlockZ() - this.cellSize / 2;
          this.visitedChunks.clear();
          this.hasTarget = false;
          if (!this.flags.is("Off")) {
@@ -315,19 +314,19 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
          }
 
          ChunkScanner.register(this);
-         this.on(TickEvent.TYPE, Stage.PRE, var1x -> this.step());
+         this.on(TickEvent.TYPE, Stage.PRE, tickEvent -> this.step());
          this.on(Render3DEvent.TYPE, Stage.POST, this::render);
          this.popped = false;
          this.on(
             PacketAppliedEvent.TYPE,
-            var1x -> {
-               Packet var3 = var1x.packet;
+            packetAppliedEvent -> {
+               Packet var3 = packetAppliedEvent.packet;
                EntityStatusS2CPacket var2x;
                if (var3 instanceof EntityStatusS2CPacket
-                  && (var2x = (EntityStatusS2CPacket)var3).method_11470() == 35
-                  && this.mc.field_1687 != null
-                  && this.mc.field_1724 != null
-                  && var2x.method_11469((World)this.mc.field_1687) == this.mc.field_1724) {
+                  && (var2x = (EntityStatusS2CPacket)var3).getStatus() == 35
+                  && this.mc.world != null
+                  && this.mc.player != null
+                  && var2x.getEntity(this.mc.world) == this.mc.player) {
                   this.popped = true;
                }
             }
@@ -337,14 +336,14 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
             ModuleChat.body()
                .text(
                   this.flags.is("Off")
-                     ? var2 + " " + this.heading.method_10151() + " at Y " + this.start.method_10264() + "."
+                     ? var2 + " " + this.heading.getId() + " at Y " + this.start.getY() + "."
                      : var2
                         + " at Y "
-                        + this.start.method_10264()
+                        + this.start.getY()
                         + " to the chunks "
                         + this.flags.get()
                         + " flags, "
-                        + this.heading.method_10151()
+                        + this.heading.getId()
                         + " while there are none."
                )
          );
@@ -372,9 +371,9 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
    }
 
    private void step() {
-      ClientPlayerEntity var1 = this.mc.field_1724;
-      ClientWorld var2 = this.mc.field_1687;
-      if (var1 != null && var2 != null && this.mc.field_1761 != null) {
+      ClientPlayerEntity var1 = this.mc.player;
+      ClientWorld var2 = this.mc.world;
+      if (var1 != null && var2 != null && this.mc.interactionManager != null) {
          this.tick++;
          if (this.popped) {
             if (this.quitOnPop.get()) {
@@ -389,13 +388,13 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
             this.linger(var1);
          } else {
             if (!this.flags.is("Off")) {
-               this.visitedChunks.add(ChunkPos.method_8331(var1.method_31477() >> 4, var1.method_31479() >> 4));
+               this.visitedChunks.add(ChunkPos.toLong(var1.getBlockX() >> 4, var1.getBlockZ() >> 4));
                if (this.hasTarget && this.tick % 20L == 0L) {
                   this.watchTarget(var1, var2);
                }
             }
 
-            if (var1.method_29504()) {
+            if (var1.isDead()) {
                this.say(ModuleChat.body().danger("You died").text(", Tunnel Base Finder stopped."));
                this.requestDisable();
             } else if (this.purchase != null) {
@@ -411,14 +410,14 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
                }
             } else if (this.mending) {
                this.mend(var1);
-            } else if (this.mc.field_1755 instanceof HandledScreen) {
+            } else if (this.mc.currentScreen instanceof HandledScreen) {
                this.release();
                if (this.screenSince == 0L) {
                   this.screenSince = this.tick;
                }
 
                if (this.tick - this.screenSince > 100L) {
-                  var1.method_7346();
+                  var1.closeHandledScreen();
                }
             } else {
                this.screenSince = 0L;
@@ -436,17 +435,17 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
       }
    }
 
-   private boolean supplies(ClientPlayerEntity var1) {
-      if (this.keepTotem.get() && !TOTEM.test(var1.method_6079())) {
+   private boolean supplies(ClientPlayerEntity clientPlayerEntity) {
+      if (this.keepTotem.get() && !TOTEM.test(clientPlayerEntity.getOffHandStack())) {
          this.release();
-         if (Hands.has(var1, TOTEM)) {
-            if (this.tick % 5L == 0L && this.calm(var1)) {
-               Hands.toOffhand(this.mc, var1, TOTEM);
+         if (Hands.has(clientPlayerEntity, TOTEM)) {
+            if (this.tick % 5L == 0L && this.calm(clientPlayerEntity)) {
+               Hands.toOffhand(this.mc, clientPlayerEntity, TOTEM);
             }
 
             return false;
          } else {
-            if (!this.startBuy(var1, Items.field_8288, "Totem", "totem", 1)) {
+            if (!this.startBuy(clientPlayerEntity, Items.TOTEM_OF_UNDYING, "Totem", "totem", 1)) {
                this.say(ModuleChat.body().danger("No totem").text(" and Buy From AH is off, Tunnel Base Finder stopped."));
                this.requestDisable();
             }
@@ -454,29 +453,29 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
             return false;
          }
       } else {
-         if (this.eat.get() && Eater.hungry(var1)) {
-            if (Hands.has(var1, APPLE)) {
-               if (this.calm(var1)) {
+         if (this.eat.get() && Eater.hungry(clientPlayerEntity)) {
+            if (Hands.has(clientPlayerEntity, APPLE)) {
+               if (this.calm(clientPlayerEntity)) {
                   this.eater = new Eater(APPLE);
                }
 
                return false;
             }
 
-            if (this.startBuy(var1, Items.field_8463, "Golden Apples", "golden apple stack", 64)) {
+            if (this.startBuy(clientPlayerEntity, Items.GOLDEN_APPLE, "Golden Apples", "golden apple stack", 64)) {
                return false;
             }
          }
 
          ItemStack var2;
-         if ((var2 = this.pickaxe(var1)) == null) {
+         if ((var2 = this.pickaxe(clientPlayerEntity)) == null) {
             this.say(ModuleChat.body().danger("No pickaxe").text(this.cellSize == 3 ? " (Shard Pickaxe)" : "").text(", Tunnel Base Finder stopped."));
             this.requestDisable();
             return false;
          } else {
-            int var3 = var2.method_7936() - var2.method_7919();
+            int var3 = var2.getMaxDamage() - var2.getDamage();
             if (this.mend.get() && mendable(var2) && var3 < this.mendBelow.getInt()) {
-               if (Hands.has(var1, XP)) {
+               if (Hands.has(clientPlayerEntity, XP)) {
                   this.release();
                   this.mending = true;
                   this.mendStarted = this.tick;
@@ -484,7 +483,7 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
                   return false;
                }
 
-               if (this.startBuy(var1, Items.field_8287, "XP Bottles", "xp bottle stack", 64)) {
+               if (this.startBuy(clientPlayerEntity, Items.EXPERIENCE_BOTTLE, "XP Bottles", "xp bottle stack", 64)) {
                   return false;
                }
             }
@@ -500,54 +499,54 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
       }
    }
 
-   private void mend(ClientPlayerEntity var1) {
-      ItemStack var3 = var1.method_6047();
-      boolean var2 = this.tool().test(var3) && var3.method_7919() == 0;
-      if (var2 || this.tick - this.mendStarted > 1200L || !XP.test(var1.method_6079()) && !Hands.has(var1, XP)) {
-         this.mc.field_1690.field_1904.method_23481(false);
+   private void mend(ClientPlayerEntity clientPlayerEntity) {
+      ItemStack var3 = clientPlayerEntity.getMainHandStack();
+      boolean var2 = this.tool().test(var3) && var3.getDamage() == 0;
+      if (var2 || this.tick - this.mendStarted > 1200L || !XP.test(clientPlayerEntity.getOffHandStack()) && !Hands.has(clientPlayerEntity, XP)) {
+         this.mc.options.useKey.setPressed(false);
          this.mending = false;
          if (var2) {
             this.feedback("mended", "Pickaxe mended", 200);
          }
-      } else if (!XP.test(var1.method_6079())) {
-         this.mc.field_1690.field_1904.method_23481(false);
-         if (this.tick % 5L == 0L && this.calm(var1)) {
-            Hands.toOffhand(this.mc, var1, XP);
+      } else if (!XP.test(clientPlayerEntity.getOffHandStack())) {
+         this.mc.options.useKey.setPressed(false);
+         if (this.tick % 5L == 0L && this.calm(clientPlayerEntity)) {
+            Hands.toOffhand(this.mc, clientPlayerEntity, XP);
          }
-      } else if (Hands.hold(this.mc, var1, this.tool())) {
-         Aim.turn(this.mc, var1.method_36454(), 80.0F, 22.0F);
-         this.mc.field_1690.field_1904.method_23481(var1.method_36455() > 60.0F);
+      } else if (Hands.hold(this.mc, clientPlayerEntity, this.tool())) {
+         Aim.turn(this.mc, clientPlayerEntity.getYaw(), 80.0F, 22.0F);
+         this.mc.options.useKey.setPressed(clientPlayerEntity.getPitch() > 60.0F);
       }
    }
 
-   private boolean startBuy(ClientPlayerEntity var1, Item var2, String var3, String var4, int var5) {
+   private boolean startBuy(ClientPlayerEntity clientPlayerEntity, Item item, String string, String string2, int i) {
       if (!this.buyFromAh.get()) {
          return false;
-      } else if (this.tick < this.nextBuy.getOrDefault(var2, 0L)) {
-         this.feedback("wait-" + var3, "Waiting to try buying " + var3 + " again", 600);
+      } else if (this.tick < this.nextBuy.getOrDefault(item, 0L)) {
+         this.feedback("wait-" + string, "Waiting to try buying " + string + " again", 600);
          return true;
-      } else if (freeSlots(var1) != 0) {
-         if (!this.calm(var1)) {
+      } else if (freeSlots(clientPlayerEntity) != 0) {
+         if (!this.calm(clientPlayerEntity)) {
             return true;
          } else {
-            this.purchaseItem = var2;
-            this.purchaseName = var3;
-            this.purchaseBefore = count(var1, var2);
-            this.feedback("buy-" + var3, "Buying " + var3 + " (/ah " + var4 + ")", 1);
-            this.purchase = AhPurchase.startAny(this, var2, var3, var4, var1x -> var1x.method_31574(var2), var5, this.maxListing, this.refresh.getInt(), 0L);
+            this.purchaseItem = item;
+            this.purchaseName = string;
+            this.purchaseBefore = count(clientPlayerEntity, item);
+            this.feedback("buy-" + string, "Buying " + string + " (/ah " + string2 + ")", 1);
+            this.purchase = AhPurchase.startAny(this, item, string, string2, itemStack -> itemStack.isOf(item), i, this.maxListing, this.refresh.getInt(), 0L);
             return true;
          }
       } else {
-         if (!this.sellJunk.get() || this.tick < this.nextSell || !this.startSelling(var1)) {
-            this.feedback("room-" + var3, "No room in the inventory to buy " + var3, 600);
-            this.nextBuy.put(var2, this.tick + 200L);
+         if (!this.sellJunk.get() || this.tick < this.nextSell || !this.startSelling(clientPlayerEntity)) {
+            this.feedback("room-" + string, "No room in the inventory to buy " + string, 600);
+            this.nextBuy.put(item, this.tick + 200L);
          }
 
          return true;
       }
    }
 
-   private void followPurchase(ClientPlayerEntity var1) {
+   private void followPurchase(ClientPlayerEntity clientPlayerEntity) {
       AhPurchase.Status var2 = this.purchase.status();
       if (var2 != AhPurchase.Status.RUNNING) {
          this.purchase = null;
@@ -561,8 +560,8 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
       }
    }
 
-   private void verifyPurchase(ClientPlayerEntity var1) {
-      int var2 = count(var1, this.purchaseItem) - this.purchaseBefore;
+   private void verifyPurchase(ClientPlayerEntity clientPlayerEntity) {
+      int var2 = count(clientPlayerEntity, this.purchaseItem) - this.purchaseBefore;
       if (var2 > 0) {
          this.say(ModuleChat.body().good("Bought " + var2 + " " + this.purchaseName).text(", it is in the inventory."));
          EasyPlace.LOG.info("[Tunnel Base Finder] bought {} {} (verified)", var2, this.purchaseName);
@@ -579,20 +578,20 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
       this.purchaseItem = null;
    }
 
-   private boolean startSelling(ClientPlayerEntity var1) {
-      PlayerInventory var2 = var1.method_31548();
+   private boolean startSelling(ClientPlayerEntity clientPlayerEntity) {
+      PlayerInventory var2 = clientPlayerEntity.getInventory();
       HashMap var3 = new HashMap();
 
       for (int var4 = 35; var4 >= 0 && var3.size() < 4; var4--) {
-         Item var5 = var2.method_5438(var4).method_7909();
-         if (var4 != var2.method_67532() && JUNK.contains(var5)) {
+         Item var5 = var2.getStack(var4).getItem();
+         if (var4 != var2.getSelectedSlot() && JUNK.contains(var5)) {
             var3.put(var4, var5);
          }
       }
 
       if (var3.isEmpty()) {
          return false;
-      } else if (!this.calm(var1)) {
+      } else if (!this.calm(clientPlayerEntity)) {
          return true;
       } else {
          this.feedback("selling", "Selling " + var3.size() + " stacks of junk stone with /sell to make room", 1);
@@ -601,11 +600,11 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
       }
    }
 
-   private void dig(ClientPlayerEntity var1, ClientWorld var2) {
+   private void dig(ClientPlayerEntity clientPlayerEntity, ClientWorld clientWorld) {
       if (this.settle > 0) {
          this.settle--;
          if (this.lingering) {
-            this.idle(var1);
+            this.idle(clientPlayerEntity);
          }
       } else {
          this.lingering = false;
@@ -615,7 +614,7 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
                BlockPos var13 = this.breaker.pos();
                this.breaker = null;
                int var14 = this.settle = this.cellSize == 3 ? this.lognormal(2.2, 0.3, 2, 6) : this.lognormal(1.0, 0.5, 0, 4);
-               if (var11 == Breaker.Result.FAILED && this.breakFails.merge(var13.method_10063(), 1, Integer::sum) >= 3) {
+               if (var11 == Breaker.Result.FAILED && this.breakFails.merge(var13.asLong(), 1, Integer::sum) >= 3) {
                   this.blocked.add(this.cellKey(var13));
                   this.steps.clear();
                }
@@ -639,31 +638,30 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
                   this.steps.clear();
                }
             }
-         } else if (!this.rest(var1)) {
-            if (Hands.hold(this.mc, var1, this.tool())) {
-               if (this.hasTarget && this.arrived(var1)) {
-                  this.endTarget(var1, null);
+         } else if (!this.rest(clientPlayerEntity)) {
+            if (Hands.hold(this.mc, clientPlayerEntity, this.tool())) {
+               if (this.hasTarget && this.arrived(clientPlayerEntity)) {
+                  this.endTarget(clientPlayerEntity, null);
                }
 
-               if (this.stepIndex < this.steps.size() && this.stepsSincePlan < 9 || this.plan(var1, var2)) {
+               if (this.stepIndex < this.steps.size() && this.stepsSincePlan < 9 || this.plan(clientPlayerEntity, clientWorld)) {
                   BlockPos var3 = this.steps.get(this.stepIndex);
                   BlockPos var4 = this.stepIndex > 0 ? this.steps.get(this.stepIndex - 1) : this.routeFrom;
                   Direction var5 = beside(var4, var3);
                   boolean var6 = this.cellKey(var3) != this.cellKey(var4);
-                  this.seenFrom = var1.method_24515();
-                  if (var5 != null
-                     && (!var6 || Boolean.TRUE.equals(this.safe(var2, this.cellX(var3.method_10263()), this.cellZ(var3.method_10260()), var3.method_10264())))) {
-                     BlockPos var7 = this.toMine(var2, var3, var5);
-                     if (!this.stream(var1, var2, var3, var5, var7)) {
+                  this.seenFrom = clientPlayerEntity.getBlockPos();
+                  if (var5 != null && (!var6 || Boolean.TRUE.equals(this.safe(clientWorld, this.cellX(var3.getX()), this.cellZ(var3.getZ()), var3.getY())))) {
+                     BlockPos var7 = this.toMine(clientWorld, var3, var5);
+                     if (!this.stream(clientPlayerEntity, clientWorld, var3, var5, var7)) {
                         if (var7 != null) {
-                           Vec3d var15 = this.stand(var2, var1, var7, var5);
+                           Vec3d var15 = this.stand(clientWorld, clientPlayerEntity, var7, var5);
                            if (var15 == null) {
-                              if (flat(var1, var4) > 0.7) {
+                              if (flat(clientPlayerEntity, var4) > 0.7) {
                                  this.hop = new Hop(var4, false);
                                  return;
                               }
-                           } else if (Math.hypot(var15.field_1352 - var1.method_23317(), var15.field_1350 - var1.method_23321()) > 0.3) {
-                              this.shuffle = new Shuffle(var15, var7.method_46558(), !this.standVaried);
+                           } else if (Math.hypot(var15.x - clientPlayerEntity.getX(), var15.z - clientPlayerEntity.getZ()) > 0.3) {
+                              this.shuffle = new Shuffle(var15, var7.toCenterPos(), !this.standVaried);
                               return;
                            }
 
@@ -672,19 +670,19 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
                               this.idleLook = null;
                               this.lingering = true;
                            } else {
-                              this.breaker = new Breaker(var7.method_10062(), false, this.face(var3, var7, var5));
+                              this.breaker = new Breaker(var7.toImmutable(), false, this.face(var3, var7, var5));
                               this.standTarget = null;
                            }
                         } else {
-                           if (flat(var1, var3) <= 3.0) {
+                           if (flat(clientPlayerEntity, var3) <= 3.0) {
                               this.stepIndex++;
                               this.stepsSincePlan++;
-                           } else if (flat(var1, var4) > 1.2) {
+                           } else if (flat(clientPlayerEntity, var4) > 1.2) {
                               this.hop = new Hop(var4, true);
                            } else {
                               boolean var8 = this.stepIndex + 1 < this.steps.size()
                                  && beside(var3, this.steps.get(this.stepIndex + 1)) == var5
-                                 && this.toMine(var2, this.steps.get(this.stepIndex + 1), var5) == null;
+                                 && this.toMine(clientWorld, this.steps.get(this.stepIndex + 1), var5) == null;
                               this.hop = new Hop(var3, var8);
                               this.stepIndex++;
                               this.stepsSincePlan++;
@@ -701,17 +699,20 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
       }
    }
 
-   private boolean stream(ClientPlayerEntity var1, ClientWorld var2, BlockPos var3, Direction var4, BlockPos var5) {
-      if (this.streamTarget != null && var2.method_8320(this.streamTarget).method_26215()) {
+   private boolean stream(ClientPlayerEntity clientPlayerEntity, ClientWorld clientWorld, BlockPos blockPos, Direction direction, BlockPos blockPos2) {
+      if (this.streamTarget != null && clientWorld.getBlockState(this.streamTarget).isAir()) {
          this.headBrokeAt = this.tick;
          this.streamTarget = null;
       }
 
-      BlockPos var7 = var3.method_10084();
-      boolean var6 = var5 != null && var5.equals(var3) && this.tick - this.headBrokeAt < 4L;
-      if (this.cellSize == 3 && this.straight(var4) && !(Math.abs(aside(var1, var3, var4)) > 0.45) && (var5 == null || var5.equals(var7) || var6)) {
-         if (var5 != null && var5.equals(var7) && !var7.equals(this.decidedSlab)) {
-            this.decidedSlab = var7.method_10062();
+      BlockPos var7 = blockPos.up();
+      boolean var6 = blockPos2 != null && blockPos2.equals(blockPos) && this.tick - this.headBrokeAt < 4L;
+      if (this.cellSize == 3
+         && this.straight(direction)
+         && !(Math.abs(aside(clientPlayerEntity, blockPos, direction)) > 0.45)
+         && (blockPos2 == null || blockPos2.equals(var7) || var6)) {
+         if (blockPos2 != null && blockPos2.equals(var7) && !var7.equals(this.decidedSlab)) {
+            this.decidedSlab = var7.toImmutable();
             if (this.oldWayLeft > 0) {
                this.oldWayLeft--;
             }
@@ -726,23 +727,25 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
             return false;
          } else {
             this.streaming = true;
-            Vec3d var9 = Vec3d.method_24953(var7).method_1023(var4.method_10148() * 0.5, 0.0, var4.method_10165() * 0.5);
-            float[] var10 = PlacementUtil.calcRotation(var1.method_33571(), var9);
+            Vec3d var9 = Vec3d.ofCenter(var7).subtract(direction.getOffsetX() * 0.5, 0.0, direction.getOffsetZ() * 0.5);
+            float[] var10 = PlacementUtil.calcRotation(clientPlayerEntity.getEyePos(), var9);
             Aim.turn(this.mc, var10[0], var10[1], 22.0F);
-            double var11 = (var9.field_1352 - var1.method_23317()) * var4.method_10148() + (var9.field_1350 - var1.method_23321()) * var4.method_10165();
-            this.mc.field_1690.field_1894.method_23481(var5 == null || var11 > 1.0);
-            if (var5 == null) {
+            double var11 = (var9.x - clientPlayerEntity.getX()) * direction.getOffsetX() + (var9.z - clientPlayerEntity.getZ()) * direction.getOffsetZ();
+            this.mc.options.forwardKey.setPressed(blockPos2 == null || var11 > 1.0);
+            if (blockPos2 == null) {
                this.stepIndex++;
                this.stepsSincePlan++;
                return true;
             } else if (var6) {
                return true;
             } else {
-               BlockHitResult var13 = Aim.trace(this.mc, var1, var1.method_36454(), var1.method_36455(), var1.method_55754());
-               if (var13 != null && var13.method_17783() == Type.field_1332 && var13.method_17777().equals(var7)) {
-                  this.streamTarget = var7.method_10062();
-                  if (this.mc.field_1761.method_2902(var7, var13.method_17780())) {
-                     var1.method_6104(Hand.field_5808);
+               BlockHitResult var13 = Aim.trace(
+                  this.mc, clientPlayerEntity, clientPlayerEntity.getYaw(), clientPlayerEntity.getPitch(), clientPlayerEntity.getBlockInteractionRange()
+               );
+               if (var13 != null && var13.getType() == Type.BLOCK && var13.getBlockPos().equals(var7)) {
+                  this.streamTarget = var7.toImmutable();
+                  if (this.mc.interactionManager.updateBlockBreakingProgress(var7, var13.getSide())) {
+                     clientPlayerEntity.swingHand(Hand.MAIN_HAND);
                   }
                }
 
@@ -755,50 +758,50 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
       }
    }
 
-   private boolean straight(Direction var1) {
-      return this.stepIndex + 1 < this.steps.size() && beside(this.steps.get(this.stepIndex), this.steps.get(this.stepIndex + 1)) == var1;
+   private boolean straight(Direction direction) {
+      return this.stepIndex + 1 < this.steps.size() && beside(this.steps.get(this.stepIndex), this.steps.get(this.stepIndex + 1)) == direction;
    }
 
-   private static double aside(ClientPlayerEntity var0, BlockPos var1, Direction var2) {
-      Direction var3 = var2.method_10170();
-      return (var0.method_23317() - var1.method_10263() - 0.5) * var3.method_10148() + (var0.method_23321() - var1.method_10260() - 0.5) * var3.method_10165();
+   private static double aside(ClientPlayerEntity clientPlayerEntity, BlockPos blockPos, Direction direction) {
+      Direction var3 = direction.rotateYClockwise();
+      return (clientPlayerEntity.getX() - blockPos.getX() - 0.5) * var3.getOffsetX() + (clientPlayerEntity.getZ() - blockPos.getZ() - 0.5) * var3.getOffsetZ();
    }
 
    private void endStream() {
       if (this.streaming) {
          this.streaming = false;
          this.streamTarget = null;
-         this.mc.field_1690.field_1894.method_23481(false);
-         if (this.mc.field_1761 != null && this.mc.field_1761.method_2923()) {
-            this.mc.field_1761.method_2925();
+         this.mc.options.forwardKey.setPressed(false);
+         if (this.mc.interactionManager != null && this.mc.interactionManager.isBreakingBlock()) {
+            this.mc.interactionManager.cancelBlockBreaking();
          }
       }
    }
 
-   private int lognormal(double var1, double var3, int var5, int var6) {
-      return (int)MathHelper.method_53062(Math.round(Math.exp(Math.log(var1) + this.random.nextGaussian() * var3)), var5, var6);
+   private int lognormal(double d, double e, int i, int j) {
+      return (int)MathHelper.clamp(Math.round(Math.exp(Math.log(d) + this.random.nextGaussian() * e)), (long)i, (long)j);
    }
 
-   private static double flat(ClientPlayerEntity var0, BlockPos var1) {
-      return Math.hypot(var1.method_10263() + 0.5 - var0.method_23317(), var1.method_10260() + 0.5 - var0.method_23321());
+   private static double flat(ClientPlayerEntity clientPlayerEntity, BlockPos blockPos) {
+      return Math.hypot(blockPos.getX() + 0.5 - clientPlayerEntity.getX(), blockPos.getZ() + 0.5 - clientPlayerEntity.getZ());
    }
 
-   private Vec3d stand(ClientWorld var1, ClientPlayerEntity var2, BlockPos var3, Direction var4) {
-      if (var3.equals(this.standTarget)) {
+   private Vec3d stand(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, BlockPos blockPos, Direction direction) {
+      if (blockPos.equals(this.standTarget)) {
          return this.standSpot;
       } else {
-         this.standTarget = var3.method_10062();
+         this.standTarget = blockPos.toImmutable();
          this.standSpot = null;
-         double var7 = var3.method_10263() + 0.5;
-         double var9 = var3.method_10260() + 0.5;
-         double var11 = var2.method_23318();
-         Direction var13 = var4.method_10170();
+         double var7 = blockPos.getX() + 0.5;
+         double var9 = blockPos.getZ() + 0.5;
+         double var11 = clientPlayerEntity.getY();
+         Direction var13 = direction.rotateYClockwise();
          double var14 = this.cellSize == 3 ? 0.7 : 0.2;
-         double var16 = (var7 - var2.method_23317()) * var4.method_10148() + (var9 - var2.method_23321()) * var4.method_10165();
-         double var18 = (var2.method_23317() - var7) * var13.method_10148() + (var2.method_23321() - var9) * var13.method_10165();
+         double var16 = (var7 - clientPlayerEntity.getX()) * direction.getOffsetX() + (var9 - clientPlayerEntity.getZ()) * direction.getOffsetZ();
+         double var18 = (clientPlayerEntity.getX() - var7) * var13.getOffsetX() + (clientPlayerEntity.getZ() - var9) * var13.getOffsetZ();
          double var5 = this.cellSize == 3 && this.oldWayLeft == 0 ? Math.min(var14, 0.45) : var14;
-         if (var16 >= 1.0 && var16 <= 2.6 && Math.abs(var18) <= var5 && open(var1, var2, var2.method_73189())) {
-            this.standSpot = var2.method_73189();
+         if (var16 >= 1.0 && var16 <= 2.6 && Math.abs(var18) <= var5 && open(clientWorld, clientPlayerEntity, clientPlayerEntity.getEntityPos())) {
+            this.standSpot = clientPlayerEntity.getEntityPos();
             return this.standSpot;
          } else {
             this.standVaried = this.random.nextFloat() < 0.2F;
@@ -807,9 +810,9 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
                double var23 = 1.0 + this.random.nextDouble() * (this.standVaried ? 0.6000000000000001 : 0.3);
                double var25 = this.standVaried ? (this.random.nextDouble() * 2.0 - 1.0) * var14 : 0.0;
                Vec3d var27 = new Vec3d(
-                  var7 - var4.method_10148() * var23 + var13.method_10148() * var25, var11, var9 - var4.method_10165() * var23 + var13.method_10165() * var25
+                  var7 - direction.getOffsetX() * var23 + var13.getOffsetX() * var25, var11, var9 - direction.getOffsetZ() * var23 + var13.getOffsetZ() * var25
                );
-               if (open(var1, var2, var27)) {
+               if (open(clientWorld, clientPlayerEntity, var27)) {
                   this.standSpot = var27;
                   return var27;
                }
@@ -820,37 +823,37 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
       }
    }
 
-   private static boolean open(ClientWorld var0, ClientPlayerEntity var1, Vec3d var2) {
-      Box var3 = var1.method_18377(EntityPose.field_18076).method_30757(var2).method_1011(0.02);
-      if (!var0.method_8587(var1, var3)) {
+   private static boolean open(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, Vec3d vec3d) {
+      Box var3 = clientPlayerEntity.getDimensions(EntityPose.STANDING).getBoxAt(vec3d).contract(0.02);
+      if (!clientWorld.isSpaceEmpty(clientPlayerEntity, var3)) {
          return false;
       } else {
-         BlockPos var4 = BlockPos.method_49637(var2.field_1352, var2.field_1351 - 0.5, var2.field_1350);
-         return !var0.method_8320(var4).method_26220(var0, var4).method_1110();
+         BlockPos var4 = BlockPos.ofFloored(vec3d.x, vec3d.y - 0.5, vec3d.z);
+         return !clientWorld.getBlockState(var4).getCollisionShape(clientWorld, var4).isEmpty();
       }
    }
 
-   private BlockPos toMine(ClientWorld var1, BlockPos var2, Direction var3) {
-      BlockPos var4 = var2.method_10084();
-      if (solid(var1, var4)) {
+   private BlockPos toMine(ClientWorld clientWorld, BlockPos blockPos, Direction direction) {
+      BlockPos var4 = blockPos.up();
+      if (solid(clientWorld, var4)) {
          return var4;
       } else {
-         return solid(var1, var2) ? var2 : null;
+         return solid(clientWorld, blockPos) ? blockPos : null;
       }
    }
 
-   private Direction face(BlockPos var1, BlockPos var2, Direction var3) {
-      return this.cellSize == 3 && var2.equals(var1) ? Direction.field_11036 : var3.method_10153();
+   private Direction face(BlockPos blockPos, BlockPos blockPos2, Direction direction) {
+      return this.cellSize == 3 && blockPos2.equals(blockPos) ? Direction.UP : direction.getOpposite();
    }
 
-   private static boolean solid(ClientWorld var0, BlockPos var1) {
-      BlockState var2 = var0.method_8320(var1);
-      return !var2.method_26220(var0, var1).method_1110();
+   private static boolean solid(ClientWorld clientWorld, BlockPos blockPos) {
+      BlockState var2 = clientWorld.getBlockState(blockPos);
+      return !var2.getCollisionShape(clientWorld, blockPos).isEmpty();
    }
 
-   private boolean rest(ClientPlayerEntity var1) {
+   private boolean rest(ClientPlayerEntity clientPlayerEntity) {
       if (this.tick < this.restUntil) {
-         this.idle(var1);
+         this.idle(clientPlayerEntity);
          return true;
       } else if (this.tick >= this.nextRest) {
          this.release();
@@ -864,54 +867,54 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
    }
 
    private long nextGap() {
-      return (long)MathHelper.method_15350(-Math.log(1.0 - this.random.nextDouble()) * 2400.0, 600.0, 12000.0);
+      return (long)MathHelper.clamp(-Math.log(1.0 - this.random.nextDouble()) * 2400.0, 600.0, 12000.0);
    }
 
-   private void idle(ClientPlayerEntity var1) {
+   private void idle(ClientPlayerEntity clientPlayerEntity) {
       if (this.idleLook == null || this.random.nextFloat() < 0.025F) {
          this.idleLook = new float[]{
-            var1.method_36454() + (float)(this.random.nextGaussian() * 40.0),
-            MathHelper.method_15363((float)(10.0 + this.random.nextGaussian() * 22.0), -45.0F, 70.0F)
+            clientPlayerEntity.getYaw() + (float)(this.random.nextGaussian() * 40.0),
+            MathHelper.clamp((float)(10.0 + this.random.nextGaussian() * 22.0), -45.0F, 70.0F)
          };
       }
 
       Aim.turn(this.mc, this.idleLook[0], this.idleLook[1], 22.0F);
    }
 
-   private boolean plan(ClientPlayerEntity var1, ClientWorld var2) {
+   private boolean plan(ClientPlayerEntity clientPlayerEntity, ClientWorld clientWorld) {
       this.steps.clear();
       this.stepIndex = 0;
       this.stepsSincePlan = 0;
       BlockPos var5;
-      this.routeFrom = var5 = var1.method_24515();
+      this.routeFrom = var5 = clientPlayerEntity.getBlockPos();
       this.seenFrom = var5;
       this.perceive = 3 + this.random.nextInt(3);
-      int var6 = var5.method_10264();
-      int var7 = this.cellX(var5.method_10263());
-      int var8 = this.cellZ(var5.method_10260());
-      this.pickTarget(var1);
+      int var6 = var5.getY();
+      int var7 = this.cellX(var5.getX());
+      int var8 = this.cellZ(var5.getZ());
+      this.pickTarget(clientPlayerEntity);
       boolean var9 = this.hasTarget;
-      int var10 = var9 ? this.cellX(middle(ChunkPos.method_8325(this.target))) : 0;
-      int var4 = var9 ? this.cellZ(middle(ChunkPos.method_8332(this.target))) : 0;
+      int var10 = var9 ? this.cellX(middle(ChunkPos.getPackedX(this.target))) : 0;
+      int var4 = var9 ? this.cellZ(middle(ChunkPos.getPackedZ(this.target))) : 0;
       if (!var9 && this.wander.get() && this.tick >= this.nextDrift) {
-         this.drift = MathHelper.method_15340(this.drift + this.random.nextInt(3) - 1, -2, 2);
+         this.drift = MathHelper.clamp(this.drift + this.random.nextInt(3) - 1, -2, 2);
          this.nextDrift = this.tick + 20L * (30 + this.random.nextInt(60));
       }
 
-      int var12 = this.heading.method_10148();
-      int var13 = this.heading.method_10165();
-      Direction var14 = this.heading.method_10170();
-      int var15 = var14.method_10148();
-      int var16 = var14.method_10165();
-      int var17 = this.cellX(this.axis.method_10263());
-      int var18 = this.cellZ(this.axis.method_10260());
+      int var12 = this.heading.getOffsetX();
+      int var13 = this.heading.getOffsetZ();
+      Direction var14 = this.heading.rotateYClockwise();
+      int var15 = var14.getOffsetX();
+      int var16 = var14.getOffsetZ();
+      int var17 = this.cellX(this.axis.getX());
+      int var18 = this.cellZ(this.axis.getZ());
       int var19 = Math.max(4, 40 / this.cellSize);
       int var20 = Math.max(3, 15 / this.cellSize);
       int var21 = (var7 - var17) * var15 + (var8 - var18) * var16;
       long var22 = this.cellChunk(var7, var8);
       long var24 = var9 ? this.target : -9223372036854775808L;
       HashMap var26 = new HashMap();
-      PriorityQueue var27 = new PriorityQueue<>((var0, var1x) -> Double.compare(var0.rank, var1x.rank));
+      PriorityQueue var27 = new PriorityQueue<>((node, node2) -> Double.compare(node.rank, node2.rank));
       HashSet var28 = new HashSet();
       TunnelMinerModule.Node var3;
       TunnelMinerModule.Node var29 = var3 = new TunnelMinerModule.Node(var7, var8, 0.0, 0.0, null);
@@ -928,10 +931,10 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
                var30 = var33;
             }
 
-            for (Direction var39 : net.minecraft.util.math.Direction.Type.field_11062) {
-               int var42 = var35.x + var39.method_10148();
+            for (Direction var39 : net.minecraft.util.math.Direction.Type.HORIZONTAL) {
+               int var42 = var35.x + var39.getOffsetX();
                int var41;
-               long var43 = key(var42, var41 = var35.z + var39.method_10165());
+               long var43 = key(var42, var41 = var35.z + var39.getOffsetZ());
                if (!var28.contains(var43) && !this.blocked.contains(var43)) {
                   if (var9) {
                      if (Math.abs(var42 - var7) > var19 || Math.abs(var41 - var8) > var19) {
@@ -945,7 +948,7 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
                      }
                   }
 
-                  if (Boolean.TRUE.equals(var26.computeIfAbsent(var43, var5x -> this.safe(var2, var42, var41, var6)))) {
+                  if (Boolean.TRUE.equals(var26.computeIfAbsent(var43, long_ -> this.safe(clientWorld, var42, var41, var6)))) {
                      double var53 = var35.cost + 1.0 + this.noise(var42, var41) + this.visitedCost(var42, var41, var22, var24);
                      double var47 = var9 ? apart(var42, var41, var10, var4) : -this.score(var42, var41, var7, var8, var12, var13, var15, var16, var17, var18);
                      var27.add(new TunnelMinerModule.Node(var42, var41, var53, var53 + var47, var35));
@@ -959,14 +962,14 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
          int var49 = apart(var29.x, var29.z, var10, var4);
          int var34 = apart(var7, var8, var10, var4);
          if (var29 == var3) {
-            this.endTarget(var1, var49 == 0 ? null : "could not get any closer");
+            this.endTarget(clientPlayerEntity, var49 == 0 ? null : "could not get any closer");
             return false;
          }
 
          if (var49 > 0) {
             if (var49 >= this.targetBest && var34 >= this.targetNear) {
                if (++this.targetStalls >= 3) {
-                  this.endTarget(var1, "could not get any closer");
+                  this.endTarget(clientPlayerEntity, "could not get any closer");
                   return false;
                }
             } else {
@@ -982,10 +985,10 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
             return false;
          }
 
-         this.heading = this.blockedPlans % 2 == 1 ? this.heading.method_10170() : this.heading.method_10160().method_10160();
+         this.heading = this.blockedPlans % 2 == 1 ? this.heading.rotateYClockwise() : this.heading.rotateYCounterclockwise().rotateYCounterclockwise();
          this.axis = var5;
          this.drift = 0;
-         this.feedback("turn", "Blocked ahead, digging " + this.heading.method_10151() + " instead", 40);
+         this.feedback("turn", "Blocked ahead, digging " + this.heading.getId() + " instead", 40);
          return false;
       }
 
@@ -1006,38 +1009,38 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
       return !this.steps.isEmpty();
    }
 
-   private BlockPos walkTo(BlockPos var1, BlockPos var2) {
-      BlockPos var3 = var1;
+   private BlockPos walkTo(BlockPos blockPos, BlockPos blockPos2) {
+      BlockPos var3 = blockPos;
 
-      while (var3.method_10263() != var2.method_10263()) {
-         var3 = var3.method_10069(Integer.signum(var2.method_10263() - var3.method_10263()), 0, 0);
+      while (var3.getX() != blockPos2.getX()) {
+         var3 = var3.add(Integer.signum(blockPos2.getX() - var3.getX()), 0, 0);
          this.steps.add(var3);
       }
 
-      while (var3.method_10260() != var2.method_10260()) {
-         var3 = var3.method_10069(0, 0, Integer.signum(var2.method_10260() - var3.method_10260()));
+      while (var3.getZ() != blockPos2.getZ()) {
+         var3 = var3.add(0, 0, Integer.signum(blockPos2.getZ() - var3.getZ()));
          this.steps.add(var3);
       }
 
       return var3;
    }
 
-   private BlockPos center(TunnelMinerModule.Node var1, int var2) {
+   private BlockPos center(TunnelMinerModule.Node node, int i) {
       int var3 = this.cellSize / 2;
-      return new BlockPos(var1.x * this.cellSize + this.originX + var3, var2, var1.z * this.cellSize + this.originZ + var3);
+      return new BlockPos(node.x * this.cellSize + this.originX + var3, i, node.z * this.cellSize + this.originZ + var3);
    }
 
-   private int cellX(int var1) {
-      return Math.floorDiv(var1 - this.originX, this.cellSize);
+   private int cellX(int i) {
+      return Math.floorDiv(i - this.originX, this.cellSize);
    }
 
-   private int cellZ(int var1) {
-      return Math.floorDiv(var1 - this.originZ, this.cellSize);
+   private int cellZ(int i) {
+      return Math.floorDiv(i - this.originZ, this.cellSize);
    }
 
-   private double score(int var1, int var2, int var3, int var4, int var5, int var6, int var7, int var8, int var9, int var10) {
-      int var11 = (var1 - var3) * var5 + (var2 - var4) * var6;
-      int var12 = (var1 - var9) * var7 + (var2 - var10) * var8;
+   private double score(int i, int j, int k, int l, int m, int n, int o, int p, int q, int r) {
+      int var11 = (i - k) * m + (j - l) * n;
+      int var12 = (i - q) * o + (j - r) * p;
       return var11 - 2.0 * Math.abs(var12 - this.drift);
    }
 
@@ -1066,14 +1069,14 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
       }
    }
 
-   private void turnOn(ClientModule var1, String var2) {
-      if (var1 != null && !var1.isEnabled()) {
-         var1.setEnabled(true);
-         this.say(ModuleChat.body().text("Turned on " + var2 + " to find chunks to dig to."));
+   private void turnOn(ClientModule clientModule, String string) {
+      if (clientModule != null && !clientModule.isEnabled()) {
+         clientModule.setEnabled(true);
+         this.say(ModuleChat.body().text("Turned on " + string + " to find chunks to dig to."));
       }
    }
 
-   private void pickTarget(ClientPlayerEntity var1) {
+   private void pickTarget(ClientPlayerEntity clientPlayerEntity) {
       if (!this.flags.is("Off") && !this.hasTarget) {
          double var2 = 1.7976931348623157E308;
          long var4 = 0L;
@@ -1082,11 +1085,11 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
          while (var6.hasNext()) {
             long var9 = var6.nextLong();
             if (!this.visitedChunks.contains(var9)) {
-               int var11 = middle(ChunkPos.method_8325(var9));
-               int var12 = middle(ChunkPos.method_8332(var9));
+               int var11 = middle(ChunkPos.getPackedX(var9));
+               int var12 = middle(ChunkPos.getPackedZ(var9));
                double var7;
-               if ((Math.abs(var11 - this.start.method_10263()) > 48 || Math.abs(var12 - this.start.method_10260()) > 48)
-                  && (var7 = Math.hypot(var11 - var1.method_23317(), var12 - var1.method_23321())) < var2) {
+               if ((Math.abs(var11 - this.start.getX()) > 48 || Math.abs(var12 - this.start.getZ()) > 48)
+                  && (var7 = Math.hypot(var11 - clientPlayerEntity.getX(), var12 - clientPlayerEntity.getZ())) < var2) {
                   var2 = var7;
                   var4 = var9;
                }
@@ -1100,78 +1103,78 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
             this.targetNear = 2147483647;
             this.targetStalls = 0;
             this.unflaggedChecks = 0;
-            int var13 = middle(ChunkPos.method_8325(var4));
-            int var8 = middle(ChunkPos.method_8332(var4));
+            int var13 = middle(ChunkPos.getPackedX(var4));
+            int var8 = middle(ChunkPos.getPackedZ(var4));
             this.feedback("target", "Digging to a flagged chunk at " + var13 + " " + var8 + " (" + (int)var2 + " blocks)", 1);
-            EasyPlace.LOG.info("[Tunnel Base Finder] digging to flagged chunk at {} {} ({} blocks)", new Object[]{var13, var8, (int)var2});
+            EasyPlace.LOG.info("[Tunnel Base Finder] digging to flagged chunk at {} {} ({} blocks)", var13, var8, (int)var2);
          }
       }
    }
 
-   private void watchTarget(ClientPlayerEntity var1, ClientWorld var2) {
-      if (!this.flagged().contains(this.target) && var2.method_8393(ChunkPos.method_8325(this.target), ChunkPos.method_8332(this.target))) {
+   private void watchTarget(ClientPlayerEntity clientPlayerEntity, ClientWorld clientWorld) {
+      if (!this.flagged().contains(this.target) && clientWorld.isChunkLoaded(ChunkPos.getPackedX(this.target), ChunkPos.getPackedZ(this.target))) {
          if (++this.unflaggedChecks >= 10) {
-            this.endTarget(var1, "it is not flagged any more");
+            this.endTarget(clientPlayerEntity, "it is not flagged any more");
          }
       } else {
          this.unflaggedChecks = 0;
       }
    }
 
-   private boolean arrived(ClientPlayerEntity var1) {
-      return Math.abs(var1.method_31477() - middle(ChunkPos.method_8325(this.target))) <= 3
-         && Math.abs(var1.method_31479() - middle(ChunkPos.method_8332(this.target))) <= 3;
+   private boolean arrived(ClientPlayerEntity clientPlayerEntity) {
+      return Math.abs(clientPlayerEntity.getBlockX() - middle(ChunkPos.getPackedX(this.target))) <= 3
+         && Math.abs(clientPlayerEntity.getBlockZ() - middle(ChunkPos.getPackedZ(this.target))) <= 3;
    }
 
-   private void endTarget(ClientPlayerEntity var1, String var2) {
-      int var3 = middle(ChunkPos.method_8325(this.target));
-      int var4 = middle(ChunkPos.method_8332(this.target));
+   private void endTarget(ClientPlayerEntity clientPlayerEntity, String string) {
+      int var3 = middle(ChunkPos.getPackedX(this.target));
+      int var4 = middle(ChunkPos.getPackedZ(this.target));
       this.visitedChunks.add(this.target);
       this.hasTarget = false;
       this.steps.clear();
-      this.heading = var1.method_5735();
-      this.axis = var1.method_24515();
+      this.heading = clientPlayerEntity.getHorizontalFacing();
+      this.axis = clientPlayerEntity.getBlockPos();
       this.drift = 0;
-      String var5 = var2 == null
+      String var5 = string == null
          ? "Dug through the flagged chunk at " + var3 + " " + var4
-         : "Left the flagged chunk at " + var3 + " " + var4 + " (" + var2 + ")";
+         : "Left the flagged chunk at " + var3 + " " + var4 + " (" + string + ")";
       this.feedback("target-end", var5, 1);
       EasyPlace.LOG.info("[Tunnel Base Finder] {}", var5);
    }
 
-   private double visitedCost(int var1, int var2, long var3, long var5) {
+   private double visitedCost(int i, int j, long l, long m) {
       if (this.flags.is("Off")) {
          return 0.0;
       } else {
-         long var7 = this.cellChunk(var1, var2);
-         return var7 != var3 && var7 != var5 && this.visitedChunks.contains(var7) ? 4.0 : 0.0;
+         long var7 = this.cellChunk(i, j);
+         return var7 != l && var7 != m && this.visitedChunks.contains(var7) ? 4.0 : 0.0;
       }
    }
 
-   private long cellChunk(int var1, int var2) {
+   private long cellChunk(int i, int j) {
       int var3 = this.cellSize / 2;
-      return ChunkPos.method_8331(var1 * this.cellSize + this.originX + var3 >> 4, var2 * this.cellSize + this.originZ + var3 >> 4);
+      return ChunkPos.toLong(i * this.cellSize + this.originX + var3 >> 4, j * this.cellSize + this.originZ + var3 >> 4);
    }
 
-   private static int middle(int var0) {
-      return var0 * 16 + 8;
+   private static int middle(int i) {
+      return i * 16 + 8;
    }
 
-   private static int apart(int var0, int var1, int var2, int var3) {
-      return Math.abs(var0 - var2) + Math.abs(var1 - var3);
+   private static int apart(int i, int j, int k, int l) {
+      return Math.abs(i - k) + Math.abs(j - l);
    }
 
-   private void render(Render3DEvent var1) {
+   private void render(Render3DEvent render3DEvent) {
       if (this.showVisited.get() && !this.flags.is("Off") && !this.visitedChunks.isEmpty()) {
-         this.visitedOverlay.draw(this.visitedChunks, 1431357695, var1.partialTick);
+         this.visitedOverlay.draw(this.visitedChunks, 1431357695, render3DEvent.partialTick);
       }
    }
 
-   private double noise(int var1, int var2) {
+   private double noise(int i, int j) {
       if (!this.wander.get()) {
          return 0.0;
       } else {
-         int var3 = var1 * 73856093 ^ var2 * 19349663 ^ this.noiseSeed;
+         int var3 = i * 73856093 ^ j * 19349663 ^ this.noiseSeed;
          var3 ^= var3 >>> 13;
          var3 *= 1540483477;
          var3 ^= var3 >>> 15;
@@ -1179,45 +1182,45 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
       }
    }
 
-   private Boolean safe(ClientWorld var1, int var2, int var3, int var4) {
+   private Boolean safe(ClientWorld clientWorld, int i, int j, int k) {
       int var6 = this.cellSize;
       int var7 = var6 == 3 ? 3 : 2;
-      int var8 = var2 * var6 + this.originX;
-      int var9 = var3 * var6 + this.originZ;
-      int var10 = Math.max(0, Math.max(var8 - this.seenFrom.method_10263(), this.seenFrom.method_10263() - (var8 + var6 - 1)));
-      if (Math.max(var10, Math.max(0, Math.max(var9 - this.seenFrom.method_10260(), this.seenFrom.method_10260() - (var9 + var6 - 1)))) > this.perceive) {
-         return var1.method_8477(new BlockPos(var8, var4, var9)) ? Boolean.TRUE : null;
+      int var8 = i * var6 + this.originX;
+      int var9 = j * var6 + this.originZ;
+      int var10 = Math.max(0, Math.max(var8 - this.seenFrom.getX(), this.seenFrom.getX() - (var8 + var6 - 1)));
+      if (Math.max(var10, Math.max(0, Math.max(var9 - this.seenFrom.getZ(), this.seenFrom.getZ() - (var9 + var6 - 1)))) > this.perceive) {
+         return clientWorld.isPosLoaded(new BlockPos(var8, k, var9)) ? Boolean.TRUE : null;
       } else {
          Mutable var11 = new Mutable();
          Mutable var12 = new Mutable();
 
          for (int var13 = var8; var13 < var8 + var6; var13++) {
             for (int var14 = var9; var14 < var9 + var6; var14++) {
-               var11.method_10103(var13, var4 - 1, var14);
-               if (!var1.method_8477(var11)) {
+               var11.set(var13, k - 1, var14);
+               if (!clientWorld.isPosLoaded(var11)) {
                   return null;
                }
 
-               BlockState var15 = var1.method_8320(var11);
-               if (!var15.method_26227().method_15769() || var15.method_26220(var1, var11).method_1110()) {
+               BlockState var15 = clientWorld.getBlockState(var11);
+               if (!var15.getFluidState().isEmpty() || var15.getCollisionShape(clientWorld, var11).isEmpty()) {
                   return false;
                }
 
-               var11.method_10103(var13, var4 + var7, var14);
-               if (var1.method_8320(var11).method_26204() instanceof FallingBlock) {
+               var11.set(var13, k + var7, var14);
+               if (clientWorld.getBlockState(var11).getBlock() instanceof FallingBlock) {
                   return false;
                }
 
                for (int var16 = 0; var16 < var7; var16++) {
-                  var11.method_10103(var13, var4 + var16, var14);
-                  BlockState var17 = var1.method_8320(var11);
-                  if (!var17.method_26227().method_15769() || var17.method_26204() instanceof InfestedBlock || var17.method_26214(var1, var11) < 0.0F) {
+                  var11.set(var13, k + var16, var14);
+                  BlockState var17 = clientWorld.getBlockState(var11);
+                  if (!var17.getFluidState().isEmpty() || var17.getBlock() instanceof InfestedBlock || var17.getHardness(clientWorld, var11) < 0.0F) {
                      return false;
                   }
 
                   for (Direction var21 : Direction.values()) {
-                     var12.method_25505(var11, var21);
-                     if (!var1.method_8320(var12).method_26227().method_15769()) {
+                     var12.set(var11, var21);
+                     if (!clientWorld.getBlockState(var12).getFluidState().isEmpty()) {
                         return false;
                      }
                   }
@@ -1229,41 +1232,41 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
       }
    }
 
-   private long cellKey(BlockPos var1) {
-      return key(this.cellX(var1.method_10263()), this.cellZ(var1.method_10260()));
+   private long cellKey(BlockPos blockPos) {
+      return key(this.cellX(blockPos.getX()), this.cellZ(blockPos.getZ()));
    }
 
-   private static long key(int var0, int var1) {
-      return (long)var0 << 32 | var1 & 4294967295L;
+   private static long key(int i, int j) {
+      return (long)i << 32 | j & 4294967295L;
    }
 
-   private static Direction beside(BlockPos var0, BlockPos var1) {
-      if (var0.method_10264() != var1.method_10264()) {
+   private static Direction beside(BlockPos blockPos, BlockPos blockPos2) {
+      if (blockPos.getY() != blockPos2.getY()) {
          return null;
       } else {
-         int var2 = var1.method_10263() - var0.method_10263();
-         int var3 = var1.method_10260() - var0.method_10260();
+         int var2 = blockPos2.getX() - blockPos.getX();
+         int var3 = blockPos2.getZ() - blockPos.getZ();
          if (Math.abs(var2) + Math.abs(var3) != 1) {
             return null;
          } else {
-            return var2 > 0 ? Direction.field_11034 : (var2 < 0 ? Direction.field_11039 : (var3 > 0 ? Direction.field_11035 : Direction.field_11043));
+            return var2 > 0 ? Direction.EAST : (var2 < 0 ? Direction.WEST : (var3 > 0 ? Direction.SOUTH : Direction.NORTH));
          }
       }
    }
 
    @Override
-   public boolean wants(BlockState var1) {
-      return var1.method_27852(Blocks.field_10260) || var1.method_26164(BlockTags.field_21490) || STORAGE.contains(var1.method_26204());
+   public boolean wants(BlockState blockState) {
+      return blockState.isOf(Blocks.SPAWNER) || blockState.isIn(BlockTags.SHULKER_BOXES) || STORAGE.contains(blockState.getBlock());
    }
 
    @Override
-   public void found(long var1, BlockState var3) {
-      this.finds.put(var1, var3.method_27852(Blocks.field_10260));
+   public void found(long l, BlockState blockState) {
+      this.finds.put(l, blockState.isOf(Blocks.SPAWNER));
    }
 
    @Override
-   public void removed(long var1) {
-      this.finds.remove(var1);
+   public void removed(long l) {
+      this.finds.remove(l);
    }
 
    @Override
@@ -1271,7 +1274,7 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
       this.finds.clear();
    }
 
-   private boolean checkFinds(ClientPlayerEntity var1, ClientWorld var2) {
+   private boolean checkFinds(ClientPlayerEntity clientPlayerEntity, ClientWorld clientWorld) {
       int var3 = this.baseRadius.getInt();
       int var4 = 0;
       long var5 = 0L;
@@ -1279,18 +1282,18 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
       BlockPos var9 = null;
 
       for (Entry var11 : this.finds.entrySet()) {
-         BlockPos var12 = BlockPos.method_10092((Long)var11.getKey());
-         if ((Math.abs(var12.method_10263() - this.start.method_10263()) > 48 || Math.abs(var12.method_10260() - this.start.method_10260()) > 48)
-            && Math.abs(var12.method_10263() - var1.method_31477()) <= var3
-            && Math.abs(var12.method_10260() - var1.method_31479()) <= var3) {
+         BlockPos var12 = BlockPos.fromLong((Long)var11.getKey());
+         if ((Math.abs(var12.getX() - this.start.getX()) > 48 || Math.abs(var12.getZ() - this.start.getZ()) > 48)
+            && Math.abs(var12.getX() - clientPlayerEntity.getBlockX()) <= var3
+            && Math.abs(var12.getZ() - clientPlayerEntity.getBlockZ()) <= var3) {
             if ((Boolean)var11.getValue()) {
-               if (var9 == null && !spiderSpawner(var2, var12)) {
+               if (var9 == null && !spiderSpawner(clientWorld, var12)) {
                   var9 = var12;
                }
             } else {
                var4++;
-               var5 += var12.method_10263();
-               var7 += var12.method_10260();
+               var5 += var12.getX();
+               var7 += var12.getZ();
             }
          }
       }
@@ -1299,31 +1302,31 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
          this.found("a spawner", var9);
          return true;
       } else if (var4 >= this.storageToStop.getInt()) {
-         this.found("a base (" + var4 + " storage blocks)", new BlockPos((int)(var5 / var4), var1.method_31478(), (int)(var7 / var4)));
+         this.found("a base (" + var4 + " storage blocks)", new BlockPos((int)(var5 / var4), clientPlayerEntity.getBlockY(), (int)(var7 / var4)));
          return true;
       } else {
          return false;
       }
    }
 
-   private static boolean spiderSpawner(ClientWorld var0, BlockPos var1) {
-      if (!(var0.method_8321(var1) instanceof MobSpawnerBlockEntity var3)) {
+   private static boolean spiderSpawner(ClientWorld clientWorld, BlockPos blockPos) {
+      if (!(clientWorld.getBlockEntity(blockPos) instanceof MobSpawnerBlockEntity var3)) {
          return false;
       } else {
-         Entity var4 = var3.method_11390().method_8283(var0, var1);
-         return var4 != null && (var4.method_5864() == EntityType.field_6079 || var4.method_5864() == EntityType.field_6084);
+         Entity var4 = var3.getLogic().getRenderedEntity(clientWorld, blockPos);
+         return var4 != null && (var4.getType() == EntityType.SPIDER || var4.getType() == EntityType.CAVE_SPIDER);
       }
    }
 
-   private void found(String var1, BlockPos var2) {
+   private void found(String string, BlockPos blockPos) {
       this.stopped = true;
       this.release();
-      this.foundWhat = var1;
-      this.foundAt = var2.method_10062();
-      EasyPlace.LOG.info("[Tunnel Base Finder] found {} at {} {} {}", new Object[]{var1, var2.method_10263(), var2.method_10264(), var2.method_10260()});
-      this.say(ModuleChat.body().danger("Found " + var1).text(" at ").coords(var2.method_10263(), var2.method_10264(), var2.method_10260()));
+      this.foundWhat = string;
+      this.foundAt = blockPos.toImmutable();
+      EasyPlace.LOG.info("[Tunnel Base Finder] found {} at {} {} {}", string, blockPos.getX(), blockPos.getY(), blockPos.getZ());
+      this.say(ModuleChat.body().danger("Found " + string).text(" at ").coords(blockPos.getX(), blockPos.getY(), blockPos.getZ()));
       if (this.notificationsOn()) {
-         this.mc.method_1483().method_4873(PositionedSoundInstance.method_47978(SoundEvents.field_14622, 1.0F));
+         this.mc.getSoundManager().play(PositionedSoundInstance.ui(SoundEvents.BLOCK_NOTE_BLOCK_PLING, 1.0F));
       }
 
       if (!this.disconnect.get()) {
@@ -1334,48 +1337,36 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
       }
    }
 
-   private void quitOnPop(ClientPlayerEntity var1) {
+   private void quitOnPop(ClientPlayerEntity clientPlayerEntity) {
       this.popped = false;
       this.release();
       this.stopped = true;
-      BlockPos var2 = var1.method_24515();
-      EasyPlace.LOG
-         .info("[Tunnel Base Finder] totem popped at {} {} {}, leaving the server", new Object[]{var2.method_10263(), var2.method_10264(), var2.method_10260()});
-      if (this.mc.method_1562() != null) {
+      BlockPos var2 = clientPlayerEntity.getBlockPos();
+      EasyPlace.LOG.info("[Tunnel Base Finder] totem popped at {} {} {}, leaving the server", var2.getX(), var2.getY(), var2.getZ());
+      if (this.mc.getNetworkHandler() != null) {
          AutoReconnectModule.holdOff();
          this.mc
-            .method_1562()
-            .method_48296()
-            .method_10747(
-               Text.method_43470(
-                  "[Tunnel Base Finder] Totem popped at " + var2.method_10263() + " " + var2.method_10264() + " " + var2.method_10260() + ", left the server"
-               )
-            );
+            .getNetworkHandler()
+            .getConnection()
+            .disconnect(Text.literal("[Tunnel Base Finder] Totem popped at " + var2.getX() + " " + var2.getY() + " " + var2.getZ() + ", left the server"));
       }
 
       this.requestDisable();
    }
 
-   private void linger(ClientPlayerEntity var1) {
+   private void linger(ClientPlayerEntity clientPlayerEntity) {
       if (this.leaveAt != 0L) {
-         this.idle(var1);
+         this.idle(clientPlayerEntity);
          if (this.tick >= this.leaveAt) {
             this.leaveAt = 0L;
-            if (this.mc.method_1562() != null) {
+            if (this.mc.getNetworkHandler() != null) {
                AutoReconnectModule.holdOff();
                this.mc
-                  .method_1562()
-                  .method_48296()
-                  .method_10747(
-                     Text.method_43470(
-                        "[Tunnel Base Finder] Found "
-                           + this.foundWhat
-                           + " at "
-                           + this.foundAt.method_10263()
-                           + " "
-                           + this.foundAt.method_10264()
-                           + " "
-                           + this.foundAt.method_10260()
+                  .getNetworkHandler()
+                  .getConnection()
+                  .disconnect(
+                     Text.literal(
+                        "[Tunnel Base Finder] Found " + this.foundWhat + " at " + this.foundAt.getX() + " " + this.foundAt.getY() + " " + this.foundAt.getZ()
                      )
                   );
             }
@@ -1389,16 +1380,16 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
       return this.cellSize == 3 ? SHARD : PICKAXE;
    }
 
-   private ItemStack pickaxe(ClientPlayerEntity var1) {
+   private ItemStack pickaxe(ClientPlayerEntity clientPlayerEntity) {
       Predicate var2 = this.tool();
-      if (var2.test(var1.method_6047())) {
-         return var1.method_6047();
+      if (var2.test(clientPlayerEntity.getMainHandStack())) {
+         return clientPlayerEntity.getMainHandStack();
       } else {
-         PlayerInventory var3 = var1.method_31548();
+         PlayerInventory var3 = clientPlayerEntity.getInventory();
 
          for (int var4 = 0; var4 < 36; var4++) {
-            if (var2.test(var3.method_5438(var4))) {
-               return var3.method_5438(var4);
+            if (var2.test(var3.getStack(var4))) {
+               return var3.getStack(var4);
             }
          }
 
@@ -1406,35 +1397,35 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
       }
    }
 
-   static boolean shardName(ItemStack var0) {
-      String var1 = var0.method_7964().getString().toLowerCase(Locale.ROOT);
+   static boolean shardName(ItemStack itemStack) {
+      String var1 = itemStack.getName().getString().toLowerCase(Locale.ROOT);
       return var1.contains("shard") || var1.contains("amethyst");
    }
 
-   private static boolean mendable(ItemStack var0) {
-      return var0.method_58657().method_57534().stream().anyMatch(var0x -> var0x.method_40225(Enchantments.field_9101));
+   private static boolean mendable(ItemStack itemStack) {
+      return itemStack.getEnchantments().getEnchantments().stream().anyMatch(registryEntry -> registryEntry.matchesKey(Enchantments.MENDING));
    }
 
-   private static int count(ClientPlayerEntity var0, Item var1) {
-      int var2 = var0.method_6079().method_31574(var1) ? var0.method_6079().method_7947() : 0;
-      PlayerInventory var3 = var0.method_31548();
+   private static int count(ClientPlayerEntity clientPlayerEntity, Item item) {
+      int var2 = clientPlayerEntity.getOffHandStack().isOf(item) ? clientPlayerEntity.getOffHandStack().getCount() : 0;
+      PlayerInventory var3 = clientPlayerEntity.getInventory();
 
       for (int var4 = 0; var4 < 36; var4++) {
-         ItemStack var5 = var3.method_5438(var4);
-         if (var5.method_31574(var1)) {
-            var2 += var5.method_7947();
+         ItemStack var5 = var3.getStack(var4);
+         if (var5.isOf(item)) {
+            var2 += var5.getCount();
          }
       }
 
       return var2;
    }
 
-   private static int freeSlots(ClientPlayerEntity var0) {
+   private static int freeSlots(ClientPlayerEntity clientPlayerEntity) {
       int var1 = 0;
-      PlayerInventory var2 = var0.method_31548();
+      PlayerInventory var2 = clientPlayerEntity.getInventory();
 
       for (int var3 = 0; var3 < 36; var3++) {
-         if (var2.method_5438(var3).method_7960()) {
+         if (var2.getStack(var3).isEmpty()) {
             var1++;
          }
       }
@@ -1442,9 +1433,9 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
       return var1;
    }
 
-   private boolean calm(ClientPlayerEntity var1) {
+   private boolean calm(ClientPlayerEntity clientPlayerEntity) {
       this.release();
-      return InventoryCalm.still(var1);
+      return InventoryCalm.still(clientPlayerEntity);
    }
 
    private void release() {
@@ -1471,29 +1462,29 @@ public final class TunnelMinerModule extends ClientModule implements ChunkScanne
       this.standTarget = null;
       this.streaming = false;
       this.streamTarget = null;
-      this.mc.field_1690.field_1904.method_23481(false);
-      this.mc.field_1690.field_1894.method_23481(false);
-      this.mc.field_1690.field_1881.method_23481(false);
-      this.mc.field_1690.field_1913.method_23481(false);
-      this.mc.field_1690.field_1849.method_23481(false);
-      this.mc.field_1690.field_1903.method_23481(false);
-      this.mc.field_1690.field_1867.method_23481(false);
-      this.mc.field_1690.field_1832.method_23481(false);
-      if (this.mc.field_1761 != null) {
-         this.mc.field_1761.method_2925();
+      this.mc.options.useKey.setPressed(false);
+      this.mc.options.forwardKey.setPressed(false);
+      this.mc.options.backKey.setPressed(false);
+      this.mc.options.leftKey.setPressed(false);
+      this.mc.options.rightKey.setPressed(false);
+      this.mc.options.jumpKey.setPressed(false);
+      this.mc.options.sprintKey.setPressed(false);
+      this.mc.options.sneakKey.setPressed(false);
+      if (this.mc.interactionManager != null) {
+         this.mc.interactionManager.cancelBlockBreaking();
       }
    }
 
-   private void say(ModuleChat.Body var1) {
-      ModuleChat.send(this, var1);
+   private void say(ModuleChat.Body body) {
+      ModuleChat.send(this, body);
    }
 
-   private void feedback(String var1, String var2, int var3) {
+   private void feedback(String string, String string2, int i) {
       if (this.chatFeedback.get()) {
-         long var4 = this.lastFeedback.getOrDefault(var1, -4611686018427387904L);
-         if (this.tick - var4 >= var3) {
-            this.lastFeedback.put(var1, this.tick);
-            ModuleChat.send(this, var2);
+         long var4 = this.lastFeedback.getOrDefault(string, -4611686018427387904L);
+         if (this.tick - var4 >= i) {
+            this.lastFeedback.put(string, this.tick);
+            ModuleChat.send(this, string2);
          }
       }
    }

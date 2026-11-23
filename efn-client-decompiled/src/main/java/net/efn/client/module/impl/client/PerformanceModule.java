@@ -75,7 +75,7 @@ public final class PerformanceModule extends ClientModule implements HudOverlayP
    }
 
    @Override
-   public void renderHudOverlay(ImDrawList var1, float var2, float var3) {
+   public void renderHudOverlay(ImDrawList imDrawList, float f, float g) {
       this.smoothedNanos = this.smoothedNanos + (Render3DEvent.lastDurationNanos() - this.smoothedNanos) / 8L;
       long var4 = System.nanoTime();
       if (var4 >= this.nextStatsUpdate) {
@@ -84,7 +84,7 @@ public final class PerformanceModule extends ClientModule implements HudOverlayP
             Locale.ROOT,
             "%s  \u00b7  %d FPS  \u00b7  3D CPU %.2f ms%s  \u00b7  queue %d",
             optimizationsEnabled() ? "Optimized" : "Standard",
-            MinecraftClient.method_1551().method_47599(),
+            MinecraftClient.getInstance().getCurrentFps(),
             this.smoothedNanos / 1000000.0,
             var6,
             ChunkScanner.pending()
@@ -94,9 +94,9 @@ public final class PerformanceModule extends ClientModule implements HudOverlayP
 
       String var10 = this.statsText;
       ImFont var7 = ImGuiManager.getInstance().hudLabelFont();
-      float var8 = var2 - EfnWidgets.textWidth(var7, var10) - 8.0F;
-      float var9 = var3 - EfnWidgets.lineHeight(var7) - 6.0F;
-      EfnWidgets.text(var1, var7, var8 + 1.0F, var9 + 1.0F, -1610612736, var10);
-      EfnWidgets.text(var1, var7, var8, var9, -3618616, var10);
+      float var8 = f - EfnWidgets.textWidth(var7, var10) - 8.0F;
+      float var9 = g - EfnWidgets.lineHeight(var7) - 6.0F;
+      EfnWidgets.text(imDrawList, var7, var8 + 1.0F, var9 + 1.0F, -1610612736, var10);
+      EfnWidgets.text(imDrawList, var7, var8, var9, -3618616, var10);
    }
 }

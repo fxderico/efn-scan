@@ -20,15 +20,15 @@ public final class EspStyle {
    public final BooleanSetting reveal;
    public final NumberSetting range;
 
-   public EspStyle(EspStyle.Registrar var1, String var2, float var3, float var4) {
-      this.shape = var1.add("shape", new ModeSetting("Shape", var2, "Outline", "Boxes"));
-      this.boxSize = var1.add("box-size", new NumberSetting("Box Size", 1.0F, 0.1F, 2.0F).step(0.1F));
-      this.fillAlpha = var1.add("fill-alpha", new NumberSetting("Fill Alpha", var3, 0.0F, 1.0F).step(0.05F));
-      this.lineWidth = var1.add("line-width", new NumberSetting("Line Width", 1.5F, 0.5F, 5.0F).step(0.5F));
-      this.glow = var1.add("glow", new BooleanSetting("Glow", true));
-      this.fade = var1.add("distance-fade", new BooleanSetting("Distance Fade", true));
-      this.reveal = var1.add("reveal", new BooleanSetting("Reveal Animation", true));
-      this.range = var1.add("range", new NumberSetting("Range", var4, 16.0F, 2048.0F).step(1.0F));
+   public EspStyle(EspStyle.Registrar registrar, String string, float f, float g) {
+      this.shape = registrar.add("shape", new ModeSetting("Shape", string, "Outline", "Boxes"));
+      this.boxSize = registrar.add("box-size", new NumberSetting("Box Size", 1.0F, 0.1F, 2.0F).step(0.1F));
+      this.fillAlpha = registrar.add("fill-alpha", new NumberSetting("Fill Alpha", f, 0.0F, 1.0F).step(0.05F));
+      this.lineWidth = registrar.add("line-width", new NumberSetting("Line Width", 1.5F, 0.5F, 5.0F).step(0.5F));
+      this.glow = registrar.add("glow", new BooleanSetting("Glow", true));
+      this.fade = registrar.add("distance-fade", new BooleanSetting("Distance Fade", true));
+      this.reveal = registrar.add("reveal", new BooleanSetting("Reveal Animation", true));
+      this.range = registrar.add("range", new NumberSetting("Range", g, 16.0F, 2048.0F).step(1.0F));
       this.boxSize.visibleWhen(() -> this.shape.is("Boxes"));
    }
 
@@ -38,6 +38,6 @@ public final class EspStyle {
 
    @Environment(EnvType.CLIENT)
    public interface Registrar {
-      <S extends Setting> S add(String var1, S var2);
+      <S extends Setting> S add(String string, S setting);
    }
 }

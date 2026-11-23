@@ -40,13 +40,13 @@ final class RivalBook {
    RivalBook() {
    }
 
-   RivalBook.Rival of(UUID var1) {
-      return this.loaded.computeIfAbsent(var1, RivalBook::read);
+   RivalBook.Rival of(UUID uUID) {
+      return this.loaded.computeIfAbsent(uUID, RivalBook::read);
    }
 
-   void save(boolean var1) {
+   void save(boolean bl) {
       long var2 = System.currentTimeMillis();
-      if (var1 || var2 - this.lastSave >= 30000L) {
+      if (bl || var2 - this.lastSave >= 30000L) {
          this.lastSave = var2;
          ArrayList var4 = new ArrayList();
 
@@ -59,7 +59,7 @@ final class RivalBook {
          }
 
          if (!var4.isEmpty()) {
-            Util.method_27958().execute(() -> {
+            Util.getIoWorkerExecutor().execute(() -> {
                for (RivalBook.Rival var2x : var4) {
                   write(var2x);
                }
@@ -74,16 +74,16 @@ final class RivalBook {
       return FabricLoader.getInstance().getConfigDir().resolve("efn").resolve("bots").resolve("rivals");
    }
 
-   private static RivalBook.Rival read(UUID var0) {
-      Path var2 = folder().resolve(var0 + ".json");
+   private static RivalBook.Rival read(UUID uUID) {
+      Path var2 = folder().resolve(uUID + ".json");
 
       try {
          RivalBook.Rival var1;
          if (Files.isRegularFile(var2)
             && Files.size(var2) <= 16384L
-            && (var1 = (RivalBook.Rival)GSON.fromJson(Files.readString(var2, StandardCharsets.UTF_8), RivalBook.Rival.class)) != null
+            && (var1 = GSON.fromJson(Files.readString(var2, StandardCharsets.UTF_8), RivalBook.Rival.class)) != null
             && var1.version == 1) {
-            var1.id = var0.toString();
+            var1.id = uUID.toString();
             if (var1.openerReward == null || var1.openerReward.length != 6) {
                var1.openerReward = new float[6];
             }
@@ -95,22 +95,22 @@ final class RivalBook {
             return var1;
          }
       } catch (IOException | JsonSyntaxException var4) {
-         LOGGER.warn("[EFN] Could not read a crystal bot rival entry, starting it over", var4);
+         LOGGER.warn("[EFN] Could not read a crystal bot rival entry, starting it over", (Throwable)var4);
       }
 
       RivalBook.Rival var5 = new RivalBook.Rival();
-      var5.id = var0.toString();
+      var5.id = uUID.toString();
       return var5;
    }
 
-   private static void write(RivalBook.Rival var0) {
+   private static void write(RivalBook.Rival rival) {
       Path var1 = folder();
-      Path var2 = var1.resolve(UUID.fromString(var0.id) + ".json");
+      Path var2 = var1.resolve(UUID.fromString(rival.id) + ".json");
 
       try {
          Files.createDirectories(var1);
          Path var3 = var1.resolve(var2.getFileName() + ".tmp");
-         Files.writeString(var3, GSON.toJson(var0), StandardCharsets.UTF_8);
+         Files.writeString(var3, GSON.toJson(rival), StandardCharsets.UTF_8);
 
          try {
             Files.move(var3, var2, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
@@ -118,7 +118,7 @@ final class RivalBook {
             Files.move(var3, var2, StandardCopyOption.REPLACE_EXISTING);
          }
       } catch (IllegalArgumentException | IOException var6) {
-         LOGGER.warn("[EFN] Could not save a crystal bot rival entry", var6);
+         LOGGER.warn("[EFN] Could not save a crystal bot rival entry", (Throwable)var6);
       }
    }
 
@@ -134,7 +134,7 @@ final class RivalBook {
       }
 
       if (var0.size() > 64) {
-         var0.sort((var0x, var1x) -> Long.compare(modified(var1x), modified(var0x)));
+         var0.sort((path, path2) -> Long.compare(modified(path2), modified(path)));
 
          for (Path var9 : var0.subList(64, var0.size())) {
             try {
@@ -145,16 +145,16 @@ final class RivalBook {
       }
    }
 
-   private static long modified(Path var0) {
+   private static long modified(Path path) {
       try {
-         return Files.getLastModifiedTime(var0).toMillis();
+         return Files.getLastModifiedTime(path).toMillis();
       } catch (IOException var2) {
          return 0L;
       }
    }
 
-   private static float average(float var0, int var1, float var2) {
-      return var1 == 0 ? var2 : var0 + (var2 - var0) * 0.25F;
+   private static float average(float f, int i, float g) {
+      return i == 0 ? g : f + (g - f) * 0.25F;
    }
 
    @Environment(EnvType.CLIENT)
@@ -186,14 +186,14 @@ final class RivalBook {
          this.dirty = true;
       }
 
-      void launched(boolean var1) {
-         this.launchRate = RivalBook.average(this.launchRate, this.launches++, var1 ? 1.0F : 0.0F);
+      void launched(boolean bl) {
+         this.launchRate = RivalBook.average(this.launchRate, this.launches++, bl ? 1.0F : 0.0F);
          this.dirty = true;
       }
 
-      void flew(double var1, double var3) {
-         this.airAlong = RivalBook.average(this.airAlong, this.flights, (float)var1);
-         this.airAcross = RivalBook.average(this.airAcross, this.flights++, (float)var3);
+      void flew(double d, double e) {
+         this.airAlong = RivalBook.average(this.airAlong, this.flights, (float)d);
+         this.airAcross = RivalBook.average(this.airAcross, this.flights++, (float)e);
          this.dirty = true;
       }
 
@@ -201,18 +201,18 @@ final class RivalBook {
          return this.flights >= 2;
       }
 
-      void retotemed(int var1) {
-         this.retotemTicks = RivalBook.average(this.retotemTicks, this.retotems++, (float)var1);
+      void retotemed(int i) {
+         this.retotemTicks = RivalBook.average(this.retotemTicks, this.retotems++, (float)i);
          this.dirty = true;
       }
 
-      void leftHole(int var1) {
-         this.holeTicks = RivalBook.average(this.holeTicks, this.holes++, (float)var1);
+      void leftHole(int i) {
+         this.holeTicks = RivalBook.average(this.holeTicks, this.holes++, (float)i);
          this.dirty = true;
       }
 
-      void lowSpell(boolean var1) {
-         this.pearlLowRate = RivalBook.average(this.pearlLowRate, this.lowSpells++, var1 ? 1.0F : 0.0F);
+      void lowSpell(boolean bl) {
+         this.pearlLowRate = RivalBook.average(this.pearlLowRate, this.lowSpells++, bl ? 1.0F : 0.0F);
          this.dirty = true;
       }
 
@@ -220,16 +220,16 @@ final class RivalBook {
          return this.launches >= 4 && this.launchRate < 0.35F;
       }
 
-      int retotemWindow(int var1) {
-         return this.retotems >= 2 ? Math.round(this.retotemTicks) : var1;
+      int retotemWindow(int i) {
+         return this.retotems >= 2 ? Math.round(this.retotemTicks) : i;
       }
 
       boolean campsInHoles() {
          return this.holes >= 2 && this.holeTicks >= 100.0F;
       }
 
-      int opener(double var1) {
-         int var3 = bucket(var1);
+      int opener(double d) {
+         int var3 = bucket(d);
          float var4 = 0.0F;
 
          for (int var5 = 0; var5 < 2; var5++) {
@@ -256,8 +256,8 @@ final class RivalBook {
          return var14;
       }
 
-      void opened(int var1, double var2, float var4) {
-         int var5 = var1 * 3 + bucket(var2);
+      void opened(int i, double d, float f) {
+         int var5 = i * 3 + bucket(d);
 
          for (int var6 = 0; var6 < this.openerTries.length; var6++) {
             if (var6 % 3 == var5 % 3) {
@@ -266,13 +266,13 @@ final class RivalBook {
             }
          }
 
-         this.openerReward[var5] = this.openerReward[var5] + var4;
+         this.openerReward[var5] = this.openerReward[var5] + f;
          this.openerTries[var5]++;
          this.dirty = true;
       }
 
-      private static int bucket(double var0) {
-         return var0 <= 2.6 ? 0 : (var0 <= 3.0 ? 1 : 2);
+      private static int bucket(double d) {
+         return d <= 2.6 ? 0 : (d <= 3.0 ? 1 : 2);
       }
 
       boolean pearlsWhenLow() {
@@ -280,7 +280,7 @@ final class RivalBook {
       }
 
       private RivalBook.Rival copy() {
-         return (RivalBook.Rival)RivalBook.GSON.fromJson(RivalBook.GSON.toJson(this), RivalBook.Rival.class);
+         return RivalBook.GSON.fromJson(RivalBook.GSON.toJson(this), RivalBook.Rival.class);
       }
    }
 }

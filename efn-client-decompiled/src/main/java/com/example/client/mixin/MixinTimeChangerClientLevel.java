@@ -17,23 +17,23 @@ public abstract class MixinTimeChangerClientLevel {
    }
 
    @WrapOperation(
-      method = {"method_29089"},
+      method = {"setTime"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_638$class_5271;method_165(J)V"
+         target = "Lnet/minecraft/client/world/ClientWorld$Properties;setTimeOfDay(J)V"
       )}
    )
-   private void efn$timeChangerServerDayTime(Properties var1, long var2, Operation<Void> var4) {
+   private void efn$timeChangerServerDayTime(Properties properties, long l, Operation<Void> operation) {
       TimeChangerModule var5 = TimeChangerModule.active;
       if (var5 == null) {
-         var4.call(new Object[]{var1, var2});
+         operation.call(properties, l);
       } else {
          ClientWorld var6 = (ClientWorld)this;
-         long var7 = var1.method_217();
-         long var9 = var5.interceptServerDayTime(var6, var2);
-         var4.call(new Object[]{var1, var9});
+         long var7 = properties.getTimeOfDay();
+         long var9 = var5.interceptServerDayTime(var6, l);
+         operation.call(properties, var9);
          if (var9 != var7) {
-            var6.method_75728().method_76405();
+            var6.getEnvironmentAttributes().tick();
          }
       }
    }

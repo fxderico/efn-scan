@@ -18,20 +18,20 @@ public abstract class MixinElytraFlyEntity {
    }
 
    @ModifyReturnValue(
-      method = {"method_18376"},
+      method = {"getPose"},
       at = {@At("RETURN")}
    )
-   private EntityPose efn$elytraFlyGetPose(EntityPose var1) {
+   private EntityPose efn$elytraFlyGetPose(EntityPose entityPose) {
       ElytraFlyModule var2 = ElytraFlyModule.active;
       if (var2 == null) {
-         return var1;
+         return entityPose;
       } else {
-         MinecraftClient var3 = MinecraftClient.method_1551();
-         ClientPlayerEntity var4 = var3.field_1724;
-         if (this == var4 && var3.method_18854()) {
-            return var2.canPacketEfly(var4) ? EntityPose.field_18077 : var1;
+         MinecraftClient var3 = MinecraftClient.getInstance();
+         ClientPlayerEntity var4 = var3.player;
+         if (this == var4 && var3.isOnThread()) {
+            return var2.canPacketEfly(var4) ? EntityPose.GLIDING : entityPose;
          } else {
-            return var1;
+            return entityPose;
          }
       }
    }

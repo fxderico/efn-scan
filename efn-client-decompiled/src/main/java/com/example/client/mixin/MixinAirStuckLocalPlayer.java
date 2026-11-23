@@ -16,13 +16,13 @@ public abstract class MixinAirStuckLocalPlayer {
    }
 
    @Inject(
-      method = {"method_6007"},
+      method = {"tickMovement"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$airStuck(CallbackInfo var1) {
+   private void efn$airStuck(CallbackInfo callbackInfo) {
       if (AirStuckModule.active != null) {
-         var1.cancel();
+         callbackInfo.cancel();
       }
    }
 }

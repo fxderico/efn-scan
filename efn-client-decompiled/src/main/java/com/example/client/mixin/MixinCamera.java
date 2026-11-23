@@ -23,47 +23,47 @@ public abstract class MixinCamera {
    }
 
    @Shadow
-   protected abstract void method_19325(float var1, float var2);
+   protected abstract void setRotation(float f, float g);
 
    @Shadow
-   protected abstract void method_19327(double var1, double var3, double var5);
+   protected abstract void setPos(double d, double e, double f);
 
    @WrapOperation(
-      method = {"method_19321"},
+      method = {"update"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_4184;method_19325(FF)V"
+         target = "Lnet/minecraft/client/render/Camera;setRotation(FF)V"
       )}
    )
-   private void efn$freelookRotation(Camera var1, float var2, float var3, Operation<Void> var4) {
+   private void efn$freelookRotation(Camera camera, float f, float g, Operation<Void> operation) {
       FreelookModule var5 = ModuleRegistry.get(FreelookModule.class);
       if (FreecamModule.active == null && var5 != null && var5.isEnabled()) {
-         var4.call(new Object[]{var1, var5.cameraYaw(), var5.cameraPitch()});
+         operation.call(camera, var5.cameraYaw(), var5.cameraPitch());
       } else {
-         var4.call(new Object[]{var1, var2, var3});
+         operation.call(camera, f, g);
       }
    }
 
    @WrapOperation(
-      method = {"method_19321"},
+      method = {"update"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_4184;method_19318(F)F"
+         target = "Lnet/minecraft/client/render/Camera;clipToSpace(F)F"
       )}
    )
-   private float efn$freelookThroughBlocks(Camera var1, float var2, Operation<Float> var3) {
-      return FreelookModule.throughBlocks() ? var2 : (Float)var3.call(new Object[]{var1, var2});
+   private float efn$freelookThroughBlocks(Camera camera, float f, Operation<Float> operation) {
+      return FreelookModule.throughBlocks() ? f : (Float)operation.call(camera, f);
    }
 
    @Inject(
-      method = {"method_19321"},
+      method = {"update"},
       at = {@At("RETURN")}
    )
-   private void efn$freecamCamera(World var1, Entity var2, boolean var3, boolean var4, float var5, CallbackInfo var6) {
+   private void efn$freecamCamera(World world, Entity entity, boolean bl, boolean bl2, float f, CallbackInfo callbackInfo) {
       FreecamModule var7 = FreecamModule.active;
       if (var7 != null) {
-         this.method_19327(var7.getX(var5), var7.getY(var5), var7.getZ(var5));
-         this.method_19325(var7.getYaw(), var7.getPitch());
+         this.setPos(var7.getX(f), var7.getY(f), var7.getZ(f));
+         this.setRotation(var7.getYaw(), var7.getPitch());
       }
    }
 }

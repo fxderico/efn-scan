@@ -18,19 +18,19 @@ public abstract class MixinCustomFovGameRenderer {
    }
 
    @Shadow
-   public abstract boolean method_35765();
+   public abstract boolean isRenderingPanorama();
 
    @ModifyReturnValue(
-      method = {"method_3196"},
+      method = {"getFov"},
       at = {@At("RETURN")}
    )
-   private float efn$customFov(float var1, @Local(argsOnly = true) boolean var2) {
+   private float efn$customFov(float f, @Local(argsOnly = true) boolean bl) {
       CustomFovModule var4 = CustomFovModule.active;
-      float var3 = var4 != null && !this.method_35765() ? var4.fov() : var1;
-      if (!var2) {
-         CustomFovModule.hudFovApplied(var1, var3);
+      float var3 = var4 != null && !this.isRenderingPanorama() ? var4.fov() : f;
+      if (!bl) {
+         CustomFovModule.hudFovApplied(f, var3);
       }
 
-      return var2 && !this.method_35765() ? ZoomModule.fov(var3) : var3;
+      return bl && !this.isRenderingPanorama() ? ZoomModule.fov(var3) : var3;
    }
 }

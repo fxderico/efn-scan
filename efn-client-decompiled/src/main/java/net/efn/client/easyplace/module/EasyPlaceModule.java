@@ -45,7 +45,7 @@ public final class EasyPlaceModule extends ClientModule {
    private final BooleanSetting baritoneWalk = this.addSetting("baritone-walk", new BooleanSetting("Baritone Walk", false));
    private final BooleanSetting chatFeedback = this.addSetting("chat-feedback", new BooleanSetting("Chat Feedback", true));
    private final BooleanSetting debug = this.addSetting("debug", new BooleanSetting("Debug Log", false));
-   private final PlacementManager placementManager = new PlacementManager(MinecraftClient.method_1551(), this::feedback);
+   private final PlacementManager placementManager = new PlacementManager(MinecraftClient.getInstance(), this::feedback);
    private final Map<String, Long> lastFeedbackTick = new HashMap<>();
    private long moduleTick;
 
@@ -67,8 +67,8 @@ public final class EasyPlaceModule extends ClientModule {
          ModuleChat.send(this, BaritoneCompat.isAvailable() ? "Baritone detected, walking is on" : "Baritone not found, walking is off");
       }
 
-      this.on(TickEvent.TYPE, Stage.PRE, var1x -> this.placementManager.tickPre(this.config()));
-      this.on(TickEvent.TYPE, Stage.POST, var1x -> {
+      this.on(TickEvent.TYPE, Stage.PRE, tickEvent -> this.placementManager.tickPre(this.config()));
+      this.on(TickEvent.TYPE, Stage.POST, tickEvent -> {
          this.moduleTick++;
          this.placementManager.tick(this.config());
       });
@@ -82,28 +82,25 @@ public final class EasyPlaceModule extends ClientModule {
       BaritoneCompat.cancel();
    }
 
-   private void renderFov(Render3DEvent var1) {
+   private void renderFov(Render3DEvent render3DEvent) {
       if (this.fovFilter.get() && this.drawFov.get()) {
-         ClientPlayerEntity var2 = MinecraftClient.method_1551().field_1724;
+         ClientPlayerEntity var2 = MinecraftClient.getInstance().player;
          if (var2 != null) {
-            Vec3d var3 = var2.method_5836(var1.partialTick);
-            double var4 = Math.toRadians(var2.method_5705(var1.partialTick));
-            double var6 = Math.toRadians(var2.method_5695(var1.partialTick));
+            Vec3d var3 = var2.getCameraPosVec(render3DEvent.partialTick);
+            double var4 = Math.toRadians(var2.getYaw(render3DEvent.partialTick));
+            double var6 = Math.toRadians(var2.getPitch(render3DEvent.partialTick));
             double var8 = Math.tan(Math.toRadians(this.fovDegrees.get() * 0.5));
             Vec3d var10 = new Vec3d(-Math.sin(var4) * Math.cos(var6), -Math.sin(var6), Math.cos(var4) * Math.cos(var6));
-            Vec3d var11 = new Vec3d(Math.cos(var4), 0.0, Math.sin(var4)).method_1021(var8);
-            Vec3d var12 = new Vec3d(-Math.sin(var4) * Math.sin(var6), Math.cos(var6), Math.cos(var4) * Math.sin(var6)).method_1021(var8);
+            Vec3d var11 = new Vec3d(Math.cos(var4), 0.0, Math.sin(var4)).multiply(var8);
+            Vec3d var12 = new Vec3d(-Math.sin(var4) * Math.sin(var6), Math.cos(var6), Math.cos(var4) * Math.sin(var6)).multiply(var8);
             Vec3d[] var13 = new Vec3d[]{
-               var10.method_1019(var11).method_1019(var12),
-               var10.method_1020(var11).method_1019(var12),
-               var10.method_1020(var11).method_1020(var12),
-               var10.method_1019(var11).method_1020(var12)
+               var10.add(var11).add(var12), var10.subtract(var11).add(var12), var10.subtract(var11).subtract(var12), var10.add(var11).subtract(var12)
             };
-            FoglessLines var14 = FoglessLines.forFrame(var1.partialTick);
+            FoglessLines var14 = FoglessLines.forFrame(render3DEvent.partialTick);
 
             for (int var15 = 0; var15 < var13.length; var15++) {
-               Vec3d var16 = var3.method_1019(var13[var15].method_1021(6.0));
-               Vec3d var17 = var3.method_1019(var13[(var15 + 1) % var13.length].method_1021(6.0));
+               Vec3d var16 = var3.add(var13[var15].multiply(6.0));
+               Vec3d var17 = var3.add(var13[(var15 + 1) % var13.length].multiply(6.0));
                var14.line(var3, var16, -1275016961, 1.5F);
                var14.line(var16, var17, -1275016961, 1.5F);
             }
@@ -129,12 +126,12 @@ public final class EasyPlaceModule extends ClientModule {
       );
    }
 
-   private void feedback(String var1, String var2, int var3) {
+   private void feedback(String string, String string2, int i) {
       if (this.chatFeedback.get()) {
-         long var4 = this.lastFeedbackTick.getOrDefault(var1, -4611686018427387904L);
-         if (this.moduleTick - var4 >= var3) {
-            this.lastFeedbackTick.put(var1, this.moduleTick);
-            ModuleChat.send(this, var2);
+         long var4 = this.lastFeedbackTick.getOrDefault(string, -4611686018427387904L);
+         if (this.moduleTick - var4 >= i) {
+            this.lastFeedbackTick.put(string, this.moduleTick);
+            ModuleChat.send(this, string2);
          }
       }
    }

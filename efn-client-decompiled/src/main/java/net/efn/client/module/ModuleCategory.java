@@ -23,33 +23,33 @@ public final class ModuleCategory {
    private final String displayName;
    private final ModuleCategory.Icon icon;
 
-   private ModuleCategory(String var1, String var2, ModuleCategory.Icon var3) {
-      this.id = var1;
-      this.displayName = var2;
-      this.icon = var3;
+   private ModuleCategory(String string, String string2, ModuleCategory.Icon icon) {
+      this.id = string;
+      this.displayName = string2;
+      this.icon = icon;
    }
 
-   public static synchronized ModuleCategory register(String var0, String var1, ModuleCategory.Icon var2) {
-      if (!isValidId(var0)) {
-         throw new IllegalArgumentException("Category id must be upper-case letters, digits and '_': " + var0);
+   public static synchronized ModuleCategory register(String string, String string2, ModuleCategory.Icon icon) {
+      if (!isValidId(string)) {
+         throw new IllegalArgumentException("Category id must be upper-case letters, digits and '_': " + string);
       } else {
          for (ModuleCategory var4 : REGISTERED) {
-            if (var4.id.equals(var0)) {
-               throw new IllegalArgumentException("Duplicate category id: " + var0);
+            if (var4.id.equals(string)) {
+               throw new IllegalArgumentException("Duplicate category id: " + string);
             }
          }
 
-         ModuleCategory var5 = new ModuleCategory(var0, Objects.requireNonNull(var1, "displayName"), Objects.requireNonNull(var2, "icon"));
+         ModuleCategory var5 = new ModuleCategory(string, Objects.requireNonNull(string2, "displayName"), Objects.requireNonNull(icon, "icon"));
          REGISTERED.add(var5);
          values = List.copyOf(REGISTERED);
          return var5;
       }
    }
 
-   private static boolean isValidId(String var0) {
-      if (var0 != null && !var0.isEmpty() && var0.charAt(0) >= 'A' && var0.charAt(0) <= 'Z') {
-         for (int var1 = 1; var1 < var0.length(); var1++) {
-            char var2 = var0.charAt(var1);
+   private static boolean isValidId(String string) {
+      if (string != null && !string.isEmpty() && string.charAt(0) >= 'A' && string.charAt(0) <= 'Z') {
+         for (int var1 = 1; var1 < string.length(); var1++) {
+            char var2 = string.charAt(var1);
             if ((var2 < 'A' || var2 > 'Z') && (var2 < '0' || var2 > '9') && var2 != '_') {
                return false;
             }
@@ -61,8 +61,8 @@ public final class ModuleCategory {
       }
    }
 
-   public static ModuleCategory register(String var0, String var1) {
-      return register(var0, var1, ModuleCategory.Icon.BOLT);
+   public static ModuleCategory register(String string, String string2) {
+      return register(string, string2, ModuleCategory.Icon.BOLT);
    }
 
    public static List<ModuleCategory> values() {

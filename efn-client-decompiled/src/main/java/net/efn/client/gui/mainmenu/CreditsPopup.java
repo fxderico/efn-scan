@@ -30,11 +30,11 @@ public final class CreditsPopup {
       return this.dialog != null && !this.dialog.isClosed();
    }
 
-   public boolean keyPressed(int var1) {
+   public boolean keyPressed(int i) {
       if (!this.isOpen()) {
          return false;
       } else {
-         if (var1 == 256) {
+         if (i == 256) {
             this.dialog.dismiss();
          }
 
@@ -42,27 +42,27 @@ public final class CreditsPopup {
       }
    }
 
-   public void render(ImDrawList var1, float var2, float var3, float var4, float var5, float var6, float var7, boolean var8) {
+   public void render(ImDrawList imDrawList, float f, float g, float h, float i, float j, float k, boolean bl) {
       if (this.isOpen()) {
          float var9 = (float)(System.nanoTime() - this.openedAt) / 1.0E9F;
-         this.frame.begin(var1, var1, var2, var3, var4, var9, var5, var6, var7, var8);
+         this.frame.begin(imDrawList, imDrawList, f, g, h, var9, i, j, k, bl);
          this.ui.begin(this.frame);
          this.ui.dialog(this.dialog);
       }
    }
 
-   private void drawContent(DuskWidgets var1, DuskWidgets.Dialog var2, float var3, float var4, float var5, float var6) {
-      MenuFrame var7 = var1.frame();
+   private void drawContent(DuskWidgets duskWidgets, DuskWidgets.Dialog dialog, float f, float g, float h, float i) {
+      MenuFrame var7 = duskWidgets.frame();
       ImDrawList var8 = var7.bg();
       float var9 = var7.scale();
-      float var10 = var1.alpha();
+      float var10 = duskWidgets.alpha();
       ImFont var11 = var7.menuFont();
       float var12 = 34.0F * var9;
-      float var13 = var3 + var5 * 0.5F;
+      float var13 = f + h * 0.5F;
 
       for (int var14 = 0; var14 < CREDITS.size(); var14++) {
          String var15 = CREDITS.get(var14);
-         float var16 = var4 + var14 * var12;
+         float var16 = g + var14 * var12;
          var7.text(var8, var11, var13 - var7.textWidth(var11, var15) * 0.5F, var16 + (var12 - var7.textHeight(var11)) * 0.5F, -6621958, var10, var15);
          if (var14 < CREDITS.size() - 1) {
             divider(var8, var13, var16 + var12, var9, var10);
@@ -70,14 +70,14 @@ public final class CreditsPopup {
       }
    }
 
-   private static void divider(ImDrawList var0, float var1, float var2, float var3, float var4) {
-      float var5 = 56.0F * var3;
-      float var6 = 3.0F * var3;
+   private static void divider(ImDrawList imDrawList, float f, float g, float h, float i) {
+      float var5 = 56.0F * h;
+      float var6 = 3.0F * h;
       float var7 = var6 * 2.0F;
-      float var8 = Math.max(1.0F, var3);
-      int var9 = HudDraw.col(-15408912, 0.4F * var4);
-      var0.addLine(var1 - var5, var2, var1 - var7, var2, var9, var8);
-      var0.addLine(var1 + var7, var2, var1 + var5, var2, var9, var8);
-      var0.addQuadFilled(var1, var2 - var6, var1 + var6, var2, var1, var2 + var6, var1 - var6, var2, HudDraw.col(-15408912, 0.75F * var4));
+      float var8 = Math.max(1.0F, h);
+      int var9 = HudDraw.col(-15408912, 0.4F * i);
+      imDrawList.addLine(f - var5, g, f - var7, g, var9, var8);
+      imDrawList.addLine(f + var7, g, f + var5, g, var9, var8);
+      imDrawList.addQuadFilled(f, g - var6, f + var6, g, f, g + var6, f - var6, g, HudDraw.col(-15408912, 0.75F * i));
    }
 }

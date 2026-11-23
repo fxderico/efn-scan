@@ -15,9 +15,9 @@ public final class WorldEntityRemoveEvent extends Event {
    private WorldEntityRemoveEvent() {
    }
 
-   public static void dispatch(Entity var0) {
+   public static void dispatch(Entity entity) {
       if (TYPE.hasPreListeners()) {
-         INSTANCE.entity = var0;
+         INSTANCE.entity = entity;
          TYPE.dispatch(INSTANCE);
          INSTANCE.entity = null;
       }

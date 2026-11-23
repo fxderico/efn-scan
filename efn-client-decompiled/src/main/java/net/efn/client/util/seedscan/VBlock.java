@@ -33,16 +33,16 @@ public final class VBlock {
    private VBlock() {
    }
 
-   public static boolean isBase(byte var0) {
-      return var0 >= 3 && var0 <= 7;
+   public static boolean isBase(byte b) {
+      return b >= 3 && b <= 7;
    }
 
-   public static boolean isOpen(byte var0) {
-      return var0 == 0 || var0 == 1 || var0 == 2;
+   public static boolean isOpen(byte b) {
+      return b == 0 || b == 1 || b == 2;
    }
 
-   public static int familyBit(byte var0) {
-      return switch (var0) {
+   public static int familyBit(byte b) {
+      return switch (b) {
          case 4 -> 1;
          case 5 -> 2;
          case 6 -> 4;
@@ -51,21 +51,21 @@ public final class VBlock {
       };
    }
 
-   public static Block familyBlock(byte var0) {
-      return switch (var0) {
-         case 4 -> Blocks.field_10474;
-         case 5 -> Blocks.field_10508;
-         case 6 -> Blocks.field_10115;
-         default -> throw new IllegalArgumentException("not a blob kind: " + var0);
-         case 8 -> Blocks.field_10255;
+   public static Block familyBlock(byte b) {
+      return switch (b) {
+         case 4 -> Blocks.GRANITE;
+         case 5 -> Blocks.DIORITE;
+         case 6 -> Blocks.ANDESITE;
+         default -> throw new IllegalArgumentException("not a blob kind: " + b);
+         case 8 -> Blocks.GRAVEL;
       };
    }
 
-   public static byte of(BlockState var0) {
-      if (var0.method_26215()) {
+   public static byte of(BlockState blockState) {
+      if (blockState.isAir()) {
          return 0;
       } else {
-         Byte var1 = kinds().get(var0.method_26204());
+         Byte var1 = kinds().get(blockState.getBlock());
          return var1 != null ? var1 : 12;
       }
    }
@@ -76,39 +76,39 @@ public final class VBlock {
          return var0;
       } else {
          IdentityHashMap var5 = new IdentityHashMap();
-         var5.put(Blocks.field_10340, (byte)3);
-         var5.put(Blocks.field_28888, (byte)3);
-         var5.put(Blocks.field_10474, (byte)4);
-         var5.put(Blocks.field_10508, (byte)5);
-         var5.put(Blocks.field_10115, (byte)6);
-         var5.put(Blocks.field_27165, (byte)7);
-         var5.put(Blocks.field_10255, (byte)8);
-         var5.put(Blocks.field_10566, (byte)9);
-         var5.put(Blocks.field_10460, (byte)10);
-         var5.put(Blocks.field_10382, (byte)1);
-         var5.put(Blocks.field_10164, (byte)2);
+         var5.put(Blocks.STONE, (byte)3);
+         var5.put(Blocks.DEEPSLATE, (byte)3);
+         var5.put(Blocks.GRANITE, (byte)4);
+         var5.put(Blocks.DIORITE, (byte)5);
+         var5.put(Blocks.ANDESITE, (byte)6);
+         var5.put(Blocks.TUFF, (byte)7);
+         var5.put(Blocks.GRAVEL, (byte)8);
+         var5.put(Blocks.DIRT, (byte)9);
+         var5.put(Blocks.CLAY, (byte)10);
+         var5.put(Blocks.WATER, (byte)1);
+         var5.put(Blocks.LAVA, (byte)2);
 
          for (Block var4 : new Block[]{
-            Blocks.field_10418,
-            Blocks.field_29219,
-            Blocks.field_10212,
-            Blocks.field_29027,
-            Blocks.field_27120,
-            Blocks.field_29221,
-            Blocks.field_10571,
-            Blocks.field_29026,
-            Blocks.field_10080,
-            Blocks.field_29030,
-            Blocks.field_10090,
-            Blocks.field_29028,
-            Blocks.field_10442,
-            Blocks.field_29029,
-            Blocks.field_10013,
-            Blocks.field_29220,
-            Blocks.field_33508,
-            Blocks.field_33509,
-            Blocks.field_10277,
-            Blocks.field_29224
+            Blocks.COAL_ORE,
+            Blocks.DEEPSLATE_COAL_ORE,
+            Blocks.IRON_ORE,
+            Blocks.DEEPSLATE_IRON_ORE,
+            Blocks.COPPER_ORE,
+            Blocks.DEEPSLATE_COPPER_ORE,
+            Blocks.GOLD_ORE,
+            Blocks.DEEPSLATE_GOLD_ORE,
+            Blocks.REDSTONE_ORE,
+            Blocks.DEEPSLATE_REDSTONE_ORE,
+            Blocks.LAPIS_ORE,
+            Blocks.DEEPSLATE_LAPIS_ORE,
+            Blocks.DIAMOND_ORE,
+            Blocks.DEEPSLATE_DIAMOND_ORE,
+            Blocks.EMERALD_ORE,
+            Blocks.DEEPSLATE_EMERALD_ORE,
+            Blocks.RAW_IRON_BLOCK,
+            Blocks.RAW_COPPER_BLOCK,
+            Blocks.INFESTED_STONE,
+            Blocks.INFESTED_DEEPSLATE
          }) {
             var5.put(var4, (byte)11);
          }

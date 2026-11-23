@@ -56,11 +56,11 @@ final class SellRoutine {
    private final Map<Item, Integer> strikes = new HashMap<>();
    private final Map<Item, Long> skipUntil = new HashMap<>();
 
-   SellRoutine(ClientModule var1, StringListSetting var2, BiPredicate<Integer, ItemStack> var3, Runnable var4) {
-      this.owner = var1;
-      this.neverSell = var2;
-      this.keep = var3;
-      this.onCommand = var4;
+   SellRoutine(ClientModule clientModule, StringListSetting stringListSetting, BiPredicate<Integer, ItemStack> biPredicate, Runnable runnable) {
+      this.owner = clientModule;
+      this.neverSell = stringListSetting;
+      this.keep = biPredicate;
+      this.onCommand = runnable;
    }
 
    void reset() {
@@ -78,18 +78,18 @@ final class SellRoutine {
       return this.state != SellRoutine.State.IDLE;
    }
 
-   void commandRejected(long var1) {
+   void commandRejected(long l) {
       if (this.state == SellRoutine.State.OPENING) {
          this.rejected = true;
-         this.retryAt = var1;
+         this.retryAt = l;
       }
    }
 
-   void abort(MinecraftClient var1) {
+   void abort(MinecraftClient minecraftClient) {
       if (this.state != SellRoutine.State.IDLE) {
-         ClientPlayerEntity var2 = var1.field_1724;
-         if (var2 != null && var2.field_7512 != var2.field_7498 && var2.field_7512.field_7763 == this.menuId) {
-            var2.method_7346();
+         ClientPlayerEntity var2 = minecraftClient.player;
+         if (var2 != null && var2.currentScreenHandler != var2.playerScreenHandler && var2.currentScreenHandler.syncId == this.menuId) {
+            var2.closeHandledScreen();
          }
 
          this.state = SellRoutine.State.IDLE;
@@ -99,145 +99,146 @@ final class SellRoutine {
       }
    }
 
-   boolean step(MinecraftClient var1, ClientPlayerEntity var2, ClientPlayNetworkHandler var3, long var4, boolean var6) {
+   boolean step(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, ClientPlayNetworkHandler clientPlayNetworkHandler, long l, boolean bl) {
       return switch (this.state) {
-         case IDLE -> this.stepIdle(var1, var2, var3, var4, var6);
-         case OPENING -> this.stepOpening(var1, var2, var3, var4);
-         case MOVING -> this.stepMoving(var1, var2, var4);
-         case CONFIRMING -> this.stepConfirming(var1, var2, var4);
+         case IDLE -> this.stepIdle(minecraftClient, clientPlayerEntity, clientPlayNetworkHandler, l, bl);
+         case OPENING -> this.stepOpening(minecraftClient, clientPlayerEntity, clientPlayNetworkHandler, l);
+         case MOVING -> this.stepMoving(minecraftClient, clientPlayerEntity, l);
+         case CONFIRMING -> this.stepConfirming(minecraftClient, clientPlayerEntity, l);
       };
    }
 
-   private boolean stepIdle(MinecraftClient var1, ClientPlayerEntity var2, ClientPlayNetworkHandler var3, long var4, boolean var6) {
-      if (var4 - this.lastCommandAt < 5000L && sellMenuOpen(var1, var2)) {
-         var2.method_7346();
+   private boolean stepIdle(
+      MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, ClientPlayNetworkHandler clientPlayNetworkHandler, long l, boolean bl
+   ) {
+      if (l - this.lastCommandAt < 5000L && sellMenuOpen(minecraftClient, clientPlayerEntity)) {
+         clientPlayerEntity.closeHandledScreen();
          return true;
-      } else if (var4 < this.nextCheckAt) {
+      } else if (l < this.nextCheckAt) {
          return false;
       } else {
-         this.nextCheckAt = var4 + 500L;
-         if (var1.field_1755 != null || !var6 || var4 - this.lastCommandAt < 4000L) {
+         this.nextCheckAt = l + 500L;
+         if (minecraftClient.currentScreen != null || !bl || l - this.lastCommandAt < 4000L) {
             return false;
-         } else if (!this.hasSellable(var2.method_31548(), var4)) {
+         } else if (!this.hasSellable(clientPlayerEntity.getInventory(), l)) {
             return false;
          } else {
             this.resends = 0;
-            this.send(var3, var4);
+            this.send(clientPlayNetworkHandler, l);
             return true;
          }
       }
    }
 
-   private void send(ClientPlayNetworkHandler var1, long var2) {
-      var1.method_45730("sell");
-      this.lastCommandAt = var2;
+   private void send(ClientPlayNetworkHandler clientPlayNetworkHandler, long l) {
+      clientPlayNetworkHandler.sendChatCommand("sell");
+      this.lastCommandAt = l;
       this.onCommand.run();
-      this.deadline = var2 + 10000L;
+      this.deadline = l + 10000L;
       this.rejected = false;
       this.state = SellRoutine.State.OPENING;
    }
 
-   private boolean stepOpening(MinecraftClient var1, ClientPlayerEntity var2, ClientPlayNetworkHandler var3, long var4) {
-      if (sellMenuOpen(var1, var2)) {
-         this.menuId = var2.field_7512.field_7763;
+   private boolean stepOpening(
+      MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, ClientPlayNetworkHandler clientPlayNetworkHandler, long l
+   ) {
+      if (sellMenuOpen(minecraftClient, clientPlayerEntity)) {
+         this.menuId = clientPlayerEntity.currentScreenHandler.syncId;
          this.state = SellRoutine.State.MOVING;
          return true;
-      } else if (this.rejected && var4 >= this.retryAt && this.resends < 3) {
+      } else if (this.rejected && l >= this.retryAt && this.resends < 3) {
          this.resends++;
-         this.send(var3, var4);
+         this.send(clientPlayNetworkHandler, l);
          return true;
-      } else if (var4 < this.deadline) {
+      } else if (l < this.deadline) {
          return true;
       } else {
          this.state = SellRoutine.State.IDLE;
          ModuleChat.send(this.owner, ModuleChat.body().warn("The sell menu did not open").text(", trying again in 30s."));
-         this.nextCheckAt = var4 + 30000L;
+         this.nextCheckAt = l + 30000L;
          return false;
       }
    }
 
-   private boolean stepMoving(MinecraftClient var1, ClientPlayerEntity var2, long var3) {
-      ScreenHandler var5 = var2.field_7512;
-      if (!this.ours(var2)) {
-         return this.finish(null, var3);
+   private boolean stepMoving(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, long l) {
+      ScreenHandler var5 = clientPlayerEntity.currentScreenHandler;
+      if (!this.ours(clientPlayerEntity)) {
+         return this.finish(null, l);
       } else {
          int var6 = 0;
 
-         for (Slot var8 : var5.field_7761) {
+         for (Slot var8 : var5.slots) {
             int var9;
-            if (var8.field_7871 instanceof PlayerInventory
-               && var8.method_7681()
-               && (var9 = var8.method_34266()) < 36
-               && this.sellable(var9, var8.method_7677(), var3)) {
-               var1.field_1761.method_2906(var5.field_7763, var8.field_7874, 0, SlotActionType.field_7794, var2);
+            if (var8.inventory instanceof PlayerInventory && var8.hasStack() && (var9 = var8.getIndex()) < 36 && this.sellable(var9, var8.getStack(), l)) {
+               minecraftClient.interactionManager.clickSlot(var5.syncId, var8.id, 0, SlotActionType.QUICK_MOVE, clientPlayerEntity);
                var6++;
             }
          }
 
          if (var6 == 0) {
-            return this.close(var2, null, var3);
+            return this.close(clientPlayerEntity, null, l);
          } else {
             this.offered.clear();
             this.offered.putAll(waitingItems(var5));
             this.confirms = 0;
-            this.deadline = var3;
+            this.deadline = l;
             this.state = SellRoutine.State.CONFIRMING;
             return true;
          }
       }
    }
 
-   private boolean stepConfirming(MinecraftClient var1, ClientPlayerEntity var2, long var3) {
-      if (!this.ours(var2)) {
-         return this.finish(null, var3);
-      } else if (var3 < this.deadline) {
+   private boolean stepConfirming(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, long l) {
+      if (!this.ours(clientPlayerEntity)) {
+         return this.finish(null, l);
+      } else if (l < this.deadline) {
          return true;
       } else {
-         ScreenHandler var5 = var2.field_7512;
+         ScreenHandler var5 = clientPlayerEntity.currentScreenHandler;
          if (this.confirms < 3 && itemsWaiting(var5)) {
-            var1.field_1761.method_2906(var5.field_7763, 53, 0, SlotActionType.field_7790, var2);
+            minecraftClient.interactionManager.clickSlot(var5.syncId, 53, 0, SlotActionType.PICKUP, clientPlayerEntity);
             this.confirms++;
-            this.deadline = var3 + (this.confirms == 1 ? 250L : 900L);
+            this.deadline = l + (this.confirms == 1 ? 250L : 900L);
             return true;
          } else {
-            return this.close(var2, waitingItems(var5), var3);
+            return this.close(clientPlayerEntity, waitingItems(var5), l);
          }
       }
    }
 
-   private boolean close(ClientPlayerEntity var1, Map<Item, Integer> var2, long var3) {
-      if (this.ours(var1)) {
-         var1.method_7346();
+   private boolean close(ClientPlayerEntity clientPlayerEntity, Map<Item, Integer> map, long l) {
+      if (this.ours(clientPlayerEntity)) {
+         clientPlayerEntity.closeHandledScreen();
       }
 
-      return this.finish(var2, var3);
+      return this.finish(map, l);
    }
 
-   private boolean finish(Map<Item, Integer> var1, long var2) {
-      if (var1 != null) {
-         this.settle(var1, var2);
+   private boolean finish(Map<Item, Integer> map, long l) {
+      if (map != null) {
+         this.settle(map, l);
       }
 
       this.offered.clear();
       this.menuId = -1;
       this.state = SellRoutine.State.IDLE;
-      this.nextCheckAt = var2 + 500L;
+      this.nextCheckAt = l + 500L;
       return false;
    }
 
-   private void settle(Map<Item, Integer> var1, long var2) {
+   private void settle(Map<Item, Integer> map, long l) {
       int var4 = 0;
 
       for (Entry var6 : this.offered.entrySet()) {
          Item var7 = (Item)var6.getKey();
-         int var8 = var1.getOrDefault(var7, 0);
+         int var8 = map.getOrDefault(var7, 0);
          var4 += Math.max(0, (Integer)var6.getValue() - var8);
          if (var8 <= 0) {
             this.strikes.remove(var7);
          } else if (this.strikes.merge(var7, 1, Integer::sum) >= 2) {
             this.strikes.remove(var7);
-            this.skipUntil.put(var7, var2 + 600000L);
-            ModuleChat.send(this.owner, ModuleChat.body().warn("Could not sell ").name(var7.method_63680().getString()).text(", skipping it for 10 minutes."));
+            this.skipUntil.put(var7, l + 600000L);
+            ModuleChat.send(this.owner, ModuleChat.body().warn("Could not sell ").name(var7.getName().getString()).text(", skipping it for 10 minutes."));
          }
       }
 
@@ -246,14 +247,14 @@ final class SellRoutine {
       }
    }
 
-   private boolean ours(ClientPlayerEntity var1) {
-      return var1.field_7512 != var1.field_7498 && var1.field_7512.field_7763 == this.menuId;
+   private boolean ours(ClientPlayerEntity clientPlayerEntity) {
+      return clientPlayerEntity.currentScreenHandler != clientPlayerEntity.playerScreenHandler && clientPlayerEntity.currentScreenHandler.syncId == this.menuId;
    }
 
-   private boolean hasSellable(PlayerInventory var1, long var2) {
+   private boolean hasSellable(PlayerInventory playerInventory, long l) {
       for (int var4 = 0; var4 < 36; var4++) {
-         ItemStack var5 = var1.method_5438(var4);
-         if (!var5.method_7960() && this.sellable(var4, var5, var2)) {
+         ItemStack var5 = playerInventory.getStack(var4);
+         if (!var5.isEmpty() && this.sellable(var4, var5, l)) {
             return true;
          }
       }
@@ -261,31 +262,31 @@ final class SellRoutine {
       return false;
    }
 
-   private boolean sellable(int var1, ItemStack var2, long var3) {
-      return !this.skipped(var2.method_7909(), var3) && !this.keep.test(var1, var2) && !this.blacklisted(var2);
+   private boolean sellable(int i, ItemStack itemStack, long l) {
+      return !this.skipped(itemStack.getItem(), l) && !this.keep.test(i, itemStack) && !this.blacklisted(itemStack);
    }
 
-   private boolean skipped(Item var1, long var2) {
-      Long var4 = this.skipUntil.get(var1);
+   private boolean skipped(Item item, long l) {
+      Long var4 = this.skipUntil.get(item);
       if (var4 == null) {
          return false;
-      } else if (var2 < var4) {
+      } else if (l < var4) {
          return true;
       } else {
-         this.skipUntil.remove(var1);
+         this.skipUntil.remove(item);
          return false;
       }
    }
 
-   private boolean blacklisted(ItemStack var1) {
-      return neverSell(var1, this.neverSell.get());
+   private boolean blacklisted(ItemStack itemStack) {
+      return neverSell(itemStack, this.neverSell.get());
    }
 
-   static boolean neverSell(ItemStack var0, List<String> var1) {
-      String var2 = Registries.field_41178.method_10221(var0.method_7909()).toString().toLowerCase(Locale.ROOT);
+   static boolean neverSell(ItemStack itemStack, List<String> list) {
+      String var2 = Registries.ITEM.getId(itemStack.getItem()).toString().toLowerCase(Locale.ROOT);
       String var3 = var2.substring(var2.indexOf(58) + 1);
 
-      for (String var5 : var1) {
+      for (String var5 : list) {
          String var6 = var5.trim().toLowerCase(Locale.ROOT);
          if (!var6.isEmpty()) {
             if (var2.equals(var6) || var3.equals(var6)) {
@@ -301,9 +302,9 @@ final class SellRoutine {
       return false;
    }
 
-   private static boolean itemsWaiting(ScreenHandler var0) {
-      for (Slot var2 : var0.field_7761) {
-         if (!(var2.field_7871 instanceof PlayerInventory) && var2.field_7874 != 53 && var2.method_7681()) {
+   private static boolean itemsWaiting(ScreenHandler screenHandler) {
+      for (Slot var2 : screenHandler.slots) {
+         if (!(var2.inventory instanceof PlayerInventory) && var2.id != 53 && var2.hasStack()) {
             return true;
          }
       }
@@ -311,28 +312,28 @@ final class SellRoutine {
       return false;
    }
 
-   private static Map<Item, Integer> waitingItems(ScreenHandler var0) {
+   private static Map<Item, Integer> waitingItems(ScreenHandler screenHandler) {
       LinkedHashMap var1 = new LinkedHashMap();
 
-      for (Slot var3 : var0.field_7761) {
-         if (!(var3.field_7871 instanceof PlayerInventory) && var3.field_7874 != 53 && var3.method_7681()) {
-            var1.merge(var3.method_7677().method_7909(), var3.method_7677().method_7947(), Integer::sum);
+      for (Slot var3 : screenHandler.slots) {
+         if (!(var3.inventory instanceof PlayerInventory) && var3.id != 53 && var3.hasStack()) {
+            var1.merge(var3.getStack().getItem(), var3.getStack().getCount(), Integer::sum);
          }
       }
 
       return var1;
    }
 
-   private static boolean sellMenuOpen(MinecraftClient var0, ClientPlayerEntity var1) {
-      ScreenHandler var2 = var1.field_7512;
-      return var2 != var1.field_7498 && var0.field_1755 instanceof HandledScreen && containerSlots(var2) > 53;
+   private static boolean sellMenuOpen(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      ScreenHandler var2 = clientPlayerEntity.currentScreenHandler;
+      return var2 != clientPlayerEntity.playerScreenHandler && minecraftClient.currentScreen instanceof HandledScreen && containerSlots(var2) > 53;
    }
 
-   private static int containerSlots(ScreenHandler var0) {
+   private static int containerSlots(ScreenHandler screenHandler) {
       int var1 = 0;
 
-      for (Slot var3 : var0.field_7761) {
-         if (!(var3.field_7871 instanceof PlayerInventory)) {
+      for (Slot var3 : screenHandler.slots) {
+         if (!(var3.inventory instanceof PlayerInventory)) {
             var1++;
          }
       }

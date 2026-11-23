@@ -46,7 +46,7 @@ import net.minecraft.world.debug.gizmo.GizmoDrawing;
 @Environment(EnvType.CLIENT)
 public final class AutoTrapModule extends ClientModule {
    private static final Direction[] SUPPORT_ORDER = new Direction[]{
-      Direction.field_11033, Direction.field_11043, Direction.field_11035, Direction.field_11034, Direction.field_11039, Direction.field_11036
+      Direction.DOWN, Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST, Direction.UP
    };
    private static final int TARGET_COLOR = -24512;
    private static final int CELL_COLOR = -2130706433;
@@ -55,7 +55,7 @@ public final class AutoTrapModule extends ClientModule {
    private final NumberSetting perTick = this.addSetting("blocks-per-tick", new NumberSetting("Blocks Per Tick", 4.0F, 1.0F, 8.0F).step(1.0F));
    private final BooleanSetting top = this.addSetting("top-block", new BooleanSetting("Top Block", true));
    private final BooleanSetting show = this.addSetting("show-target", new BooleanSetting("Show Target", true));
-   private final MinecraftClient mc = MinecraftClient.method_1551();
+   private final MinecraftClient mc = MinecraftClient.getInstance();
    private final SlotReturn slot = new SlotReturn(this);
    private PlayerEntity target;
    private List<BlockPos> plan = List.of();
@@ -71,8 +71,8 @@ public final class AutoTrapModule extends ClientModule {
       this.target = null;
       this.plan = List.of();
       this.warnedEmpty = false;
-      this.on(TickEvent.TYPE, Stage.PRE, var1 -> this.tick());
-      this.on(Render3DEvent.TYPE, Stage.POST, var1 -> this.render());
+      this.on(TickEvent.TYPE, Stage.PRE, tickEvent -> this.tick());
+      this.on(Render3DEvent.TYPE, Stage.POST, render3DEvent -> this.render());
    }
 
    @Override
@@ -83,15 +83,15 @@ public final class AutoTrapModule extends ClientModule {
    }
 
    private void tick() {
-      ClientPlayerEntity var1 = this.mc.field_1724;
-      ClientWorld var2 = this.mc.field_1687;
-      if (var1 != null && var2 != null && this.mc.field_1761 != null && MeleeAttacks.canAct(this.mc)) {
+      ClientPlayerEntity var1 = this.mc.player;
+      ClientWorld var2 = this.mc.world;
+      if (var1 != null && var2 != null && this.mc.interactionManager != null && MeleeAttacks.canAct(this.mc)) {
          this.target = this.pick(var1);
          this.plan = this.target == null ? List.of() : this.cells(var2, var1, this.target);
          if (this.plan.isEmpty()) {
             this.slot.tick(this.mc, true);
          } else {
-            int var3 = Crystals.hotbarSlotOf(var1.method_31548(), Items.field_8281);
+            int var3 = Crystals.hotbarSlotOf(var1.getInventory(), Items.OBSIDIAN);
             if (var3 < 0) {
                if (!this.warnedEmpty) {
                   ModuleChat.send(this, ModuleChat.body().warn("No obsidian in the hotbar"));
@@ -114,7 +114,7 @@ public final class AutoTrapModule extends ClientModule {
                      if (this.rotate.get()) {
                         BlockHitResult var9 = seenByServer(var2, var1, var8);
                         if (var9 == null) {
-                           ServerRotation.request(RotationUtils.fromTo(var1.method_33571(), var8.method_17784()));
+                           ServerRotation.request(RotationUtils.fromTo(var1.getEyePos(), var8.getPos()));
                            return;
                         }
 
@@ -126,9 +126,9 @@ public final class AutoTrapModule extends ClientModule {
                            return;
                         }
 
-                        ActionResult var10 = this.mc.field_1761.method_2896(var1, Hand.field_5808, var8);
-                        if (var10.method_23665()) {
-                           var1.method_6104(Hand.field_5808);
+                        ActionResult var10 = this.mc.interactionManager.interactBlock(var1, Hand.MAIN_HAND, var8);
+                        if (var10.isAccepted()) {
+                           var1.swingHand(Hand.MAIN_HAND);
                            MeleeAttacks.noteAction(var1);
                            var5++;
                         }
@@ -152,17 +152,17 @@ public final class AutoTrapModule extends ClientModule {
       }
    }
 
-   private PlayerEntity pick(ClientPlayerEntity var1) {
+   private PlayerEntity pick(ClientPlayerEntity clientPlayerEntity) {
       double var2 = this.range.get() + 1.5;
       PlayerEntity var4 = null;
 
-      for (PlayerEntity var6 : this.mc.field_1687.method_18456()) {
+      for (PlayerEntity var6 : this.mc.world.getPlayers()) {
          double var7;
-         if (var6 != var1
-            && var6.method_5805()
-            && MeleeAttacks.isEnemy(var1, var6)
-            && (var7 = var6.method_5739(var1)) <= var2
-            && (var4 == null || var7 < var4.method_5739(var1))) {
+         if (var6 != clientPlayerEntity
+            && var6.isAlive()
+            && MeleeAttacks.isEnemy(clientPlayerEntity, var6)
+            && (var7 = var6.distanceTo(clientPlayerEntity)) <= var2
+            && (var4 == null || var7 < var4.distanceTo(clientPlayerEntity))) {
             var4 = var6;
          }
       }
@@ -170,14 +170,14 @@ public final class AutoTrapModule extends ClientModule {
       return var4;
    }
 
-   private List<BlockPos> cells(ClientWorld var1, ClientPlayerEntity var2, PlayerEntity var3) {
-      Box var4 = var3.method_5829();
-      int var5 = MathHelper.method_15357(var4.field_1322 + 0.01);
+   private List<BlockPos> cells(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity) {
+      Box var4 = playerEntity.getBoundingBox();
+      int var5 = MathHelper.floor(var4.minY + 0.01);
       LinkedHashSet var6 = new LinkedHashSet();
 
-      for (int var7 = MathHelper.method_15357(var4.field_1323); var7 <= MathHelper.method_15357(var4.field_1320 - 1.0E-4); var7++) {
-         for (int var8 = MathHelper.method_15357(var4.field_1321); var8 <= MathHelper.method_15357(var4.field_1324 - 1.0E-4); var8++) {
-            var6.add(BlockPos.method_10064(var7, 0, var8));
+      for (int var7 = MathHelper.floor(var4.minX); var7 <= MathHelper.floor(var4.maxX - 1.0E-4); var7++) {
+         for (int var8 = MathHelper.floor(var4.minZ); var8 <= MathHelper.floor(var4.maxZ - 1.0E-4); var8++) {
+            var6.add(BlockPos.asLong(var7, 0, var8));
          }
       }
 
@@ -187,26 +187,26 @@ public final class AutoTrapModule extends ClientModule {
          ArrayList var9 = new ArrayList();
 
          for (long var11 : var6) {
-            BlockPos var13 = BlockPos.method_10092(var11).method_33096(var5 + var18);
+            BlockPos var13 = BlockPos.fromLong(var11).withY(var5 + var18);
 
-            for (Direction var15 : Type.field_11062) {
-               BlockPos var16 = var13.method_10093(var15);
-               if (!var6.contains(BlockPos.method_10064(var16.method_10263(), 0, var16.method_10260()))
-                  && this.open(var1, var2, var16)
-                  && !var9.contains(var16)) {
+            for (Direction var15 : Type.HORIZONTAL) {
+               BlockPos var16 = var13.offset(var15);
+               if (!var6.contains(BlockPos.asLong(var16.getX(), 0, var16.getZ())) && this.open(clientWorld, clientPlayerEntity, var16) && !var9.contains(var16)
+                  )
+                {
                   var9.add(var16);
                }
             }
          }
 
-         var9.sort(Comparator.comparingDouble(var1x -> var1x.method_19770(var2.method_33571())));
+         var9.sort(Comparator.comparingDouble(blockPos -> blockPos.getSquaredDistance(clientPlayerEntity.getEyePos())));
          var17.addAll(var9);
       }
 
       if (this.top.get()) {
          for (long var20 : var6) {
-            BlockPos var21 = BlockPos.method_10092(var20).method_33096(var5 + 2);
-            if (this.open(var1, var2, var21)) {
+            BlockPos var21 = BlockPos.fromLong(var20).withY(var5 + 2);
+            if (this.open(clientWorld, clientPlayerEntity, var21)) {
                var17.add(var21);
             }
          }
@@ -215,42 +215,38 @@ public final class AutoTrapModule extends ClientModule {
       return var17;
    }
 
-   private boolean open(ClientWorld var1, ClientPlayerEntity var2, BlockPos var3) {
-      BlockState var4 = var1.method_8320(var3);
-      if (var4.method_45474() && (var4.method_26227().method_15769() || var4.method_26227().method_15771())) {
-         return var3.method_46558().method_1022(var2.method_33571()) > var2.method_55754()
+   private boolean open(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, BlockPos blockPos) {
+      BlockState var4 = clientWorld.getBlockState(blockPos);
+      if (var4.isReplaceable() && (var4.getFluidState().isEmpty() || var4.getFluidState().isStill())) {
+         return blockPos.toCenterPos().distanceTo(clientPlayerEntity.getEyePos()) > clientPlayerEntity.getBlockInteractionRange()
             ? false
-            : var1.method_8628(Blocks.field_10540.method_9564(), var3, ShapeContext.method_16194());
+            : clientWorld.canPlace(Blocks.OBSIDIAN.getDefaultState(), blockPos, ShapeContext.absent());
       } else {
          return false;
       }
    }
 
-   public static BlockHitResult support(ClientWorld var0, ClientPlayerEntity var1, BlockPos var2) {
-      Vec3d var3 = var1.method_33571();
-      double var4 = var1.method_55754();
+   public static BlockHitResult support(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, BlockPos blockPos) {
+      Vec3d var3 = clientPlayerEntity.getEyePos();
+      double var4 = clientPlayerEntity.getBlockInteractionRange();
 
       for (Direction var9 : SUPPORT_ORDER) {
-         BlockPos var11 = var2.method_10093(var9);
-         BlockState var12 = var0.method_8320(var11);
-         if (!var12.method_45474() && !var12.method_26220(var0, var11).method_1110()) {
-            Direction var13 = var9.method_10153();
-            Vec3d var14 = Vec3d.method_24953(var11).method_1031(var13.method_10148() * 0.5, var13.method_10164() * 0.5, var13.method_10165() * 0.5);
+         BlockPos var11 = blockPos.offset(var9);
+         BlockState var12 = clientWorld.getBlockState(var11);
+         if (!var12.isReplaceable() && !var12.getCollisionShape(clientWorld, var11).isEmpty()) {
+            Direction var13 = var9.getOpposite();
+            Vec3d var14 = Vec3d.ofCenter(var11).add(var13.getOffsetX() * 0.5, var13.getOffsetY() * 0.5, var13.getOffsetZ() * 0.5);
             BlockHitResult var10;
-            if (!(var14.method_1022(var3) > var4)
-               && (var10 = var0.method_17742(
+            if (!(var14.distanceTo(var3) > var4)
+               && (var10 = clientWorld.raycast(
                         new RaycastContext(
-                           var3,
-                           var14.method_1019(Vec3d.method_24954(var9.method_62675()).method_1021(0.05)),
-                           ShapeType.field_17559,
-                           FluidHandling.field_1348,
-                           var1
+                           var3, var14.add(Vec3d.of(var9.getVector()).multiply(0.05)), ShapeType.OUTLINE, FluidHandling.NONE, clientPlayerEntity
                         )
                      ))
-                     .method_17783()
-                  == net.minecraft.util.hit.HitResult.Type.field_1332
-               && var10.method_17777().equals(var11)
-               && var10.method_17780() == var13) {
+                     .getType()
+                  == net.minecraft.util.hit.HitResult.Type.BLOCK
+               && var10.getBlockPos().equals(var11)
+               && var10.getSide() == var13) {
                return new BlockHitResult(var14, var13, var11, false);
             }
          }
@@ -259,24 +255,24 @@ public final class AutoTrapModule extends ClientModule {
       return null;
    }
 
-   public static BlockHitResult seenByServer(ClientWorld var0, ClientPlayerEntity var1, BlockHitResult var2) {
+   public static BlockHitResult seenByServer(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, BlockHitResult blockHitResult) {
       Rotation var4 = ServerRotation.sent();
       if (var4 == null) {
          return null;
       } else {
-         Vec3d var5 = var1.method_33571();
-         BlockHitResult var6 = var0.method_17742(
+         Vec3d var5 = clientPlayerEntity.getEyePos();
+         BlockHitResult var6 = clientWorld.raycast(
             new RaycastContext(
                var5,
-               var5.method_1019(Vec3d.method_1030(var4.pitch(), var4.yaw()).method_1021(var1.method_55754())),
-               ShapeType.field_17559,
-               FluidHandling.field_1348,
-               var1
+               var5.add(Vec3d.fromPolar(var4.pitch(), var4.yaw()).multiply(clientPlayerEntity.getBlockInteractionRange())),
+               ShapeType.OUTLINE,
+               FluidHandling.NONE,
+               clientPlayerEntity
             )
          );
-         return var6.method_17783() == net.minecraft.util.hit.HitResult.Type.field_1332
-               && var6.method_17777().equals(var2.method_17777())
-               && var6.method_17780() == var2.method_17780()
+         return var6.getType() == net.minecraft.util.hit.HitResult.Type.BLOCK
+               && var6.getBlockPos().equals(blockHitResult.getBlockPos())
+               && var6.getSide() == blockHitResult.getSide()
             ? var6
             : null;
       }
@@ -284,10 +280,10 @@ public final class AutoTrapModule extends ClientModule {
 
    private void render() {
       if (this.show.get() && this.target != null) {
-         GizmoDrawing.method_75541(this.target.method_5829(), DrawStyle.method_75536(-24512, 2.0F));
+         GizmoDrawing.box(this.target.getBoundingBox(), DrawStyle.stroked(-24512, 2.0F));
 
          for (BlockPos var2 : this.plan) {
-            GizmoDrawing.method_75550(var2, DrawStyle.method_75536(-2130706433, 1.0F));
+            GizmoDrawing.box(var2, DrawStyle.stroked(-2130706433, 1.0F));
          }
       }
    }

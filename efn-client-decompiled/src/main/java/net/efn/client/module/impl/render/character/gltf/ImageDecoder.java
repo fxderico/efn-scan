@@ -6,7 +6,7 @@ import net.fabricmc.api.Environment;
 
 @Environment(EnvType.CLIENT)
 public interface ImageDecoder {
-   ImageDecoder.Picture decode(byte[] var1) throws IOException;
+   ImageDecoder.Picture decode(byte[] bs) throws IOException;
 
    @Environment(EnvType.CLIENT)
    public record Picture(int width, int height, int[] argb) {

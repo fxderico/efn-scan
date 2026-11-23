@@ -32,7 +32,7 @@ public final class ColorGradingModule extends ClientModule {
       if (RenderSystem.isOnRenderThread()) {
          ColorGradingPass.release();
       } else {
-         MinecraftClient.method_1551().execute(ColorGradingModule::releaseIfOff);
+         MinecraftClient.getInstance().execute(ColorGradingModule::releaseIfOff);
       }
    }
 
@@ -42,11 +42,11 @@ public final class ColorGradingModule extends ClientModule {
       }
    }
 
-   public static void afterWorld(boolean var0) {
+   public static void afterWorld(boolean bl) {
       ColorGradingModule var1 = active;
       if (var1 != null) {
          ColorGradingPass.apply(
-            var0,
+            bl,
             var1.vibrance.get() / 100.0F,
             1.0F + var1.contrast.get() / 100.0F,
             1.0F + var1.brightness.get() / 100.0F,

@@ -15,25 +15,25 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin({LivingEntity.class})
 public abstract class MixinNoJumpDelayLivingEntity {
    @Shadow
-   private int field_6228;
+   private int jumpingCooldown;
 
    public MixinNoJumpDelayLivingEntity() {
    }
 
    @WrapOperation(
-      method = {"method_6007"},
+      method = {"tickMovement"},
       at = {@At(
          value = "FIELD",
-         target = "Lnet/minecraft/class_1309;field_6228:I",
+         target = "Lnet/minecraft/entity/LivingEntity;jumpingCooldown:I",
          opcode = 181
       )}
    )
-   private void efn$noJumpDelay(LivingEntity var1, int var2, Operation<Void> var3) {
+   private void efn$noJumpDelay(LivingEntity livingEntity, int i, Operation<Void> operation) {
       NoJumpDelayModule var4 = NoJumpDelayModule.active;
-      if (var4 != null && var2 > this.field_6228 && var1 == MinecraftClient.method_1551().field_1724) {
-         var2 = var4.rearm(var2);
+      if (var4 != null && i > this.jumpingCooldown && livingEntity == MinecraftClient.getInstance().player) {
+         i = var4.rearm(i);
       }
 
-      var3.call(new Object[]{var1, var2});
+      operation.call(livingEntity, i);
    }
 }

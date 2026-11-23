@@ -17,10 +17,10 @@ public abstract class MixinClientPacketListener {
    }
 
    @Inject(
-      method = {"method_21707"},
+      method = {"onPlayerActionResponse"},
       at = {@At("TAIL")}
    )
-   private void easyplace$acked(PlayerActionResponseS2CPacket var1, CallbackInfo var2) {
-      BlockAcks.acked(var1.comp_633());
+   private void easyplace$acked(PlayerActionResponseS2CPacket playerActionResponseS2CPacket, CallbackInfo callbackInfo) {
+      BlockAcks.acked(playerActionResponseS2CPacket.sequence());
    }
 }

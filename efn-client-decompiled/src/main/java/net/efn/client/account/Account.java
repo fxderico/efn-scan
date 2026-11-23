@@ -11,12 +11,12 @@ public final class Account {
    private final String uuid;
    private final String secret;
 
-   Account(String var1, AccountType var2, String var3, String var4, String var5) {
-      this.id = var1;
-      this.type = var2;
-      this.name = var3;
-      this.uuid = var4;
-      this.secret = var5;
+   Account(String string, AccountType accountType, String string2, String string3, String string4) {
+      this.id = string;
+      this.type = accountType;
+      this.name = string2;
+      this.uuid = string3;
+      this.secret = string4;
    }
 
    public AccountType type() {
@@ -39,13 +39,13 @@ public final class Account {
       return this.secret;
    }
 
-   Account withLogin(String var1, String var2, String var3) {
-      return new Account(this.id, this.type, var1, var2, var3);
+   Account withLogin(String string, String string2, String string3) {
+      return new Account(this.id, this.type, string, string2, string3);
    }
 
    @Override
-   public boolean equals(Object var1) {
-      return !(var1 instanceof Account var2) ? false : var2.id.equals(this.id);
+   public boolean equals(Object object) {
+      return !(object instanceof Account var2) ? false : var2.id.equals(this.id);
    }
 
    @Override

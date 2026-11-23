@@ -7,9 +7,9 @@ import net.fabricmc.api.Environment;
 public interface CharacterHolder {
    WornCharacter efn$character();
 
-   void efn$setCharacter(WornCharacter var1);
+   void efn$setCharacter(WornCharacter wornCharacter);
 
    float efn$seat();
 
-   void efn$setSeat(float var1);
+   void efn$setSeat(float f);
 }

@@ -22,28 +22,28 @@ final class GameIcons {
    private GameIcons() {
    }
 
-   static ThemeImages.Texture effect(RegistryEntry<StatusEffect> var0) {
-      Identifier var1 = var0.method_40230().<Identifier>map(RegistryKey::method_29177).orElse(null);
-      return var1 == null ? null : texture(Identifier.method_60655(var1.method_12836(), "textures/mob_effect/" + var1.method_12832() + ".png"));
+   static ThemeImages.Texture effect(RegistryEntry<StatusEffect> registryEntry) {
+      Identifier var1 = registryEntry.getKey().map(RegistryKey::getValue).orElse(null);
+      return var1 == null ? null : texture(Identifier.of(var1.getNamespace(), "textures/mob_effect/" + var1.getPath() + ".png"));
    }
 
-   static ThemeImages.Texture block(String var0) {
-      return texture(Identifier.method_60656("textures/block/" + var0 + ".png"));
+   static ThemeImages.Texture block(String string) {
+      return texture(Identifier.ofVanilla("textures/block/" + string + ".png"));
    }
 
-   private static ThemeImages.Texture texture(Identifier var0) {
-      ThemeImages.Texture var1 = TEXTURES.get(var0);
-      if (var1 == null && !MISSING.contains(var0)) {
-         try (InputStream var2 = MinecraftClient.method_1551().method_1478().open(var0)) {
-            var1 = ThemeImages.decode(var2.readAllBytes(), var0.toString(), true);
+   private static ThemeImages.Texture texture(Identifier identifier) {
+      ThemeImages.Texture var1 = TEXTURES.get(identifier);
+      if (var1 == null && !MISSING.contains(identifier)) {
+         try (InputStream var2 = MinecraftClient.getInstance().getResourceManager().open(identifier)) {
+            var1 = ThemeImages.decode(var2.readAllBytes(), identifier.toString(), true);
          } catch (RuntimeException | IOException var7) {
             var1 = null;
          }
 
          if (var1 == null) {
-            MISSING.add(var0);
+            MISSING.add(identifier);
          } else {
-            TEXTURES.put(var0, var1);
+            TEXTURES.put(identifier, var1);
          }
 
          return var1;

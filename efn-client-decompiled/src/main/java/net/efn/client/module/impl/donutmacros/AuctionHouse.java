@@ -40,37 +40,37 @@ final class AuctionHouse {
    private volatile long listedAt;
    private volatile long errorAt;
 
-   AuctionHouse(ClientModule var1, MacroWorker var2, AuctionHouse.Config var3, String var4) {
-      this.module = var1;
-      this.worker = var2;
-      this.gui = new Gui(var2);
-      this.config = var3;
-      this.ign = var4;
-      this.ignKey = ServerText.key(var4);
+   AuctionHouse(ClientModule clientModule, MacroWorker macroWorker, AuctionHouse.Config config, String string) {
+      this.module = clientModule;
+      this.worker = macroWorker;
+      this.gui = new Gui(macroWorker);
+      this.config = config;
+      this.ign = string;
+      this.ignKey = ServerText.key(string);
    }
 
-   void say(ModuleChat.Body var1) {
-      ModuleChat.send(this.module, var1);
+   void say(ModuleChat.Body body) {
+      ModuleChat.send(this.module, body);
    }
 
    boolean inWorld() {
-      return this.worker.call(() -> Gui.mc().field_1724 != null && Gui.mc().method_1562() != null);
+      return this.worker.call(() -> Gui.mc().player != null && Gui.mc().getNetworkHandler() != null);
    }
 
-   void ensurePrice(AuctionHouse.Stock var1) {
-      if (var1.fixedPrice) {
-         var1.price = var1.product.minPrice();
+   void ensurePrice(AuctionHouse.Stock stock) {
+      if (stock.fixedPrice) {
+         stock.price = stock.product.minPrice();
       } else {
-         if (var1.price <= 0L || System.currentTimeMillis() - var1.lastPriceCheck >= this.config.priceCheckMs()) {
-            this.updatePrice(var1);
+         if (stock.price <= 0L || System.currentTimeMillis() - stock.lastPriceCheck >= this.config.priceCheckMs()) {
+            this.updatePrice(stock);
          }
       }
    }
 
-   private void updatePrice(AuctionHouse.Stock var1) {
-      Product var2 = var1.product;
-      double[] var3 = this.scan(var1);
-      var1.lastPriceCheck = System.currentTimeMillis();
+   private void updatePrice(AuctionHouse.Stock stock) {
+      Product var2 = stock.product;
+      double[] var3 = this.scan(stock);
+      stock.lastPriceCheck = System.currentTimeMillis();
       boolean var4 = var3[0] > 0.0;
       boolean var5 = var3[1] > 0.0;
       double var6 = var3[2];
@@ -79,9 +79,9 @@ final class AuctionHouse {
       if (var6 > 0.0) {
          long var11 = Math.round(var6);
          long var13 = Math.max(var11 - var8, var2.minPrice());
-         if (var1.price > 0L && var11 < var1.price) {
-            long var17 = var1.price - var11;
-            double var15 = var8 > 0L ? var8 * this.config.ignoreDrops() : var1.price / 2.0;
+         if (stock.price > 0L && var11 < stock.price) {
+            long var17 = stock.price - var11;
+            double var15 = var8 > 0L ? var8 * this.config.ignoreDrops() : stock.price / 2.0;
             if (var17 > var15) {
                this.say(
                   ModuleChat.body()
@@ -94,7 +94,7 @@ final class AuctionHouse {
                      .value(ServerText.shortMoney(var17))
                      .text(").")
                );
-            } else if (var13 < var1.price) {
+            } else if (var13 < stock.price) {
                this.say(
                   ModuleChat.body()
                      .name(var10)
@@ -106,9 +106,9 @@ final class AuctionHouse {
                      .value(ServerText.shortMoney(var13))
                      .text(".")
                );
-               this.relist(var1, var13);
+               this.relist(stock, var13);
             }
-         } else if (var1.price > 0L && var13 > var1.price + var8 * this.config.relistGap() && var1.inAh > 0) {
+         } else if (stock.price > 0L && var13 > stock.price + var8 * this.config.relistGap() && stock.inAh > 0) {
             this.say(
                ModuleChat.body()
                   .name(var10)
@@ -118,9 +118,9 @@ final class AuctionHouse {
                   .value(ServerText.shortMoney(var13))
                   .text(".")
             );
-            this.relist(var1, var13);
+            this.relist(stock, var13);
          } else {
-            if (var1.price <= 0L) {
+            if (stock.price <= 0L) {
                this.say(
                   ModuleChat.body()
                      .name(var10)
@@ -132,18 +132,18 @@ final class AuctionHouse {
                );
             }
 
-            var1.price = var13;
+            stock.price = var13;
          }
-      } else if (var1.price <= 0L && var4 && !var5) {
-         var1.price = var2.minPrice() * 2L;
-         this.say(ModuleChat.body().name(var10).text(": no other listings, selling at $").value(ServerText.shortMoney(var1.price)).text(" each."));
-      } else if (var1.price <= 0L) {
+      } else if (stock.price <= 0L && var4 && !var5) {
+         stock.price = var2.minPrice() * 2L;
+         this.say(ModuleChat.body().name(var10).text(": no other listings, selling at $").value(ServerText.shortMoney(stock.price)).text(" each."));
+      } else if (stock.price <= 0L) {
          this.say(ModuleChat.body().name(var10).text(": ").warn("could not read AH prices").text(", waiting."));
       }
    }
 
-   private double[] scan(AuctionHouse.Stock var1) {
-      Product var2 = var1.product;
+   private double[] scan(AuctionHouse.Stock stock) {
+      Product var2 = stock.product;
       this.gui.closeAll();
       this.worker.sleep(200L);
       this.gui.command("ah " + var2.search());
@@ -168,7 +168,7 @@ final class AuctionHouse {
                      var4x = true;
                      double var11 = ServerText.listingPrice(var10);
                      double var8;
-                     if (!(var11 <= 0.0) && !this.ownListing(var1, var10, var8 = var11 / Math.max(1, var10.method_7947())) && (var5 < 0.0 || var8 < var5)) {
+                     if (!(var11 <= 0.0) && !this.ownListing(stock, var10, var8 = var11 / Math.max(1, var10.getCount())) && (var5 < 0.0 || var8 < var5)) {
                         var5 = var8;
                      }
                   }
@@ -183,23 +183,23 @@ final class AuctionHouse {
       }
    }
 
-   private boolean ownListing(AuctionHouse.Stock var1, ItemStack var2, double var3) {
-      for (String var6 : ServerText.lore(var2)) {
+   private boolean ownListing(AuctionHouse.Stock stock, ItemStack itemStack, double d) {
+      for (String var6 : ServerText.lore(itemStack)) {
          if (!this.ignKey.isEmpty() && ServerText.key(var6).contains(this.ignKey)) {
             return true;
          }
       }
 
-      return var1.inAh > 0 && var1.price > 0L && Math.abs(var3 - var1.price) < 1.0;
+      return stock.inAh > 0 && stock.price > 0L && Math.abs(d - stock.price) < 1.0;
    }
 
    private boolean hasContent() {
       List var1 = Gui.containerNow();
-      if (var1.size() > 49 && !((ItemStack)var1.get(49)).method_7960()) {
+      if (var1.size() > 49 && !((ItemStack)var1.get(49)).isEmpty()) {
          return true;
       } else {
          for (int var2 = 0; var2 <= 10 && var2 < var1.size(); var2++) {
-            if (!((ItemStack)var1.get(var2)).method_7960()) {
+            if (!((ItemStack)var1.get(var2)).isEmpty()) {
                return true;
             }
          }
@@ -212,7 +212,7 @@ final class AuctionHouse {
       if (!Gui.containerOpenNow()) {
          return false;
       } else {
-         String var1 = ServerText.normalize(Gui.mc().field_1755.method_25440());
+         String var1 = ServerText.normalize(Gui.mc().currentScreen.getTitle());
          if (var1.contains("order")) {
             return false;
          } else {
@@ -225,15 +225,15 @@ final class AuctionHouse {
       if (!Gui.containerOpenNow()) {
          return false;
       } else {
-         return ServerText.normalize(Gui.mc().field_1755.method_25440()).contains("order") ? false : isChest(Gui.slotNow(51));
+         return ServerText.normalize(Gui.mc().currentScreen.getTitle()).contains("order") ? false : isChest(Gui.slotNow(51));
       }
    }
 
-   private static boolean isChest(ItemStack var0) {
-      if (var0.method_7960()) {
+   private static boolean isChest(ItemStack itemStack) {
+      if (itemStack.isEmpty()) {
          return false;
       } else {
-         String var1 = Registries.field_41178.method_10221(var0.method_7909()).method_12832();
+         String var1 = Registries.ITEM.getId(itemStack.getItem()).getPath();
          return var1.equals("chest") || var1.equals("trapped_chest");
       }
    }
@@ -247,7 +247,7 @@ final class AuctionHouse {
       } else {
          for (int var1 = 0; var1 < 2; var1++) {
             String var2 = this.gui.fingerprint();
-            this.gui.click(51, 0, SlotActionType.field_7790);
+            this.gui.click(51, 0, SlotActionType.PICKUP);
             if (this.gui.waitChange(var2, 4000L)) {
                this.worker.sleep(200L);
                return this.worker.call(Gui::containerOpenNow);
@@ -258,30 +258,30 @@ final class AuctionHouse {
       }
    }
 
-   boolean refreshListings(List<AuctionHouse.Stock> var1) {
+   boolean refreshListings(List<AuctionHouse.Stock> list) {
       if (!this.openYourItems()) {
          this.gui.closeAll();
          return false;
       } else {
          int[] var2 = this.worker.call(() -> {
-            int[] var1x = new int[var1.size()];
+            int[] var1 = new int[list.size()];
 
             for (ItemStack var3x : Gui.containerNow()) {
-               for (int var4x = 0; var4x < var1.size(); var4x++) {
-                  if (((AuctionHouse.Stock)var1.get(var4x)).product.matches(var3x)) {
-                     var1x[var4x]++;
+               for (int var4x = 0; var4x < list.size(); var4x++) {
+                  if (((AuctionHouse.Stock)list.get(var4x)).product.matches(var3x)) {
+                     var1[var4x]++;
                      break;
                   }
                }
             }
 
-            return var1x;
+            return var1;
          });
          this.gui.closeAll();
          this.worker.sleep(200L);
 
-         for (int var3 = 0; var3 < var1.size(); var3++) {
-            AuctionHouse.Stock var4 = (AuctionHouse.Stock)var1.get(var3);
+         for (int var3 = 0; var3 < list.size(); var3++) {
+            AuctionHouse.Stock var4 = (AuctionHouse.Stock)list.get(var3);
             int var5 = var4.inAh - var2[var3];
             if (var5 > 0 && var4.chatSales.getAndSet(0) == 0) {
                var4.sold.addAndGet(var5);
@@ -299,18 +299,18 @@ final class AuctionHouse {
       }
    }
 
-   private int collect(AuctionHouse.Stock var1) {
+   private int collect(AuctionHouse.Stock stock) {
       if (!this.openYourItems()) {
          this.say(ModuleChat.body().warn("Could not open Your Items."));
          this.gui.closeAll();
          return 0;
       } else {
-         int var2 = this.collectPass(var1.product, 50);
+         int var2 = this.collectPass(stock.product, 50);
          if (var2 > 0) {
             this.gui.closeAll();
             this.worker.sleep(500L);
             if (this.openYourItems()) {
-               var2 += this.collectPass(var1.product, 15);
+               var2 += this.collectPass(stock.product, 15);
             }
          }
 
@@ -318,7 +318,7 @@ final class AuctionHouse {
          this.worker.sleep(200L);
          if (var2 > 0) {
             this.say(
-               ModuleChat.body().text("Took back ").value(var2).text(var2 == 1 ? " listing of " : " listings of ").name(var1.product.displayName()).text(".")
+               ModuleChat.body().text("Took back ").value(var2).text(var2 == 1 ? " listing of " : " listings of ").name(stock.product.displayName()).text(".")
             );
          }
 
@@ -326,16 +326,16 @@ final class AuctionHouse {
       }
    }
 
-   private int collectPass(Product var1, int var2) {
+   private int collectPass(Product product, int i) {
       int var4 = 0;
       HashSet var5 = new HashSet();
 
       int var3;
-      while (var4 < var2 && this.worker.call(Gui::containerOpenNow) && (var3 = this.worker.call(() -> {
-         List var2x = Gui.containerNow();
+      while (var4 < i && this.worker.call(Gui::containerOpenNow) && (var3 = this.worker.call(() -> {
+         List var2 = Gui.containerNow();
 
-         for (int var3x = 0; var3x < var2x.size(); var3x++) {
-            if (!var5.contains(var3x) && var1.matches((ItemStack)var2x.get(var3x))) {
+         for (int var3x = 0; var3x < var2.size(); var3x++) {
+            if (!var5.contains(var3x) && product.matches((ItemStack)var2.get(var3x))) {
                return var3x;
             }
          }
@@ -343,7 +343,7 @@ final class AuctionHouse {
          return -1;
       })) >= 0) {
          long var6 = System.currentTimeMillis();
-         this.gui.click(var3, 0, SlotActionType.field_7790);
+         this.gui.click(var3, 0, SlotActionType.PICKUP);
          this.worker.ticks(3);
          if (this.alreadyBoughtAt >= var6) {
             var5.add(var3);
@@ -355,35 +355,35 @@ final class AuctionHouse {
       return var4;
    }
 
-   private void relist(AuctionHouse.Stock var1, long var2) {
-      this.refreshListings(List.of(var1));
-      var1.price = var2;
-      this.collect(var1);
-      var1.inAh = 0;
+   private void relist(AuctionHouse.Stock stock, long l) {
+      this.refreshListings(List.of(stock));
+      stock.price = l;
+      this.collect(stock);
+      stock.inAh = 0;
    }
 
-   int listSome(AuctionHouse.Stock var1, int var2, int[] var3) {
-      if (var2 <= 0) {
+   int listSome(AuctionHouse.Stock stock, int i, int[] is) {
+      if (i <= 0) {
          return 0;
       } else {
          this.gui.closeAll();
          this.gui.closeInventory();
-         int var4 = this.worker.call(() -> Gui.player().method_31548().method_67532());
+         int var4 = this.worker.call(() -> Gui.player().getInventory().getSelectedSlot());
          int var5 = 0;
          int var6 = 0;
 
          try {
-            for (int var7 = 0; var7 < var2; var7++) {
+            for (int var7 = 0; var7 < i; var7++) {
                this.ensureAlive();
-               int var8 = this.stage(var1.product);
+               int var8 = this.stage(stock.product);
                if (var8 < 0) {
                   this.say(ModuleChat.body().warn("Could not prepare a hotbar slot").text(" (inventory full?)."));
                   break;
                }
 
-               AuctionHouse.Listing var9 = this.listFrom(var1, var8);
+               AuctionHouse.Listing var9 = this.listFrom(stock, var8);
                if (var9 == AuctionHouse.Listing.FULL) {
-                  var3[0] = Math.max(var3[0], this.config.maxListings());
+                  is[0] = Math.max(is[0], this.config.maxListings());
                   this.say(ModuleChat.body().warn("The AH says you have too many listings."));
                   break;
                }
@@ -394,19 +394,19 @@ final class AuctionHouse {
                   }
                } else {
                   var5++;
-                  var1.inAh++;
-                  var3[0]++;
-                  var1.listed.incrementAndGet();
-                  if (this.config.listingDelayMs() > 0L && var7 < var2 - 1) {
+                  stock.inAh++;
+                  is[0]++;
+                  stock.listed.incrementAndGet();
+                  if (this.config.listingDelayMs() > 0L && var7 < i - 1) {
                      this.worker.sleep(this.config.listingDelayMs());
                   }
                }
             }
          } finally {
             this.worker.run(() -> {
-               ClientPlayerEntity var1x = Gui.mc().field_1724;
-               if (var1x != null) {
-                  var1x.method_31548().method_61496(var4);
+               ClientPlayerEntity var1 = Gui.mc().player;
+               if (var1 != null) {
+                  var1.getInventory().setSelectedSlot(var4);
                }
             });
          }
@@ -417,11 +417,11 @@ final class AuctionHouse {
                   .text("Listed ")
                   .value(var5 + "x")
                   .text(" ")
-                  .name(var1.product.displayName())
+                  .name(stock.product.displayName())
                   .text(" at $")
-                  .value(ServerText.shortMoney(var1.price * this.config.perListing()))
+                  .value(ServerText.shortMoney(stock.price * this.config.perListing()))
                   .text(" (in AH: ")
-                  .value(var3[0])
+                  .value(is[0])
                   .text(").")
             );
          }
@@ -430,13 +430,13 @@ final class AuctionHouse {
       }
    }
 
-   private AuctionHouse.Listing listFrom(AuctionHouse.Stock var1, int var2) {
-      Product var3 = var1.product;
-      this.worker.run(() -> Gui.player().method_31548().method_61496(var2));
+   private AuctionHouse.Listing listFrom(AuctionHouse.Stock stock, int i) {
+      Product var3 = stock.product;
+      this.worker.run(() -> Gui.player().getInventory().setSelectedSlot(i));
       this.worker.ticks(2);
-      int var4 = this.worker.call(() -> Gui.player().method_31548().method_5438(var2).method_7947());
+      int var4 = this.worker.call(() -> Gui.player().getInventory().getStack(i).getCount());
       long var5 = System.currentTimeMillis();
-      this.gui.command("ah sell " + ServerText.exactMoney(var1.price * this.config.perListing()));
+      this.gui.command("ah sell " + ServerText.exactMoney(stock.price * this.config.perListing()));
       long var7 = var5 + 15000L;
       boolean[] var9 = new boolean[]{false};
       Object[] var10 = new Object[]{null};
@@ -480,15 +480,12 @@ final class AuctionHouse {
                      }
                   } else if (Gui.containerOpenNow()) {
                      ClientPlayerEntity var17 = Gui.player();
-                     int var11x = var17.field_7512.field_7763;
+                     int var11x = var17.currentScreenHandler.syncId;
                      ItemStack var12x = Gui.slotNow(15);
-                     String var13 = ServerText.normalize(Gui.mc().field_1755.method_25440());
+                     String var13 = ServerText.normalize(Gui.mc().currentScreen.getTitle());
                      boolean var15 = var13.contains("buy") || var13.contains("purchase") || var13.contains("(page") || var13.contains("order");
-                     if (var11x != var11[0]
-                        && !var15
-                        && !var12x.method_7960()
-                        && Registries.field_41178.method_10221(var12x.method_7909()).method_12832().contains("lime")) {
-                        Gui.mc().field_1761.method_2906(var11x, 15, 0, SlotActionType.field_7790, var17);
+                     if (var11x != var11[0] && !var15 && !var12x.isEmpty() && Registries.ITEM.getId(var12x.getItem()).getPath().contains("lime")) {
+                        Gui.mc().interactionManager.clickSlot(var11x, 15, 0, SlotActionType.PICKUP, var17);
                         var11[0] = var11x;
                         var9[0] = true;
                         return 1;
@@ -496,8 +493,8 @@ final class AuctionHouse {
                         return 0;
                      }
                   } else {
-                     ItemStack var9x = Gui.player().method_31548().method_5438(var2);
-                     boolean var10x = !var3.matches(var9x) || var9x.method_7947() < var4;
+                     ItemStack var9x = Gui.player().getInventory().getStack(i);
+                     boolean var10x = !var3.matches(var9x) || var9x.getCount() < var4;
                      return !var10x || !var9[0] && var12 <= 2000L ? 0 : 2;
                   }
                }
@@ -515,13 +512,13 @@ final class AuctionHouse {
       return AuctionHouse.Listing.FAILED;
    }
 
-   private int stage(Product var1) {
+   private int stage(Product product) {
       int var2 = this.config.perListing();
       boolean var3 = false;
 
       try {
          for (int var4 = 0; var4 < 12; var4++) {
-            int[] var6 = this.worker.call(() -> planStage(var1, var2));
+            int[] var6 = this.worker.call(() -> planStage(product, var2));
             if (var6[0] == 0) {
                return var6[1];
             }
@@ -531,7 +528,7 @@ final class AuctionHouse {
             }
 
             for (byte var7 = 2; var7 < var6.length; var7 += 2) {
-               this.gui.clickInventory(var6[var7] >> 1, var6[var7] & 1, var6[var7 + 1] == 1 ? SlotActionType.field_7794 : SlotActionType.field_7790);
+               this.gui.clickInventory(var6[var7] >> 1, var6[var7] & 1, var6[var7 + 1] == 1 ? SlotActionType.QUICK_MOVE : SlotActionType.PICKUP);
                var3 = true;
                this.worker.ticks(1);
             }
@@ -546,11 +543,11 @@ final class AuctionHouse {
       }
    }
 
-   private static int[] planStage(Product var0, int var1) {
+   private static int[] planStage(Product product, int i) {
       ClientPlayerEntity var3 = Gui.player();
-      PlayerInventory var4 = var3.method_31548();
-      ItemStack var5 = var3.field_7498.method_34255();
-      if (!var5.method_7960()) {
+      PlayerInventory var4 = var3.getInventory();
+      ItemStack var5 = var3.playerScreenHandler.getCursorStack();
+      if (!var5.isEmpty()) {
          int var20 = emptyMain(var4);
          int[] var16;
          if (var20 < 0) {
@@ -566,8 +563,8 @@ final class AuctionHouse {
          return var16;
       } else {
          for (int var6 = 0; var6 < 9; var6++) {
-            ItemStack var7 = var4.method_5438(var6);
-            if (var0.matches(var7) && var7.method_7947() == var1) {
+            ItemStack var7 = var4.getStack(var6);
+            if (product.matches(var7) && var7.getCount() == i) {
                return new int[]{0, var6};
             }
          }
@@ -575,8 +572,8 @@ final class AuctionHouse {
          int var15 = -1;
 
          for (int var2 = 0; var2 < 9; var2++) {
-            ItemStack var17 = var4.method_5438(var2);
-            if (var0.matches(var17) && var17.method_7947() < var1) {
+            ItemStack var17 = var4.getStack(var2);
+            if (product.matches(var17) && var17.getCount() < i) {
                var15 = var2;
                break;
             }
@@ -584,7 +581,7 @@ final class AuctionHouse {
 
          if (var15 < 0) {
             for (int var14 = 0; var14 < 9; var14++) {
-               if (var4.method_5438(var14).method_7960()) {
+               if (var4.getStack(var14).isEmpty()) {
                   var15 = var14;
                   break;
                }
@@ -595,7 +592,7 @@ final class AuctionHouse {
             int var19 = -1;
 
             for (int var21 = 8; var21 >= 0; var21--) {
-               if (!var0.matches(var4.method_5438(var21))) {
+               if (!product.matches(var4.getStack(var21))) {
                   var19 = var21;
                   break;
                }
@@ -607,14 +604,14 @@ final class AuctionHouse {
 
             return emptyMain(var4) < 0 ? new int[]{-1} : new int[]{1, 0, click(menuSlot(var19), 0), 1};
          } else {
-            int var18 = var0.matches(var4.method_5438(var15)) ? var4.method_5438(var15).method_7947() : 0;
+            int var18 = product.matches(var4.getStack(var15)) ? var4.getStack(var15).getCount() : 0;
             int var8 = -1;
             int var9 = 0;
 
             for (int var10 = 0; var10 < 36; var10++) {
                ItemStack var11;
-               if (var10 != var15 && var0.matches(var11 = var4.method_5438(var10)) && var11.method_7947() > var9) {
-                  var9 = var11.method_7947();
+               if (var10 != var15 && product.matches(var11 = var4.getStack(var10)) && var11.getCount() > var9) {
+                  var9 = var11.getCount();
                   var8 = var10;
                }
             }
@@ -622,7 +619,7 @@ final class AuctionHouse {
             if (var8 < 0) {
                return new int[]{-1};
             } else {
-               int var24 = var1 - var18;
+               int var24 = i - var18;
                int[] var25 = new int[2 + 2 * (var24 + 2)];
                int var12 = 2;
                var25[0] = 1;
@@ -647,17 +644,17 @@ final class AuctionHouse {
       }
    }
 
-   private static int click(int var0, int var1) {
-      return var0 << 1 | var1;
+   private static int click(int i, int j) {
+      return i << 1 | j;
    }
 
-   private static int menuSlot(int var0) {
-      return var0 < 9 ? 36 + var0 : var0;
+   private static int menuSlot(int i) {
+      return i < 9 ? 36 + i : i;
    }
 
-   private static int emptyMain(PlayerInventory var0) {
+   private static int emptyMain(PlayerInventory playerInventory) {
       for (int var1 = 9; var1 < 36; var1++) {
-         if (var0.method_5438(var1).method_7960()) {
+         if (playerInventory.getStack(var1).isEmpty()) {
             return var1;
          }
       }
@@ -665,18 +662,18 @@ final class AuctionHouse {
       return -1;
    }
 
-   int countInventory(Product var1) {
+   int countInventory(Product product) {
       return this.worker.call(() -> {
-         ClientPlayerEntity var1x = Gui.mc().field_1724;
-         if (var1x == null) {
+         ClientPlayerEntity var1 = Gui.mc().player;
+         if (var1 == null) {
             return 0;
          } else {
             int var2 = 0;
 
             for (int var3 = 0; var3 < 36; var3++) {
-               ItemStack var4 = var1x.method_31548().method_5438(var3);
-               if (var1.matches(var4)) {
-                  var2 += var4.method_7947();
+               ItemStack var4 = var1.getInventory().getStack(var3);
+               if (product.matches(var4)) {
+                  var2 += var4.getCount();
                }
             }
 
@@ -685,17 +682,17 @@ final class AuctionHouse {
       });
    }
 
-   boolean inventoryCapReached(Product var1) {
+   boolean inventoryCapReached(Product product) {
       return this.worker.call(() -> {
-         PlayerInventory var2 = Gui.player().method_31548();
+         PlayerInventory var2 = Gui.player().getInventory();
          int var3 = 0;
          int var4 = 0;
 
          for (int var5 = 0; var5 < 36; var5++) {
-            ItemStack var6 = var2.method_5438(var5);
-            if (var6.method_7960()) {
+            ItemStack var6 = var2.getStack(var5);
+            if (var6.isEmpty()) {
                var4++;
-            } else if (var6.method_31574(var1.item())) {
+            } else if (var6.isOf(product.item())) {
                var3++;
             }
          }
@@ -705,19 +702,19 @@ final class AuctionHouse {
    }
 
    void ensureAlive() {
-      if (this.worker.call(() -> Gui.mc().field_1724 != null && Gui.mc().field_1724.method_29504())) {
+      if (this.worker.call(() -> Gui.mc().player != null && Gui.mc().player.isDead())) {
          this.say(ModuleChat.body().danger("You died").text(", respawning."));
          long var2 = System.currentTimeMillis() + 30000L;
 
          for (long var4 = System.currentTimeMillis() + 700L;
-            System.currentTimeMillis() < var2 && this.worker.call(() -> Gui.mc().field_1724 != null && Gui.mc().field_1724.method_29504());
+            System.currentTimeMillis() < var2 && this.worker.call(() -> Gui.mc().player != null && Gui.mc().player.isDead());
             this.worker.sleep(100L)
          ) {
             if (System.currentTimeMillis() >= var4) {
                this.worker.run(() -> {
-                  ClientPlayerEntity var0 = Gui.mc().field_1724;
+                  ClientPlayerEntity var0 = Gui.mc().player;
                   if (var0 != null) {
-                     var0.method_7331();
+                     var0.requestRespawn();
                   }
                });
                var4 = System.currentTimeMillis() + 1500L;
@@ -725,8 +722,8 @@ final class AuctionHouse {
          }
 
          this.worker.run(() -> {
-            if (Gui.mc().field_1755 instanceof DeathScreen) {
-               Gui.mc().method_1507(null);
+            if (Gui.mc().currentScreen instanceof DeathScreen) {
+               Gui.mc().setScreen(null);
             }
          });
          throw new AuctionHouse.Problem("Respawned");
@@ -741,34 +738,34 @@ final class AuctionHouse {
       }
    }
 
-   String onChat(String var1, List<AuctionHouse.Stock> var2) {
+   String onChat(String string, List<AuctionHouse.Stock> list) {
       long var4 = System.currentTimeMillis();
-      if (var1.contains("too many listed items")) {
+      if (string.contains("too many listed items")) {
          this.tooManyAt = var4;
       }
 
-      if (var1.contains("already bought")) {
+      if (string.contains("already bought")) {
          this.alreadyBoughtAt = var4;
       }
 
-      if (var1.startsWith("you listed")) {
+      if (string.startsWith("you listed")) {
          this.listedAt = var4;
       }
 
-      if (var1.contains("you cannot do this") || var1.contains("you need to wait another") || var1.contains("don't have enough")) {
+      if (string.contains("you cannot do this") || string.contains("you need to wait another") || string.contains("don't have enough")) {
          this.errorAt = var4;
       }
 
       int var3;
-      if ((var3 = var1.indexOf(" bought your ")) <= 0) {
+      if ((var3 = string.indexOf(" bought your ")) <= 0) {
          return null;
       } else {
-         String var6 = var1.substring(var3 + " bought your ".length());
+         String var6 = string.substring(var3 + " bought your ".length());
          int var7 = var6.lastIndexOf(" for ");
          String var8 = var7 > 0 ? var6.substring(0, var7) : var6;
          AuctionHouse.Stock var9 = null;
 
-         for (AuctionHouse.Stock var11 : var2) {
+         for (AuctionHouse.Stock var11 : list) {
             if (var11.product.nameMatches(var8, false)) {
                var9 = var11;
                break;
@@ -776,7 +773,7 @@ final class AuctionHouse {
          }
 
          if (var9 == null) {
-            for (AuctionHouse.Stock var15 : var2) {
+            for (AuctionHouse.Stock var15 : list) {
                if (var15.product.nameMatches(var8, true)) {
                   var9 = var15;
                   break;
@@ -809,12 +806,12 @@ final class AuctionHouse {
       }
    }
 
-   static String summary(List<AuctionHouse.Stock> var0) {
+   static String summary(List<AuctionHouse.Stock> list) {
       int var1 = 0;
       int var2 = 0;
       long var3 = 0L;
 
-      for (AuctionHouse.Stock var6 : var0) {
+      for (AuctionHouse.Stock var6 : list) {
          var1 += var6.listed.get();
          var2 += var6.sold.get();
          var3 += var6.earned.get();
@@ -850,8 +847,8 @@ final class AuctionHouse {
 
    @Environment(EnvType.CLIENT)
    static final class Problem extends RuntimeException {
-      Problem(String var1) {
-         super(var1, null, false, false);
+      Problem(String string) {
+         super(string, null, false, false);
       }
    }
 
@@ -867,11 +864,11 @@ final class AuctionHouse {
       final AtomicInteger chatSales = new AtomicInteger();
       final AtomicLong earned = new AtomicLong();
 
-      Stock(Product var1, boolean var2) {
-         this.product = var1;
-         this.fixedPrice = var2;
-         if (var2) {
-            this.price = var1.minPrice();
+      Stock(Product product, boolean bl) {
+         this.product = product;
+         this.fixedPrice = bl;
+         if (bl) {
+            this.price = product.minPrice();
          }
       }
    }

@@ -21,19 +21,19 @@ final class GltfFile {
    final JsonObject json;
    private final ByteBuffer bin;
 
-   private GltfFile(JsonObject var1, ByteBuffer var2) {
-      this.json = var1;
-      this.bin = var2;
+   private GltfFile(JsonObject jsonObject, ByteBuffer byteBuffer) {
+      this.json = jsonObject;
+      this.bin = byteBuffer;
    }
 
-   static GltfFile read(byte[] var0) throws IOException {
-      ByteBuffer var1 = ByteBuffer.wrap(var0).order(ByteOrder.LITTLE_ENDIAN);
-      if (var0.length < 20 || var1.getInt(0) != 1179937895) {
+   static GltfFile read(byte[] bs) throws IOException {
+      ByteBuffer var1 = ByteBuffer.wrap(bs).order(ByteOrder.LITTLE_ENDIAN);
+      if (bs.length < 20 || var1.getInt(0) != 1179937895) {
          throw new IOException("not a .glb file");
       } else if (var1.getInt(4) != 2) {
          throw new IOException("only glTF 2.0 files are supported");
       } else {
-         int var2 = Math.min(var1.getInt(8), var0.length);
+         int var2 = Math.min(var1.getInt(8), bs.length);
          int var3 = 12;
          JsonObject var4 = null;
          ByteBuffer var5 = ByteBuffer.allocate(0);
@@ -46,9 +46,9 @@ final class GltfFile {
             }
 
             if (var7 == 1313821514) {
-               var4 = JsonParser.parseString(new String(var0, var3 + 8, var6, StandardCharsets.UTF_8)).getAsJsonObject();
+               var4 = JsonParser.parseString(new String(bs, var3 + 8, var6, StandardCharsets.UTF_8)).getAsJsonObject();
             } else if (var7 == 5130562) {
-               var5 = ByteBuffer.wrap(var0, var3 + 8, var6).slice().order(ByteOrder.LITTLE_ENDIAN);
+               var5 = ByteBuffer.wrap(bs, var3 + 8, var6).slice().order(ByteOrder.LITTLE_ENDIAN);
             }
 
             var3 += 8 + var6;
@@ -67,73 +67,73 @@ final class GltfFile {
       }
    }
 
-   static JsonArray array(JsonObject var0, String var1) {
-      JsonElement var2 = var0.get(var1);
+   static JsonArray array(JsonObject jsonObject, String string) {
+      JsonElement var2 = jsonObject.get(string);
       return var2 != null && var2.isJsonArray() ? var2.getAsJsonArray() : new JsonArray();
    }
 
-   static JsonObject object(JsonObject var0, String var1) {
-      JsonElement var2 = var0.get(var1);
+   static JsonObject object(JsonObject jsonObject, String string) {
+      JsonElement var2 = jsonObject.get(string);
       return var2 != null && var2.isJsonObject() ? var2.getAsJsonObject() : new JsonObject();
    }
 
-   static int integer(JsonObject var0, String var1, int var2) {
-      JsonElement var3 = var0.get(var1);
-      return var3 != null && var3.isJsonPrimitive() ? var3.getAsInt() : var2;
+   static int integer(JsonObject jsonObject, String string, int i) {
+      JsonElement var3 = jsonObject.get(string);
+      return var3 != null && var3.isJsonPrimitive() ? var3.getAsInt() : i;
    }
 
-   private static String string(JsonObject var0, String var1, String var2) {
-      JsonElement var3 = var0.get(var1);
-      return var3 != null && var3.isJsonPrimitive() ? var3.getAsString() : var2;
+   private static String string(JsonObject jsonObject, String string, String string2) {
+      JsonElement var3 = jsonObject.get(string);
+      return var3 != null && var3.isJsonPrimitive() ? var3.getAsString() : string2;
    }
 
    int nodes() {
       return array(this.json, "nodes").size();
    }
 
-   JsonObject node(int var1) {
-      return array(this.json, "nodes").get(var1).getAsJsonObject();
+   JsonObject node(int i) {
+      return array(this.json, "nodes").get(i).getAsJsonObject();
    }
 
-   String nodeName(int var1) {
-      return string(this.node(var1), "name", "node" + var1);
+   String nodeName(int i) {
+      return string(this.node(i), "name", "node" + i);
    }
 
-   private JsonObject material(int var1) {
-      return var1 < 0 ? new JsonObject() : array(this.json, "materials").get(var1).getAsJsonObject();
+   private JsonObject material(int i) {
+      return i < 0 ? new JsonObject() : array(this.json, "materials").get(i).getAsJsonObject();
    }
 
-   String materialName(int var1) {
-      return string(this.material(var1), "name", "material" + var1);
+   String materialName(int i) {
+      return string(this.material(i), "name", "material" + i);
    }
 
-   boolean translucent(int var1) {
-      String var2 = string(this.material(var1), "alphaMode", "OPAQUE");
+   boolean translucent(int i) {
+      String var2 = string(this.material(i), "alphaMode", "OPAQUE");
       return var2.equals("BLEND") || var2.equals("MASK");
    }
 
-   boolean doubleSided(int var1) {
-      JsonElement var2 = this.material(var1).get("doubleSided");
+   boolean doubleSided(int i) {
+      JsonElement var2 = this.material(i).get("doubleSided");
       return var2 != null && var2.getAsBoolean();
    }
 
-   private JsonObject baseColorTexture(int var1) {
-      return object(object(this.material(var1), "pbrMetallicRoughness"), "baseColorTexture");
+   private JsonObject baseColorTexture(int i) {
+      return object(object(this.material(i), "pbrMetallicRoughness"), "baseColorTexture");
    }
 
-   int texCoord(int var1) {
-      return integer(this.baseColorTexture(var1), "texCoord", 0);
+   int texCoord(int i) {
+      return integer(this.baseColorTexture(i), "texCoord", 0);
    }
 
-   float[] baseColorFactor(int var1) {
-      JsonArray var2 = array(object(this.material(var1), "pbrMetallicRoughness"), "baseColorFactor");
+   float[] baseColorFactor(int i) {
+      JsonArray var2 = array(object(this.material(i), "pbrMetallicRoughness"), "baseColorFactor");
       return var2.size() != 4
          ? new float[]{1.0F, 1.0F, 1.0F, 1.0F}
          : new float[]{var2.get(0).getAsFloat(), var2.get(1).getAsFloat(), var2.get(2).getAsFloat(), var2.get(3).getAsFloat()};
    }
 
-   byte[] baseColorImage(int var1) throws IOException {
-      JsonObject var2 = this.baseColorTexture(var1);
+   byte[] baseColorImage(int i) throws IOException {
+      JsonObject var2 = this.baseColorTexture(i);
       if (!var2.has("index")) {
          return null;
       } else {
@@ -160,8 +160,8 @@ final class GltfFile {
       }
    }
 
-   float[] floats(int var1) throws IOException {
-      JsonObject var2 = this.accessor(var1);
+   float[] floats(int i) throws IOException {
+      JsonObject var2 = this.accessor(i);
       int var3 = var2.get("count").getAsInt();
       int var4 = components(var2.get("type").getAsString());
       int var5 = var2.get("componentType").getAsInt();
@@ -195,8 +195,8 @@ final class GltfFile {
       }
    }
 
-   int[] ints(int var1) throws IOException {
-      JsonObject var2 = this.accessor(var1);
+   int[] ints(int i) throws IOException {
+      JsonObject var2 = this.accessor(i);
       int var3 = var2.get("count").getAsInt();
       int var4 = components(var2.get("type").getAsString());
       int var5 = var2.get("componentType").getAsInt();
@@ -221,8 +221,8 @@ final class GltfFile {
       return var9;
    }
 
-   private JsonObject accessor(int var1) throws IOException {
-      JsonObject var2 = array(this.json, "accessors").get(var1).getAsJsonObject();
+   private JsonObject accessor(int i) throws IOException {
+      JsonObject var2 = array(this.json, "accessors").get(i).getAsJsonObject();
       if (var2.has("sparse")) {
          throw new IOException("sparse accessors aren't supported");
       } else {
@@ -235,13 +235,13 @@ final class GltfFile {
       }
    }
 
-   private ByteBuffer view(int var1, int var2) throws IOException {
-      JsonObject var3 = array(this.json, "bufferViews").get(var1).getAsJsonObject();
+   private ByteBuffer view(int i, int j) throws IOException {
+      JsonObject var3 = array(this.json, "bufferViews").get(i).getAsJsonObject();
       if (integer(var3, "buffer", 0) != 0) {
          throw new IOException("its data is split over several files");
       } else {
-         int var4 = integer(var3, "byteOffset", 0) + var2;
-         int var5 = var3.get("byteLength").getAsInt() - var2;
+         int var4 = integer(var3, "byteOffset", 0) + j;
+         int var5 = var3.get("byteLength").getAsInt() - j;
          if (var4 >= 0 && var5 >= 0 && var4 + var5 <= this.bin.capacity()) {
             return this.bin.slice(var4, var5).order(ByteOrder.LITTLE_ENDIAN);
          } else {
@@ -250,27 +250,27 @@ final class GltfFile {
       }
    }
 
-   private int stride(JsonObject var1, int var2, int var3) {
-      JsonObject var4 = array(this.json, "bufferViews").get(var1.get("bufferView").getAsInt()).getAsJsonObject();
-      return integer(var4, "byteStride", var2 * size(var3));
+   private int stride(JsonObject jsonObject, int i, int j) {
+      JsonObject var4 = array(this.json, "bufferViews").get(jsonObject.get("bufferView").getAsInt()).getAsJsonObject();
+      return integer(var4, "byteStride", i * size(j));
    }
 
-   private static int size(int var0) {
-      return switch (var0) {
+   private static int size(int i) {
+      return switch (i) {
          case 5120, 5121 -> 1;
          case 5122, 5123 -> 2;
          default -> 4;
       };
    }
 
-   private static int components(String var0) throws IOException {
-      return switch (var0) {
+   private static int components(String string) throws IOException {
+      return switch (string) {
          case "SCALAR" -> 1;
          case "VEC2" -> 2;
          case "VEC3" -> 3;
          case "VEC4" -> 4;
          case "MAT4" -> 16;
-         default -> throw new IOException("unknown accessor type " + var0);
+         default -> throw new IOException("unknown accessor type " + string);
       };
    }
 }

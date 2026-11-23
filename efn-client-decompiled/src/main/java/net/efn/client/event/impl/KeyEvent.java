@@ -17,14 +17,14 @@ public final class KeyEvent extends CancellableEvent {
    private KeyEvent() {
    }
 
-   public static boolean dispatch(int var0, int var1, int var2, int var3) {
+   public static boolean dispatch(int i, int j, int k, int l) {
       if (!TYPE.hasPreListeners()) {
          return false;
       } else {
-         INSTANCE.key = var0;
-         INSTANCE.scancode = var1;
-         INSTANCE.action = var2;
-         INSTANCE.mods = var3;
+         INSTANCE.key = i;
+         INSTANCE.scancode = j;
+         INSTANCE.action = k;
+         INSTANCE.mods = l;
          INSTANCE.resetCancellation();
          TYPE.dispatch(INSTANCE);
          return INSTANCE.isCancelled();

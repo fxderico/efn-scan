@@ -75,18 +75,18 @@ public final class PearlTrajectoryModule extends ClientModule implements HudOver
    }
 
    @EventHandler
-   public void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      if (var2.field_1687 != null && var2.field_1724 != null) {
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      if (var2.world != null && var2.player != null) {
          HashSet var3 = new HashSet();
 
-         for (Entity var5 : var2.field_1687.method_18112()) {
+         for (Entity var5 : var2.world.getEntities()) {
             EnderPearlEntity var6;
             if (var5 instanceof EnderPearlEntity && this.isTracked(var6 = (EnderPearlEntity)var5, var2)) {
-               var3.add(var6.method_5628());
-               List var7 = this.trails.computeIfAbsent(var6.method_5628(), var0 -> new ArrayList<>());
-               Vec3d var8 = var6.method_73189();
-               if (var7.isEmpty() || !(((Vec3d)var7.getLast()).method_1025(var8) < 1.0E-4)) {
+               var3.add(var6.getId());
+               List var7 = this.trails.computeIfAbsent(var6.getId(), integer -> new ArrayList<>());
+               Vec3d var8 = var6.getEntityPos();
+               if (var7.isEmpty() || !(((Vec3d)var7.getLast()).squaredDistanceTo(var8) < 1.0E-4)) {
                   var7.add(var8);
                   if (var7.size() > 200) {
                      var7.removeFirst();
@@ -102,22 +102,22 @@ public final class PearlTrajectoryModule extends ClientModule implements HudOver
    }
 
    @EventHandler
-   public void onRender3D(Render3DEvent var1) {
+   public void onRender3D(Render3DEvent render3DEvent) {
       this.labels.clear();
-      MinecraftClient var4 = MinecraftClient.method_1551();
-      if (var4.field_1724 != null && var4.field_1687 != null) {
+      MinecraftClient var4 = MinecraftClient.getInstance();
+      if (var4.player != null && var4.world != null) {
          long var2;
          this.labelsAt = var2 = System.nanoTime();
          float var5 = (float)(var2 - EPOCH) / 1.0E9F;
          float var6 = this.sLineWidth.get();
-         Vec3d var7 = var4.field_1724.method_5836(var1.partialTick);
-         if (this.sPredict.get() && PearlTrajectorySimulator.isHoldingPearl(var4.field_1724)) {
+         Vec3d var7 = var4.player.getCameraPosVec(render3DEvent.partialTick);
+         if (this.sPredict.get() && PearlTrajectorySimulator.isHoldingPearl(var4.player)) {
             if (this.predictionShownAt < 0L) {
                this.predictionShownAt = var2;
             }
 
             float var8 = easeOutBack(Math.min(1.0F, (float)(var2 - this.predictionShownAt) / 1.0E9F / 0.22F));
-            PearlTrajectorySimulator.SimulationResult var9 = PearlTrajectorySimulator.simulate(var4.field_1687, var4.field_1724, var1.partialTick);
+            PearlTrajectorySimulator.SimulationResult var9 = PearlTrajectorySimulator.simulate(var4.world, var4.player, render3DEvent.partialTick);
             this.drawPath(var9.points(), var6, true, false, 1.0F);
             this.drawLanding(var9, var8, var5, var6, 1.0F);
             this.addLabel(var9, var7, null);
@@ -125,33 +125,33 @@ public final class PearlTrajectoryModule extends ClientModule implements HudOver
             this.predictionShownAt = -1L;
          }
 
-         for (Entity var17 : var4.field_1687.method_18112()) {
+         for (Entity var17 : var4.world.getEntities()) {
             EnderPearlEntity var10;
             if (var17 instanceof EnderPearlEntity && this.isTracked(var10 = (EnderPearlEntity)var17, var4)) {
-               Vec3d var11 = var10.method_30950(var1.partialTick);
+               Vec3d var11 = var10.getLerpedPos(render3DEvent.partialTick);
                if (this.sTrail.get()) {
-                  this.drawTrail(this.trails.get(var10.method_5628()), var11, var6);
+                  this.drawTrail(this.trails.get(var10.getId()), var11, var6);
                }
 
-               PearlTrajectorySimulator.SimulationResult var12 = PearlTrajectorySimulator.simulate(var4.field_1687, var10);
+               PearlTrajectorySimulator.SimulationResult var12 = PearlTrajectorySimulator.simulate(var4.world, var10);
                ArrayList var13 = new ArrayList<>(var12.points());
                var13.set(0, var11);
                this.drawPath(var13, var6 * 0.8F, false, true, 0.7F);
                this.drawLanding(var12, 1.0F, var5, var6, 0.75F);
-               Entity var14 = var10.method_24921();
-               boolean var15 = var14 == null || var14 == var4.field_1724;
-               this.addLabel(var12, var7, var15 ? null : NameProtectModule.protect(var14.method_5477()).getString());
+               Entity var14 = var10.getOwner();
+               boolean var15 = var14 == null || var14 == var4.player;
+               this.addLabel(var12, var7, var15 ? null : NameProtectModule.protect(var14.getName()).getString());
             }
          }
       }
    }
 
-   private void drawPath(List<Vec3d> var1, float var2, boolean var3, boolean var4, float var5) {
-      if (var1.size() >= 2) {
+   private void drawPath(List<Vec3d> list, float f, boolean bl, boolean bl2, float g) {
+      if (list.size() >= 2) {
          double var6 = 0.0;
 
-         for (int var8 = 1; var8 < var1.size(); var8++) {
-            var6 += ((Vec3d)var1.get(var8 - 1)).method_1022((Vec3d)var1.get(var8));
+         for (int var8 = 1; var8 < list.size(); var8++) {
+            var6 += ((Vec3d)list.get(var8 - 1)).distanceTo((Vec3d)list.get(var8));
          }
 
          if (!(var6 <= 1.0E-6)) {
@@ -161,31 +161,31 @@ public final class PearlTrajectoryModule extends ClientModule implements HudOver
             double var11 = 0.0;
             int var13 = 0;
 
-            for (int var14 = 1; var14 < var1.size(); var14++) {
-               Vec3d var15 = (Vec3d)var1.get(var14 - 1);
-               Vec3d var16 = (Vec3d)var1.get(var14);
-               double var17 = var15.method_1022(var16);
+            for (int var14 = 1; var14 < list.size(); var14++) {
+               Vec3d var15 = (Vec3d)list.get(var14 - 1);
+               Vec3d var16 = (Vec3d)list.get(var14);
+               double var17 = var15.distanceTo(var16);
                int var19 = Math.max(1, (int)Math.ceil(var17 / 0.45));
 
                for (int var20 = 0; var20 < var19; var13++) {
-                  if (!var4 || (var13 & 1) == 0) {
+                  if (!bl2 || (var13 & 1) == 0) {
                      double var21 = (double)var20 / var19;
                      double var23 = (double)(var20 + 1) / var19;
                      double var25 = var11 + var17 * (var21 + var23) * 0.5;
-                     float var27 = var5;
-                     if (var3) {
-                        var27 = var5 * smoothstep((float)(var25 / 1.8));
+                     float var27 = g;
+                     if (bl) {
+                        var27 = g * smoothstep((float)(var25 / 1.8));
                      }
 
                      if (!(var27 < 0.02F)) {
                         int var28 = scaleAlpha(lerpArgb(var31, var9, (float)(var25 / var6)), var27);
-                        Vec3d var29 = var15.method_35590(var16, var21);
-                        Vec3d var30 = var15.method_35590(var16, var23);
+                        Vec3d var29 = var15.lerp(var16, var21);
+                        Vec3d var30 = var15.lerp(var16, var23);
                         if (var10) {
-                           GizmoDrawing.method_75546(var29, var30, scaleAlpha(var28, 0.2F), var2 * 3.2F).method_75533();
+                           GizmoDrawing.line(var29, var30, scaleAlpha(var28, 0.2F), f * 3.2F).ignoreOcclusion();
                         }
 
-                        GizmoDrawing.method_75546(var29, var30, var28, var2).method_75533();
+                        GizmoDrawing.line(var29, var30, var28, f).ignoreOcclusion();
                      }
                   }
 
@@ -198,59 +198,58 @@ public final class PearlTrajectoryModule extends ClientModule implements HudOver
       }
    }
 
-   private void drawTrail(List<Vec3d> var1, Vec3d var2, float var3) {
-      if (var1 != null && !var1.isEmpty()) {
+   private void drawTrail(List<Vec3d> list, Vec3d vec3d, float f) {
+      if (list != null && !list.isEmpty()) {
          int var4 = this.sColor.argb();
-         int var5 = var1.size() + 1;
+         int var5 = list.size() + 1;
 
          for (int var6 = 1; var6 < var5; var6++) {
-            Vec3d var7 = (Vec3d)var1.get(var6 - 1);
-            Vec3d var8 = var6 < var1.size() ? (Vec3d)var1.get(var6) : var2;
+            Vec3d var7 = (Vec3d)list.get(var6 - 1);
+            Vec3d var8 = var6 < list.size() ? (Vec3d)list.get(var6) : vec3d;
             float var9 = 0.15F + 0.85F * var6 / (var5 - 1.0F);
-            GizmoDrawing.method_75546(var7, var8, scaleAlpha(var4, var9), var3).method_75533();
+            GizmoDrawing.line(var7, var8, scaleAlpha(var4, var9), f).ignoreOcclusion();
          }
       }
    }
 
-   private void drawLanding(PearlTrajectorySimulator.SimulationResult var1, float var2, float var3, float var4, float var5) {
-      int var6 = scaleAlpha(this.sHitColor.argb(), var5);
-      if (var1.entityHit() != null) {
-         Box var16 = var1.entityHit().method_5829().method_1014(0.05);
-         GizmoDrawing.method_75541(var16, DrawStyle.method_75537(var6, var4, scaleAlpha(var6, 0.14F))).method_75533();
+   private void drawLanding(PearlTrajectorySimulator.SimulationResult simulationResult, float f, float g, float h, float i) {
+      int var6 = scaleAlpha(this.sHitColor.argb(), i);
+      if (simulationResult.entityHit() != null) {
+         Box var16 = simulationResult.entityHit().getBoundingBox().expand(0.05);
+         GizmoDrawing.box(var16, DrawStyle.filledAndStroked(var6, h, scaleAlpha(var6, 0.14F))).ignoreOcclusion();
       } else {
-         BlockHitResult var7 = var1.blockHit();
+         BlockHitResult var7 = simulationResult.blockHit();
          String var8 = this.sLanding.get();
          if (var7 != null && !"None".equals(var8)) {
-            int var9 = scaleAlpha(this.sGradient.get() ? this.sEndColor.argb() : this.sColor.argb(), var5);
-            Direction var10 = var7.method_17780();
-            Vec3d var11 = new Vec3d(var10.method_10148(), var10.method_10164(), var10.method_10165());
+            int var9 = scaleAlpha(this.sGradient.get() ? this.sEndColor.argb() : this.sColor.argb(), i);
+            Direction var10 = var7.getSide();
+            Vec3d var11 = new Vec3d(var10.getOffsetX(), var10.getOffsetY(), var10.getOffsetZ());
             if ("Box".equals(var8)) {
-               Box var17 = new Box(var7.method_17777()).method_1014(0.002);
-               GizmoDrawing.method_75548(var17.method_61125(), var17.method_61126(), var10, DrawStyle.method_75537(var9, var4, scaleAlpha(var9, 0.22F)))
-                  .method_75533();
+               Box var17 = new Box(var7.getBlockPos()).expand(0.002);
+               GizmoDrawing.face(var17.getMinPos(), var17.getMaxPos(), var10, DrawStyle.filledAndStroked(var9, h, scaleAlpha(var9, 0.22F))).ignoreOcclusion();
             } else {
-               Vec3d var12 = var1.landing().method_1019(var11.method_1021(0.02));
-               float var13 = 1.0F + 0.05F * (float)Math.sin(var3 * 5.0F);
-               drawRing(var12, var11, 0.38F * var2 * var13, var9, var4);
-               drawCross(var12, var11, 0.09F * var2, var9, var4);
-               float var14 = var3 % 1.4F / 1.4F;
-               float var15 = lerp(0.3F, 0.95F, easeOutCubic(var14)) * var2;
-               drawRing(var12, var11, var15, scaleAlpha(var9, 0.75F * (1.0F - var14)), var4 * 0.8F);
+               Vec3d var12 = simulationResult.landing().add(var11.multiply(0.02));
+               float var13 = 1.0F + 0.05F * (float)Math.sin(g * 5.0F);
+               drawRing(var12, var11, 0.38F * f * var13, var9, h);
+               drawCross(var12, var11, 0.09F * f, var9, h);
+               float var14 = g % 1.4F / 1.4F;
+               float var15 = lerp(0.3F, 0.95F, easeOutCubic(var14)) * f;
+               drawRing(var12, var11, var15, scaleAlpha(var9, 0.75F * (1.0F - var14)), h * 0.8F);
             }
          }
       }
    }
 
-   private static void drawRing(Vec3d var0, Vec3d var1, float var2, int var3, float var4) {
-      if ((var3 >>> 24 & 0xFF) >= 4 && !(var2 <= 0.0F)) {
-         Vec3d[] var5 = planeBasis(var1);
+   private static void drawRing(Vec3d vec3d, Vec3d vec3d2, float f, int i, float g) {
+      if ((i >>> 24 & 0xFF) >= 4 && !(f <= 0.0F)) {
+         Vec3d[] var5 = planeBasis(vec3d2);
          Vec3d var6 = null;
 
          for (int var7 = 0; var7 <= 48; var7++) {
             double var8 = 6.283185307179586 * var7 / 48.0;
-            Vec3d var10 = var0.method_1019(var5[0].method_1021(Math.cos(var8) * var2)).method_1019(var5[1].method_1021(Math.sin(var8) * var2));
+            Vec3d var10 = vec3d.add(var5[0].multiply(Math.cos(var8) * f)).add(var5[1].multiply(Math.sin(var8) * f));
             if (var6 != null) {
-               GizmoDrawing.method_75546(var6, var10, var3, var4).method_75533();
+               GizmoDrawing.line(var6, var10, i, g).ignoreOcclusion();
             }
 
             var6 = var10;
@@ -258,34 +257,34 @@ public final class PearlTrajectoryModule extends ClientModule implements HudOver
       }
    }
 
-   private static void drawCross(Vec3d var0, Vec3d var1, float var2, int var3, float var4) {
-      Vec3d[] var5 = planeBasis(var1);
-      GizmoDrawing.method_75546(var0.method_1019(var5[0].method_1021(-var2)), var0.method_1019(var5[0].method_1021(var2)), var3, var4).method_75533();
-      GizmoDrawing.method_75546(var0.method_1019(var5[1].method_1021(-var2)), var0.method_1019(var5[1].method_1021(var2)), var3, var4).method_75533();
+   private static void drawCross(Vec3d vec3d, Vec3d vec3d2, float f, int i, float g) {
+      Vec3d[] var5 = planeBasis(vec3d2);
+      GizmoDrawing.line(vec3d.add(var5[0].multiply(-f)), vec3d.add(var5[0].multiply(f)), i, g).ignoreOcclusion();
+      GizmoDrawing.line(vec3d.add(var5[1].multiply(-f)), vec3d.add(var5[1].multiply(f)), i, g).ignoreOcclusion();
    }
 
-   private static Vec3d[] planeBasis(Vec3d var0) {
-      Vec3d var1 = Math.abs(var0.field_1351) > 0.9 ? new Vec3d(1.0, 0.0, 0.0) : var0.method_1036(new Vec3d(0.0, 1.0, 0.0)).method_1029();
-      return new Vec3d[]{var1, var0.method_1036(var1).method_1029()};
+   private static Vec3d[] planeBasis(Vec3d vec3d) {
+      Vec3d var1 = Math.abs(vec3d.y) > 0.9 ? new Vec3d(1.0, 0.0, 0.0) : vec3d.crossProduct(new Vec3d(0.0, 1.0, 0.0)).normalize();
+      return new Vec3d[]{var1, vec3d.crossProduct(var1).normalize()};
    }
 
-   private void addLabel(PearlTrajectorySimulator.SimulationResult var1, Vec3d var2, String var3) {
-      if (this.sInfo.get() && var1.landed()) {
-         String var4 = String.format(Locale.ROOT, "%.1fs", var1.ticks() / 20.0F);
-         String var5 = String.format(Locale.ROOT, "%.1fm", var2.method_1022(var1.landing()));
-         String var6 = var1.entityHit() != null
-            ? NameProtectModule.protect(var1.entityHit().method_5477()).getString() + "  \u00b7  " + var4
-            : (var3 != null ? var3 + "  \u00b7  " + var4 : var4);
-         this.labels.add(new PearlTrajectoryModule.Label(var1.landing(), var5, var6));
+   private void addLabel(PearlTrajectorySimulator.SimulationResult simulationResult, Vec3d vec3d, String string) {
+      if (this.sInfo.get() && simulationResult.landed()) {
+         String var4 = String.format(Locale.ROOT, "%.1fs", simulationResult.ticks() / 20.0F);
+         String var5 = String.format(Locale.ROOT, "%.1fm", vec3d.distanceTo(simulationResult.landing()));
+         String var6 = simulationResult.entityHit() != null
+            ? NameProtectModule.protect(simulationResult.entityHit().getName()).getString() + "  \u00b7  " + var4
+            : (string != null ? string + "  \u00b7  " + var4 : var4);
+         this.labels.add(new PearlTrajectoryModule.Label(simulationResult.landing(), var5, var6));
       }
    }
 
-   private boolean isTracked(EnderPearlEntity var1, MinecraftClient var2) {
-      if (var1.method_31481()) {
+   private boolean isTracked(EnderPearlEntity enderPearlEntity, MinecraftClient minecraftClient) {
+      if (enderPearlEntity.isRemoved()) {
          return false;
       } else {
-         Entity var3 = var1.method_24921();
-         return var3 == null || var3 == var2.field_1724 || this.sOthers.get();
+         Entity var3 = enderPearlEntity.getOwner();
+         return var3 == null || var3 == minecraftClient.player || this.sOthers.get();
       }
    }
 
@@ -295,58 +294,58 @@ public final class PearlTrajectoryModule extends ClientModule implements HudOver
    }
 
    @Override
-   public void renderHudOverlay(ImDrawList var1, float var2, float var3) {
+   public void renderHudOverlay(ImDrawList imDrawList, float f, float g) {
       if (!this.labels.isEmpty() && System.nanoTime() - this.labelsAt <= 250000000L) {
-         MinecraftClient var4 = MinecraftClient.method_1551();
+         MinecraftClient var4 = MinecraftClient.getInstance();
 
          for (PearlTrajectoryModule.Label var6 : this.labels) {
-            float[] var7 = WorldLabel.project(var4, var6.pos().method_1031(0.0, 0.35, 0.0), var2, var3);
+            float[] var7 = WorldLabel.project(var4, var6.pos().add(0.0, 0.35, 0.0), f, g);
             if (var7 != null) {
-               WorldLabel.drawText(var1, var7[0], var7[1], var6.primary(), var6.secondary(), 1.0F);
+               WorldLabel.drawText(imDrawList, var7[0], var7[1], var6.primary(), var6.secondary(), 1.0F);
             }
          }
       }
    }
 
-   private static int lerpArgb(int var0, int var1, float var2) {
-      var2 = Math.max(0.0F, Math.min(1.0F, var2));
-      int var3 = var0 >>> 24;
-      int var4 = var0 >> 16 & 0xFF;
-      int var5 = var0 >> 8 & 0xFF;
-      int var6 = var0 & 0xFF;
-      int var7 = var1 >>> 24;
-      int var8 = var1 >> 16 & 0xFF;
-      int var9 = var1 >> 8 & 0xFF;
-      int var10 = var1 & 0xFF;
-      return Math.round(var3 + (var7 - var3) * var2) << 24
-         | Math.round(var4 + (var8 - var4) * var2) << 16
-         | Math.round(var5 + (var9 - var5) * var2) << 8
-         | Math.round(var6 + (var10 - var6) * var2);
+   private static int lerpArgb(int i, int j, float f) {
+      f = Math.max(0.0F, Math.min(1.0F, f));
+      int var3 = i >>> 24;
+      int var4 = i >> 16 & 0xFF;
+      int var5 = i >> 8 & 0xFF;
+      int var6 = i & 0xFF;
+      int var7 = j >>> 24;
+      int var8 = j >> 16 & 0xFF;
+      int var9 = j >> 8 & 0xFF;
+      int var10 = j & 0xFF;
+      return Math.round(var3 + (var7 - var3) * f) << 24
+         | Math.round(var4 + (var8 - var4) * f) << 16
+         | Math.round(var5 + (var9 - var5) * f) << 8
+         | Math.round(var6 + (var10 - var6) * f);
    }
 
-   private static int scaleAlpha(int var0, float var1) {
-      int var2 = Math.round((var0 >>> 24) * Math.max(0.0F, Math.min(1.0F, var1)));
-      return var2 << 24 | var0 & 16777215;
+   private static int scaleAlpha(int i, float f) {
+      int var2 = Math.round((i >>> 24) * Math.max(0.0F, Math.min(1.0F, f)));
+      return var2 << 24 | i & 16777215;
    }
 
-   private static float lerp(float var0, float var1, float var2) {
-      return var0 + (var1 - var0) * var2;
+   private static float lerp(float f, float g, float h) {
+      return f + (g - f) * h;
    }
 
-   private static float smoothstep(float var0) {
-      var0 = Math.max(0.0F, Math.min(1.0F, var0));
-      return var0 * var0 * (3.0F - 2.0F * var0);
+   private static float smoothstep(float f) {
+      f = Math.max(0.0F, Math.min(1.0F, f));
+      return f * f * (3.0F - 2.0F * f);
    }
 
-   private static float easeOutCubic(float var0) {
-      float var1 = 1.0F - var0;
+   private static float easeOutCubic(float f) {
+      float var1 = 1.0F - f;
       return 1.0F - var1 * var1 * var1;
    }
 
-   private static float easeOutBack(float var0) {
+   private static float easeOutBack(float f) {
       float var1 = 1.70158F;
       float var2 = var1 + 1.0F;
-      float var3 = var0 - 1.0F;
+      float var3 = f - 1.0F;
       return 1.0F + var2 * var3 * var3 * var3 + var1 * var3 * var3;
    }
 

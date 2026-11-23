@@ -12,75 +12,75 @@ import net.minecraft.item.Items;
 public final class FakeLoadout {
    public static final int UNKNOWN = 41;
    private static final Item[] HOTBAR = new Item[]{
-      Items.field_8371,
-      Items.field_8802,
-      Items.field_22022,
-      Items.field_8403,
-      Items.field_8377,
-      Items.field_22024,
-      Items.field_8475,
-      Items.field_8556,
-      Items.field_22025,
-      Items.field_8699,
-      Items.field_8250,
-      Items.field_22023,
-      Items.field_8102,
-      Items.field_8705,
-      Items.field_20412,
-      Items.field_8810,
-      Items.field_8176,
-      Items.field_8071,
-      Items.field_8229,
-      Items.field_8634,
-      Items.field_8118,
-      Items.field_8831,
-      Items.field_8884
+      Items.IRON_SWORD,
+      Items.DIAMOND_SWORD,
+      Items.NETHERITE_SWORD,
+      Items.IRON_PICKAXE,
+      Items.DIAMOND_PICKAXE,
+      Items.NETHERITE_PICKAXE,
+      Items.IRON_AXE,
+      Items.DIAMOND_AXE,
+      Items.NETHERITE_AXE,
+      Items.IRON_SHOVEL,
+      Items.DIAMOND_SHOVEL,
+      Items.NETHERITE_SHOVEL,
+      Items.BOW,
+      Items.WATER_BUCKET,
+      Items.COBBLESTONE,
+      Items.TORCH,
+      Items.COOKED_BEEF,
+      Items.GOLDEN_CARROT,
+      Items.BREAD,
+      Items.ENDER_PEARL,
+      Items.OAK_PLANKS,
+      Items.DIRT,
+      Items.FLINT_AND_STEEL
    };
    private static final Item[] MAIN = new Item[]{
-      Items.field_20412,
-      Items.field_20391,
-      Items.field_8831,
-      Items.field_8583,
-      Items.field_8118,
-      Items.field_8600,
-      Items.field_8713,
-      Items.field_8620,
-      Items.field_8695,
-      Items.field_8477,
-      Items.field_8725,
-      Items.field_8759,
-      Items.field_8107,
-      Items.field_8276,
-      Items.field_8606,
-      Items.field_8511,
-      Items.field_8054,
-      Items.field_8858,
-      Items.field_8110,
-      Items.field_8317,
-      Items.field_8861,
-      Items.field_8121,
-      Items.field_8281,
-      Items.field_8280,
-      Items.field_8745,
-      Items.field_8153,
-      Items.field_8145,
-      Items.field_8680,
-      Items.field_8279,
-      Items.field_8261,
-      Items.field_8550,
-      Items.field_8529,
-      Items.field_8407,
-      Items.field_17531,
-      Items.field_8465,
-      Items.field_8106,
-      Items.field_8732
+      Items.COBBLESTONE,
+      Items.STONE,
+      Items.DIRT,
+      Items.OAK_LOG,
+      Items.OAK_PLANKS,
+      Items.STICK,
+      Items.COAL,
+      Items.IRON_INGOT,
+      Items.GOLD_INGOT,
+      Items.DIAMOND,
+      Items.REDSTONE,
+      Items.LAPIS_LAZULI,
+      Items.ARROW,
+      Items.STRING,
+      Items.BONE,
+      Items.ROTTEN_FLESH,
+      Items.GUNPOWDER,
+      Items.SAND,
+      Items.GRAVEL,
+      Items.WHEAT_SEEDS,
+      Items.WHEAT,
+      Items.LADDER,
+      Items.OBSIDIAN,
+      Items.GLASS,
+      Items.LEATHER,
+      Items.FEATHER,
+      Items.FLINT,
+      Items.SPIDER_EYE,
+      Items.APPLE,
+      Items.COOKED_PORKCHOP,
+      Items.BUCKET,
+      Items.BOOK,
+      Items.PAPER,
+      Items.SUGAR_CANE,
+      Items.CRAFTING_TABLE,
+      Items.CHEST,
+      Items.FURNACE
    };
-   private static final Item[] OFFHAND = new Item[]{Items.field_8255, Items.field_8810, Items.field_8705, Items.field_8107, Items.field_8176, Items.field_8463};
+   private static final Item[] OFFHAND = new Item[]{Items.SHIELD, Items.TORCH, Items.WATER_BUCKET, Items.ARROW, Items.COOKED_BEEF, Items.GOLDEN_APPLE};
    private static final Item[][] ARMOR = new Item[][]{
-      {Items.field_8660, Items.field_8313, Items.field_8285, Items.field_22030},
-      {Items.field_8396, Items.field_8218, Items.field_8348, Items.field_22029},
-      {Items.field_8523, Items.field_8873, Items.field_8058, Items.field_22028},
-      {Items.field_8743, Items.field_8283, Items.field_8805, Items.field_22027}
+      {Items.IRON_BOOTS, Items.CHAINMAIL_BOOTS, Items.DIAMOND_BOOTS, Items.NETHERITE_BOOTS},
+      {Items.IRON_LEGGINGS, Items.CHAINMAIL_LEGGINGS, Items.DIAMOND_LEGGINGS, Items.NETHERITE_LEGGINGS},
+      {Items.IRON_CHESTPLATE, Items.CHAINMAIL_CHESTPLATE, Items.DIAMOND_CHESTPLATE, Items.NETHERITE_CHESTPLATE},
+      {Items.IRON_HELMET, Items.CHAINMAIL_HELMET, Items.DIAMOND_HELMET, Items.NETHERITE_HELMET}
    };
    private static final int FIRST_ARMOR = 36;
    private final ItemStack[] stacks = new ItemStack[42];
@@ -94,44 +94,44 @@ public final class FakeLoadout {
       Arrays.fill(this.stacks, null);
    }
 
-   public ItemStack get(int var1) {
-      if (var1 < 0 || var1 > 41) {
-         var1 = 41;
+   public ItemStack get(int i) {
+      if (i < 0 || i > 41) {
+         i = 41;
       }
 
       ItemStack var2;
-      if ((var2 = this.stacks[var1]) == null) {
-         this.stacks[var1] = var2 = this.roll(var1);
+      if ((var2 = this.stacks[i]) == null) {
+         this.stacks[i] = var2 = this.roll(i);
       }
 
       return var2;
    }
 
-   private ItemStack roll(int var1) {
-      Item var2 = var1 < 9
-         ? this.pick(HOTBAR, var1)
+   private ItemStack roll(int i) {
+      Item var2 = i < 9
+         ? this.pick(HOTBAR, i)
          : (
-            var1 < 36 || var1 == 41
-               ? this.pick(MAIN, var1)
-               : (var1 == 40 ? this.pick(OFFHAND, var1) : ARMOR[var1 - 36][(int)Long.remainderUnsigned(mix(this.seed ^ 167L), ARMOR[0].length)])
+            i < 36 || i == 41
+               ? this.pick(MAIN, i)
+               : (i == 40 ? this.pick(OFFHAND, i) : ARMOR[i - 36][(int)Long.remainderUnsigned(mix(this.seed ^ 167L), ARMOR[0].length)])
          );
       ItemStack var3 = new ItemStack(var2);
-      if (var3.method_7914() > 1) {
-         var3.method_7939(1 + (int)Long.remainderUnsigned(mix(this.seed ^ var1 ^ 81L), var3.method_7914()));
-      } else if (var3.method_7963()) {
-         var3.method_7974((int)Long.remainderUnsigned(mix(this.seed ^ var1 ^ 82L), var3.method_7936() / 2));
+      if (var3.getMaxCount() > 1) {
+         var3.setCount(1 + (int)Long.remainderUnsigned(mix(this.seed ^ i ^ 81L), var3.getMaxCount()));
+      } else if (var3.isDamageable()) {
+         var3.setDamage((int)Long.remainderUnsigned(mix(this.seed ^ i ^ 82L), var3.getMaxDamage() / 2));
       }
 
       return var3;
    }
 
-   private Item pick(Item[] var1, int var2) {
-      return var1[(int)Long.remainderUnsigned(mix(this.seed ^ var2 * -7046029254386353131L), var1.length)];
+   private Item pick(Item[] items, int i) {
+      return items[(int)Long.remainderUnsigned(mix(this.seed ^ i * -7046029254386353131L), items.length)];
    }
 
-   private static long mix(long var0) {
-      var0 = (var0 ^ var0 >>> 30) * -4658895280553007687L;
-      var0 = (var0 ^ var0 >>> 27) * -7723592293110705685L;
-      return var0 ^ var0 >>> 31;
+   private static long mix(long l) {
+      l = (l ^ l >>> 30) * -4658895280553007687L;
+      l = (l ^ l >>> 27) * -7723592293110705685L;
+      return l ^ l >>> 31;
    }
 }

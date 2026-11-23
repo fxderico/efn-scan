@@ -96,16 +96,16 @@ public final class ConfigProfiles {
       this(ModuleConfigStore.getInstance());
    }
 
-   private ConfigProfiles(ModuleConfigStore var1) {
-      this.store = var1;
+   private ConfigProfiles(ModuleConfigStore moduleConfigStore) {
+      this.store = moduleConfigStore;
    }
 
    public static ConfigProfiles getInstance() {
       return INSTANCE;
    }
 
-   public static boolean isValidName(String var0) {
-      return var0 != null && var0.equals(var0.trim()) && VALID_NAME.matcher(var0).matches() && !RESERVED.contains(var0.toLowerCase(Locale.ROOT));
+   public static boolean isValidName(String string) {
+      return string != null && string.equals(string.trim()) && VALID_NAME.matcher(string).matches() && !RESERVED.contains(string.toLowerCase(Locale.ROOT));
    }
 
    public Path directory() {
@@ -124,12 +124,12 @@ public final class ConfigProfiles {
       this.cached = null;
    }
 
-   public synchronized ConfigProfiles.Profile find(String var1) {
-      if (var1 == null) {
+   public synchronized ConfigProfiles.Profile find(String string) {
+      if (string == null) {
          return null;
       } else {
          for (ConfigProfiles.Profile var3 : this.list()) {
-            if (var3.name().equalsIgnoreCase(var1)) {
+            if (var3.name().equalsIgnoreCase(string)) {
                return var3;
             }
          }
@@ -138,8 +138,8 @@ public final class ConfigProfiles {
       }
    }
 
-   public synchronized String create(String var1) throws ProfileException {
-      String var2 = var1 == null ? "" : var1.trim();
+   public synchronized String create(String string) throws ProfileException {
+      String var2 = string == null ? "" : string.trim();
       if (!isValidName(var2)) {
          throw new ProfileException("Use 1-32 letters, digits, spaces, _ - ( )");
       } else {
@@ -159,8 +159,8 @@ public final class ConfigProfiles {
       }
    }
 
-   public synchronized Set<ConfigProfiles.Part> save(String var1) throws ProfileException {
-      ConfigProfiles.Profile var2 = this.require(var1);
+   public synchronized Set<ConfigProfiles.Part> save(String string) throws ProfileException {
+      ConfigProfiles.Profile var2 = this.require(string);
       ConfigProfiles.Contents var3 = this.read(var2.name());
       EnumSet var4 = var3.data.isEmpty() ? EnumSet.of(ConfigProfiles.Part.MODULES) : EnumSet.copyOf(var3.data.keySet());
 
@@ -173,8 +173,8 @@ public final class ConfigProfiles {
       return Collections.unmodifiableSet(var4);
    }
 
-   public synchronized Set<ConfigProfiles.Part> load(String var1) throws ProfileException {
-      ConfigProfiles.Profile var2 = this.require(var1);
+   public synchronized Set<ConfigProfiles.Part> load(String string) throws ProfileException {
+      ConfigProfiles.Profile var2 = this.require(string);
       ConfigProfiles.Contents var3 = this.read(var2.name());
       EnumSet var4 = EnumSet.noneOf(ConfigProfiles.Part.class);
 
@@ -192,8 +192,8 @@ public final class ConfigProfiles {
       }
    }
 
-   public synchronized void delete(String var1) throws ProfileException {
-      ConfigProfiles.Profile var2 = this.require(var1);
+   public synchronized void delete(String string) throws ProfileException {
+      ConfigProfiles.Profile var2 = this.require(string);
 
       try {
          Files.deleteIfExists(this.file(var2.name()));
@@ -209,9 +209,9 @@ public final class ConfigProfiles {
       }
    }
 
-   public synchronized String rename(String var1, String var2) throws ProfileException {
-      ConfigProfiles.Profile var4 = this.require(var1);
-      String var3 = var2 == null ? "" : var2.trim();
+   public synchronized String rename(String string, String string2) throws ProfileException {
+      ConfigProfiles.Profile var4 = this.require(string);
+      String var3 = string2 == null ? "" : string2.trim();
       if (var3.equals(var4.name())) {
          return var3;
       } else if (!isValidName(var3)) {
@@ -240,7 +240,7 @@ public final class ConfigProfiles {
                   Files.move(var9, var10);
                }
             } catch (IOException var14) {
-               LOGGER.warn("[EFN] Failed to rename profile '{}' to '{}'", new Object[]{var4.name(), var3, var14});
+               LOGGER.warn("[EFN] Failed to rename profile '{}' to '{}'", var4.name(), var3, var14);
                throw new ProfileException("Could not rename " + var4.name());
             }
 
@@ -255,30 +255,30 @@ public final class ConfigProfiles {
       }
    }
 
-   public synchronized void setPart(String var1, ConfigProfiles.Part var2, boolean var3) throws ProfileException {
-      ConfigProfiles.Profile var4 = this.require(var1);
+   public synchronized void setPart(String string, ConfigProfiles.Part part, boolean bl) throws ProfileException {
+      ConfigProfiles.Profile var4 = this.require(string);
       ConfigProfiles.Contents var5 = this.read(var4.name());
-      if (var3 != var5.data.containsKey(var2)) {
-         if (var3) {
-            var5.data.put(var2, this.capture(var2));
+      if (bl != var5.data.containsKey(part)) {
+         if (bl) {
+            var5.data.put(part, this.capture(part));
          } else {
             if (var5.data.size() == 1) {
                throw new ProfileException("A profile needs at least one part");
             }
 
-            var5.data.remove(var2);
+            var5.data.remove(part);
          }
 
          this.write(var4.name(), var5);
       }
    }
 
-   public synchronized String addServer(String var1, String var2) throws ProfileException {
-      ServerAddresses.Address var3 = ServerAddresses.parse(var2);
+   public synchronized String addServer(String string, String string2) throws ProfileException {
+      ServerAddresses.Address var3 = ServerAddresses.parse(string2);
       if (var3 == null) {
          throw new ProfileException("That isn't a server address");
       } else {
-         ConfigProfiles.Profile var4 = this.require(var1);
+         ConfigProfiles.Profile var4 = this.require(string);
          ConfigProfiles.Contents var5 = this.read(var4.name());
          String var6 = var3.toString();
          if (var5.servers.contains(var6)) {
@@ -293,64 +293,64 @@ public final class ConfigProfiles {
       }
    }
 
-   public synchronized void removeServer(String var1, String var2) throws ProfileException {
-      ConfigProfiles.Profile var3 = this.require(var1);
+   public synchronized void removeServer(String string, String string2) throws ProfileException {
+      ConfigProfiles.Profile var3 = this.require(string);
       ConfigProfiles.Contents var4 = this.read(var3.name());
-      if (var4.servers.remove(var2)) {
+      if (var4.servers.remove(string2)) {
          this.write(var3.name(), var4);
       }
    }
 
-   public synchronized void exportTo(String var1, Path var2) throws ProfileException {
-      JsonObject var3 = this.exportJson(var1);
+   public synchronized void exportTo(String string, Path path) throws ProfileException {
+      JsonObject var3 = this.exportJson(string);
 
       try {
-         Files.writeString(var2, GSON.toJson(var3), StandardCharsets.UTF_8);
+         Files.writeString(path, GSON.toJson((JsonElement)var3), StandardCharsets.UTF_8);
       } catch (RuntimeException | IOException var5) {
-         LOGGER.warn("[EFN] Failed to export profile '{}' to {}", new Object[]{var1, var2, var5});
-         throw new ProfileException("Could not write " + var2.getFileName());
+         LOGGER.warn("[EFN] Failed to export profile '{}' to {}", string, path, var5);
+         throw new ProfileException("Could not write " + path.getFileName());
       }
    }
 
-   public synchronized String shareCode(String var1) throws ProfileException {
-      return ProfileCodes.encode(this.exportJson(var1));
+   public synchronized String shareCode(String string) throws ProfileException {
+      return ProfileCodes.encode(this.exportJson(string));
    }
 
-   public synchronized String importFile(Path var1) throws ProfileException {
+   public synchronized String importFile(Path path) throws ProfileException {
       String var2;
       try {
-         if (!Files.isRegularFile(var1)) {
+         if (!Files.isRegularFile(path)) {
             throw new ProfileException("That file doesn't exist");
          }
 
-         if (Files.size(var1) > 4194304L) {
+         if (Files.size(path) > 4194304L) {
             throw new ProfileException("That file is too large to be a profile");
          }
 
-         var2 = Files.readString(var1, StandardCharsets.UTF_8);
+         var2 = Files.readString(path, StandardCharsets.UTF_8);
       } catch (RuntimeException | IOException var6) {
-         throw new ProfileException("Couldn't read " + var1.getFileName());
+         throw new ProfileException("Couldn't read " + path.getFileName());
       }
 
-      String var3 = var1.getFileName().toString();
+      String var3 = path.getFileName().toString();
       int var4 = var3.lastIndexOf(46);
       String var5 = var4 > 0 ? var3.substring(0, var4) : var3;
       return this.importRoot(ProfileCodes.parseObject(var2, "That file isn't an EFN profile"), var5);
    }
 
-   public synchronized String importCode(String var1) throws ProfileException {
+   public synchronized String importCode(String string) throws ProfileException {
       try {
-         return this.importRoot(ProfileCodes.decode(var1), "Shared profile");
+         return this.importRoot(ProfileCodes.decode(string), "Shared profile");
       } catch (ProfileException var3) {
-         LOGGER.warn("[EFN] Share code import failed ({} characters on the clipboard): {}", var1 == null ? 0 : var1.length(), var3.getMessage());
+         LOGGER.warn("[EFN] Share code import failed ({} characters on the clipboard): {}", string == null ? 0 : string.length(), var3.getMessage());
          throw var3;
       }
    }
 
-   public synchronized void backup(Set<ConfigProfiles.Part> var1) throws ProfileException {
+   public synchronized void backup(Set<ConfigProfiles.Part> set) throws ProfileException {
       ConfigProfiles.Contents var2 = new ConfigProfiles.Contents();
 
-      for (ConfigProfiles.Part var4 : var1) {
+      for (ConfigProfiles.Part var4 : set) {
          var2.data.put(var4, this.capture(var4));
       }
 
@@ -362,8 +362,8 @@ public final class ConfigProfiles {
       this.cached = null;
    }
 
-   public synchronized List<String> loadForServer(String var1) {
-      ServerAddresses.Address var2 = ServerAddresses.parse(var1);
+   public synchronized List<String> loadForServer(String string) {
+      ServerAddresses.Address var2 = ServerAddresses.parse(string);
       if (var2 == null) {
          return List.of();
       } else {
@@ -393,7 +393,7 @@ public final class ConfigProfiles {
          var3.sort(
             Comparator.comparingInt(ConfigProfiles.Match::score)
                .thenComparingInt(ConfigProfiles.Match::length)
-               .thenComparing(var0 -> var0.name().toLowerCase(Locale.ROOT))
+               .thenComparing(match -> match.name().toLowerCase(Locale.ROOT))
          );
          ArrayList var13 = new ArrayList();
 
@@ -402,7 +402,7 @@ public final class ConfigProfiles {
                this.load(var15.name());
                var13.add(var15.name());
             } catch (ProfileException var12) {
-               LOGGER.warn("[EFN] Could not load profile '{}' for {}: {}", new Object[]{var15.name(), var2, var12.getMessage()});
+               LOGGER.warn("[EFN] Could not load profile '{}' for {}: {}", var15.name(), var2, var12.getMessage());
             }
          }
 
@@ -410,8 +410,8 @@ public final class ConfigProfiles {
       }
    }
 
-   private ConfigProfiles.Profile require(String var1) throws ProfileException {
-      ConfigProfiles.Profile var2 = this.find(var1);
+   private ConfigProfiles.Profile require(String string) throws ProfileException {
+      ConfigProfiles.Profile var2 = this.find(string);
       if (var2 == null) {
          throw new ProfileException("That profile no longer exists");
       } else {
@@ -419,13 +419,13 @@ public final class ConfigProfiles {
       }
    }
 
-   private void activate(String var1) {
-      this.store.setActiveProfile(var1);
+   private void activate(String string) {
+      this.store.setActiveProfile(string);
       this.store.save();
    }
 
-   private JsonObject exportJson(String var1) throws ProfileException {
-      ConfigProfiles.Profile var2 = this.require(var1);
+   private JsonObject exportJson(String string) throws ProfileException {
+      ConfigProfiles.Profile var2 = this.require(string);
       ConfigProfiles.Contents var3 = this.shareable(this.read(var2.name()), "Could not prepare " + var2.name() + " for sharing");
       if (var3.data.isEmpty()) {
          throw new ProfileException(var2.name() + " has nothing to share");
@@ -438,22 +438,22 @@ public final class ConfigProfiles {
       }
    }
 
-   private String importRoot(JsonObject var1, String var2) throws ProfileException {
-      ConfigProfiles.Contents var3 = this.shareable(parse(var1, false, false), "That profile is damaged");
+   private String importRoot(JsonObject jsonObject, String string) throws ProfileException {
+      ConfigProfiles.Contents var3 = this.shareable(parse(jsonObject, false, false), "That profile is damaged");
       if (var3.data.isEmpty()) {
          throw new ProfileException("That profile has nothing EFN can use");
       } else {
-         JsonElement var4 = var1.get("name");
-         String var5 = var4 != null && var4.isJsonPrimitive() ? var4.getAsString() : var2;
+         JsonElement var4 = jsonObject.get("name");
+         String var5 = var4 != null && var4.isJsonPrimitive() ? var4.getAsString() : string;
          String var6 = this.uniqueName(var5);
          this.write(var6, var3);
          return var6;
       }
    }
 
-   private JsonElement capture(ConfigProfiles.Part var1) throws ProfileException {
+   private JsonElement capture(ConfigProfiles.Part part) throws ProfileException {
       try {
-         return (JsonElement)(switch (var1) {
+         return (JsonElement)(switch (part) {
             case MODULES -> this.store.snapshot();
             case HUD -> {
                JsonObject var6 = new JsonObject();
@@ -473,46 +473,46 @@ public final class ConfigProfiles {
             }
          });
       } catch (RuntimeException var5) {
-         LOGGER.warn("[EFN] Failed to capture the {} part of a profile", var1.key, var5);
-         throw new ProfileException("Could not read your current " + var1.label);
+         LOGGER.warn("[EFN] Failed to capture the {} part of a profile", part.key, var5);
+         throw new ProfileException("Could not read your current " + part.label);
       }
    }
 
-   private boolean apply(ConfigProfiles.Part var1, JsonElement var2) {
+   private boolean apply(ConfigProfiles.Part part, JsonElement jsonElement) {
       try {
-         return switch (var1) {
-            case MODULES -> var2.isJsonObject() && this.store.applyProfile(var2.getAsJsonObject());
-            case HUD -> applyHud(var2);
+         return switch (part) {
+            case MODULES -> jsonElement.isJsonObject() && this.store.applyProfile(jsonElement.getAsJsonObject());
+            case HUD -> applyHud(jsonElement);
             case THEME -> {
-               if (!var2.isJsonObject()) {
+               if (!jsonElement.isJsonObject()) {
                   yield false;
                } else {
                   ThemeStore var3 = ThemeStore.get();
-                  var3.applyProfile(var2.getAsJsonObject());
+                  var3.applyProfile(jsonElement.getAsJsonObject());
                   var3.save();
                   yield true;
                }
             }
             case FRIENDS -> {
-               if (!var2.isJsonArray()) {
+               if (!jsonElement.isJsonArray()) {
                   yield false;
                } else {
-                  FriendStore.getInstance().replaceAll(friendNames(var2.getAsJsonArray()));
+                  FriendStore.getInstance().replaceAll(friendNames(jsonElement.getAsJsonArray()));
                   yield true;
                }
             }
          };
       } catch (RuntimeException var4) {
-         LOGGER.warn("[EFN] Failed to apply the {} part of a profile", var1.key, var4);
+         LOGGER.warn("[EFN] Failed to apply the {} part of a profile", part.key, var4);
          return false;
       }
    }
 
-   private static boolean applyHud(JsonElement var0) {
-      if (!var0.isJsonObject()) {
+   private static boolean applyHud(JsonElement jsonElement) {
+      if (!jsonElement.isJsonObject()) {
          return false;
       } else {
-         JsonObject var1 = var0.getAsJsonObject();
+         JsonObject var1 = jsonElement.getAsJsonObject();
          boolean var2 = false;
          if (var1.has("layout") && var1.get("layout").isJsonObject()) {
             var2 = HudLayoutStore.getInstance().applyProfile(var1.getAsJsonObject("layout"));
@@ -529,11 +529,11 @@ public final class ConfigProfiles {
       }
    }
 
-   private ConfigProfiles.Contents shareable(ConfigProfiles.Contents var1, String var2) throws ProfileException {
+   private ConfigProfiles.Contents shareable(ConfigProfiles.Contents contents, String string) throws ProfileException {
       ConfigProfiles.Contents var3 = new ConfigProfiles.Contents();
 
       try {
-         for (Entry var5 : var1.data.entrySet()) {
+         for (Entry var5 : contents.data.entrySet()) {
             JsonElement var6 = this.shareable((ConfigProfiles.Part)var5.getKey(), (JsonElement)var5.getValue());
             if (var6 != null) {
                var3.data.put((ConfigProfiles.Part)var5.getKey(), var6);
@@ -542,19 +542,19 @@ public final class ConfigProfiles {
 
          return var3;
       } catch (RuntimeException var7) {
-         LOGGER.warn("[EFN] Failed to filter a profile for sharing", var7);
-         throw new ProfileException(var2);
+         LOGGER.warn("[EFN] Failed to filter a profile for sharing", (Throwable)var7);
+         throw new ProfileException(string);
       }
    }
 
-   private JsonElement shareable(ConfigProfiles.Part var1, JsonElement var2) {
-      return (JsonElement)(switch (var1) {
-         case MODULES -> var2.isJsonObject() ? this.store.shareable(var2.getAsJsonObject()) : null;
+   private JsonElement shareable(ConfigProfiles.Part part, JsonElement jsonElement) {
+      return (JsonElement)(switch (part) {
+         case MODULES -> jsonElement.isJsonObject() ? this.store.shareable(jsonElement.getAsJsonObject()) : null;
          case HUD -> {
-            if (!var2.isJsonObject()) {
+            if (!jsonElement.isJsonObject()) {
                yield null;
             } else {
-               JsonObject var7 = var2.getAsJsonObject();
+               JsonObject var7 = jsonElement.getAsJsonObject();
                JsonObject var8 = new JsonObject();
                JsonObject var6;
                if (var7.has("layout") && var7.get("layout").isJsonObject() && (var6 = HudLayoutStore.shareable(var7.getAsJsonObject("layout"))) != null) {
@@ -568,14 +568,14 @@ public final class ConfigProfiles {
                yield var8.size() == 0 ? null : var8;
             }
          }
-         case THEME -> var2.isJsonObject() ? ThemeStore.get().shareable(var2.getAsJsonObject()) : null;
+         case THEME -> jsonElement.isJsonObject() ? ThemeStore.get().shareable(jsonElement.getAsJsonObject()) : null;
          case FRIENDS -> {
-            if (!var2.isJsonArray()) {
+            if (!jsonElement.isJsonArray()) {
                yield null;
             } else {
                JsonArray var3 = new JsonArray();
 
-               for (String var5 : friendNames(var2.getAsJsonArray())) {
+               for (String var5 : friendNames(jsonElement.getAsJsonArray())) {
                   var3.add(var5);
                }
 
@@ -585,10 +585,10 @@ public final class ConfigProfiles {
       });
    }
 
-   private static List<String> friendNames(JsonArray var0) {
+   private static List<String> friendNames(JsonArray jsonArray) {
       LinkedHashMap var1 = new LinkedHashMap();
 
-      for (JsonElement var3 : var0) {
+      for (JsonElement var3 : jsonArray) {
          if (var1.size() >= 1000) {
             break;
          }
@@ -602,12 +602,12 @@ public final class ConfigProfiles {
       return List.copyOf(var1.values());
    }
 
-   private static ConfigProfiles.Contents parse(JsonObject var0, boolean var1, boolean var2) throws ProfileException {
+   private static ConfigProfiles.Contents parse(JsonObject jsonObject, boolean bl, boolean bl2) throws ProfileException {
       ConfigProfiles.Contents var3 = new ConfigProfiles.Contents();
-      if (var0.has("efnProfile")) {
+      if (jsonObject.has("efnProfile")) {
          int var4;
          try {
-            var4 = var0.get("efnProfile").getAsInt();
+            var4 = jsonObject.get("efnProfile").getAsInt();
          } catch (RuntimeException var11) {
             throw new ProfileException("That isn't an EFN profile");
          }
@@ -620,11 +620,11 @@ public final class ConfigProfiles {
             throw new ProfileException("That isn't an EFN profile");
          }
 
-         if (var4 < 2 && !var2) {
+         if (var4 < 2 && !bl2) {
             throw new ProfileException("Made by an old EFN - old configs no longer work");
          }
 
-         JsonElement var5 = var0.get("data");
+         JsonElement var5 = jsonObject.get("data");
          if (var5 != null && var5.isJsonObject()) {
             for (ConfigProfiles.Part var9 : ConfigProfiles.Part.values()) {
                JsonElement var10 = var5.getAsJsonObject().get(var9.key);
@@ -634,8 +634,8 @@ public final class ConfigProfiles {
             }
          }
 
-         JsonElement var12 = var0.get("loadOnJoin");
-         if (var1 && var12 != null && var12.isJsonArray()) {
+         JsonElement var12 = jsonObject.get("loadOnJoin");
+         if (bl && var12 != null && var12.isJsonArray()) {
             for (JsonElement var14 : var12.getAsJsonArray()) {
                if (var14.isJsonPrimitive()) {
                   addServer(var3.servers, var14.getAsString());
@@ -643,52 +643,52 @@ public final class ConfigProfiles {
             }
          }
       } else {
-         if (!var0.has("modules") || !var0.get("modules").isJsonObject()) {
+         if (!jsonObject.has("modules") || !jsonObject.get("modules").isJsonObject()) {
             throw new ProfileException("That isn't an EFN profile");
          }
 
-         if (!var2) {
+         if (!bl2) {
             throw new ProfileException("Made by an old EFN - old configs no longer work");
          }
 
-         var3.data.put(ConfigProfiles.Part.MODULES, var0);
+         var3.data.put(ConfigProfiles.Part.MODULES, jsonObject);
       }
 
       return var3;
    }
 
-   private static void addServer(List<String> var0, String var1) {
-      ServerAddresses.Address var2 = ServerAddresses.parse(var1);
-      if (var2 != null && var0.size() < 16) {
+   private static void addServer(List<String> list, String string) {
+      ServerAddresses.Address var2 = ServerAddresses.parse(string);
+      if (var2 != null && list.size() < 16) {
          String var3 = var2.toString();
-         if (!var0.contains(var3)) {
-            var0.add(var3);
+         if (!list.contains(var3)) {
+            list.add(var3);
          }
       }
    }
 
-   private static JsonObject data(ConfigProfiles.Contents var0) {
+   private static JsonObject data(ConfigProfiles.Contents contents) {
       JsonObject var1 = new JsonObject();
 
-      for (Entry var3 : var0.data.entrySet()) {
+      for (Entry var3 : contents.data.entrySet()) {
          var1.add(((ConfigProfiles.Part)var3.getKey()).key, (JsonElement)var3.getValue());
       }
 
       return var1;
    }
 
-   private ConfigProfiles.Contents read(String var1) throws ProfileException {
-      Path var3 = this.file(var1);
+   private ConfigProfiles.Contents read(String string) throws ProfileException {
+      Path var3 = this.file(string);
 
       try {
          if (Files.size(var3) > 33554432L) {
-            throw new ProfileException(var1 + " is too large to open");
+            throw new ProfileException(string + " is too large to open");
          } else {
             ConfigProfiles.Contents var2;
             try (BufferedReader var4 = Files.newBufferedReader(var3, StandardCharsets.UTF_8)) {
                JsonElement var5 = JsonParser.parseReader(var4);
                if (!var5.isJsonObject()) {
-                  throw new ProfileException(var1 + " isn't a profile file");
+                  throw new ProfileException(string + " isn't a profile file");
                }
 
                var2 = parse(var5.getAsJsonObject(), true, false);
@@ -697,35 +697,35 @@ public final class ConfigProfiles {
             return var2;
          }
       } catch (RuntimeException | IOException var9) {
-         LOGGER.warn("[EFN] Failed to read profile '{}'", var1, var9);
-         throw new ProfileException("Could not read " + var1);
+         LOGGER.warn("[EFN] Failed to read profile '{}'", string, var9);
+         throw new ProfileException("Could not read " + string);
       }
    }
 
-   private void write(String var1, ConfigProfiles.Contents var2) throws ProfileException {
-      JsonElement var3 = var2.data.get(ConfigProfiles.Part.MODULES);
+   private void write(String string, ConfigProfiles.Contents contents) throws ProfileException {
+      JsonElement var3 = contents.data.get(ConfigProfiles.Part.MODULES);
       if (var3 != null && var3.isJsonObject()) {
-         var2.data.put(ConfigProfiles.Part.MODULES, ModuleConfigStore.withoutPrivateValues(var3.getAsJsonObject()));
+         contents.data.put(ConfigProfiles.Part.MODULES, ModuleConfigStore.withoutPrivateValues(var3.getAsJsonObject()));
       }
 
       JsonObject var4 = new JsonObject();
       var4.addProperty("efnProfile", 2);
       JsonArray var5 = new JsonArray();
 
-      for (String var7 : var2.servers) {
+      for (String var7 : contents.servers) {
          var5.add(var7);
       }
 
       var4.add("loadOnJoin", var5);
-      var4.add("data", data(var2));
-      Path var15 = this.file(var1);
+      var4.add("data", data(contents));
+      Path var15 = this.file(string);
 
       try {
          Files.createDirectories(var15.getParent());
-         Path var16 = var15.resolveSibling(var1 + ".json.tmp");
+         Path var16 = var15.resolveSibling(string + ".json.tmp");
 
          try (BufferedWriter var8 = Files.newBufferedWriter(var16, StandardCharsets.UTF_8)) {
-            GSON.toJson(var4, var8);
+            GSON.toJson((JsonElement)var4, var8);
          }
 
          try {
@@ -734,20 +734,20 @@ public final class ConfigProfiles {
             Files.move(var16, var15, StandardCopyOption.REPLACE_EXISTING);
          }
       } catch (RuntimeException | IOException var14) {
-         LOGGER.warn("[EFN] Failed to save profile '{}'", var1, var14);
-         throw new ProfileException("Could not save " + var1);
+         LOGGER.warn("[EFN] Failed to save profile '{}'", string, var14);
+         throw new ProfileException("Could not save " + string);
       }
 
       this.cached = null;
    }
 
-   private Path file(String var1) throws ProfileException {
-      if (!isValidName(var1)) {
+   private Path file(String string) throws ProfileException {
+      if (!isValidName(string)) {
          throw new ProfileException("Use 1-32 letters, digits, spaces, _ - ( )");
       } else {
          Path var3 = this.directory();
          Path var2;
-         if (!var3.equals((var2 = var3.resolve(var1 + ".json").normalize()).getParent())) {
+         if (!var3.equals((var2 = var3.resolve(string + ".json").normalize()).getParent())) {
             throw new ProfileException("Use 1-32 letters, digits, spaces, _ - ( )");
          } else {
             return var2;
@@ -755,8 +755,8 @@ public final class ConfigProfiles {
       }
    }
 
-   private String uniqueName(String var1) throws ProfileException {
-      String var2 = cleanName(var1);
+   private String uniqueName(String string) throws ProfileException {
+      String var2 = cleanName(string);
       if (!this.taken(var2)) {
          return var2;
       } else {
@@ -775,13 +775,13 @@ public final class ConfigProfiles {
       }
    }
 
-   private boolean taken(String var1) {
-      return this.find(var1) != null || Files.exists(this.directory().resolve(var1 + ".json"));
+   private boolean taken(String string) {
+      return this.find(string) != null || Files.exists(this.directory().resolve(string + ".json"));
    }
 
-   private static String cleanName(String var0) {
+   private static String cleanName(String string) {
       StringBuilder var2 = new StringBuilder();
-      String var3 = var0 == null ? "" : var0;
+      String var3 = string == null ? "" : string;
       int var4 = 0;
 
       while (var4 < var3.length()) {
@@ -797,8 +797,8 @@ public final class ConfigProfiles {
       return isValidName(var5) ? var5 : "Imported";
    }
 
-   private static String cut(String var0, int var1) {
-      return var0.codePointCount(0, var0.length()) <= var1 ? var0 : var0.substring(0, var0.offsetByCodePoints(0, var1));
+   private static String cut(String string, int i) {
+      return string.codePointCount(0, string.length()) <= i ? string : string.substring(0, string.offsetByCodePoints(0, i));
    }
 
    private List<ConfigProfiles.Profile> scan() {
@@ -822,7 +822,7 @@ public final class ConfigProfiles {
                }
             }
          } catch (IOException var11) {
-            LOGGER.warn("[EFN] Failed to list profiles", var11);
+            LOGGER.warn("[EFN] Failed to list profiles", (Throwable)var11);
          }
 
          HashSet var12 = new HashSet();
@@ -832,24 +832,24 @@ public final class ConfigProfiles {
          }
 
          this.headers.keySet().retainAll(var12);
-         var2.sort(Comparator.comparing(var0 -> var0.name().toLowerCase(Locale.ROOT)));
+         var2.sort(Comparator.comparing(profile -> profile.name().toLowerCase(Locale.ROOT)));
          return List.copyOf(var2);
       }
    }
 
-   private void upgradeLocalProfiles(Path var1) {
+   private void upgradeLocalProfiles(Path path) {
       if (!this.upgradeChecked) {
          this.upgradeChecked = true;
-         Path var2 = var1.resolve(".format2");
+         Path var2 = path.resolve(".format2");
 
          try {
             if (Files.exists(var2)) {
                return;
             }
 
-            Files.createDirectories(var1);
+            Files.createDirectories(path);
 
-            try (DirectoryStream var3 = Files.newDirectoryStream(var1, "*.json")) {
+            try (DirectoryStream var3 = Files.newDirectoryStream(path, "*.json")) {
                for (Path var5 : var3) {
                   String var6 = var5.getFileName().toString();
                   String var7 = var6.substring(0, var6.length() - ".json".length());
@@ -861,22 +861,22 @@ public final class ConfigProfiles {
 
             Files.writeString(var2, "Profiles here were moved to format 2.\n", StandardCharsets.UTF_8);
          } catch (RuntimeException | IOException var10) {
-            LOGGER.warn("[EFN] Failed to move old profiles to the current format", var10);
+            LOGGER.warn("[EFN] Failed to move old profiles to the current format", (Throwable)var10);
          }
       }
    }
 
-   private void removePrivateValues(Path var1) {
+   private void removePrivateValues(Path path) {
       if (!this.privateChecked) {
          this.privateChecked = true;
-         Path var2 = var1.resolve(".private-values-removed");
+         Path var2 = path.resolve(".private-values-removed");
 
          try {
-            if (Files.exists(var2) || !Files.isDirectory(var1)) {
+            if (Files.exists(var2) || !Files.isDirectory(path)) {
                return;
             }
 
-            try (DirectoryStream var3 = Files.newDirectoryStream(var1, "*.json")) {
+            try (DirectoryStream var3 = Files.newDirectoryStream(path, "*.json")) {
                for (Path var5 : var3) {
                   String var6 = var5.getFileName().toString();
                   String var7 = var6.substring(0, var6.length() - ".json".length());
@@ -896,17 +896,17 @@ public final class ConfigProfiles {
 
             Files.writeString(var2, "Private values were removed from the profiles here.\n", StandardCharsets.UTF_8);
          } catch (RuntimeException | IOException var13) {
-            LOGGER.warn("[EFN] Failed to clean private values out of the profiles", var13);
+            LOGGER.warn("[EFN] Failed to clean private values out of the profiles", (Throwable)var13);
          }
       }
    }
 
-   private void installPresets(Path var1) {
+   private void installPresets(Path path) {
       if (!this.presetsChecked) {
          this.presetsChecked = true;
          List var2 = BundledDefaults.presets();
          if (!var2.isEmpty()) {
-            Path var3 = var1.resolve(".presets");
+            Path var3 = path.resolve(".presets");
 
             try {
                ArrayList var4 = new ArrayList();
@@ -943,19 +943,19 @@ public final class ConfigProfiles {
                   return;
                }
 
-               Files.createDirectories(var1);
+               Files.createDirectories(path);
                Files.write(var3, var4, StandardCharsets.UTF_8);
             } catch (RuntimeException | IOException var14) {
-               LOGGER.warn("[EFN] Failed to add the bundled profiles", var14);
+               LOGGER.warn("[EFN] Failed to add the bundled profiles", (Throwable)var14);
             }
          }
       }
    }
 
-   private void upgrade(String var1, Path var2) {
+   private void upgrade(String string, Path path) {
       try {
          JsonElement var3;
-         try (BufferedReader var4 = Files.newBufferedReader(var2, StandardCharsets.UTF_8)) {
+         try (BufferedReader var4 = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
             var3 = JsonParser.parseReader(var4);
          }
 
@@ -969,125 +969,111 @@ public final class ConfigProfiles {
             return;
          }
 
-         this.write(var1, parse(var10, true, true));
-         LOGGER.info("[EFN] Moved profile '{}' to the current format", var1);
+         this.write(string, parse(var10, true, true));
+         LOGGER.info("[EFN] Moved profile '{}' to the current format", string);
       } catch (RuntimeException | ProfileException | IOException var9) {
-         LOGGER.warn("[EFN] Could not move profile '{}' to the current format", var1, var9);
+         LOGGER.warn("[EFN] Could not move profile '{}' to the current format", string, var9);
       }
    }
 
-   private ConfigProfiles.Profile header(String var1, Path var2) {
+   private ConfigProfiles.Profile header(String string, Path path) {
       try {
-         BasicFileAttributes var3 = Files.readAttributes(var2, BasicFileAttributes.class);
-         ConfigProfiles.Header var4 = this.headers.get(var1);
+         BasicFileAttributes var3 = Files.readAttributes(path, BasicFileAttributes.class);
+         ConfigProfiles.Header var4 = this.headers.get(string);
          if (var4 != null && var4.modified().equals(var3.lastModifiedTime()) && var4.size() == var3.size()) {
             return var4.profile();
          } else {
-            ConfigProfiles.Profile var5 = readHeader(var1, var2);
-            this.headers.put(var1, new ConfigProfiles.Header(var3.lastModifiedTime(), var3.size(), var5));
+            ConfigProfiles.Profile var5 = readHeader(string, path);
+            this.headers.put(string, new ConfigProfiles.Header(var3.lastModifiedTime(), var3.size(), var5));
             return var5;
          }
       } catch (IOException var6) {
-         return new ConfigProfiles.Profile(var1, Set.of(), List.of(), true);
+         return new ConfigProfiles.Profile(string, Set.of(), List.of(), true);
       }
    }
 
-   private static ConfigProfiles.Profile readHeader(String var0, Path var1) {
+   private static ConfigProfiles.Profile readHeader(String string, Path path) {
       EnumSet var2 = EnumSet.noneOf(ConfigProfiles.Part.class);
       ArrayList var3 = new ArrayList();
       int var4 = -1;
       boolean var5 = false;
 
-      try {
-         JsonReader var6 = new JsonReader(Files.newBufferedReader(var1, StandardCharsets.UTF_8));
+      try (JsonReader var6 = new JsonReader(Files.newBufferedReader(path, StandardCharsets.UTF_8))) {
+         var6.beginObject();
 
-         try {
-            var6.beginObject();
-
-            while (var6.hasNext()) {
-               String var7 = var6.nextName();
-               switch (var7) {
-                  case "efnProfile":
-                     var4 = var6.nextInt();
-                     break;
-                  case "loadOnJoin":
-                     readServers(var6, var3);
-                     break;
-                  case "data":
-                     readParts(var6, var2);
-                     break;
-                  case "modules":
-                     var5 = var6.peek() == JsonToken.BEGIN_OBJECT;
-                     var6.skipValue();
-                     break;
-                  default:
-                     var6.skipValue();
-               }
+         while (var6.hasNext()) {
+            String var7 = var6.nextName();
+            switch (var7) {
+               case "efnProfile":
+                  var4 = var6.nextInt();
+                  break;
+               case "loadOnJoin":
+                  readServers(var6, var3);
+                  break;
+               case "data":
+                  readParts(var6, var2);
+                  break;
+               case "modules":
+                  var5 = var6.peek() == JsonToken.BEGIN_OBJECT;
+                  var6.skipValue();
+                  break;
+               default:
+                  var6.skipValue();
             }
-
-            var6.endObject();
-         } catch (Throwable var10) {
-            try {
-               var6.close();
-            } catch (Throwable var9) {
-               var10.addSuppressed(var9);
-            }
-
-            throw var10;
          }
 
-         var6.close();
+         var6.endObject();
       } catch (RuntimeException | IOException var11) {
-         LOGGER.warn("[EFN] Failed to read profile '{}'", var0, var11);
-         return new ConfigProfiles.Profile(var0, Set.of(), List.of(), true);
+         LOGGER.warn("[EFN] Failed to read profile '{}'", string, var11);
+         return new ConfigProfiles.Profile(string, Set.of(), List.of(), true);
       }
 
       if (var4 < 0 && var5) {
-         return new ConfigProfiles.Profile(var0, Collections.unmodifiableSet(EnumSet.of(ConfigProfiles.Part.MODULES)), List.of(), true);
+         return new ConfigProfiles.Profile(string, Collections.unmodifiableSet(EnumSet.of(ConfigProfiles.Part.MODULES)), List.of(), true);
       } else {
          boolean var12 = var4 < 2 || var4 > 2 || var2.isEmpty();
-         return new ConfigProfiles.Profile(var0, Collections.unmodifiableSet(var2), List.copyOf(var3), var12);
+         return new ConfigProfiles.Profile(string, Collections.unmodifiableSet(var2), List.copyOf(var3), var12);
       }
    }
 
-   private static void readServers(JsonReader var0, List<String> var1) throws IOException {
-      if (var0.peek() != JsonToken.BEGIN_ARRAY) {
-         var0.skipValue();
+   private static void readServers(JsonReader jsonReader, List<String> list) throws IOException {
+      if (jsonReader.peek() != JsonToken.BEGIN_ARRAY) {
+         jsonReader.skipValue();
       } else {
-         var0.beginArray();
+         jsonReader.beginArray();
 
-         while (var0.hasNext()) {
-            if (var0.peek() == JsonToken.STRING) {
-               addServer(var1, var0.nextString());
+         while (jsonReader.hasNext()) {
+            if (jsonReader.peek() == JsonToken.STRING) {
+               addServer(list, jsonReader.nextString());
             } else {
-               var0.skipValue();
+               jsonReader.skipValue();
             }
          }
 
-         var0.endArray();
+         jsonReader.endArray();
       }
    }
 
-   private static void readParts(JsonReader var0, Set<ConfigProfiles.Part> var1) throws IOException {
-      if (var0.peek() != JsonToken.BEGIN_OBJECT) {
-         var0.skipValue();
+   private static void readParts(JsonReader jsonReader, Set<ConfigProfiles.Part> set) throws IOException {
+      if (jsonReader.peek() != JsonToken.BEGIN_OBJECT) {
+         jsonReader.skipValue();
       } else {
-         var0.beginObject();
+         jsonReader.beginObject();
 
-         while (var0.hasNext()) {
-            String var2 = var0.nextName();
-            JsonToken var3 = var0.peek();
+         while (jsonReader.hasNext()) {
+            String var2 = jsonReader.nextName();
+            JsonToken var3 = jsonReader.peek();
 
             for (ConfigProfiles.Part var7 : ConfigProfiles.Part.values()) {
                if (var7.key.equals(var2) && var3 == (var7 == ConfigProfiles.Part.FRIENDS ? JsonToken.BEGIN_ARRAY : JsonToken.BEGIN_OBJECT)) {
-                  var1.add(var7);
+                  set.add(var7);
                }
             }
 
-            var0.skipValue();
+            jsonReader.skipValue();
          }
 
-         var0.endObject();
+         jsonReader.endObject();
       }
    }
 
@@ -1118,9 +1104,9 @@ public final class ConfigProfiles {
       public final String key;
       public final String label;
 
-      private Part(String nullxx, String nullxxx) {
-         this.key = nullxx;
-         this.label = nullxxx;
+      private Part(String string2, String string3) {
+         this.key = string2;
+         this.label = string3;
       }
    }
 

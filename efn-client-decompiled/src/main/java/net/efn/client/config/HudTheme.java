@@ -82,12 +82,12 @@ public final class HudTheme {
       this.defaults = this.snapshot(true);
    }
 
-   private static Surface surface(String var0, String var1) {
-      return surface(var0, var1, 0.85F);
+   private static Surface surface(String string, String string2) {
+      return surface(string, string2, 0.85F);
    }
 
-   private static Surface surface(String var0, String var1, float var2) {
-      return new Surface(var0, var1, false, -15329251, var2, 0.4F);
+   private static Surface surface(String string, String string2, float f) {
+      return new Surface(string, string2, false, -15329251, f, 0.4F);
    }
 
    public static HudTheme get() {
@@ -99,35 +99,35 @@ public final class HudTheme {
       return this.surfaces;
    }
 
-   public Surface forElementId(String var1) {
-      if ("info_bar".equals(var1)) {
+   public Surface forElementId(String string) {
+      if ("info_bar".equals(string)) {
          return this.infoBar;
-      } else if ("coordinates".equals(var1)) {
+      } else if ("coordinates".equals(string)) {
          return this.coordinates;
-      } else if ("module_list".equals(var1)) {
+      } else if ("module_list".equals(string)) {
          return this.moduleList;
-      } else if ("potion_tracker".equals(var1)) {
+      } else if ("potion_tracker".equals(string)) {
          return this.potions;
-      } else if ("region_map".equals(var1)) {
+      } else if ("region_map".equals(string)) {
          return this.regionMap;
-      } else if ("anti_vanish".equals(var1)) {
+      } else if ("anti_vanish".equals(string)) {
          return this.antiVanish;
-      } else if ("staff_list".equals(var1)) {
+      } else if ("staff_list".equals(string)) {
          return this.staffList;
-      } else if ("spotify".equals(var1)) {
+      } else if ("spotify".equals(string)) {
          return this.spotify;
-      } else if ("hotkeys".equals(var1)) {
+      } else if ("hotkeys".equals(string)) {
          return this.hotkeys;
-      } else if ("radar".equals(var1)) {
+      } else if ("radar".equals(string)) {
          return this.radar;
-      } else if ("toggle_toasts".equals(var1)) {
+      } else if ("toggle_toasts".equals(string)) {
          return this.toasts;
-      } else if ("target_card".equals(var1)) {
+      } else if ("target_card".equals(string)) {
          return this.targetCard;
-      } else if ("armor_status".equals(var1)) {
+      } else if ("armor_status".equals(string)) {
          return this.armorStatus;
       } else {
-         return "item_cooldowns".equals(var1) ? this.itemCooldowns : null;
+         return "item_cooldowns".equals(string) ? this.itemCooldowns : null;
       }
    }
 
@@ -141,10 +141,10 @@ public final class HudTheme {
       return var1.toString();
    }
 
-   public boolean importString(String var1) {
-      if (var1 != null && !var1.isBlank()) {
+   public boolean importString(String string) {
+      if (string != null && !string.isBlank()) {
          try {
-            JsonElement var2 = JsonParser.parseString(var1.trim());
+            JsonElement var2 = JsonParser.parseString(string.trim());
             if (var2.isJsonObject() && var2.getAsJsonObject().has("efnHudTheme")) {
                JsonElement var3 = var2.getAsJsonObject().get("efnHudTheme");
                if (!var3.isJsonObject()) {
@@ -168,9 +168,9 @@ public final class HudTheme {
       return this.snapshot(true);
    }
 
-   public void applyProfile(JsonObject var1) {
+   public void applyProfile(JsonObject jsonObject) {
       for (Setting var3 : this.settings) {
-         JsonElement var4 = var1.get(var3.id());
+         JsonElement var4 = jsonObject.get(var3.id());
          if (var4 == null && !var3.isPrivate()) {
             var4 = this.defaults.get(var3.id());
          }
@@ -181,11 +181,11 @@ public final class HudTheme {
       }
    }
 
-   public JsonObject shareable(JsonObject var1) {
+   public JsonObject shareable(JsonObject jsonObject) {
       JsonObject var2 = new JsonObject();
 
       for (Setting var4 : this.settings) {
-         JsonElement var5 = var1.get(var4.id());
+         JsonElement var5 = jsonObject.get(var4.id());
          if (var5 != null && !var4.isPrivate() && !Setting.sameValue(var5, this.defaults.get(var4.id()))) {
             var2.add(var4.id(), var5.deepCopy());
          }
@@ -215,7 +215,7 @@ public final class HudTheme {
                   LOGGER.warn("[EFN] HUD theme version {} is newer than supported {}; skipping load", var3, 1);
                }
             } catch (RuntimeException | IOException var8) {
-               LOGGER.warn("[EFN] Failed to load HUD theme; preserving the file", var8);
+               LOGGER.warn("[EFN] Failed to load HUD theme; preserving the file", (Throwable)var8);
                this.readOnly = true;
             }
          }
@@ -234,7 +234,7 @@ public final class HudTheme {
             Path var3 = var2.resolveSibling(var2.getFileName().toString() + ".tmp");
 
             try (BufferedWriter var4 = Files.newBufferedWriter(var3)) {
-               GSON.toJson(var1, var4);
+               GSON.toJson((JsonElement)var1, var4);
             }
 
             try {
@@ -243,16 +243,16 @@ public final class HudTheme {
                Files.move(var3, var2, StandardCopyOption.REPLACE_EXISTING);
             }
          } catch (IOException var10) {
-            LOGGER.warn("[EFN] Failed to save HUD theme", var10);
+            LOGGER.warn("[EFN] Failed to save HUD theme", (Throwable)var10);
          }
       }
    }
 
-   private JsonObject snapshot(boolean var1) {
+   private JsonObject snapshot(boolean bl) {
       JsonObject var2 = new JsonObject();
 
       for (Setting var4 : this.settings) {
-         if (var1 || !var4.isPrivate()) {
+         if (bl || !var4.isPrivate()) {
             var2.add(var4.id(), var4.serialize());
          }
       }
@@ -260,10 +260,10 @@ public final class HudTheme {
       return var2;
    }
 
-   private void apply(JsonObject var1, boolean var2) {
+   private void apply(JsonObject jsonObject, boolean bl) {
       for (Setting var4 : this.settings) {
-         if ((var2 || !var4.isPrivate()) && var1.has(var4.id())) {
-            var4.deserialize(var1.get(var4.id()));
+         if ((bl || !var4.isPrivate()) && jsonObject.has(var4.id())) {
+            var4.deserialize(jsonObject.get(var4.id()));
          }
       }
    }

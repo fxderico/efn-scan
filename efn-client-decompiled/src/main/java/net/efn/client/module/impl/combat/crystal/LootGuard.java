@@ -35,15 +35,15 @@ public final class LootGuard {
    private LootGuard() {
    }
 
-   public static void update(ClientWorld var0, ClientPlayerEntity var1) {
-      if (var1 != lastPlayer || var1.field_6012 != lastTick) {
-         lastPlayer = var1;
-         lastTick = var1.field_6012;
-         dimension = var0.method_27983();
-         long var2 = Util.method_658();
-         if (var1.method_29504()) {
+   public static void update(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity) {
+      if (clientPlayerEntity != lastPlayer || clientPlayerEntity.age != lastTick) {
+         lastPlayer = clientPlayerEntity;
+         lastTick = clientPlayerEntity.age;
+         dimension = clientWorld.getRegistryKey();
+         long var2 = Util.getMeasuringTimeMs();
+         if (clientPlayerEntity.isDead()) {
             if (!selfDead) {
-               SPOTS.add(new LootGuard.Spot(dimension, var1.method_73189(), var2, var2 + 300000L));
+               SPOTS.add(new LootGuard.Spot(dimension, clientPlayerEntity.getEntityPos(), var2, var2 + 300000L));
             }
 
             selfDead = true;
@@ -51,27 +51,27 @@ public final class LootGuard {
             selfDead = false;
          }
 
-         SEEN.removeIf(var1x -> var0.method_8469(var1x) == null);
+         SEEN.removeIf(i -> clientWorld.getEntityById(i) == null);
 
-         for (PlayerEntity var5 : var0.method_18456()) {
-            if (var5 != var1 && var5.method_29504() && SEEN.add(var5.method_5628()) && var5.method_5739(var1) <= 16.0) {
-               SPOTS.add(new LootGuard.Spot(dimension, var5.method_73189(), var2, var2 + 60000L));
+         for (PlayerEntity var5 : clientWorld.getPlayers()) {
+            if (var5 != clientPlayerEntity && var5.isDead() && SEEN.add(var5.getId()) && var5.distanceTo(clientPlayerEntity) <= 16.0) {
+               SPOTS.add(new LootGuard.Spot(dimension, var5.getEntityPos(), var2, var2 + 60000L));
             }
          }
 
          SPOTS.removeIf(
-            var4 -> var2 > var4.until()
-               || var4.dimension() == dimension
-                  && var2 - var4.since() > 3000L
-                  && var4.at().method_1022(var1.method_73189()) <= 32.0
-                  && var0.method_18467(ItemEntity.class, var4.box()).isEmpty()
+            spot -> var2 > spot.until()
+               || spot.dimension() == dimension
+                  && var2 - spot.since() > 3000L
+                  && spot.at().distanceTo(clientPlayerEntity.getEntityPos()) <= 32.0
+                  && clientWorld.getNonSpectatingEntities(ItemEntity.class, spot.box()).isEmpty()
          );
       }
    }
 
-   public static boolean near(Vec3d var0) {
+   public static boolean near(Vec3d vec3d) {
       for (LootGuard.Spot var2 : SPOTS) {
-         if (var2.dimension() == dimension && var2.box().method_1006(var0)) {
+         if (var2.dimension() == dimension && var2.box().contains(vec3d)) {
             return true;
          }
       }
@@ -82,14 +82,7 @@ public final class LootGuard {
    @Environment(EnvType.CLIENT)
    private record Spot(RegistryKey<World> dimension, Vec3d at, long since, long until) {
       Box box() {
-         return new Box(
-            this.at.field_1352 - 8.0,
-            this.at.field_1351 - 4.0,
-            this.at.field_1350 - 8.0,
-            this.at.field_1352 + 8.0,
-            this.at.field_1351 + 4.0,
-            this.at.field_1350 + 8.0
-         );
+         return new Box(this.at.x - 8.0, this.at.y - 4.0, this.at.z - 8.0, this.at.x + 8.0, this.at.y + 4.0, this.at.z + 8.0);
       }
    }
 }

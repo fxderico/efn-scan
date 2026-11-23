@@ -86,7 +86,7 @@ public final class FloatingIconsModule extends ClientModule {
    private final BooleanSetting blocks = this.addSetting("block-bounce", new BooleanSetting("Block Bounce", true));
    private final FloatingIconsModule.FloatIcon[] floatIcons = new FloatingIconsModule.FloatIcon[32];
    private final GlyphCanvas canvas = new GlyphCanvas();
-   private final Random random = Random.method_43047();
+   private final Random random = Random.create();
    private final Mutable cursor = new Mutable();
    private int live;
    private int age;
@@ -123,17 +123,17 @@ public final class FloatingIconsModule extends ClientModule {
       this.boundLevel = null;
    }
 
-   private void syncLevel(ClientWorld var1) {
-      if (var1 != this.boundLevel) {
-         this.boundLevel = var1;
+   private void syncLevel(ClientWorld clientWorld) {
+      if (clientWorld != this.boundLevel) {
+         this.boundLevel = clientWorld;
          this.live = 0;
       }
    }
 
-   private void onTick(TickEvent var1) {
-      MinecraftClient var3 = MinecraftClient.method_1551();
-      ClientPlayerEntity var4 = var3.field_1724;
-      ClientWorld var5 = var3.field_1687;
+   private void onTick(TickEvent tickEvent) {
+      MinecraftClient var3 = MinecraftClient.getInstance();
+      ClientPlayerEntity var4 = var3.player;
+      ClientWorld var5 = var3.world;
       if (var4 != null && var5 != null) {
          this.syncLevel(var5);
          this.age++;
@@ -144,12 +144,12 @@ public final class FloatingIconsModule extends ClientModule {
          }
 
          this.live = var6;
-         double var19 = var4.method_23317();
-         double var9 = var4.method_23318();
-         double var11 = var4.method_23321();
-         float var13 = var4.method_17682();
-         float var14 = (float)(var19 - var4.field_6014);
-         float var15 = (float)(var11 - var4.field_5969);
+         double var19 = var4.getX();
+         double var9 = var4.getY();
+         double var11 = var4.getZ();
+         float var13 = var4.getHeight();
+         float var14 = (float)(var19 - var4.lastX);
+         float var15 = (float)(var11 - var4.lastZ);
          float var16 = this.bounce.get();
 
          for (int var2 = 0; var2 < this.live; var2++) {
@@ -166,219 +166,217 @@ public final class FloatingIconsModule extends ClientModule {
       }
    }
 
-   private void wake(FloatingIconsModule.FloatIcon var1, int var2) {
-      var1.placed = false;
-      var1.wakeAt = this.age + var2;
-      var1.orbit = 0.55F + 0.45F * this.random.method_43057();
-      var1.lift = this.random.method_43057();
-      var1.grain = 0.82F + 0.3F * this.random.method_43057();
-      var1.phase = this.random.method_43057() * 6.2831855F;
-      var1.restTurn = this.signed(0.07F, 0.12F);
+   private void wake(FloatingIconsModule.FloatIcon floatIcon, int i) {
+      floatIcon.placed = false;
+      floatIcon.wakeAt = this.age + i;
+      floatIcon.orbit = 0.55F + 0.45F * this.random.nextFloat();
+      floatIcon.lift = this.random.nextFloat();
+      floatIcon.grain = 0.82F + 0.3F * this.random.nextFloat();
+      floatIcon.phase = this.random.nextFloat() * 6.2831855F;
+      floatIcon.restTurn = this.signed(0.07F, 0.12F);
    }
 
-   private float signed(float var1, float var2) {
-      float var3 = var1 + (var2 - var1) * this.random.method_43057();
-      return this.random.method_43056() ? var3 : -var3;
+   private float signed(float f, float g) {
+      float var3 = f + (g - f) * this.random.nextFloat();
+      return this.random.nextBoolean() ? var3 : -var3;
    }
 
-   private void place(FloatingIconsModule.FloatIcon var1, double var2, double var4, double var6) {
-      float var8 = this.random.method_43057() * 6.2831855F;
-      double var9 = this.spread.get() * var1.orbit;
-      var1.x = var2 + MathHelper.method_15362(var8) * var9;
-      var1.y = var4 + 0.15;
-      var1.z = var6 + MathHelper.method_15374(var8) * var9;
-      var1.lastX = var1.x;
-      var1.lastY = var1.y;
-      var1.lastZ = var1.z;
-      var1.vx = -MathHelper.method_15374(var8) * 0.03F;
-      var1.vy = 0.14F + 0.08F * this.random.method_43057();
-      var1.vz = MathHelper.method_15362(var8) * 0.03F;
-      var1.lastYaw = var1.yaw = this.random.method_43057() * 6.2831855F;
-      var1.turn = var1.restTurn * 3.0F;
-      var1.tiltX = 0.0F;
-      var1.tiltZ = 0.0F;
-      var1.lastTiltX = 0.0F;
-      var1.lastTiltZ = 0.0F;
-      var1.swayX = this.signed(0.02F, 0.05F);
-      var1.swayZ = this.signed(0.02F, 0.05F);
-      var1.placed = true;
-      var1.placedAt = this.age;
+   private void place(FloatingIconsModule.FloatIcon floatIcon, double d, double e, double f) {
+      float var8 = this.random.nextFloat() * 6.2831855F;
+      double var9 = this.spread.get() * floatIcon.orbit;
+      floatIcon.x = d + MathHelper.cos(var8) * var9;
+      floatIcon.y = e + 0.15;
+      floatIcon.z = f + MathHelper.sin(var8) * var9;
+      floatIcon.lastX = floatIcon.x;
+      floatIcon.lastY = floatIcon.y;
+      floatIcon.lastZ = floatIcon.z;
+      floatIcon.vx = -MathHelper.sin(var8) * 0.03F;
+      floatIcon.vy = 0.14F + 0.08F * this.random.nextFloat();
+      floatIcon.vz = MathHelper.cos(var8) * 0.03F;
+      floatIcon.lastYaw = floatIcon.yaw = this.random.nextFloat() * 6.2831855F;
+      floatIcon.turn = floatIcon.restTurn * 3.0F;
+      floatIcon.tiltX = 0.0F;
+      floatIcon.tiltZ = 0.0F;
+      floatIcon.lastTiltX = 0.0F;
+      floatIcon.lastTiltZ = 0.0F;
+      floatIcon.swayX = this.signed(0.02F, 0.05F);
+      floatIcon.swayZ = this.signed(0.02F, 0.05F);
+      floatIcon.placed = true;
+      floatIcon.placedAt = this.age;
    }
 
-   private void step(
-      FloatingIconsModule.FloatIcon var1, ClientWorld var2, double var3, double var5, double var7, float var9, float var10, float var11, float var12
-   ) {
-      if (!var1.placed) {
-         if (this.age < var1.wakeAt) {
+   private void step(FloatingIconsModule.FloatIcon floatIcon, ClientWorld clientWorld, double d, double e, double f, float g, float h, float i, float j) {
+      if (!floatIcon.placed) {
+         if (this.age < floatIcon.wakeAt) {
             return;
          }
 
-         this.place(var1, var3, var5, var7);
+         this.place(floatIcon, d, e, f);
       }
 
-      var1.lastX = var1.x;
-      var1.lastY = var1.y;
-      var1.lastZ = var1.z;
-      double var13 = var1.x - var3;
-      double var15 = var1.z - var7;
+      floatIcon.lastX = floatIcon.x;
+      floatIcon.lastY = floatIcon.y;
+      floatIcon.lastZ = floatIcon.z;
+      double var13 = floatIcon.x - d;
+      double var15 = floatIcon.z - f;
       double var17 = Math.sqrt(var13 * var13 + var15 * var15);
-      double var19 = var5 + 0.35 + var1.lift * (var9 + 0.2) + 0.16 * MathHelper.method_15374((this.age + var1.phase * 16.0F) * 0.045F);
+      double var19 = e + 0.35 + floatIcon.lift * (g + 0.2) + 0.16 * MathHelper.sin((this.age + floatIcon.phase * 16.0F) * 0.045F);
       double var21 = this.spread.get() * 3.0 + 8.0;
-      if (!(var17 > var21) && !(Math.abs(var1.y - var19) > var21)) {
+      if (!(var17 > var21) && !(Math.abs(floatIcon.y - var19) > var21)) {
          float var23 = var17 > 1.0E-4 ? (float)(var13 / var17) : 1.0F;
          float var24 = var17 > 1.0E-4 ? (float)(var15 / var17) : 0.0F;
-         float var25 = (float)(this.spread.get() * var1.orbit - var17) * 0.012F;
+         float var25 = (float)(this.spread.get() * floatIcon.orbit - var17) * 0.012F;
          float var26 = this.drift.get() * 0.0025F;
-         var1.vx += var23 * var25 - var24 * var26 + var10 * 0.035F;
-         var1.vz += var24 * var25 + var23 * var26 + var11 * 0.035F;
-         float var27 = (this.age + var1.phase * 20.0F) * 0.06F;
-         var1.vx = var1.vx + MathHelper.method_15374(var27) * 0.003F;
-         var1.vz = var1.vz + MathHelper.method_15362(var27 * 1.31F) * 0.003F;
-         var1.vy -= 0.016F;
-         double var28 = var19 - var1.y;
+         floatIcon.vx += var23 * var25 - var24 * var26 + h * 0.035F;
+         floatIcon.vz += var24 * var25 + var23 * var26 + i * 0.035F;
+         float var27 = (this.age + floatIcon.phase * 20.0F) * 0.06F;
+         floatIcon.vx = floatIcon.vx + MathHelper.sin(var27) * 0.003F;
+         floatIcon.vz = floatIcon.vz + MathHelper.cos(var27 * 1.31F) * 0.003F;
+         floatIcon.vy -= 0.016F;
+         double var28 = var19 - floatIcon.y;
          if (var28 > 0.0) {
-            var1.vy = var1.vy + (float)Math.min(var28, 1.5) * 0.045F;
+            floatIcon.vy = floatIcon.vy + (float)Math.min(var28, 1.5) * 0.045F;
          }
 
-         var1.vx *= 0.982F;
-         var1.vy *= 0.982F;
-         var1.vz *= 0.982F;
-         float var30 = var1.vx * var1.vx + var1.vy * var1.vy + var1.vz * var1.vz;
+         floatIcon.vx *= 0.982F;
+         floatIcon.vy *= 0.982F;
+         floatIcon.vz *= 0.982F;
+         float var30 = floatIcon.vx * floatIcon.vx + floatIcon.vy * floatIcon.vy + floatIcon.vz * floatIcon.vz;
          if (var30 > 0.80999994F) {
             float var31 = 0.9F / (float)Math.sqrt(var30);
-            var1.vx *= var31;
-            var1.vy *= var31;
-            var1.vz *= var31;
+            floatIcon.vx *= var31;
+            floatIcon.vy *= var31;
+            floatIcon.vz *= var31;
          }
 
          boolean var35 = this.blocks.get();
-         float var32 = this.size.get() * var1.grain * 0.5F;
-         double var33 = var1.x + var1.vx;
-         if (var35 && this.solid(var2, var33 + Math.copySign(var32, var1.vx), var1.y, var1.z)) {
-            var1.vx = -var1.vx * var12;
-            this.tumble(var1, 0.6F);
+         float var32 = this.size.get() * floatIcon.grain * 0.5F;
+         double var33 = floatIcon.x + floatIcon.vx;
+         if (var35 && this.solid(clientWorld, var33 + Math.copySign(var32, floatIcon.vx), floatIcon.y, floatIcon.z)) {
+            floatIcon.vx = -floatIcon.vx * j;
+            this.tumble(floatIcon, 0.6F);
          } else {
-            var1.x = var33;
+            floatIcon.x = var33;
          }
 
-         var33 = var1.y + var1.vy;
-         if (var35 && this.solid(var2, var1.x, var33 + Math.copySign(var32, var1.vy), var1.z)) {
-            if (var1.vy < 0.0F) {
-               var1.vx *= 0.86F;
-               var1.vz *= 0.86F;
+         var33 = floatIcon.y + floatIcon.vy;
+         if (var35 && this.solid(clientWorld, floatIcon.x, var33 + Math.copySign(var32, floatIcon.vy), floatIcon.z)) {
+            if (floatIcon.vy < 0.0F) {
+               floatIcon.vx *= 0.86F;
+               floatIcon.vz *= 0.86F;
             }
 
-            var1.vy = -var1.vy * var12;
-            this.tumble(var1, 0.8F);
+            floatIcon.vy = -floatIcon.vy * j;
+            this.tumble(floatIcon, 0.8F);
          } else {
-            var1.y = var33;
+            floatIcon.y = var33;
          }
 
-         var33 = var1.z + var1.vz;
-         if (var35 && this.solid(var2, var1.x, var1.y, var33 + Math.copySign(var32, var1.vz))) {
-            var1.vz = -var1.vz * var12;
-            this.tumble(var1, 0.6F);
+         var33 = floatIcon.z + floatIcon.vz;
+         if (var35 && this.solid(clientWorld, floatIcon.x, floatIcon.y, var33 + Math.copySign(var32, floatIcon.vz))) {
+            floatIcon.vz = -floatIcon.vz * j;
+            this.tumble(floatIcon, 0.6F);
          } else {
-            var1.z = var33;
+            floatIcon.z = var33;
          }
 
-         if (var35 && this.solid(var2, var1.x, var1.y, var1.z)) {
-            var1.y += 0.2;
-            var1.lastY = var1.y;
-            var1.vy = Math.max(var1.vy, 0.08F);
+         if (var35 && this.solid(clientWorld, floatIcon.x, floatIcon.y, floatIcon.z)) {
+            floatIcon.y += 0.2;
+            floatIcon.lastY = floatIcon.y;
+            floatIcon.vy = Math.max(floatIcon.vy, 0.08F);
          }
 
-         if (Math.abs(var1.yaw) > 512.0F) {
-            var1.yaw %= 6.2831855F;
+         if (Math.abs(floatIcon.yaw) > 512.0F) {
+            floatIcon.yaw %= 6.2831855F;
          }
 
-         var1.lastYaw = var1.yaw;
-         var1.lastTiltX = var1.tiltX;
-         var1.lastTiltZ = var1.tiltZ;
-         var1.turn = var1.turn + (var1.restTurn * this.spinSpeed.get() - var1.turn) * 0.03F;
-         var1.yaw = var1.yaw + var1.turn;
-         var1.swayX = (var1.swayX - var1.tiltX * 0.09F) * 0.9F;
-         var1.swayZ = (var1.swayZ - var1.tiltZ * 0.09F) * 0.9F;
-         var1.tiltX = MathHelper.method_15363(var1.tiltX + var1.swayX, -0.55F, 0.55F);
-         var1.tiltZ = MathHelper.method_15363(var1.tiltZ + var1.swayZ, -0.55F, 0.55F);
+         floatIcon.lastYaw = floatIcon.yaw;
+         floatIcon.lastTiltX = floatIcon.tiltX;
+         floatIcon.lastTiltZ = floatIcon.tiltZ;
+         floatIcon.turn = floatIcon.turn + (floatIcon.restTurn * this.spinSpeed.get() - floatIcon.turn) * 0.03F;
+         floatIcon.yaw = floatIcon.yaw + floatIcon.turn;
+         floatIcon.swayX = (floatIcon.swayX - floatIcon.tiltX * 0.09F) * 0.9F;
+         floatIcon.swayZ = (floatIcon.swayZ - floatIcon.tiltZ * 0.09F) * 0.9F;
+         floatIcon.tiltX = MathHelper.clamp(floatIcon.tiltX + floatIcon.swayX, -0.55F, 0.55F);
+         floatIcon.tiltZ = MathHelper.clamp(floatIcon.tiltZ + floatIcon.swayZ, -0.55F, 0.55F);
       } else {
-         this.place(var1, var3, var5, var7);
+         this.place(floatIcon, d, e, f);
       }
    }
 
-   private void knock(FloatingIconsModule.FloatIcon var1, FloatingIconsModule.FloatIcon var2, float var3) {
-      if (var1.placed && var2.placed) {
-         double var4 = var2.x - var1.x;
-         double var6 = var2.y - var1.y;
-         double var8 = var2.z - var1.z;
+   private void knock(FloatingIconsModule.FloatIcon floatIcon, FloatingIconsModule.FloatIcon floatIcon2, float f) {
+      if (floatIcon.placed && floatIcon2.placed) {
+         double var4 = floatIcon2.x - floatIcon.x;
+         double var6 = floatIcon2.y - floatIcon.y;
+         double var8 = floatIcon2.z - floatIcon.z;
          double var10 = var4 * var4 + var6 * var6 + var8 * var8;
-         double var12 = this.size.get() * (var1.grain + var2.grain) * 0.5 * 0.95;
+         double var12 = this.size.get() * (floatIcon.grain + floatIcon2.grain) * 0.5 * 0.95;
          if (!(var10 >= var12 * var12) && !(var10 < 1.0E-8)) {
             double var14 = Math.sqrt(var10);
             float var16 = (float)(var4 / var14);
             float var17 = (float)(var6 / var14);
             float var18 = (float)(var8 / var14);
             double var19 = (var12 - var14) * 0.5;
-            var1.x -= var16 * var19;
-            var1.y -= var17 * var19;
-            var1.z -= var18 * var19;
-            var2.x += var16 * var19;
-            var2.y += var17 * var19;
-            var2.z += var18 * var19;
-            float var21 = (var1.vx - var2.vx) * var16 + (var1.vy - var2.vy) * var17 + (var1.vz - var2.vz) * var18;
+            floatIcon.x -= var16 * var19;
+            floatIcon.y -= var17 * var19;
+            floatIcon.z -= var18 * var19;
+            floatIcon2.x += var16 * var19;
+            floatIcon2.y += var17 * var19;
+            floatIcon2.z += var18 * var19;
+            float var21 = (floatIcon.vx - floatIcon2.vx) * var16 + (floatIcon.vy - floatIcon2.vy) * var17 + (floatIcon.vz - floatIcon2.vz) * var18;
             if (!(var21 <= 0.0F)) {
-               float var22 = var21 * (1.0F + var3) * 0.5F;
-               var1.vx -= var22 * var16;
-               var1.vy -= var22 * var17;
-               var1.vz -= var22 * var18;
-               var2.vx += var22 * var16;
-               var2.vy += var22 * var17;
-               var2.vz += var22 * var18;
-               this.tumble(var1, 0.5F);
-               this.tumble(var2, 0.5F);
+               float var22 = var21 * (1.0F + f) * 0.5F;
+               floatIcon.vx -= var22 * var16;
+               floatIcon.vy -= var22 * var17;
+               floatIcon.vz -= var22 * var18;
+               floatIcon2.vx += var22 * var16;
+               floatIcon2.vy += var22 * var17;
+               floatIcon2.vz += var22 * var18;
+               this.tumble(floatIcon, 0.5F);
+               this.tumble(floatIcon2, 0.5F);
             }
          }
       }
    }
 
-   private void tumble(FloatingIconsModule.FloatIcon var1, float var2) {
-      var1.turn = var1.turn + (this.random.method_43057() - 0.5F) * 0.3F * var2;
-      var1.swayX = var1.swayX + (this.random.method_43057() - 0.5F) * 0.12F * var2;
-      var1.swayZ = var1.swayZ + (this.random.method_43057() - 0.5F) * 0.12F * var2;
+   private void tumble(FloatingIconsModule.FloatIcon floatIcon, float f) {
+      floatIcon.turn = floatIcon.turn + (this.random.nextFloat() - 0.5F) * 0.3F * f;
+      floatIcon.swayX = floatIcon.swayX + (this.random.nextFloat() - 0.5F) * 0.12F * f;
+      floatIcon.swayZ = floatIcon.swayZ + (this.random.nextFloat() - 0.5F) * 0.12F * f;
    }
 
-   private boolean solid(ClientWorld var1, double var2, double var4, double var6) {
-      this.cursor.method_10103(MathHelper.method_15357(var2), MathHelper.method_15357(var4), MathHelper.method_15357(var6));
-      BlockState var8 = var1.method_8320(this.cursor);
-      if (var8.method_26215()) {
+   private boolean solid(ClientWorld clientWorld, double d, double e, double f) {
+      this.cursor.set(MathHelper.floor(d), MathHelper.floor(e), MathHelper.floor(f));
+      BlockState var8 = clientWorld.getBlockState(this.cursor);
+      if (var8.isAir()) {
          return false;
       } else {
-         VoxelShape var9 = var8.method_26220(var1, this.cursor);
-         if (var9.method_1110()) {
+         VoxelShape var9 = var8.getCollisionShape(clientWorld, this.cursor);
+         if (var9.isEmpty()) {
             return false;
          } else {
-            double var10 = var2 - this.cursor.method_10263();
-            double var12 = var4 - this.cursor.method_10264();
-            double var14 = var6 - this.cursor.method_10260();
-            return var10 >= var9.method_1091(Axis.field_11048)
-               && var10 <= var9.method_1105(Axis.field_11048)
-               && var12 >= var9.method_1091(Axis.field_11052)
-               && var12 <= var9.method_1105(Axis.field_11052)
-               && var14 >= var9.method_1091(Axis.field_11051)
-               && var14 <= var9.method_1105(Axis.field_11051);
+            double var10 = d - this.cursor.getX();
+            double var12 = e - this.cursor.getY();
+            double var14 = f - this.cursor.getZ();
+            return var10 >= var9.getMin(Axis.X)
+               && var10 <= var9.getMax(Axis.X)
+               && var12 >= var9.getMin(Axis.Y)
+               && var12 <= var9.getMax(Axis.Y)
+               && var14 >= var9.getMin(Axis.Z)
+               && var14 <= var9.getMax(Axis.Z);
          }
       }
    }
 
-   private void onRender3D(Render3DEvent var1) {
+   private void onRender3D(Render3DEvent render3DEvent) {
       if (this.live != 0) {
-         MinecraftClient var2 = MinecraftClient.method_1551();
-         if (var2.field_1687 != null && var2.field_1724 != null) {
-            this.canvas.begin(var2.field_1773.method_19418());
-            float var3 = var1.partialTick;
+         MinecraftClient var2 = MinecraftClient.getInstance();
+         if (var2.world != null && var2.player != null) {
+            this.canvas.begin(var2.gameRenderer.getCamera());
+            float var3 = render3DEvent.partialTick;
             float var4 = (float)(System.nanoTime() - EPOCH) / 1.0E9F;
             boolean var5 = MobilePerformance.active();
-            Frustum var6 = !PerformanceModule.frustumCulling() && !var5 ? null : var1.frustum;
+            Frustum var6 = !PerformanceModule.frustumCulling() && !var5 ? null : render3DEvent.frustum;
             float var7 = this.size.get() * 0.5F * 1.25F;
             boolean var8 = this.symbols.is("Money");
             float[][] var9 = var8 ? LARP_GLYPHS : EFN_GLYPHS;
@@ -395,17 +393,16 @@ public final class FloatingIconsModule extends ClientModule {
                   && !((var15 = var7 * var16.grain * var10[var14 = var12 % var9.length] * appear((var13 = this.age - var16.placedAt + var3) / 12.0F)) < 0.004F)
                   )
                 {
-                  double var17 = MathHelper.method_16436(var3, var16.lastX, var16.x);
-                  double var19 = MathHelper.method_16436(var3, var16.lastY, var16.y) + var15 * 0.2F * MathHelper.method_15374(var4 * 2.4F + var16.phase * 3.0F);
-                  double var21 = MathHelper.method_16436(var3, var16.lastZ, var16.z);
+                  double var17 = MathHelper.lerp((double)var3, var16.lastX, var16.x);
+                  double var19 = MathHelper.lerp((double)var3, var16.lastY, var16.y) + var15 * 0.2F * MathHelper.sin(var4 * 2.4F + var16.phase * 3.0F);
+                  double var21 = MathHelper.lerp((double)var3, var16.lastZ, var16.z);
                   double var23 = renderReach(var15, var11, var5);
-                  if (var6 == null || var6.method_23093(new Box(var17 - var23, var19 - var23, var21 - var23, var17 + var23, var19 + var23, var21 + var23))) {
+                  if (var6 == null || var6.isVisible(new Box(var17 - var23, var19 - var23, var21 - var23, var17 + var23, var19 + var23, var21 + var23))) {
                      float var25 = Math.min(1.0F, var13 / 7.2000003F);
-                     float var26 = MathHelper.method_16439(var3, var16.lastYaw, var16.yaw);
-                     float var27 = MathHelper.method_16439(var3, var16.lastTiltX, var16.tiltX) + 0.12F * MathHelper.method_15374(var4 * 1.3F + var16.phase);
-                     float var28 = MathHelper.method_16439(var3, var16.lastTiltZ, var16.tiltZ)
-                        + 0.12F * MathHelper.method_15374(var4 * 0.9F + var16.phase * 2.3F);
-                     float var29 = var11 ? (0.1F + 0.07F * MathHelper.method_15374(var4 * 2.1F + var16.phase)) * var25 : 0.0F;
+                     float var26 = MathHelper.lerp(var3, var16.lastYaw, var16.yaw);
+                     float var27 = MathHelper.lerp(var3, var16.lastTiltX, var16.tiltX) + 0.12F * MathHelper.sin(var4 * 1.3F + var16.phase);
+                     float var28 = MathHelper.lerp(var3, var16.lastTiltZ, var16.tiltZ) + 0.12F * MathHelper.sin(var4 * 0.9F + var16.phase * 2.3F);
+                     float var29 = var11 ? (0.1F + 0.07F * MathHelper.sin(var4 * 2.1F + var16.phase)) * var25 : 0.0F;
                      float[] var30 = var5 ? IconGlyphs.mobile(var9[var14]) : var9[var14];
                      this.drawIcon(var30, var17, var19, var21, var15, var26, var27, var28, var25, var29);
                   }
@@ -417,29 +414,29 @@ public final class FloatingIconsModule extends ClientModule {
       }
    }
 
-   private static double renderReach(float var0, boolean var1, boolean var2) {
-      return var0 * (var2 && var1 ? HALO_SCALES[HALO_SCALES.length - 1] + 0.6F : 2.0);
+   private static double renderReach(float f, boolean bl, boolean bl2) {
+      return f * (bl2 && bl ? HALO_SCALES[HALO_SCALES.length - 1] + 0.6F : 2.0);
    }
 
    private void tint() {
       if (this.colorMode.is("Manual")) {
-         this.tintMain = ColorHelper.method_61334(this.mainColor.argb());
-         this.tintShade = ColorHelper.method_61334(this.secondColor.argb());
+         this.tintMain = ColorHelper.fullAlpha(this.mainColor.argb());
+         this.tintShade = ColorHelper.fullAlpha(this.secondColor.argb());
       } else {
          this.tintMain = CosmeticAccent.argb();
-         this.tintShade = ColorHelper.method_61321(this.tintMain, 0.45F);
+         this.tintShade = ColorHelper.scaleRgb(this.tintMain, 0.45F);
       }
 
-      this.tintShine = ColorHelper.method_61319(0.6F, this.tintMain, -1);
+      this.tintShine = ColorHelper.lerp(0.6F, this.tintMain, -1);
    }
 
-   private void drawIcon(float[] var1, double var2, double var4, double var6, float var8, float var9, float var10, float var11, float var12, float var13) {
-      float var18 = MathHelper.method_15362(var9);
-      float var19 = MathHelper.method_15374(var9);
-      float var20 = MathHelper.method_15362(var10);
-      float var21 = MathHelper.method_15374(var10);
-      float var22 = MathHelper.method_15362(var11);
-      float var23 = MathHelper.method_15374(var11);
+   private void drawIcon(float[] fs, double d, double e, double f, float g, float h, float i, float j, float k, float l) {
+      float var18 = MathHelper.cos(h);
+      float var19 = MathHelper.sin(h);
+      float var20 = MathHelper.cos(i);
+      float var21 = MathHelper.sin(i);
+      float var22 = MathHelper.cos(j);
+      float var23 = MathHelper.sin(j);
       float var24 = var18 * var22 + var19 * var21 * var23;
       float var25 = var20 * var23;
       float var26 = -var19 * var22 + var18 * var21 * var23;
@@ -449,10 +446,10 @@ public final class FloatingIconsModule extends ClientModule {
       float var30 = var19 * var20;
       float var31 = -var21;
       float var32 = var18 * var20;
-      double var33 = this.canvas.camX() - var2;
+      double var33 = this.canvas.camX() - d;
       double var14;
       double var16;
-      double var35 = var33 * var33 + (var16 = this.canvas.camY() - var4) * var16 + (var14 = this.canvas.camZ() - var6) * var14;
+      double var35 = var33 * var33 + (var16 = this.canvas.camY() - e) * var16 + (var14 = this.canvas.camZ() - f) * var14;
       if (!(var35 < 1.0E-8)) {
          double var37 = Math.sqrt(var35);
          float var39 = (float)((var30 * var33 + var31 * var16 + var32 * var14) / var37);
@@ -466,39 +463,29 @@ public final class FloatingIconsModule extends ClientModule {
             var39 = -var39;
          }
 
-         if (var13 > 0.0F) {
-            double var40 = var8 * 0.6F / var37;
-            double var42 = var2 - var33 * var40;
-            double var44 = var4 - var16 * var40;
-            double var46 = var6 - var14 * var40;
+         if (l > 0.0F) {
+            double var40 = g * 0.6F / var37;
+            double var42 = d - var33 * var40;
+            double var44 = e - var16 * var40;
+            double var46 = f - var14 * var40;
             float[] var48 = MobilePerformance.active() ? GlyphShapes.OCTAGON : GlyphShapes.DISK;
 
             for (int var49 = 0; var49 < HALO_SCALES.length; var49++) {
-               this.canvas.sprite(var48, var42, var44, var46, var8 * HALO_SCALES[var49], 0.0F, withAlpha(this.tintMain, var13 * HALO_WEIGHTS[var49]));
+               this.canvas.sprite(var48, var42, var44, var46, g * HALO_SCALES[var49], 0.0F, withAlpha(this.tintMain, l * HALO_WEIGHTS[var49]));
             }
          }
 
-         double var57 = var24 * var8;
-         double var58 = var25 * var8;
-         double var59 = var26 * var8;
-         double var60 = var27 * var8;
-         double var61 = var28 * var8;
-         double var50 = var29 * var8;
-         double var52 = var8 * 0.07F;
+         double var57 = var24 * g;
+         double var58 = var25 * g;
+         double var59 = var26 * g;
+         double var60 = var27 * g;
+         double var61 = var28 * g;
+         double var50 = var29 * g;
+         double var52 = g * 0.07F;
          if (var35 < 576.0 && var39 < 0.995F) {
             this.canvas
                .shape(
-                  var1,
-                  var2 - var30 * var52,
-                  var4 - var31 * var52,
-                  var6 - var32 * var52,
-                  var57,
-                  var58,
-                  var59,
-                  var60,
-                  var61,
-                  var50,
-                  withAlpha(this.tintShade, 0.9F * var12)
+                  fs, d - var30 * var52, e - var31 * var52, f - var32 * var52, var57, var58, var59, var60, var61, var50, withAlpha(this.tintShade, 0.9F * k)
                );
          }
 
@@ -506,38 +493,25 @@ public final class FloatingIconsModule extends ClientModule {
          float var55 = var39 * var39;
          var55 *= var55;
          var55 *= var55;
-         int var56 = ColorHelper.method_61319(var55 * 0.45F, ColorHelper.method_61321(this.tintMain, 0.6F + 0.22F * var54 + 0.18F * var39), this.tintShine);
-         this.canvas
-            .shape(
-               var1,
-               var2 + var30 * var52,
-               var4 + var31 * var52,
-               var6 + var32 * var52,
-               var57,
-               var58,
-               var59,
-               var60,
-               var61,
-               var50,
-               withAlpha(var56, 0.94F * var12)
-            );
+         int var56 = ColorHelper.lerp(var55 * 0.45F, ColorHelper.scaleRgb(this.tintMain, 0.6F + 0.22F * var54 + 0.18F * var39), this.tintShine);
+         this.canvas.shape(fs, d + var30 * var52, e + var31 * var52, f + var32 * var52, var57, var58, var59, var60, var61, var50, withAlpha(var56, 0.94F * k));
       }
    }
 
-   private static float appear(float var0) {
-      if (var0 >= 1.0F) {
+   private static float appear(float f) {
+      if (f >= 1.0F) {
          return 1.0F;
-      } else if (var0 <= 0.0F) {
+      } else if (f <= 0.0F) {
          return 0.0F;
       } else {
-         float var1 = 1.0F - var0;
-         return 1.0F - var1 * var1 * var1 + 0.22F * MathHelper.method_15374(var0 * 3.1415927F) * var1;
+         float var1 = 1.0F - f;
+         return 1.0F - var1 * var1 * var1 + 0.22F * MathHelper.sin(f * 3.1415927F) * var1;
       }
    }
 
-   private static int withAlpha(int var0, float var1) {
-      int var2 = (int)(Math.max(0.0F, Math.min(1.0F, var1)) * 255.0F + 0.5F);
-      return var2 << 24 | var0 & 16777215;
+   private static int withAlpha(int i, float f) {
+      int var2 = (int)(Math.max(0.0F, Math.min(1.0F, f)) * 255.0F + 0.5F);
+      return var2 << 24 | i & 16777215;
    }
 
    static {

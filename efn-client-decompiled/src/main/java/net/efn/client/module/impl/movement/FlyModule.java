@@ -60,7 +60,7 @@ public final class FlyModule extends ClientModule {
       this.noSneak.visibleWhen(() -> this.mode.is("Velocity"));
       this.mode.onChange(() -> {
          if (this.isEnabled()) {
-            ClientPlayerEntity var1 = MinecraftClient.method_1551().field_1724;
+            ClientPlayerEntity var1 = MinecraftClient.getInstance().player;
             if (var1 != null) {
                abilitiesOff(var1);
             }
@@ -75,7 +75,7 @@ public final class FlyModule extends ClientModule {
 
    @Override
    protected void onEnable() {
-      ClientPlayerEntity var1 = MinecraftClient.method_1551().field_1724;
+      ClientPlayerEntity var1 = MinecraftClient.getInstance().player;
       if (var1 == null) {
          this.requestDisable();
       } else {
@@ -83,11 +83,11 @@ public final class FlyModule extends ClientModule {
          this.offLeft = this.offTime.getInt();
          this.resetPlayerState(var1);
          active = this;
-         if (this.mode.is("Abilities") && !var1.method_7325()) {
-            PlayerAbilities var2 = var1.method_31549();
-            var2.field_7479 = true;
-            if (!var2.field_7477) {
-               var2.field_7478 = true;
+         if (this.mode.is("Abilities") && !var1.isSpectator()) {
+            PlayerAbilities var2 = var1.getAbilities();
+            var2.flying = true;
+            if (!var2.creativeMode) {
+               var2.allowFlying = true;
             }
          }
 
@@ -101,7 +101,7 @@ public final class FlyModule extends ClientModule {
    @Override
    protected void onDisable() {
       active = null;
-      ClientPlayerEntity var1 = MinecraftClient.method_1551().field_1724;
+      ClientPlayerEntity var1 = MinecraftClient.getInstance().player;
       if (var1 != null && this.mode.is("Abilities")) {
          abilitiesOff(var1);
       }
@@ -109,14 +109,14 @@ public final class FlyModule extends ClientModule {
       this.trackedPlayer = null;
    }
 
-   private void resetPlayerState(ClientPlayerEntity var1) {
-      this.trackedPlayer = var1;
-      this.lastYaw = var1.method_36454();
+   private void resetPlayerState(ClientPlayerEntity clientPlayerEntity) {
+      this.trackedPlayer = clientPlayerEntity;
+      this.lastYaw = clientPlayerEntity.getYaw();
       this.lastPacketY = 1.7976931348623157E308;
    }
 
-   private void onPreTick(TickEvent var1) {
-      ClientPlayerEntity var2 = MinecraftClient.method_1551().field_1724;
+   private void onPreTick(TickEvent tickEvent) {
+      ClientPlayerEntity var2 = MinecraftClient.getInstance().player;
       if (var2 == null) {
          this.requestDisable();
       } else {
@@ -124,9 +124,9 @@ public final class FlyModule extends ClientModule {
             this.resetPlayerState(var2);
          }
 
-         float var3 = var2.method_36454();
-         if (var2.field_6017 >= 3.0 && var3 == this.lastYaw && var2.method_18798().method_1033() < 0.003) {
-            var2.method_36456(var3 + (this.flip ? 1 : -1));
+         float var3 = var2.getYaw();
+         if (var2.fallDistance >= 3.0 && var3 == this.lastYaw && var2.getVelocity().length() < 0.003) {
+            var2.setYaw(var3 + (this.flip ? 1 : -1));
             this.flip = !this.flip;
          }
 
@@ -134,8 +134,8 @@ public final class FlyModule extends ClientModule {
       }
    }
 
-   private void onPostTick(TickEvent var1) {
-      ClientPlayerEntity var2 = MinecraftClient.method_1551().field_1724;
+   private void onPostTick(TickEvent tickEvent) {
+      ClientPlayerEntity var2 = MinecraftClient.getInstance().player;
       if (var2 != null) {
          if (var2 != this.trackedPlayer) {
             this.resetPlayerState(var2);
@@ -168,118 +168,110 @@ public final class FlyModule extends ClientModule {
             }
          }
 
-         if (var2.method_36454() != this.lastYaw) {
-            var2.method_36456(this.lastYaw);
+         if (var2.getYaw() != this.lastYaw) {
+            var2.setYaw(this.lastYaw);
          }
 
          if (this.mode.is("Velocity")) {
-            if (!var2.method_7325()) {
-               var2.method_31549().field_7479 = false;
+            if (!var2.isSpectator()) {
+               var2.getAbilities().flying = false;
             }
 
-            var2.method_18800(0.0, 0.0, 0.0);
-            Vec3d var7 = var2.method_18798();
+            var2.setVelocity(0.0, 0.0, 0.0);
+            Vec3d var7 = var2.getVelocity();
             if (!isFreecamActive()) {
-               MinecraftClient var4 = MinecraftClient.method_1551();
+               MinecraftClient var4 = MinecraftClient.getInstance();
                double var5 = (double)this.speed.get() * (this.verticalSpeedMatch.get() ? 10.0F : 5.0F);
-               if (var4.field_1690.field_1903.method_1434()) {
-                  var7 = var7.method_1031(0.0, var5, 0.0);
+               if (var4.options.jumpKey.isPressed()) {
+                  var7 = var7.add(0.0, var5, 0.0);
                }
 
-               if (var4.field_1690.field_1832.method_1434()) {
-                  var7 = var7.method_1023(0.0, var5, 0.0);
+               if (var4.options.sneakKey.isPressed()) {
+                  var7 = var7.subtract(0.0, var5, 0.0);
                }
             }
 
-            var2.method_18799(var7);
+            var2.setVelocity(var7);
             if (this.noSneak.get()) {
-               var2.method_24830(false);
+               var2.setOnGround(false);
             }
          } else {
-            if (var2.method_7325()) {
+            if (var2.isSpectator()) {
                return;
             }
 
-            PlayerAbilities var8 = var2.method_31549();
-            var8.method_7248(this.speed.get());
-            var8.field_7479 = true;
-            if (var8.field_7477) {
+            PlayerAbilities var8 = var2.getAbilities();
+            var8.setFlySpeed(this.speed.get());
+            var8.flying = true;
+            if (var8.creativeMode) {
                return;
             }
 
-            var8.field_7478 = true;
+            var8.allowFlying = true;
          }
       }
    }
 
-   private void onPacketSend(PacketSendEvent var1) {
-      MinecraftClient var3 = MinecraftClient.method_1551();
-      if (var3.method_18854()) {
-         if (var1.packet instanceof TeleportConfirmC2SPacket) {
+   private void onPacketSend(PacketSendEvent packetSendEvent) {
+      MinecraftClient var3 = MinecraftClient.getInstance();
+      if (var3.isOnThread()) {
+         if (packetSendEvent.packet instanceof TeleportConfirmC2SPacket) {
             this.lastPacketY = 1.7976931348623157E308;
-         } else if (var1.packet instanceof PlayerMoveC2SPacket var2 && this.antiKickMode.is("Packet")) {
-            ClientPlayerEntity var9 = var3.field_1724;
-            ClientPlayNetworkHandler var5 = var3.method_1562();
+         } else if (packetSendEvent.packet instanceof PlayerMoveC2SPacket var2 && this.antiKickMode.is("Packet")) {
+            ClientPlayerEntity var9 = var3.player;
+            ClientPlayNetworkHandler var5 = var3.getNetworkHandler();
             if (var9 != null && var5 != null) {
-               double var6 = var2.method_12268(1.7976931348623157E308);
+               double var6 = var2.getY(1.7976931348623157E308);
                if (var6 != 1.7976931348623157E308) {
                   this.antiKickPacket(var9, var2, var6);
                } else {
-                  Object var8 = var2.method_36172()
-                     ? new Full(
-                        var9.method_23317(),
-                        var9.method_23318(),
-                        var9.method_23321(),
-                        var2.method_12271(0.0F),
-                        var2.method_12270(0.0F),
-                        var2.method_12273(),
-                        var9.field_5976
-                     )
-                     : new PositionAndOnGround(var9.method_23317(), var9.method_23318(), var9.method_23321(), var2.method_12273(), var9.field_5976);
-                  var1.setCancelled(true);
-                  this.antiKickPacket(var9, (PlayerMoveC2SPacket)var8, var9.method_23318());
-                  var5.method_52787((Packet)var8);
+                  Object var8 = var2.changesLook()
+                     ? new Full(var9.getX(), var9.getY(), var9.getZ(), var2.getYaw(0.0F), var2.getPitch(0.0F), var2.isOnGround(), var9.horizontalCollision)
+                     : new PositionAndOnGround(var9.getX(), var9.getY(), var9.getZ(), var2.isOnGround(), var9.horizontalCollision);
+                  packetSendEvent.setCancelled(true);
+                  this.antiKickPacket(var9, (PlayerMoveC2SPacket)var8, var9.getY());
+                  var5.sendPacket((Packet<?>)var8);
                }
             }
          }
       }
    }
 
-   private void antiKickPacket(ClientPlayerEntity var1, PlayerMoveC2SPacket var2, double var3) {
-      if (this.delayLeft <= 0 && this.lastPacketY != 1.7976931348623157E308 && shouldFlyDown(var3, this.lastPacketY) && isOnAir(var1)) {
-         ((AccessorServerboundMovePlayerPacket)var2).efn$setY(this.lastPacketY - 0.0313);
+   private void antiKickPacket(ClientPlayerEntity clientPlayerEntity, PlayerMoveC2SPacket playerMoveC2SPacket, double d) {
+      if (this.delayLeft <= 0 && this.lastPacketY != 1.7976931348623157E308 && shouldFlyDown(d, this.lastPacketY) && isOnAir(clientPlayerEntity)) {
+         ((AccessorServerboundMovePlayerPacket)playerMoveC2SPacket).efn$setY(this.lastPacketY - 0.0313);
       } else {
-         this.lastPacketY = var3;
+         this.lastPacketY = d;
       }
    }
 
-   private void onPacketReceiveNetty(PacketReceiveNettyEvent var1) {
-      if (var1.packet instanceof PlayerAbilitiesS2CPacket var2 && this.mode.is("Abilities")) {
-         var1.setCancelled(true);
-         MinecraftClient var4 = MinecraftClient.method_1551();
+   private void onPacketReceiveNetty(PacketReceiveNettyEvent packetReceiveNettyEvent) {
+      if (packetReceiveNettyEvent.packet instanceof PlayerAbilitiesS2CPacket var2 && this.mode.is("Abilities")) {
+         packetReceiveNettyEvent.setCancelled(true);
+         MinecraftClient var4 = MinecraftClient.getInstance();
          var4.execute(() -> {
-            ClientPlayerEntity var2x = var4.field_1724;
+            ClientPlayerEntity var2x = var4.player;
             if (var2x != null) {
-               PlayerAbilities var3 = var2x.method_31549();
-               var3.field_7480 = var2.method_11695();
-               var3.field_7477 = var2.method_11696();
-               var3.method_7250(var2.method_11691());
+               PlayerAbilities var3 = var2x.getAbilities();
+               var3.invulnerable = var2.isInvulnerable();
+               var3.creativeMode = var2.isCreativeMode();
+               var3.setWalkSpeed(var2.getWalkSpeed());
             }
          });
       }
    }
 
-   private static boolean shouldFlyDown(double var0, double var2) {
-      return var0 >= var2 ? true : var2 - var0 < 0.0313;
+   private static boolean shouldFlyDown(double d, double e) {
+      return d >= e ? true : e - d < 0.0313;
    }
 
-   private static void forcePositionPacket(ClientPlayerEntity var0) {
-      ((AccessorLocalPlayer)var0).efn$setPositionReminder(20);
+   private static void forcePositionPacket(ClientPlayerEntity clientPlayerEntity) {
+      ((AccessorLocalPlayer)clientPlayerEntity).efn$setPositionReminder(20);
    }
 
-   private static boolean isOnAir(ClientPlayerEntity var0) {
-      Box var1 = var0.method_5829().method_1014(0.0625).method_1012(0.0, -0.55, 0.0);
-      return var0.method_73183().method_29546(var1).allMatch(AbstractBlockState::method_26215);
+   private static boolean isOnAir(ClientPlayerEntity clientPlayerEntity) {
+      Box var1 = clientPlayerEntity.getBoundingBox().expand(0.0625).stretch(0.0, -0.55, 0.0);
+      return clientPlayerEntity.getEntityWorld().getStatesInBox(var1).allMatch(AbstractBlockState::isAir);
    }
 
    private static boolean isFreecamActive() {
@@ -287,19 +279,19 @@ public final class FlyModule extends ClientModule {
       return var0 != null && var0.isEnabled();
    }
 
-   private static void abilitiesOff(ClientPlayerEntity var0) {
-      if (!var0.method_7325()) {
-         PlayerAbilities var1 = var0.method_31549();
-         var1.field_7479 = false;
-         var1.method_7248(0.05F);
-         if (!var1.field_7477) {
-            var1.field_7478 = false;
+   private static void abilitiesOff(ClientPlayerEntity clientPlayerEntity) {
+      if (!clientPlayerEntity.isSpectator()) {
+         PlayerAbilities var1 = clientPlayerEntity.getAbilities();
+         var1.flying = false;
+         var1.setFlySpeed(0.05F);
+         if (!var1.creativeMode) {
+            var1.allowFlying = false;
          }
       }
    }
 
-   public float getOffGroundSpeed(ClientPlayerEntity var1) {
-      return this.isEnabled() && this.mode.is("Velocity") ? this.speed.get() * (var1.method_5624() ? 15.0F : 10.0F) : -1.0F;
+   public float getOffGroundSpeed(ClientPlayerEntity clientPlayerEntity) {
+      return this.isEnabled() && this.mode.is("Velocity") ? this.speed.get() * (clientPlayerEntity.isSprinting() ? 15.0F : 10.0F) : -1.0F;
    }
 
    public boolean noSneak() {

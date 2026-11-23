@@ -28,26 +28,26 @@ public abstract class MixinMultiPlayerGameMode {
    }
 
    @Inject(
-      method = {"method_2918"},
+      method = {"attackEntity"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_636;method_2911()V"
+         target = "Lnet/minecraft/client/network/ClientPlayerInteractionManager;syncSelectedSlot()V"
       )}
    )
-   private void efn$beforeAttack(PlayerEntity var1, Entity var2, CallbackInfo var3) {
+   private void efn$beforeAttack(PlayerEntity playerEntity, Entity entity, CallbackInfo callbackInfo) {
       WTapRecodeModule var4 = ModuleRegistry.get(WTapRecodeModule.class);
       if (var4 != null && var4.isEnabled()) {
-         var4.beforeAttack(var1, var2);
+         var4.beforeAttack(playerEntity, entity);
       }
    }
 
    @Inject(
-      method = {"method_2918"},
+      method = {"attackEntity"},
       at = {@At("RETURN")}
    )
-   private void efn$afterAttack(PlayerEntity var1, Entity var2, CallbackInfo var3) {
-      if (var1 == MinecraftClient.method_1551().field_1724) {
-         MeleeAttacks.noteAction(var1);
+   private void efn$afterAttack(PlayerEntity playerEntity, Entity entity, CallbackInfo callbackInfo) {
+      if (playerEntity == MinecraftClient.getInstance().player) {
+         MeleeAttacks.noteAction(playerEntity);
       }
 
       WTapRecodeModule var4;
@@ -57,11 +57,11 @@ public abstract class MixinMultiPlayerGameMode {
    }
 
    @Inject(
-      method = {"method_75407"},
+      method = {"attackWithPiercingWeapon"},
       at = {@At("RETURN")}
    )
-   private void efn$afterStab(PiercingWeaponComponent var1, CallbackInfo var2) {
-      MeleeAttacks.noteAction(MinecraftClient.method_1551().field_1724);
+   private void efn$afterStab(PiercingWeaponComponent piercingWeaponComponent, CallbackInfo callbackInfo) {
+      MeleeAttacks.noteAction(MinecraftClient.getInstance().player);
       WTapRecodeModule var3 = ModuleRegistry.get(WTapRecodeModule.class);
       if (var3 != null && var3.isEnabled()) {
          var3.afterStab();
@@ -69,52 +69,56 @@ public abstract class MixinMultiPlayerGameMode {
    }
 
    @Inject(
-      method = {"method_2919"},
+      method = {"interactItem"},
       at = {@At("RETURN")}
    )
-   private void efn$afterUseItem(PlayerEntity var1, Hand var2, CallbackInfoReturnable<ActionResult> var3) {
-      if (var1 == MinecraftClient.method_1551().field_1724) {
-         MeleeAttacks.noteAction(var1);
+   private void efn$afterUseItem(PlayerEntity playerEntity, Hand hand, CallbackInfoReturnable<ActionResult> callbackInfoReturnable) {
+      if (playerEntity == MinecraftClient.getInstance().player) {
+         MeleeAttacks.noteAction(playerEntity);
       }
    }
 
    @Inject(
-      method = {"method_2896"},
+      method = {"interactBlock"},
       at = {@At("RETURN")}
    )
-   private void efn$afterUseItemOn(ClientPlayerEntity var1, Hand var2, BlockHitResult var3, CallbackInfoReturnable<ActionResult> var4) {
-      if (var1 == MinecraftClient.method_1551().field_1724) {
-         MeleeAttacks.noteAction(var1);
+   private void efn$afterUseItemOn(
+      ClientPlayerEntity clientPlayerEntity, Hand hand, BlockHitResult blockHitResult, CallbackInfoReturnable<ActionResult> callbackInfoReturnable
+   ) {
+      if (clientPlayerEntity == MinecraftClient.getInstance().player) {
+         MeleeAttacks.noteAction(clientPlayerEntity);
       }
    }
 
    @Inject(
-      method = {"method_2905"},
+      method = {"interactEntity"},
       at = {@At("RETURN")}
    )
-   private void efn$afterInteract(PlayerEntity var1, Entity var2, Hand var3, CallbackInfoReturnable<ActionResult> var4) {
-      if (var1 == MinecraftClient.method_1551().field_1724) {
-         MeleeAttacks.noteAction(var1);
+   private void efn$afterInteract(PlayerEntity playerEntity, Entity entity, Hand hand, CallbackInfoReturnable<ActionResult> callbackInfoReturnable) {
+      if (playerEntity == MinecraftClient.getInstance().player) {
+         MeleeAttacks.noteAction(playerEntity);
       }
    }
 
    @Inject(
-      method = {"method_2917"},
+      method = {"interactEntityAtLocation"},
       at = {@At("RETURN")}
    )
-   private void efn$afterInteractAt(PlayerEntity var1, Entity var2, EntityHitResult var3, Hand var4, CallbackInfoReturnable<ActionResult> var5) {
-      if (var1 == MinecraftClient.method_1551().field_1724) {
-         MeleeAttacks.noteAction(var1);
+   private void efn$afterInteractAt(
+      PlayerEntity playerEntity, Entity entity, EntityHitResult entityHitResult, Hand hand, CallbackInfoReturnable<ActionResult> callbackInfoReturnable
+   ) {
+      if (playerEntity == MinecraftClient.getInstance().player) {
+         MeleeAttacks.noteAction(playerEntity);
       }
    }
 
    @Inject(
-      method = {"method_2897"},
+      method = {"stopUsingItem"},
       at = {@At("RETURN")}
    )
-   private void efn$afterRelease(PlayerEntity var1, CallbackInfo var2) {
-      if (var1 == MinecraftClient.method_1551().field_1724) {
-         MeleeAttacks.noteAction(var1);
+   private void efn$afterRelease(PlayerEntity playerEntity, CallbackInfo callbackInfo) {
+      if (playerEntity == MinecraftClient.getInstance().player) {
+         MeleeAttacks.noteAction(playerEntity);
       }
    }
 }

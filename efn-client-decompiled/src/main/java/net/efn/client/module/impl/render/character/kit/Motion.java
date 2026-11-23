@@ -48,87 +48,87 @@ public final class Motion {
       return new Motion().idle(2.0F, 10.0F, 0.0F, 0.45F).walk(3.0F, 9.0F, 0.0F, 1.0F).drag(8.0F).hang(0.25F).turn(0.0F, 18.0F).spring(35.0F, 5.0F).bend(1.2F);
    }
 
-   public static Motion skirt(Bone var0) {
-      return new Motion().follow(var0, 0.45F).drag(4.0F).spring(90.0F, 12.0F).bend(1.0F);
+   public static Motion skirt(Bone bone) {
+      return new Motion().follow(bone, 0.45F).drag(4.0F).spring(90.0F, 12.0F).bend(1.0F);
    }
 
    public static Motion cloth() {
       return new Motion().idle(1.5F, 0.0F, 1.5F, 0.3F).walk(5.0F, 0.0F, 2.0F, 2.0F).drag(10.0F).hang(0.6F).turn(8.0F, 0.0F).spring(45.0F, 6.0F).bend(1.4F);
    }
 
-   public Motion rest(float var1, float var2, float var3) {
-      this.restPitch = var1;
-      this.restYaw = var2;
-      this.restRoll = var3;
+   public Motion rest(float f, float g, float h) {
+      this.restPitch = f;
+      this.restYaw = g;
+      this.restRoll = h;
       return this;
    }
 
-   public Motion idle(float var1, float var2, float var3, float var4) {
-      this.idlePitch = var1;
-      this.idleYaw = var2;
-      this.idleRoll = var3;
-      this.idleRate = var4;
+   public Motion idle(float f, float g, float h, float i) {
+      this.idlePitch = f;
+      this.idleYaw = g;
+      this.idleRoll = h;
+      this.idleRate = i;
       return this;
    }
 
-   public Motion idlePhase(float var1) {
-      this.idlePhase = var1 * 0.017453292F;
+   public Motion idlePhase(float f) {
+      this.idlePhase = f * 0.017453292F;
       return this;
    }
 
-   public Motion walk(float var1, float var2, float var3, float var4) {
-      this.walkPitch = var1;
-      this.walkYaw = var2;
-      this.walkRoll = var3;
-      this.walkRate = var4;
+   public Motion walk(float f, float g, float h, float i) {
+      this.walkPitch = f;
+      this.walkYaw = g;
+      this.walkRoll = h;
+      this.walkRate = i;
       return this;
    }
 
-   public Motion walkPhase(float var1) {
-      this.walkPhase = var1 * 0.017453292F;
+   public Motion walkPhase(float f) {
+      this.walkPhase = f * 0.017453292F;
       return this;
    }
 
-   public Motion drag(float var1) {
-      this.drag = var1;
+   public Motion drag(float f) {
+      this.drag = f;
       return this;
    }
 
-   public Motion hang(float var1) {
-      this.hang = var1;
+   public Motion hang(float f) {
+      this.hang = f;
       return this;
    }
 
-   public Motion turn(float var1, float var2) {
-      this.turnRoll = var1;
-      this.turnYaw = var2;
+   public Motion turn(float f, float g) {
+      this.turnRoll = f;
+      this.turnYaw = g;
       return this;
    }
 
-   public Motion follow(Bone var1, float var2) {
-      return this.follow(var1, var2, 0.0F);
+   public Motion follow(Bone bone, float f) {
+      return this.follow(bone, f, 0.0F);
    }
 
-   public Motion follow(Bone var1, float var2, float var3) {
-      this.follow = var1;
-      this.followAmount = var2;
-      this.followLimit = Math.max(0.0F, var3);
+   public Motion follow(Bone bone, float f, float g) {
+      this.follow = bone;
+      this.followAmount = f;
+      this.followLimit = Math.max(0.0F, g);
       return this;
    }
 
-   public Motion spring(float var1, float var2) {
-      this.stiffness = Math.max(0.0F, var1);
-      this.damping = Math.max(0.0F, var2);
+   public Motion spring(float f, float g) {
+      this.stiffness = Math.max(0.0F, f);
+      this.damping = Math.max(0.0F, g);
       return this;
    }
 
-   public Motion bend(float var1) {
-      this.bend = Math.max(0.0F, var1);
+   public Motion bend(float f) {
+      this.bend = Math.max(0.0F, f);
       return this;
    }
 
-   public Motion limit(float var1) {
-      this.limit = Math.abs(var1);
+   public Motion limit(float f) {
+      this.limit = Math.abs(f);
       return this;
    }
 
@@ -173,55 +173,55 @@ public final class Motion {
       return this.bend;
    }
 
-   public void target(Motion.Input var1, Bone var2, float[] var3) {
-      float var4 = Math.min(1.0F, Math.max(0.0F, var1.walkSpeed));
-      float var5 = (float)Math.sin(var1.time * this.idleRate * 6.2831855F + this.idlePhase);
-      float var6 = (float)Math.sin(var1.walkPos * 0.6662F * this.walkRate + this.walkPhase) * var4;
-      float var7 = Math.max(-1.5F, Math.min(1.5F, var1.turnRate / 180.0F));
-      int var8 = var2.ordinal();
-      float var9 = (this.restPitch + this.idlePitch * var5 + this.walkPitch * var6 + this.drag * var4) * 0.017453292F - this.hang * var1.pitch[var8];
+   public void target(Motion.Input input, Bone bone, float[] fs) {
+      float var4 = Math.min(1.0F, Math.max(0.0F, input.walkSpeed));
+      float var5 = (float)Math.sin(input.time * this.idleRate * 6.2831855F + this.idlePhase);
+      float var6 = (float)Math.sin(input.walkPos * 0.6662F * this.walkRate + this.walkPhase) * var4;
+      float var7 = Math.max(-1.5F, Math.min(1.5F, input.turnRate / 180.0F));
+      int var8 = bone.ordinal();
+      float var9 = (this.restPitch + this.idlePitch * var5 + this.walkPitch * var6 + this.drag * var4) * 0.017453292F - this.hang * input.pitch[var8];
       float var10 = (this.restYaw + this.idleYaw * var5 + this.walkYaw * var6 + this.turnYaw * var7) * 0.017453292F;
       float var11 = (this.restRoll + this.idleRoll * var5 + this.walkRoll * var6 + this.turnRoll * var7) * 0.017453292F;
       if (this.follow != null) {
          int var12 = this.follow.ordinal();
-         var9 += soft(this.followAmount * (var1.pitch[var12] - var1.pitch[var8]), this.followLimit);
-         var10 += soft(this.followAmount * (var1.yaw[var12] - var1.yaw[var8]), this.followLimit);
-         var11 += soft(this.followAmount * (var1.roll[var12] - var1.roll[var8]), this.followLimit);
+         var9 += soft(this.followAmount * (input.pitch[var12] - input.pitch[var8]), this.followLimit);
+         var10 += soft(this.followAmount * (input.yaw[var12] - input.yaw[var8]), this.followLimit);
+         var11 += soft(this.followAmount * (input.roll[var12] - input.roll[var8]), this.followLimit);
       }
 
       float var13 = this.limit * 0.017453292F;
-      var3[0] = Math.max(-var13, Math.min(var13, var9));
-      var3[1] = Math.max(-var13, Math.min(var13, var10));
-      var3[2] = Math.max(-var13, Math.min(var13, var11));
+      fs[0] = Math.max(-var13, Math.min(var13, var9));
+      fs[1] = Math.max(-var13, Math.min(var13, var10));
+      fs[2] = Math.max(-var13, Math.min(var13, var11));
    }
 
-   static float soft(float var0, float var1) {
-      if (var1 <= 0.0F) {
-         return var0;
+   static float soft(float f, float g) {
+      if (g <= 0.0F) {
+         return f;
       } else {
-         float var2 = var1 * 0.017453292F;
-         return var2 * (float)Math.tanh(var0 / var2);
+         float var2 = g * 0.017453292F;
+         return var2 * (float)Math.tanh(f / var2);
       }
    }
 
-   public void step(float[] var1, int var2, float[] var3, float var4) {
-      if (!(this.stiffness <= 0.0F) && !(var4 <= 0.0F) && !(var4 > 0.25F) && !Float.isNaN(var1[var2])) {
-         int var11 = Math.max(1, (int)Math.ceil(var4 * 120.0F));
-         float var6 = var4 / var11;
+   public void step(float[] fs, int i, float[] gs, float f) {
+      if (!(this.stiffness <= 0.0F) && !(f <= 0.0F) && !(f > 0.25F) && !Float.isNaN(fs[i])) {
+         int var11 = Math.max(1, (int)Math.ceil(f * 120.0F));
+         float var6 = f / var11;
 
          for (int var7 = 0; var7 < var11; var7++) {
             for (int var8 = 0; var8 < 3; var8++) {
-               float var9 = var1[var2 + var8];
-               float var10 = var1[var2 + 3 + var8];
-               var10 += (this.stiffness * (var3[var8] - var9) - this.damping * var10) * var6;
-               var1[var2 + 3 + var8] = var10;
-               var1[var2 + var8] = var9 + var10 * var6;
+               float var9 = fs[i + var8];
+               float var10 = fs[i + 3 + var8];
+               var10 += (this.stiffness * (gs[var8] - var9) - this.damping * var10) * var6;
+               fs[i + 3 + var8] = var10;
+               fs[i + var8] = var9 + var10 * var6;
             }
          }
       } else {
          for (int var5 = 0; var5 < 3; var5++) {
-            var1[var2 + var5] = var3[var5];
-            var1[var2 + 3 + var5] = 0.0F;
+            fs[i + var5] = gs[var5];
+            fs[i + 3 + var5] = 0.0F;
          }
       }
    }

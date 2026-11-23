@@ -16,11 +16,11 @@ public abstract class MixinFlyLocalPlayer {
    }
 
    @ModifyReturnValue(
-      method = {"method_5715"},
+      method = {"isSneaking"},
       at = {@At("RETURN")}
    )
-   private boolean efn$flyNoSneak(boolean var1) {
-      if (!var1) {
+   private boolean efn$flyNoSneak(boolean bl) {
+      if (!bl) {
          return false;
       } else {
          FlyModule var2 = FlyModule.active;
@@ -29,14 +29,14 @@ public abstract class MixinFlyLocalPlayer {
    }
 
    @ModifyExpressionValue(
-      method = {"method_6007"},
+      method = {"tickMovement"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_1656;method_7252()F"
+         target = "Lnet/minecraft/entity/player/PlayerAbilities;getFlySpeed()F"
       )}
    )
-   private float efn$flyFreecamVertical(float var1) {
+   private float efn$flyFreecamVertical(float f) {
       FlyModule var2 = FlyModule.active;
-      return var2 != null && var2.suppressFlightVerticalInput() ? 0.0F : var1;
+      return var2 != null && var2.suppressFlightVerticalInput() ? 0.0F : f;
    }
 }

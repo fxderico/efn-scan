@@ -58,14 +58,14 @@ public final class ToggleToasts {
    }
 
    public static void install() {
-      ModuleToggleEvent.TYPE.listen(OWNER, var0 -> show(var0.module, var0.enabled));
+      ModuleToggleEvent.TYPE.listen(OWNER, moduleToggleEvent -> show(moduleToggleEvent.module, moduleToggleEvent.enabled));
    }
 
-   public static void show(ClientModule var0, boolean var1) {
-      if (var0.toggleMessageOn()) {
-         MinecraftClient var2 = MinecraftClient.method_1551();
-         if (var2.field_1724 != null && var2.field_1687 != null) {
-            PENDING.add(new ToggleToasts.Toggle(var0, var1));
+   public static void show(ClientModule clientModule, boolean bl) {
+      if (clientModule.toggleMessageOn()) {
+         MinecraftClient var2 = MinecraftClient.getInstance();
+         if (var2.player != null && var2.world != null) {
+            PENDING.add(new ToggleToasts.Toggle(clientModule, bl));
          }
       }
    }
@@ -75,8 +75,8 @@ public final class ToggleToasts {
    }
 
    public static void render() {
-      MinecraftClient var1 = MinecraftClient.method_1551();
-      if (var1.field_1687 == null) {
+      MinecraftClient var1 = MinecraftClient.getInstance();
+      if (var1.world == null) {
          PENDING.clear();
          TOASTS.clear();
          lift = 0.0F / 0.0F;
@@ -101,22 +101,22 @@ public final class ToggleToasts {
       }
    }
 
-   private static void add(ToggleToasts.Toggle var0) {
+   private static void add(ToggleToasts.Toggle toggle) {
       ToggleToasts.Toast var1 = null;
 
       for (ToggleToasts.Toast var3 : TOASTS) {
-         if (var3.module == var0.module()) {
+         if (var3.module == toggle.module()) {
             var1 = var3;
             break;
          }
       }
 
       if (var1 == null) {
-         var1 = new ToggleToasts.Toast(var0.module());
+         var1 = new ToggleToasts.Toast(toggle.module());
          TOASTS.add(var1);
       }
 
-      var1.enabled = var0.enabled();
+      var1.enabled = toggle.enabled();
       var1.leaving = false;
       var1.hold = 2.0F;
       int var5 = 1;
@@ -131,18 +131,18 @@ public final class ToggleToasts {
       }
    }
 
-   private static void step(float var0) {
+   private static void step(float f) {
       for (int var1 = TOASTS.size() - 1; var1 >= 0; var1--) {
          ToggleToasts.Toast var2 = TOASTS.get(var1);
          if (var2.leaving) {
-            var2.shown -= var0 / 0.18F;
+            var2.shown -= f / 0.18F;
             if (var2.shown <= 0.0F) {
                TOASTS.remove(var1);
             }
          } else if (var2.shown < 1.0F) {
-            var2.shown = Math.min(1.0F, var2.shown + var0 / 0.16F);
+            var2.shown = Math.min(1.0F, var2.shown + f / 0.16F);
          } else {
-            var2.hold -= var0;
+            var2.hold -= f;
             if (var2.hold <= 0.0F) {
                var2.leaving = true;
             }
@@ -150,24 +150,24 @@ public final class ToggleToasts {
       }
    }
 
-   private static float liftTarget(MinecraftClient var0, float var1) {
-      return var0.field_1755 instanceof ChatScreen ? 14.0F * var0.method_22683().method_4495() + 6.0F * var1 : 10.0F * var1;
+   private static float liftTarget(MinecraftClient minecraftClient, float f) {
+      return minecraftClient.currentScreen instanceof ChatScreen ? 14.0F * minecraftClient.getWindow().getScaleFactor() + 6.0F * f : 10.0F * f;
    }
 
-   private static boolean hidden(MinecraftClient var0) {
-      return var0.field_1690.field_1842 && var0.field_1755 == null
+   private static boolean hidden(MinecraftClient minecraftClient) {
+      return minecraftClient.options.hudHidden && minecraftClient.currentScreen == null
          ? true
-         : var0.method_18506() != null
-            || var0.field_1755 instanceof LevelLoadingScreen
-            || var0.field_1755 instanceof MessageScreen
-            || var0.field_1755 instanceof ProgressScreen;
+         : minecraftClient.getOverlay() != null
+            || minecraftClient.currentScreen instanceof LevelLoadingScreen
+            || minecraftClient.currentScreen instanceof MessageScreen
+            || minecraftClient.currentScreen instanceof ProgressScreen;
    }
 
-   private static void draw(float var0) {
+   private static void draw(float f) {
       HudModule var1 = ModuleRegistry.get(HudModule.class);
       HudModule.ToastStyle var2 = var1 != null ? var1.toastStyle() : HudModule.ToastStyle.BAR;
       Surface var3 = HudTheme.get().toasts;
-      ToggleToasts.Look var4 = look(var2, var0, HudChrome.needsTextGuard(var3));
+      ToggleToasts.Look var4 = look(var2, f, HudChrome.needsTextGuard(var3));
       float var5 = ImGui.getIO().getDisplaySizeY() - lift;
 
       for (int var6 = TOASTS.size() - 1; var6 >= 0; var6--) {
@@ -175,13 +175,13 @@ public final class ToggleToasts {
          var7.open = ClickGuiRenderer.easeOut(Math.max(0.0F, Math.min(1.0F, var7.shown)));
          var7.bottom = Math.round(var5);
          var7.top = Math.round(var5 - var4.h() * var7.open);
-         var5 -= (var4.h() + 6.0F * var0) * var7.open;
+         var5 -= (var4.h() + 6.0F * f) * var7.open;
       }
 
       ImDrawList var21 = ImGui.getForegroundDrawList();
       boolean var22 = var1 == null || var1.shadow();
-      float var8 = HudTheme.get().rounding.get() * var0;
-      float var9 = Math.round(10.0F * var0);
+      float var8 = HudTheme.get().rounding.get() * f;
+      float var9 = Math.round(10.0F * f);
 
       for (ToggleToasts.Toast var11 : TOASTS) {
          float var13 = var11.bottom - var11.top;
@@ -191,7 +191,7 @@ public final class ToggleToasts {
             float var16 = measure(var2, var4, var15);
             float var17 = Math.round(var9 - (var16 + var9) * (1.0F - var11.open));
             float var18 = var11.open;
-            HudChrome.card(var21, var3, var17, var11.top, var16, var13, var8, var18, var22, var0);
+            HudChrome.card(var21, var3, var17, var11.top, var16, var13, var8, var18, var22, f);
             boolean var12 = var13 < var4.h() - 0.5F;
             if (var12) {
                var21.pushClipRect(var17, var11.top, var17 + var16, var11.bottom, true);
@@ -216,133 +216,133 @@ public final class ToggleToasts {
       }
    }
 
-   private static ToggleToasts.Look look(HudModule.ToastStyle var0, float var1, boolean var2) {
+   private static ToggleToasts.Look look(HudModule.ToastStyle toastStyle, float f, boolean bl) {
       ImGuiManager var3 = ImGuiManager.getInstance();
       ImFont var4 = var3.hudTextFont();
       ImFont var5 = var3.hudLabelFont();
-      int var6 = HudChrome.px(17.0F, var1);
-      int var7 = HudChrome.px(14.0F, var1);
-      float var8 = var0 == HudModule.ToastStyle.CARD ? Math.round(8.0F * var1 * 2.0F + var6 + 2.0F * var1 + var7) : Math.round(28.0F * var1);
-      float var9 = Math.max(HudChrome.width(var5, var7, state(var0, true)), HudChrome.width(var5, var7, state(var0, false)));
-      if (var0 == HudModule.ToastStyle.CHIP) {
-         var9 = (float)Math.ceil(var9 + 6.0F * var1 * 2.0F);
+      int var6 = HudChrome.px(17.0F, f);
+      int var7 = HudChrome.px(14.0F, f);
+      float var8 = toastStyle == HudModule.ToastStyle.CARD ? Math.round(8.0F * f * 2.0F + var6 + 2.0F * f + var7) : Math.round(28.0F * f);
+      float var9 = Math.max(HudChrome.width(var5, var7, state(toastStyle, true)), HudChrome.width(var5, var7, state(toastStyle, false)));
+      if (toastStyle == HudModule.ToastStyle.CHIP) {
+         var9 = (float)Math.ceil(var9 + 6.0F * f * 2.0F);
       }
 
-      return new ToggleToasts.Look(var4, var6, var5, var7, var1, var8, var9, WorldText.hudAccent(), var2);
+      return new ToggleToasts.Look(var4, var6, var5, var7, f, var8, var9, WorldText.hudAccent(), bl);
    }
 
-   private static String state(HudModule.ToastStyle var0, boolean var1) {
-      return switch (var0) {
-         case CARD -> var1 ? "Enabled" : "Disabled";
-         case CHIP -> var1 ? "ON" : "OFF";
-         case BAR -> var1 ? "on" : "off";
+   private static String state(HudModule.ToastStyle toastStyle, boolean bl) {
+      return switch (toastStyle) {
+         case CARD -> bl ? "Enabled" : "Disabled";
+         case CHIP -> bl ? "ON" : "OFF";
+         case BAR -> bl ? "on" : "off";
       };
    }
 
-   private static float measure(HudModule.ToastStyle var0, ToggleToasts.Look var1, float var2) {
-      float var3 = var1.s();
+   private static float measure(HudModule.ToastStyle toastStyle, ToggleToasts.Look look, float f) {
+      float var3 = look.s();
 
-      float var4 = switch (var0) {
-         case CARD -> 12.0F * var3 * 2.0F + 14.0F * var3 + Math.max(var2, var1.stateW());
-         case CHIP -> 12.0F * var3 + var2 + 10.0F * var3 + var1.stateW() + chipInset(var1);
-         case BAR -> 12.0F * var3 * 2.0F + var2 + 10.0F * var3 * 2.0F + 1.0F + var1.stateW();
+      float var4 = switch (toastStyle) {
+         case CARD -> 12.0F * var3 * 2.0F + 14.0F * var3 + Math.max(f, look.stateW());
+         case CHIP -> 12.0F * var3 + f + 10.0F * var3 + look.stateW() + chipInset(look);
+         case BAR -> 12.0F * var3 * 2.0F + f + 10.0F * var3 * 2.0F + 1.0F + look.stateW();
       };
       return (float)Math.ceil(var4);
    }
 
-   private static float chipInset(ToggleToasts.Look var0) {
-      return (float)Math.floor((var0.h() - Math.round(16.0F * var0.s())) * 0.5F);
+   private static float chipInset(ToggleToasts.Look look) {
+      return (float)Math.floor((look.h() - Math.round(16.0F * look.s())) * 0.5F);
    }
 
-   private static void drawBar(ImDrawList var0, ToggleToasts.Look var1, ToggleToasts.Toast var2, float var3, float var4, float var5, float var6) {
-      float var7 = var1.s();
-      float var8 = var4 + (float)Math.floor((var1.h() - var1.namePx()) * 0.5F);
-      float var9 = var8 + HudChrome.baselineOffset(var1.name(), var1.namePx(), var1.label(), var1.labelPx());
-      float var10 = Math.round(var3 + 12.0F * var7);
-      HudChrome.text(var0, var1.name(), var1.namePx(), var10, var8, HudChrome.scaleAlpha(HudChrome.TEXT_VALUE, var6), var2.module.name(), var1.guard());
+   private static void drawBar(ImDrawList imDrawList, ToggleToasts.Look look, ToggleToasts.Toast toast, float f, float g, float h, float i) {
+      float var7 = look.s();
+      float var8 = g + (float)Math.floor((look.h() - look.namePx()) * 0.5F);
+      float var9 = var8 + HudChrome.baselineOffset(look.name(), look.namePx(), look.label(), look.labelPx());
+      float var10 = Math.round(f + 12.0F * var7);
+      HudChrome.text(imDrawList, look.name(), look.namePx(), var10, var8, HudChrome.scaleAlpha(HudChrome.TEXT_VALUE, i), toast.module.name(), look.guard());
       float var12;
-      HudChrome.divider(var0, var12 = var10 + (var5 + 10.0F * var7), var4 + var1.h() * 0.5F, 12.0F * var7, var6);
-      int var11 = HudChrome.scaleAlpha(var2.enabled ? var1.accent() : HudChrome.TEXT_LABEL, var6);
+      HudChrome.divider(imDrawList, var12 = var10 + (h + 10.0F * var7), g + look.h() * 0.5F, 12.0F * var7, i);
+      int var11 = HudChrome.scaleAlpha(toast.enabled ? look.accent() : HudChrome.TEXT_LABEL, i);
       HudChrome.text(
-         var0,
-         var1.label(),
-         var1.labelPx(),
+         imDrawList,
+         look.label(),
+         look.labelPx(),
          Math.round(var10 = var12 + (1.0F + 10.0F * var7)),
          var9,
          var11,
-         state(HudModule.ToastStyle.BAR, var2.enabled),
-         var1.guard()
+         state(HudModule.ToastStyle.BAR, toast.enabled),
+         look.guard()
       );
    }
 
-   private static void drawCard(ImDrawList var0, ToggleToasts.Look var1, ToggleToasts.Toast var2, float var3, float var4, float var5) {
-      float var6 = var1.s();
-      var0.addCircleFilled(
-         var3 + 15.0F * var6, var4 + var1.h() * 0.5F, 3.0F * var6, HudChrome.scaleAlpha(var2.enabled ? var1.accent() : HudChrome.TEXT_LABEL, var5), 0
+   private static void drawCard(ImDrawList imDrawList, ToggleToasts.Look look, ToggleToasts.Toast toast, float f, float g, float h) {
+      float var6 = look.s();
+      imDrawList.addCircleFilled(
+         f + 15.0F * var6, g + look.h() * 0.5F, 3.0F * var6, HudChrome.scaleAlpha(toast.enabled ? look.accent() : HudChrome.TEXT_LABEL, h), 0
       );
-      float var7 = Math.round(var3 + 26.0F * var6);
-      float var8 = Math.round(var4 + 8.0F * var6);
-      HudChrome.text(var0, var1.name(), var1.namePx(), var7, var8, HudChrome.scaleAlpha(HudChrome.TEXT_VALUE, var5), var2.module.name(), var1.guard());
+      float var7 = Math.round(f + 26.0F * var6);
+      float var8 = Math.round(g + 8.0F * var6);
+      HudChrome.text(imDrawList, look.name(), look.namePx(), var7, var8, HudChrome.scaleAlpha(HudChrome.TEXT_VALUE, h), toast.module.name(), look.guard());
       HudChrome.text(
-         var0,
-         var1.label(),
-         var1.labelPx(),
+         imDrawList,
+         look.label(),
+         look.labelPx(),
          var7,
-         Math.round(var8 + var1.namePx() + 2.0F * var6),
-         HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, var5),
-         state(HudModule.ToastStyle.CARD, var2.enabled),
-         var1.guard()
+         Math.round(var8 + look.namePx() + 2.0F * var6),
+         HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, h),
+         state(HudModule.ToastStyle.CARD, toast.enabled),
+         look.guard()
       );
    }
 
-   private static void drawChip(ImDrawList var0, ToggleToasts.Look var1, ToggleToasts.Toast var2, float var3, float var4, float var5, float var6) {
-      float var7 = var1.s();
-      float var8 = var4 + (float)Math.floor((var1.h() - var1.namePx()) * 0.5F);
+   private static void drawChip(ImDrawList imDrawList, ToggleToasts.Look look, ToggleToasts.Toast toast, float f, float g, float h, float i) {
+      float var7 = look.s();
+      float var8 = g + (float)Math.floor((look.h() - look.namePx()) * 0.5F);
       HudChrome.text(
-         var0,
-         var1.name(),
-         var1.namePx(),
-         Math.round(var3 + 12.0F * var7),
+         imDrawList,
+         look.name(),
+         look.namePx(),
+         Math.round(f + 12.0F * var7),
          var8,
-         HudChrome.scaleAlpha(HudChrome.TEXT_VALUE, var6),
-         var2.module.name(),
-         var1.guard()
+         HudChrome.scaleAlpha(HudChrome.TEXT_VALUE, i),
+         toast.module.name(),
+         look.guard()
       );
-      float var9 = chipInset(var1);
+      float var9 = chipInset(look);
       float var10 = Math.round(16.0F * var7);
-      float var11 = var3 + var5 - var9;
-      float var12 = var11 - var1.stateW();
-      float var13 = var4 + var9;
+      float var11 = f + h - var9;
+      float var12 = var11 - look.stateW();
+      float var13 = g + var9;
       float var14 = Math.min(HudTheme.get().rounding.get(), 4.0F) * var7;
-      if (var2.enabled) {
-         var0.addRectFilled(var12, var13, var11, var13 + var10, HudChrome.scaleAlpha(var1.accent(), var6), var14);
+      if (toast.enabled) {
+         imDrawList.addRectFilled(var12, var13, var11, var13 + var10, HudChrome.scaleAlpha(look.accent(), i), var14);
       } else {
-         var0.addRect(var12, var13, var11, var13 + var10, HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, var6 * 0.55F), var14, 0, 1.0F);
+         imDrawList.addRect(var12, var13, var11, var13 + var10, HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, i * 0.55F), var14, 0, 1.0F);
       }
 
-      String var15 = state(HudModule.ToastStyle.CHIP, var2.enabled);
-      float var16 = Math.round(var12 + (var1.stateW() - HudChrome.width(var1.label(), var1.labelPx(), var15)) * 0.5F);
-      float var17 = Math.round(var13 + var10 * 0.5F - capMiddle(var1.label(), var1.labelPx()));
+      String var15 = state(HudModule.ToastStyle.CHIP, toast.enabled);
+      float var16 = Math.round(var12 + (look.stateW() - HudChrome.width(look.label(), look.labelPx(), var15)) * 0.5F);
+      float var17 = Math.round(var13 + var10 * 0.5F - capMiddle(look.label(), look.labelPx()));
       HudChrome.text(
-         var0,
-         var1.label(),
-         var1.labelPx(),
+         imDrawList,
+         look.label(),
+         look.labelPx(),
          var16,
          var17,
-         HudChrome.scaleAlpha(var2.enabled ? -1 : HudChrome.TEXT_LABEL, var6),
+         HudChrome.scaleAlpha(toast.enabled ? -1 : HudChrome.TEXT_LABEL, i),
          var15,
-         !var2.enabled && var1.guard()
+         !toast.enabled && look.guard()
       );
    }
 
-   private static float capMiddle(ImFont var0, int var1) {
-      float var3 = var1 * 0.2F;
+   private static float capMiddle(ImFont imFont, int i) {
+      float var3 = i * 0.2F;
       ImFontGlyph var2;
-      if (var0 != null && var0.getFontSize() > 0.0F && (var2 = var0.findGlyphNoFallback(72)).isValidPtr()) {
-         var3 = var2.getY0() * var1 / var0.getFontSize();
+      if (imFont != null && imFont.getFontSize() > 0.0F && (var2 = imFont.findGlyphNoFallback(72)).isValidPtr()) {
+         var3 = var2.getY0() * i / imFont.getFontSize();
       }
 
-      return (var3 + HudChrome.ascent(var0, var1)) * 0.5F;
+      return (var3 + HudChrome.ascent(imFont, i)) * 0.5F;
    }
 
    @Environment(EnvType.CLIENT)
@@ -360,8 +360,8 @@ public final class ToggleToasts {
       float top;
       float bottom;
 
-      Toast(ClientModule var1) {
-         this.module = var1;
+      Toast(ClientModule clientModule) {
+         this.module = clientModule;
       }
    }
 

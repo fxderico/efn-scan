@@ -20,7 +20,6 @@ import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
 import org.joml.Vector3fc;
 import org.joml.Vector4f;
 
@@ -117,29 +116,29 @@ public final class AtmosphereModule extends ClientModule {
       this.auroraHere = 0.0F;
    }
 
-   public void extract(ClientWorld var1, float var2, SkyRenderState var3) {
+   public void extract(ClientWorld clientWorld, float f, SkyRenderState skyRenderState) {
       this.shaderRendered = false;
-      this.night = MathHelper.method_15363(var3.field_63094 * 2.0F, 0.0F, 1.0F);
-      float var4 = 1.0F - var3.field_63093;
-      float var5 = var1.method_8478(var2);
+      this.night = MathHelper.clamp(skyRenderState.starBrightness * 2.0F, 0.0F, 1.0F);
+      float var4 = 1.0F - skyRenderState.rainGradient;
+      float var5 = clientWorld.getThunderGradient(f);
       if (this.keepInRain.get()) {
-         this.night = Math.max(this.night, clearNight(var3.field_63091) * var4);
-         var3.field_63094 = Math.max(var3.field_63094, this.night * 0.5F);
-         var3.field_63093 = 1.0F;
+         this.night = Math.max(this.night, clearNight(skyRenderState.sunAngle) * var4);
+         skyRenderState.starBrightness = Math.max(skyRenderState.starBrightness, this.night * 0.5F);
+         skyRenderState.rainGradient = 1.0F;
          var4 = 0.0F;
          var5 = 0.0F;
       }
 
       this.rainBrightness = 1.0F - var4;
       AtmosphereModule.Theme var6 = this.currentTheme();
-      int var7 = ((AccessorAtmosphereClientLevel)var1).efn$atmosphereSkyFlash();
+      int var7 = ((AccessorAtmosphereClientLevel)clientWorld).efn$atmosphereSkyFlash();
       this.sky
          .update(
-            var3.field_63091,
-            var3.field_64465,
+            skyRenderState.sunAngle,
+            skyRenderState.moonAngle,
             var4,
             var5,
-            var7 > 0 ? Math.min(1.0F, (var7 - var2) / 2.0F) : 0.0F,
+            var7 > 0 ? Math.min(1.0F, (var7 - f) / 2.0F) : 0.0F,
             var6.nightZenith,
             var6.nightHorizon,
             var6.twilight
@@ -150,8 +149,8 @@ public final class AtmosphereModule extends ClientModule {
       return this.keepInRain.get();
    }
 
-   private static float clearNight(float var0) {
-      float var1 = MathHelper.method_15363(0.75F - 2.0F * MathHelper.method_15362(var0), 0.0F, 1.0F);
+   private static float clearNight(float f) {
+      float var1 = MathHelper.clamp(0.75F - 2.0F * MathHelper.cos(f), 0.0F, 1.0F);
       return var1 * var1;
    }
 
@@ -207,42 +206,42 @@ public final class AtmosphereModule extends ClientModule {
    }
 
    private float shaderVisibility() {
-      return MathHelper.method_16439(this.night, this.shaderDaytime.get(), 1.0F) * (0.4F + 0.6F * this.rainBrightness);
+      return MathHelper.lerp(this.night, this.shaderDaytime.get(), 1.0F) * (0.4F + 0.6F * this.rainBrightness);
    }
 
    public boolean replacesSunrise() {
       return this.gradientSky.get() && this.sky.ready();
    }
 
-   public boolean stars(MatrixStack var1) {
+   public boolean stars(MatrixStack matrixStack) {
       if (this.shaderRendered) {
          return true;
       } else {
          float var2 = this.night * this.rainBrightness;
          if (this.milkyWay.get()) {
-            this.starField.renderBand(var1, var2 * this.milkyWayBrightness.get(), this.currentTheme().milkyWay);
+            this.starField.renderBand(matrixStack, var2 * this.milkyWayBrightness.get(), this.currentTheme().milkyWay);
          }
 
          if (!this.stars.get()) {
             return false;
          } else {
-            this.starField.renderStars(var1, var2, this.starBrightness.get());
+            this.starField.renderStars(matrixStack, var2, this.starBrightness.get());
             return true;
          }
       }
    }
 
-   public void beforeMoon(MatrixStack var1) {
+   public void beforeMoon(MatrixStack matrixStack) {
       this.moonScaled = this.celestialGlow.get();
       if (this.moonScaled) {
-         var1.method_22903();
-         var1.method_22905(1.4F, 1.0F, 1.4F);
+         matrixStack.push();
+         matrixStack.scale(1.4F, 1.0F, 1.4F);
       }
    }
 
-   public void afterMoon(MatrixStack var1) {
+   public void afterMoon(MatrixStack matrixStack) {
       if (this.moonScaled) {
-         var1.method_22909();
+         matrixStack.pop();
       }
 
       this.moonScaled = false;
@@ -277,56 +276,56 @@ public final class AtmosphereModule extends ClientModule {
       } else if (this.aurora.is("Always")) {
          return 1.0F;
       } else {
-         MinecraftClient var1 = MinecraftClient.method_1551();
-         if (var1.field_1687 == null) {
+         MinecraftClient var1 = MinecraftClient.getInstance();
+         if (var1.world == null) {
             return 0.0F;
          } else {
-            BlockPos var2 = BlockPos.method_49638(var1.field_1773.method_19418().method_71156());
-            return ((Biome)var1.field_1687.method_23753(var2).comp_349()).method_33599(var2, var1.field_1687.method_8615()) ? 1.0F : 0.0F;
+            BlockPos var2 = BlockPos.ofFloored(var1.gameRenderer.getCamera().getCameraPos());
+            return var1.world.getBiome(var2).value().isCold(var2, var1.world.getSeaLevel()) ? 1.0F : 0.0F;
          }
       }
    }
 
-   public void fog(Camera var1, ClientWorld var2, Vector4f var3) {
-      if (var2.method_27983() == World.field_25179) {
+   public void fog(Camera camera, ClientWorld clientWorld, Vector4f vector4f) {
+      if (clientWorld.getRegistryKey() == World.OVERWORLD) {
          if (this.gradientSky.get() && this.sky.ready()) {
-            Vector3fc var4 = var1.method_19335();
+            Vector3fc var4 = camera.getHorizontalPlane();
             int var5 = this.sky.horizonToward(var4.x(), var4.z());
-            var3.x = (var5 >> 16 & 0xFF) / 255.0F;
-            var3.y = (var5 >> 8 & 0xFF) / 255.0F;
-            var3.z = (var5 & 0xFF) / 255.0F;
+            vector4f.x = (var5 >> 16 & 0xFF) / 255.0F;
+            vector4f.y = (var5 >> 8 & 0xFF) / 255.0F;
+            vector4f.z = (var5 & 0xFF) / 255.0F;
          }
 
          if (this.shaderOn()) {
-            this.shaderFog(var3);
+            this.shaderFog(vector4f);
          }
-      } else if (var2.method_27983() == World.field_25180 && this.netherColors.get()) {
-         float var6 = 0.2126F * var3.x + 0.7152F * var3.y + 0.0722F * var3.z;
-         var3.x = MathHelper.method_15363((var6 + (var3.x - var6) * 1.45F) * 1.12F, 0.0F, 1.0F);
-         var3.y = MathHelper.method_15363((var6 + (var3.y - var6) * 1.45F) * 1.12F, 0.0F, 1.0F);
-         var3.z = MathHelper.method_15363((var6 + (var3.z - var6) * 1.45F) * 1.12F, 0.0F, 1.0F);
+      } else if (clientWorld.getRegistryKey() == World.NETHER && this.netherColors.get()) {
+         float var6 = 0.2126F * vector4f.x + 0.7152F * vector4f.y + 0.0722F * vector4f.z;
+         vector4f.x = MathHelper.clamp((var6 + (vector4f.x - var6) * 1.45F) * 1.12F, 0.0F, 1.0F);
+         vector4f.y = MathHelper.clamp((var6 + (vector4f.y - var6) * 1.45F) * 1.12F, 0.0F, 1.0F);
+         vector4f.z = MathHelper.clamp((var6 + (vector4f.z - var6) * 1.45F) * 1.12F, 0.0F, 1.0F);
       }
    }
 
-   private void shaderFog(Vector4f var1) {
+   private void shaderFog(Vector4f vector4f) {
       int var2 = this.currentTheme().nightHorizon;
       float var3 = this.shaderAurora() ? 0.85F : 0.3F;
       float var4 = this.shaderVisibility() * 0.85F;
-      var1.x = MathHelper.method_16439(var4, var1.x, (var2 >> 16 & 0xFF) / 255.0F * var3);
-      var1.y = MathHelper.method_16439(var4, var1.y, (var2 >> 8 & 0xFF) / 255.0F * var3);
-      var1.z = MathHelper.method_16439(var4, var1.z, (var2 & 0xFF) / 255.0F * var3);
+      vector4f.x = MathHelper.lerp(var4, vector4f.x, (var2 >> 16 & 0xFF) / 255.0F * var3);
+      vector4f.y = MathHelper.lerp(var4, vector4f.y, (var2 >> 8 & 0xFF) / 255.0F * var3);
+      vector4f.z = MathHelper.lerp(var4, vector4f.z, (var2 & 0xFF) / 255.0F * var3);
    }
 
-   public int clouds(int var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      if (this.cloudColors.get() && this.sky.ready() && var2.field_1687 != null && var2.field_1687.method_27983() == World.field_25179) {
+   public int clouds(int i) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      if (this.cloudColors.get() && this.sky.ready() && var2.world != null && var2.world.getRegistryKey() == World.OVERWORLD) {
          float var3 = this.sky.golden();
          float var4 = this.sky.nightness();
-         int var5 = ColorHelper.method_61319(var3, ColorHelper.method_61319(var4, 16777215, this.currentTheme().nightHorizon), this.sky.twilightGlow());
+         int var5 = ColorHelper.lerp(var3, ColorHelper.lerp(var4, 16777215, this.currentTheme().nightHorizon), this.sky.twilightGlow());
          float var6 = Math.max(var3 * 0.75F, var4 * 0.55F);
-         return keepBrightness(var1, var5, var6);
+         return keepBrightness(i, var5, var6);
       } else {
-         return var1;
+         return i;
       }
    }
 
@@ -337,7 +336,7 @@ public final class AtmosphereModule extends ClientModule {
          long var1 = System.nanoTime();
          this.sky.renderEndDome(this.world);
          MatrixStack var3 = new MatrixStack();
-         var3.method_22907(RotationAxis.field_40716.rotationDegrees((float)(var1 % 1200000000000L) / 1.0E9F * 0.3F));
+         var3.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((float)(var1 % 1200000000000L) / 1.0E9F * 0.3F));
          this.starField.renderNebulae(var3, 1.0F);
          this.starField.renderStars(var3, 1.0F, 1.2F);
          return true;
@@ -357,30 +356,30 @@ public final class AtmosphereModule extends ClientModule {
       );
    }
 
-   private static int keepBrightness(int var0, int var1, float var2) {
-      if (var2 <= 0.0F) {
-         return var0;
+   private static int keepBrightness(int i, int j, float f) {
+      if (f <= 0.0F) {
+         return i;
       } else {
-         float var3 = (var0 >> 16 & 0xFF) / 255.0F;
-         float var4 = (var0 >> 8 & 0xFF) / 255.0F;
-         float var5 = (var0 & 0xFF) / 255.0F;
-         float var6 = (var1 >> 16 & 0xFF) / 255.0F;
-         float var7 = (var1 >> 8 & 0xFF) / 255.0F;
-         float var8 = (var1 & 0xFF) / 255.0F;
+         float var3 = (i >> 16 & 0xFF) / 255.0F;
+         float var4 = (i >> 8 & 0xFF) / 255.0F;
+         float var5 = (i & 0xFF) / 255.0F;
+         float var6 = (j >> 16 & 0xFF) / 255.0F;
+         float var7 = (j >> 8 & 0xFF) / 255.0F;
+         float var8 = (j & 0xFF) / 255.0F;
          float var9 = luminance(var3, var4, var5) / Math.max(luminance(var6, var7, var8), 0.001F);
-         var3 = MathHelper.method_16439(var2, var3, Math.min(1.0F, var6 * var9));
-         var4 = MathHelper.method_16439(var2, var4, Math.min(1.0F, var7 * var9));
-         var5 = MathHelper.method_16439(var2, var5, Math.min(1.0F, var8 * var9));
-         return var0 & 0xFF000000 | channel(var3) << 16 | channel(var4) << 8 | channel(var5);
+         var3 = MathHelper.lerp(f, var3, Math.min(1.0F, var6 * var9));
+         var4 = MathHelper.lerp(f, var4, Math.min(1.0F, var7 * var9));
+         var5 = MathHelper.lerp(f, var5, Math.min(1.0F, var8 * var9));
+         return i & 0xFF000000 | channel(var3) << 16 | channel(var4) << 8 | channel(var5);
       }
    }
 
-   private static float luminance(float var0, float var1, float var2) {
-      return 0.2126F * var0 + 0.7152F * var1 + 0.0722F * var2;
+   private static float luminance(float f, float g, float h) {
+      return 0.2126F * f + 0.7152F * g + 0.0722F * h;
    }
 
-   private static int channel(float var0) {
-      return MathHelper.method_15340(Math.round(var0 * 255.0F), 0, 255);
+   private static int channel(float f) {
+      return MathHelper.clamp(Math.round(f * 255.0F), 0, 255);
    }
 
    @Environment(EnvType.CLIENT)

@@ -119,35 +119,35 @@ final class KnifeSkin {
    private float bladeTo;
 
    private KnifeSkin(
-      String var1,
-      KnifeSkin.Part[] var2,
-      KnifeSkin.Streak[] var3,
-      float var4,
-      float var5,
-      float var6,
-      Vector3f var7,
-      Vector3f var8,
-      Vector3f var9,
-      InspectAnimation.Clip var10,
-      InspectAnimation.Clip var11
+      String string,
+      KnifeSkin.Part[] parts,
+      KnifeSkin.Streak[] streaks,
+      float f,
+      float g,
+      float h,
+      Vector3f vector3f,
+      Vector3f vector3f2,
+      Vector3f vector3f3,
+      InspectAnimation.Clip clip,
+      InspectAnimation.Clip clip2
    ) {
-      this.name = var1;
-      this.parts = var2;
-      this.streaks = var3;
-      this.voxel = var4;
-      this.gripX = var5;
-      this.gripY = var6;
-      this.fist = var7;
-      this.inspect = var10;
-      this.deploy = var11;
-      Vector3f var12 = new Vector3f(var8).normalize();
-      Vector3f var13 = new Vector3f(var9).fma(-var9.dot(var12), var12).normalize();
+      this.name = string;
+      this.parts = parts;
+      this.streaks = streaks;
+      this.voxel = f;
+      this.gripX = g;
+      this.gripY = h;
+      this.fist = vector3f;
+      this.inspect = clip;
+      this.deploy = clip2;
+      Vector3f var12 = new Vector3f(vector3f2).normalize();
+      Vector3f var13 = new Vector3f(vector3f3).fma(-vector3f3.dot(var12), var12).normalize();
       this.rest = new Quaternionf().setFromNormalized(new Matrix3f(var12, var13, new Vector3f(var12).cross(var13)));
-      var7.fma(0.6F, FirstPersonArm.FOREARM, this.elbow);
+      vector3f.fma(0.6F, FirstPersonArm.FOREARM, this.elbow);
    }
 
-   static KnifeSkin of(String var0) {
-      return switch (var0) {
+   static KnifeSkin of(String string) {
+      return switch (string) {
          case "Butterfly" -> butterfly != null ? butterfly : (butterfly = butterfly());
          case "Karambit" -> karambit != null ? karambit : (karambit = karambit());
          case "Katana" -> katana != null ? katana : (katana = katana());
@@ -224,7 +224,7 @@ final class KnifeSkin {
       var2.scabbard = KnifeModels.katanaScabbard();
       var2.saddleX = 20.0F;
       var2.saddleY = 0.0F;
-      var2.centre = var0x -> var0x < 3.0F ? 0.5F : KnifeModels.katanaCentre(var0x);
+      var2.centre = f -> f < 3.0F ? 0.5F : KnifeModels.katanaCentre(f);
       var2.bladeFrom = 3.0F;
       var2.bladeTo = 49.0F;
       var2.letGo = var2.findLetGo();
@@ -251,118 +251,118 @@ final class KnifeSkin {
       return this.streaks.length;
    }
 
-   float streakStrength(int var1) {
-      return this.streaks[var1].strength;
+   float streakStrength(int i) {
+      return this.streaks[i].strength;
    }
 
-   void draw(MatrixStack var1, float[] var2, float var3, boolean var4, float var5, KnifeSkin.Sink var6, float[] var7) {
-      Matrix4f var10 = this.knifeMatrix(var2, var3, var5, new Matrix4f());
-      Vector3f var11 = new Vector3f(this.fist).add(var2[0] * var3, var2[1] * var3, var2[2] * var3);
-      FirstPersonArm.place(var1, var11, this.elbow, var4, var1x -> var6.arm(var1x, false));
-      Matrix4f var12 = this.scabbard != null && var3 >= 0.999F && var2[13] > 0.01F ? this.scabbardMatrix(var2, var5) : null;
+   void draw(MatrixStack matrixStack, float[] fs, float f, boolean bl, float g, KnifeSkin.Sink sink, float[] gs) {
+      Matrix4f var10 = this.knifeMatrix(fs, f, g, new Matrix4f());
+      Vector3f var11 = new Vector3f(this.fist).add(fs[0] * f, fs[1] * f, fs[2] * f);
+      FirstPersonArm.place(matrixStack, var11, this.elbow, bl, matrixStackx -> sink.arm(matrixStackx, false));
+      Matrix4f var12 = this.scabbard != null && f >= 0.999F && fs[13] > 0.01F ? this.scabbardMatrix(fs, g) : null;
       Vector3f var13 = null;
       if (var12 != null) {
          var13 = var12.transformPosition(this.saddleX, this.saddleY, 0.5F, new Vector3f());
-      } else if (this.centre != null && var2[14] * var3 > 0.01F) {
-         float var14 = MathHelper.method_15363(var2[14] * var3, 0.0F, 1.0F);
-         float var15 = var2[15];
+      } else if (this.centre != null && fs[14] * f > 0.01F) {
+         float var14 = MathHelper.clamp(fs[14] * f, 0.0F, 1.0F);
+         float var15 = fs[15];
          float var16 = this.centre.y(var15) + (var15 >= this.bladeFrom ? 3.0F : 0.0F);
          var13 = var10.transformPosition(var15, var16, 0.5F, new Vector3f()).fma(1.0F - var14 * var14 * (3.0F - 2.0F * var14), OFF_AWAY);
       }
 
       if (var13 != null) {
-         var1.method_22903();
-         var1.method_22905(-1.0F, 1.0F, 1.0F);
+         matrixStack.push();
+         matrixStack.scale(-1.0F, 1.0F, 1.0F);
          Vector3f var17 = new Vector3f(-var13.x, var13.y, var13.z);
-         FirstPersonArm.place(var1, var17, new Vector3f(var17).fma(0.6F, OFF_FOREARM), var4, var1x -> var6.arm(var1x, true));
-         var1.method_22909();
+         FirstPersonArm.place(matrixStack, var17, new Vector3f(var17).fma(0.6F, OFF_FOREARM), bl, matrixStackx -> sink.arm(matrixStackx, true));
+         matrixStack.pop();
       }
 
       KnifeMesh.Shine var8;
       KnifeMesh.Shine var9;
-      if ((var9 = var8 = this.wipe(var2, var3)) == null) {
-         float var18 = shinePosition(var2[10]);
-         var9 = new KnifeMesh.Shine(var18, var18 > 0.0F ? MathHelper.method_15374(3.1415927F * var18) * var3 : 0.0F, 0.0F);
+      if ((var9 = var8 = this.wipe(fs, f)) == null) {
+         float var18 = shinePosition(fs[10]);
+         var9 = new KnifeMesh.Shine(var18, var18 > 0.0F ? MathHelper.sin(3.1415927F * var18) * f : 0.0F, 0.0F);
       }
 
-      var1.method_22903();
-      var1.method_34425(var10);
+      matrixStack.push();
+      matrixStack.multiplyPositionMatrix(var10);
 
       for (int var19 = 0; var19 < this.parts.length; var19++) {
          KnifeSkin.Part var21 = this.parts[var19];
-         var1.method_22903();
+         matrixStack.push();
          float var20;
-         if (var21.channel >= 0 && (var20 = MathHelper.method_15393(var2[var21.channel]) * var3) != 0.0F) {
-            var1.method_49278(RotationAxis.field_40718.rotationDegrees(var20), var21.pivotX, var21.pivotY, 0.5F);
+         if (var21.channel >= 0 && (var20 = MathHelper.wrapDegrees(fs[var21.channel]) * f) != 0.0F) {
+            matrixStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(var20), var21.pivotX, var21.pivotY, 0.5F);
          }
 
-         var6.part(var1, var21.mesh, var9);
+         sink.part(matrixStack, var21.mesh, var9);
          if (var8 != null) {
-            var6.glow(var1, var21.mesh, var8);
+            sink.glow(matrixStack, var21.mesh, var8);
          }
 
-         if (var7 != null) {
-            this.streaks(var19, var1.method_23760().method_23761(), var7);
+         if (gs != null) {
+            this.streaks(var19, matrixStack.peek().getPositionMatrix(), gs);
          }
 
-         var1.method_22909();
+         matrixStack.pop();
       }
 
-      var1.method_22909();
+      matrixStack.pop();
       if (var12 != null) {
-         var1.method_22903();
-         var1.method_34425(var12);
-         var6.part(var1, this.scabbard, KnifeMesh.Shine.NONE);
-         var1.method_22909();
+         matrixStack.push();
+         matrixStack.multiplyPositionMatrix(var12);
+         sink.part(matrixStack, this.scabbard, KnifeMesh.Shine.NONE);
+         matrixStack.pop();
       }
    }
 
-   private void streaks(int var1, Matrix4f var2, float[] var3) {
+   private void streaks(int i, Matrix4f matrix4f, float[] fs) {
       Vector3f var4 = new Vector3f();
 
       for (int var5 = 0; var5 < this.streaks.length; var5++) {
          KnifeSkin.Streak var6 = this.streaks[var5];
-         if (var6.part == var1) {
-            var2.transformPosition(var6.baseX, var6.baseY, 0.5F, var4);
-            var3[var5 * 6] = var4.x;
-            var3[var5 * 6 + 1] = var4.y;
-            var3[var5 * 6 + 2] = var4.z;
-            var2.transformPosition(var6.tipX, var6.tipY, 0.5F, var4);
-            var3[var5 * 6 + 3] = var4.x;
-            var3[var5 * 6 + 4] = var4.y;
-            var3[var5 * 6 + 5] = var4.z;
+         if (var6.part == i) {
+            matrix4f.transformPosition(var6.baseX, var6.baseY, 0.5F, var4);
+            fs[var5 * 6] = var4.x;
+            fs[var5 * 6 + 1] = var4.y;
+            fs[var5 * 6 + 2] = var4.z;
+            matrix4f.transformPosition(var6.tipX, var6.tipY, 0.5F, var4);
+            fs[var5 * 6 + 3] = var4.x;
+            fs[var5 * 6 + 4] = var4.y;
+            fs[var5 * 6 + 5] = var4.z;
          }
       }
    }
 
-   private Matrix4f knifeMatrix(float[] var1, float var2, float var3, Matrix4f var4) {
-      float var5 = 0.017453292F * var2;
-      float var6 = this.voxel * var3;
-      var4.translation(this.fist.x + var1[0] * var2, this.fist.y + var1[1] * var2, this.fist.z + var1[2] * var2)
+   private Matrix4f knifeMatrix(float[] fs, float f, float g, Matrix4f matrix4f) {
+      float var5 = 0.017453292F * f;
+      float var6 = this.voxel * g;
+      matrix4f.translation(this.fist.x + fs[0] * f, this.fist.y + fs[1] * f, this.fist.z + fs[2] * f)
          .rotate(
             new Quaternionf()
-               .rotateY(MathHelper.method_15393(var1[3]) * var5)
-               .rotateX(MathHelper.method_15393(var1[4]) * var5)
-               .rotateZ(MathHelper.method_15393(var1[5]) * var5)
+               .rotateY(MathHelper.wrapDegrees(fs[3]) * var5)
+               .rotateX(MathHelper.wrapDegrees(fs[4]) * var5)
+               .rotateZ(MathHelper.wrapDegrees(fs[5]) * var5)
          )
          .rotate(this.rest);
-      float var7 = MathHelper.method_15393(var1[6]) * var5;
+      float var7 = MathHelper.wrapDegrees(fs[6]) * var5;
       if (var7 != 0.0F) {
-         var4.rotateX(var7);
+         matrix4f.rotateX(var7);
       }
 
-      return var4.scale(var6).translate(var1[11] * var2 - this.gripX, -this.gripY, -0.5F);
+      return matrix4f.scale(var6).translate(fs[11] * f - this.gripX, -this.gripY, -0.5F);
    }
 
-   private Matrix4f scabbardMatrix(float[] var1, float var2) {
-      boolean var3 = var1[13] >= 1.0F;
-      float[] var4 = var3 ? var1 : this.letGo;
+   private Matrix4f scabbardMatrix(float[] fs, float f) {
+      boolean var3 = fs[13] >= 1.0F;
+      float[] var4 = var3 ? fs : this.letGo;
       float var5 = 312.5F;
-      Matrix4f var6 = this.knifeMatrix(var4, 1.0F, var2, new Matrix4f())
+      Matrix4f var6 = this.knifeMatrix(var4, 1.0F, f, new Matrix4f())
          .rotateAround(new Quaternionf().rotationZ(var4[12] / var5), 3.0F, var5, 0.5F)
          .translate(0.05F, 0.0F, 0.0F);
       if (!var3) {
-         float var7 = 1.0F - Math.max(var1[13], 0.0F);
+         float var7 = 1.0F - Math.max(fs[13], 0.0F);
          var7 *= var7;
          Vector3f var8 = var6.transformPosition(this.saddleX, this.saddleY, 0.5F, new Vector3f());
          var6.translateLocal(-var8.x, -var8.y, -var8.z)
@@ -373,44 +373,44 @@ final class KnifeSkin {
       return var6;
    }
 
-   private KnifeMesh.Shine wipe(float[] var1, float var2) {
-      float var3 = this.centre != null ? MathHelper.method_15363((var1[14] * var2 - 0.7F) / 0.3F, 0.0F, 1.0F) : 0.0F;
-      if (!(var3 <= 0.01F) && !(var1[15] < this.bladeFrom)) {
-         float var5 = (var1[15] - this.bladeFrom) / (this.bladeTo - this.bladeFrom);
+   private KnifeMesh.Shine wipe(float[] fs, float f) {
+      float var3 = this.centre != null ? MathHelper.clamp((fs[14] * f - 0.7F) / 0.3F, 0.0F, 1.0F) : 0.0F;
+      if (!(var3 <= 0.01F) && !(fs[15] < this.bladeFrom)) {
+         float var5 = (fs[15] - this.bladeFrom) / (this.bladeTo - this.bladeFrom);
          return new KnifeMesh.Shine(var5, var3 * var3 * (3.0F - 2.0F * var3), 16.0F);
       } else {
          return null;
       }
    }
 
-   float sparkle(float[] var1, float var2) {
-      float var3 = sparkle(var1[10]);
-      if (this.centre != null && var1[15] >= this.bladeFrom) {
-         float var4 = (var1[15] - this.bladeFrom) / (this.bladeTo - this.bladeFrom);
-         float var5 = MathHelper.method_15363((var4 - 0.96F) / 0.06F, 0.0F, 1.0F) * MathHelper.method_15363((1.3F - var4) / 0.15F, 0.0F, 1.0F);
-         var3 = Math.max(var3, var5 * MathHelper.method_15363(var1[14] * 1.6F, 0.0F, 1.0F));
+   float sparkle(float[] fs, float f) {
+      float var3 = sparkle(fs[10]);
+      if (this.centre != null && fs[15] >= this.bladeFrom) {
+         float var4 = (fs[15] - this.bladeFrom) / (this.bladeTo - this.bladeFrom);
+         float var5 = MathHelper.clamp((var4 - 0.96F) / 0.06F, 0.0F, 1.0F) * MathHelper.clamp((1.3F - var4) / 0.15F, 0.0F, 1.0F);
+         var3 = Math.max(var3, var5 * MathHelper.clamp(fs[14] * 1.6F, 0.0F, 1.0F));
       }
 
-      return var3 * var2;
+      return var3 * f;
    }
 
-   static float shinePosition(float var0) {
-      if (var0 <= 0.0F) {
+   static float shinePosition(float f) {
+      if (f <= 0.0F) {
          return 0.0F;
       } else {
-         float var1 = var0 - 2.0F * MathHelper.method_15375(var0 / 2.0F);
+         float var1 = f - 2.0F * MathHelper.floor(f / 2.0F);
          return var1 < 1.0F ? var1 : 0.0F;
       }
    }
 
-   static float sparkle(float var0) {
-      float var1 = shinePosition(var0);
-      return MathHelper.method_15363((var1 - 0.72F) / 0.16F, 0.0F, 1.0F) * MathHelper.method_15363((1.0F - var1) / 0.07F, 0.0F, 1.0F);
+   static float sparkle(float f) {
+      float var1 = shinePosition(f);
+      return MathHelper.clamp((var1 - 0.72F) / 0.16F, 0.0F, 1.0F) * MathHelper.clamp((1.0F - var1) / 0.07F, 0.0F, 1.0F);
    }
 
    @Environment(EnvType.CLIENT)
    private interface Centre {
-      float y(float var1);
+      float y(float f);
    }
 
    @Environment(EnvType.CLIENT)
@@ -419,11 +419,11 @@ final class KnifeSkin {
 
    @Environment(EnvType.CLIENT)
    interface Sink {
-      void part(MatrixStack var1, KnifeMesh var2, KnifeMesh.Shine var3);
+      void part(MatrixStack matrixStack, KnifeMesh knifeMesh, KnifeMesh.Shine shine);
 
-      void glow(MatrixStack var1, KnifeMesh var2, KnifeMesh.Shine var3);
+      void glow(MatrixStack matrixStack, KnifeMesh knifeMesh, KnifeMesh.Shine shine);
 
-      void arm(MatrixStack var1, boolean var2);
+      void arm(MatrixStack matrixStack, boolean bl);
    }
 
    @Environment(EnvType.CLIENT)

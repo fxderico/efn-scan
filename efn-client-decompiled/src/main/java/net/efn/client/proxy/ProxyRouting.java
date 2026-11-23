@@ -18,40 +18,41 @@ public final class ProxyRouting {
    private ProxyRouting() {
    }
 
-   public static ChannelHandler route(InetSocketAddress var0, final ChannelHandler var1) {
-      if (var0 != null && !isLocal(var0)) {
+   public static ChannelHandler route(InetSocketAddress inetSocketAddress, ChannelHandler channelHandler) {
+      if (inetSocketAddress != null && !isLocal(inetSocketAddress)) {
          Proxy var2 = Proxies.get().enabledCopy();
          if (var2 != null && var2.isValid()) {
             final ProxyHandler var3 = handler(var2);
             return new ChannelInitializer<Channel>() {
-               protected void initChannel(Channel var1x) {
-                  var1x.pipeline().addFirst("efn_proxy", var3);
-                  var1x.pipeline().addLast(new ChannelHandler[]{var1});
+               @Override
+               protected void initChannel(Channel channel) {
+                  channel.pipeline().addFirst("efn_proxy", var3);
+                  channel.pipeline().addLast(channelHandler);
                }
             };
          } else {
-            return var1;
+            return channelHandler;
          }
       } else {
-         return var1;
+         return channelHandler;
       }
    }
 
-   static ProxyHandler handler(Proxy var0) {
-      InetSocketAddress var1 = new InetSocketAddress(var0.address.trim(), var0.port);
-      String var2 = var0.username != null && !var0.username.isEmpty() ? var0.username : null;
-      String var3 = var0.password != null && !var0.password.isEmpty() ? var0.password : null;
+   static ProxyHandler handler(Proxy proxy) {
+      InetSocketAddress var1 = new InetSocketAddress(proxy.address.trim(), proxy.port);
+      String var2 = proxy.username != null && !proxy.username.isEmpty() ? proxy.username : null;
+      String var3 = proxy.password != null && !proxy.password.isEmpty() ? proxy.password : null;
 
-      return (ProxyHandler)(switch (var0.type) {
+      return (ProxyHandler)(switch (proxy.type) {
          case SOCKS4 -> new Socks4ProxyHandler(var1, var2);
          case SOCKS5 -> new Socks5ProxyHandler(var1, var2, var3);
       });
    }
 
-   private static boolean isLocal(InetSocketAddress var0) {
-      InetAddress var1 = var0.getAddress();
+   private static boolean isLocal(InetSocketAddress inetSocketAddress) {
+      InetAddress var1 = inetSocketAddress.getAddress();
       if (var1 == null) {
-         return "localhost".equalsIgnoreCase(var0.getHostString());
+         return "localhost".equalsIgnoreCase(inetSocketAddress.getHostString());
       } else if (!var1.isLoopbackAddress() && !var1.isAnyLocalAddress() && !var1.isLinkLocalAddress() && !var1.isSiteLocalAddress()) {
          byte[] var2 = var1.getAddress();
          return var2.length == 16 && (var2[0] & 254) == 252;

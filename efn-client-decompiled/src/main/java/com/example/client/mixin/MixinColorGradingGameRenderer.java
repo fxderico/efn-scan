@@ -17,15 +17,15 @@ public abstract class MixinColorGradingGameRenderer {
    }
 
    @Inject(
-      method = {"method_3192"},
+      method = {"render"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_758;method_71108()V"
+         target = "Lnet/minecraft/client/render/fog/FogRenderer;rotate()V"
       )}
    )
-   private void efn$colorGrading(RenderTickCounter var1, boolean var2, CallbackInfo var3) {
+   private void efn$colorGrading(RenderTickCounter renderTickCounter, boolean bl, CallbackInfo callbackInfo) {
       if (ColorGradingModule.active != null) {
-         ColorGradingModule.afterWorld(var2);
+         ColorGradingModule.afterWorld(bl);
       }
    }
 }

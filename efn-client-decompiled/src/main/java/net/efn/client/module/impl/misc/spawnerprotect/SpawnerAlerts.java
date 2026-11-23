@@ -33,58 +33,58 @@ public final class SpawnerAlerts {
    private static final int MAX_ATTEMPTS = 3;
    private static final double MAX_RETRY_SECONDS = 30.0;
    private static final Duration TIMEOUT = Duration.ofSeconds(5L);
-   private static final ThreadPoolExecutor WORKER = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.SECONDS, new ArrayBlockingQueue<>(64), var0 -> {
-      Thread var1 = new Thread(var0, "EFN-SpawnerProtect-Alerts");
+   private static final ThreadPoolExecutor WORKER = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.SECONDS, new ArrayBlockingQueue<>(64), runnable -> {
+      Thread var1 = new Thread(runnable, "EFN-SpawnerProtect-Alerts");
       var1.setDaemon(true);
       return var1;
-   }, (var0, var1) -> LOGGER.warn("[EFN] Spawner Protect alert queue is full"));
+   }, (runnable, threadPoolExecutor) -> LOGGER.warn("[EFN] Spawner Protect alert queue is full"));
 
    private SpawnerAlerts() {
    }
 
-   public static Map<String, Object> field(String var0, String var1, boolean var2) {
-      return Map.of("name", var0, "value", var1, "inline", var2);
+   public static Map<String, Object> field(String string, String string2, boolean bl) {
+      return Map.of("name", string, "value", string2, "inline", bl);
    }
 
-   public static String payload(String var0, String var1, int var2, List<Map<String, Object>> var3, Instant var4) {
+   public static String payload(String string, String string2, int i, List<Map<String, Object>> list, Instant instant) {
       Map var5 = Map.of(
          "title",
-         var0,
+         string,
          "description",
-         var1,
+         string2,
          "color",
-         var2,
+         i,
          "fields",
-         new ArrayList(var3),
+         new ArrayList(list),
          "timestamp",
-         var4.toString(),
+         instant.toString(),
          "author",
          Map.<String, String>of("name", "EFN  /  SPAWNER PROTECT"),
          "footer",
-         Map.<String, String>of("text", "Minecraft 1.21.11 \u2022 " + LOCAL_TIME.format(var4) + " (TR)")
+         Map.<String, String>of("text", "Minecraft 1.21.11 \u2022 " + LOCAL_TIME.format(instant) + " (TR)")
       );
       return GSON.toJson(
          Map.of("username", "Spawner Protect \u2022 EFN", "allowed_mentions", Map.<String, List>of("parse", List.of()), "embeds", List.<Map>of(var5))
       );
    }
 
-   public static void send(String var0, String var1) {
-      if (var0 != null && !var0.isBlank()) {
-         WORKER.execute(() -> post(var0.trim(), var1));
+   public static void send(String string, String string2) {
+      if (string != null && !string.isBlank()) {
+         WORKER.execute(() -> post(string.trim(), string2));
       }
    }
 
-   private static void post(String var0, String var1) {
+   private static void post(String string, String string2) {
       int var2 = 0;
 
       while (true) {
          label50: {
             if (var2 < 3) {
                try {
-                  HttpRequest var3 = HttpRequest.newBuilder(URI.create(var0))
+                  HttpRequest var3 = HttpRequest.newBuilder(URI.create(string))
                      .timeout(TIMEOUT)
                      .header("Content-Type", "application/json; charset=utf-8")
-                     .POST(BodyPublishers.ofString(var1, StandardCharsets.UTF_8))
+                     .POST(BodyPublishers.ofString(string2, StandardCharsets.UTF_8))
                      .build();
                   HttpResponse var4 = SpawnerAlerts.ClientHolder.CLIENT.send(var3, BodyHandlers.ofString(StandardCharsets.UTF_8));
                   int var5 = var4.statusCode();
@@ -119,10 +119,10 @@ public final class SpawnerAlerts {
       }
    }
 
-   private static double retryAfter(String var0) {
-      if (var0 != null && !var0.isBlank()) {
+   private static double retryAfter(String string) {
+      if (string != null && !string.isBlank()) {
          try {
-            JsonObject var1 = JsonParser.parseString(var0).getAsJsonObject();
+            JsonObject var1 = JsonParser.parseString(string).getAsJsonObject();
             return var1.has("retry_after") ? var1.get("retry_after").getAsDouble() : 1.0;
          } catch (RuntimeException var2) {
             return 1.0;

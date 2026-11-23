@@ -8,12 +8,12 @@ public abstract class CharacterDesign {
    private final String id;
    private final String name;
 
-   protected CharacterDesign(String var1, String var2) {
-      if (var1 != null && var1.matches("[a-z0-9_]+")) {
-         this.id = var1;
-         this.name = var2;
+   protected CharacterDesign(String string, String string2) {
+      if (string != null && string.matches("[a-z0-9_]+")) {
+         this.id = string;
+         this.name = string2;
       } else {
-         throw new IllegalArgumentException("character id must match [a-z0-9_]+: " + var1);
+         throw new IllegalArgumentException("character id must match [a-z0-9_]+: " + string);
       }
    }
 
@@ -25,7 +25,7 @@ public abstract class CharacterDesign {
       return this.name;
    }
 
-   protected abstract void define(Rig var1);
+   protected abstract void define(Rig rig);
 
    public final Rig rig() {
       Rig var1 = new Rig();

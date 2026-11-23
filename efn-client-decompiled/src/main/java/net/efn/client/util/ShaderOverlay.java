@@ -65,59 +65,59 @@ public final class ShaderOverlay {
          return null;
       } else {
          if (pending()) {
-            COLLECTOR.method_75558();
+            COLLECTOR.extractGizmos();
          }
 
-         return GizmoDrawing.method_75554(COLLECTOR);
+         return GizmoDrawing.using(COLLECTOR);
       }
    }
 
    public static boolean pending() {
-      return !COLLECTOR.method_75560().isEmpty();
+      return !COLLECTOR.getGizmos().isEmpty();
    }
 
-   public static void render(Camera var0, Matrix4f var1, Matrix4f var2, GpuBufferSlice var3, GpuBufferSlice var4) {
+   public static void render(Camera camera, Matrix4f matrix4f, Matrix4f matrix4f2, GpuBufferSlice gpuBufferSlice, GpuBufferSlice gpuBufferSlice2) {
       if (pending()) {
          GizmoDrawerImpl var5 = new GizmoDrawerImpl();
          GizmoDrawerImpl var6 = new GizmoDrawerImpl();
-         long var7 = Util.method_658();
+         long var7 = Util.getMeasuringTimeMs();
 
-         for (Entry var10 : COLLECTOR.method_75558()) {
-            var10.method_75563().method_75531(var10.method_75562() ? var6 : var5, var10.method_75857(var7));
+         for (Entry var10 : COLLECTOR.extractGizmos()) {
+            var10.getGizmo().draw(var10.ignoresOcclusion() ? var6 : var5, var10.getOpacity(var7));
          }
 
-         if (!var5.method_76659() || !var6.method_76659()) {
+         if (!var5.isEmpty() || !var6.isEmpty()) {
             CameraRenderState var18 = new CameraRenderState();
-            var18.field_63079 = var0.method_19332();
-            var18.field_63078 = var0.method_71156();
-            var18.field_63077 = var0.method_19328();
-            var18.field_63081 = new Quaternionf(var0.method_23767());
-            MinecraftClient var19 = MinecraftClient.method_1551();
+            var18.initialized = camera.isReady();
+            var18.pos = camera.getCameraPos();
+            var18.blockPos = camera.getBlockPos();
+            var18.orientation = new Quaternionf(camera.getRotation());
+            MinecraftClient var19 = MinecraftClient.getInstance();
             if (projectionBuffer == null) {
                projectionBuffer = new RawProjectionMatrix("efn overlay");
             }
 
-            Immediate var11 = var19.method_22940().method_23000();
+            Immediate var11 = var19.getBufferBuilders().getEntityVertexConsumers();
             MatrixStack var12 = new MatrixStack();
             Matrix4fStack var13 = RenderSystem.getModelViewStack();
             GpuBufferSlice var14 = RenderSystem.getShaderFog();
             RenderSystem.backupProjectionMatrix();
-            RenderSystem.setProjectionMatrix(projectionBuffer.method_71123(var2), ProjectionType.field_54953);
+            RenderSystem.setProjectionMatrix(projectionBuffer.set(matrix4f2), ProjectionType.PERSPECTIVE);
             var13.pushMatrix();
-            var13.mul(var1);
+            var13.mul(matrix4f);
 
             try {
-               if (!var5.method_76659()) {
-                  RenderSystem.setShaderFog(var3);
-                  var5.method_75477(var12, var11, var18, var1);
-                  var11.method_22993();
+               if (!var5.isEmpty()) {
+                  RenderSystem.setShaderFog(gpuBufferSlice);
+                  var5.draw(var12, var11, var18, matrix4f);
+                  var11.draw();
                }
 
-               if (!var6.method_76659()) {
-                  RenderSystem.getDevice().createCommandEncoder().clearDepthTexture(var19.method_1522().method_30278(), 1.0);
-                  RenderSystem.setShaderFog(var4);
-                  var6.method_75477(var12, var11, var18, var1);
-                  var11.method_22993();
+               if (!var6.isEmpty()) {
+                  RenderSystem.getDevice().createCommandEncoder().clearDepthTexture(var19.getFramebuffer().getDepthAttachment(), 1.0);
+                  RenderSystem.setShaderFog(gpuBufferSlice2);
+                  var6.draw(var12, var11, var18, matrix4f);
+                  var11.draw();
                }
             } finally {
                var13.popMatrix();

@@ -53,7 +53,7 @@ public final class SpearLungeModule extends ClientModule {
    @Override
    protected void onEnable() {
       this.pending = false;
-      this.owner = MinecraftClient.method_1551().field_1724;
+      this.owner = MinecraftClient.getInstance().player;
       this.on(KeyInputEvent.TYPE, Stage.PRE, EventPriority.HIGH, this::onKey);
       this.on(MouseInputEvent.TYPE, Stage.PRE, EventPriority.HIGH, this::onMouse);
       this.on(TickEvent.TYPE, Stage.PRE, EventPriority.HIGH, this::onTick);
@@ -63,27 +63,27 @@ public final class SpearLungeModule extends ClientModule {
    protected void onDisable() {
       this.pending = false;
       this.owner = null;
-      this.slots.drop(MinecraftClient.method_1551(), this.switchBack.get());
+      this.slots.drop(MinecraftClient.getInstance(), this.switchBack.get());
    }
 
-   private void onKey(KeyInputEvent var1) {
-      if (var1.action == 1) {
-         this.onPress(var1.key);
+   private void onKey(KeyInputEvent keyInputEvent) {
+      if (keyInputEvent.action == 1) {
+         this.onPress(keyInputEvent.key);
       }
    }
 
-   private void onMouse(MouseInputEvent var1) {
-      if (var1.action == 1) {
-         this.onPress(1000 + var1.button);
+   private void onMouse(MouseInputEvent mouseInputEvent) {
+      if (mouseInputEvent.action == 1) {
+         this.onPress(1000 + mouseInputEvent.button);
       }
    }
 
-   private void onPress(int var1) {
+   private void onPress(int i) {
       int var2 = this.key.value();
-      if (ModuleKeybinds.isBindable(var2) && var1 == var2) {
-         MinecraftClient var3 = MinecraftClient.method_1551();
-         if (var3.field_1755 == null && var3.field_1724 != null && var3.field_1687 != null) {
-            if (bestSpear(var3.field_1724.method_31548(), true) < 0) {
+      if (ModuleKeybinds.isBindable(var2) && i == var2) {
+         MinecraftClient var3 = MinecraftClient.getInstance();
+         if (var3.currentScreen == null && var3.player != null && var3.world != null) {
+            if (bestSpear(var3.player.getInventory(), true) < 0) {
                ModuleChat.actionBar(this, ModuleChat.body().warn("No Lunge spear").text(" in your hotbar"));
             } else {
                this.pending = true;
@@ -93,16 +93,16 @@ public final class SpearLungeModule extends ClientModule {
       }
    }
 
-   private void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
+   private void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
       this.slots.tick(var2, this.switchBack.get());
-      ClientPlayerEntity var3 = var2.field_1724;
+      ClientPlayerEntity var3 = var2.player;
       if (var3 != this.owner) {
          this.owner = var3;
          this.pending = false;
       }
 
-      if (var3 != null && var2.field_1687 != null && var2.field_1761 != null) {
+      if (var3 != null && var2.world != null && var2.interactionManager != null) {
          if (this.pending) {
             this.tryLunge(var2, var3);
          }
@@ -113,73 +113,80 @@ public final class SpearLungeModule extends ClientModule {
       }
    }
 
-   private void tryLunge(MinecraftClient var1, ClientPlayerEntity var2) {
+   private void tryLunge(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
       if (++this.pendingTicks > 10) {
          this.pending = false;
-      } else if (this.canStab(var1, var2) && !var2.method_5799() && !var2.method_6128() && !var2.method_5765()) {
-         if (var2.method_7344().method_75882() || var2.method_31549().field_7478) {
-            PlayerInventory var3 = var2.method_31548();
+      } else if (this.canStab(minecraftClient, clientPlayerEntity)
+         && !clientPlayerEntity.isTouchingWater()
+         && !clientPlayerEntity.isGliding()
+         && !clientPlayerEntity.hasVehicle()) {
+         if (clientPlayerEntity.getHungerManager().canSprint() || clientPlayerEntity.getAbilities().allowFlying) {
+            PlayerInventory var3 = clientPlayerEntity.getInventory();
             int var4 = bestSpear(var3, true);
             if (var4 < 0) {
                this.pending = false;
             } else {
-               ItemStack var5 = var3.method_5438(var4);
-               if (canJab(var1, var2, var5) && this.slots.take(var2, var4)) {
+               ItemStack var5 = var3.getStack(var4);
+               if (canJab(minecraftClient, clientPlayerEntity, var5) && this.slots.take(clientPlayerEntity, var4)) {
                   this.pending = false;
-                  stab(var1, var2, (PiercingWeaponComponent)var5.method_58694(DataComponentTypes.field_63631));
+                  stab(minecraftClient, clientPlayerEntity, var5.get(DataComponentTypes.PIERCING_WEAPON));
                }
             }
          }
       }
    }
 
-   private void tryPoke(MinecraftClient var1, ClientPlayerEntity var2) {
-      if (this.canStab(var1, var2) && !var2.method_6047().method_57826(DataComponentTypes.field_63631)) {
-         if (MeleeAttacks.crosshairHit(var1) == null) {
-            PlayerInventory var3 = var2.method_31548();
+   private void tryPoke(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      if (this.canStab(minecraftClient, clientPlayerEntity) && !clientPlayerEntity.getMainHandStack().contains(DataComponentTypes.PIERCING_WEAPON)) {
+         if (MeleeAttacks.crosshairHit(minecraftClient) == null) {
+            PlayerInventory var3 = clientPlayerEntity.getInventory();
             int var4 = bestSpear(var3, false);
             if (var4 >= 0) {
-               ItemStack var5 = var3.method_5438(var4);
-               if (canJab(var1, var2, var5) && enemyPastReach(var2) && this.slots.take(var2, var4)) {
-                  stab(var1, var2, (PiercingWeaponComponent)var5.method_58694(DataComponentTypes.field_63631));
+               ItemStack var5 = var3.getStack(var4);
+               if (canJab(minecraftClient, clientPlayerEntity, var5) && enemyPastReach(clientPlayerEntity) && this.slots.take(clientPlayerEntity, var4)) {
+                  stab(minecraftClient, clientPlayerEntity, var5.get(DataComponentTypes.PIERCING_WEAPON));
                }
             }
          }
       }
    }
 
-   private static void stab(MinecraftClient var0, ClientPlayerEntity var1, PiercingWeaponComponent var2) {
-      var0.field_1761.method_75407(var2);
-      if (MeleeAttacks.actedThisTick(var1)) {
-         var1.method_6104(Hand.field_5808);
-         MeleeAttacks.claimTick(var0);
+   private static void stab(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, PiercingWeaponComponent piercingWeaponComponent) {
+      minecraftClient.interactionManager.attackWithPiercingWeapon(piercingWeaponComponent);
+      if (MeleeAttacks.actedThisTick(clientPlayerEntity)) {
+         clientPlayerEntity.swingHand(Hand.MAIN_HAND);
+         MeleeAttacks.claimTick(minecraftClient);
       }
    }
 
-   private boolean canStab(MinecraftClient var1, ClientPlayerEntity var2) {
-      return MeleeAttacks.canAct(var1) && MeleeAttacks.handsFree(var1, var2) && !MeleeAttacks.actedThisTick(var2)
+   private boolean canStab(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      return MeleeAttacks.canAct(minecraftClient)
+            && MeleeAttacks.handsFree(minecraftClient, clientPlayerEntity)
+            && !MeleeAttacks.actedThisTick(clientPlayerEntity)
          ? !CombatMacroLock.heldByOther(this) && !AutoInvTotemModule.wantsHotbar()
          : false;
    }
 
-   private static boolean canJab(MinecraftClient var0, ClientPlayerEntity var1, ItemStack var2) {
-      return var0.field_1771 <= 0 && !var0.field_1761.method_2928() ? var2.method_45435(var0.field_1687.method_45162()) && !var1.method_75202(var2, 0) : false;
+   private static boolean canJab(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, ItemStack itemStack) {
+      return minecraftClient.attackCooldown <= 0 && !minecraftClient.interactionManager.isFlyingLocked()
+         ? itemStack.isItemEnabled(minecraftClient.world.getEnabledFeatures()) && !clientPlayerEntity.isBelowMinimumAttackCharge(itemStack, 0)
+         : false;
    }
 
-   private static boolean enemyPastReach(ClientPlayerEntity var0) {
+   private static boolean enemyPastReach(ClientPlayerEntity clientPlayerEntity) {
       Rotation var1 = ServerRotation.sent();
-      Vec3d var2 = var1 != null ? Vec3d.method_1030(var1.pitch(), var1.yaw()) : var0.method_5828(1.0F);
-      Vec3d var3 = var0.method_33571();
-      Vec3d var4 = var3.method_1019(var2.method_1021(4.4));
-      double var5 = var0.method_55755();
-      Box var7 = var0.method_5829().method_18804(var2.method_1021(4.4)).method_1014(1.0);
+      Vec3d var2 = var1 != null ? Vec3d.fromPolar(var1.pitch(), var1.yaw()) : clientPlayerEntity.getRotationVec(1.0F);
+      Vec3d var3 = clientPlayerEntity.getEyePos();
+      Vec3d var4 = var3.add(var2.multiply(4.4));
+      double var5 = clientPlayerEntity.getEntityInteractionRange();
+      Box var7 = clientPlayerEntity.getBoundingBox().stretch(var2.multiply(4.4)).expand(1.0);
 
-      for (Entity var9 : var0.method_73183().method_8335(var0, var7)) {
+      for (Entity var9 : clientPlayerEntity.getEntityWorld().getOtherEntities(clientPlayerEntity, var7)) {
          Optional var10;
-         if (MeleeAttacks.isEnemy(var0, var9)
-            && (var10 = var9.method_5829().method_1014(0.125).method_992(var3, var4)).isPresent()
-            && var3.method_1022((Vec3d)var10.get()) > var5
-            && MeleeAttacks.lineIsClear(var0, var3, (Vec3d)var10.get())) {
+         if (MeleeAttacks.isEnemy(clientPlayerEntity, var9)
+            && (var10 = var9.getBoundingBox().expand(0.125).raycast(var3, var4)).isPresent()
+            && var3.distanceTo((Vec3d)var10.get()) > var5
+            && MeleeAttacks.lineIsClear(clientPlayerEntity, var3, (Vec3d)var10.get())) {
             return true;
          }
       }
@@ -187,16 +194,16 @@ public final class SpearLungeModule extends ClientModule {
       return false;
    }
 
-   private static int bestSpear(PlayerInventory var0, boolean var1) {
-      int var2 = var0.method_67532();
+   private static int bestSpear(PlayerInventory playerInventory, boolean bl) {
+      int var2 = playerInventory.getSelectedSlot();
       int var3 = -1;
       int var4 = 0;
 
-      for (int var5 = 0; var5 < PlayerInventory.method_7368(); var5++) {
-         ItemStack var6 = var0.method_5438(var5);
-         if (var6.method_57826(DataComponentTypes.field_63631) && !var6.method_63692()) {
+      for (int var5 = 0; var5 < PlayerInventory.getHotbarSize(); var5++) {
+         ItemStack var6 = playerInventory.getStack(var5);
+         if (var6.contains(DataComponentTypes.PIERCING_WEAPON) && !var6.willBreakNextUse()) {
             int var7 = lungeLevel(var6);
-            boolean var8 = !var1 ? var3 < 0 || var7 < var4 : var7 > var4 || var7 > 0 && var7 == var4 && var5 == var2;
+            boolean var8 = !bl ? var3 < 0 || var7 < var4 : var7 > var4 || var7 > 0 && var7 == var4 && var5 == var2;
             if (var8) {
                var3 = var5;
                var4 = var7;
@@ -207,9 +214,9 @@ public final class SpearLungeModule extends ClientModule {
       return var3;
    }
 
-   private static int lungeLevel(ItemStack var0) {
-      for (Entry var2 : var0.method_58657().method_57539()) {
-         if (((RegistryEntry)var2.getKey()).method_40225(Enchantments.field_63420)) {
+   private static int lungeLevel(ItemStack itemStack) {
+      for (Entry var2 : itemStack.getEnchantments().getEnchantmentEntries()) {
+         if (((RegistryEntry)var2.getKey()).matchesKey(Enchantments.LUNGE)) {
             return var2.getIntValue();
          }
       }

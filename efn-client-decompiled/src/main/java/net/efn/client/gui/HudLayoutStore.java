@@ -69,12 +69,12 @@ public final class HudLayoutStore {
       return INSTANCE;
    }
 
-   synchronized HudLayoutStore.HudElementState element(String var1) {
+   synchronized HudLayoutStore.HudElementState element(String string) {
       this.loadIfNeeded();
-      HudLayoutStore.HudElementState var2 = this.elements.get(var1);
+      HudLayoutStore.HudElementState var2 = this.elements.get(string);
       if (var2 == null) {
-         var2 = defaultElement(var1);
-         this.elements.put(var1, var2);
+         var2 = defaultElement(string);
+         this.elements.put(string, var2);
       }
 
       return var2;
@@ -85,20 +85,20 @@ public final class HudLayoutStore {
       return List.copyOf(this.elements.values());
    }
 
-   synchronized void updateBounds(String var1, float var2, float var3, float var4, float var5) {
-      HudLayoutStore.HudElementState var6 = this.element(var1);
-      float var7 = Math.max(1.0F, var2);
-      float var8 = Math.max(1.0F, var3);
-      if (var6.positioned && var6.autoPlaced && var4 > 0.0F && var5 > 0.0F && dockMoved(var6, var4, var5)) {
+   synchronized void updateBounds(String string, float f, float g, float h, float i) {
+      HudLayoutStore.HudElementState var6 = this.element(string);
+      float var7 = Math.max(1.0F, f);
+      float var8 = Math.max(1.0F, g);
+      if (var6.positioned && var6.autoPlaced && h > 0.0F && i > 0.0F && dockMoved(var6, h, i)) {
          var6.positioned = false;
       }
 
-      if (var6.positioned && !(var4 <= 0.0F) && !(var5 <= 0.0F)) {
+      if (var6.positioned && !(h <= 0.0F) && !(i <= 0.0F)) {
          if (!var6.anchored) {
-            this.adoptLoadedPosition(var6, var4, var5);
+            this.adoptLoadedPosition(var6, h, i);
          }
 
-         rebaseToScreen(var6, var4, var5);
+         rebaseToScreen(var6, h, i);
          float var9 = var6.width - var7;
          if (var6.anchorX == 2) {
             var6.x += var9;
@@ -112,74 +112,74 @@ public final class HudLayoutStore {
 
          var6.width = var7;
          var6.height = var8;
-         clampToScreen(var6, var4, var5);
+         clampToScreen(var6, h, i);
       } else {
          var6.width = var7;
          var6.height = var8;
-         if (!var6.positioned && var4 > 0.0F && var5 > 0.0F && !isCollapsed(var6)) {
-            this.placeDefault(var6, var4, var5);
+         if (!var6.positioned && h > 0.0F && i > 0.0F && !isCollapsed(var6)) {
+            this.placeDefault(var6, h, i);
          }
       }
    }
 
-   private void adoptLoadedPosition(HudLayoutStore.HudElementState var1, float var2, float var3) {
-      if (var1.refScreenW > 0.0F && var1.refScreenH > 0.0F) {
-         var1.anchored = true;
+   private void adoptLoadedPosition(HudLayoutStore.HudElementState hudElementState, float f, float g) {
+      if (hudElementState.refScreenW > 0.0F && hudElementState.refScreenH > 0.0F) {
+         hudElementState.anchored = true;
       } else {
-         if ("info_bar".equals(var1.id)) {
-            var1.x = (var2 - var1.width) * 0.5F;
-         } else if (var1.x > var2 - var1.width || var1.y > var3 - var1.height) {
-            this.placeDefault(var1, var2, var3);
+         if ("info_bar".equals(hudElementState.id)) {
+            hudElementState.x = (f - hudElementState.width) * 0.5F;
+         } else if (hudElementState.x > f - hudElementState.width || hudElementState.y > g - hudElementState.height) {
+            this.placeDefault(hudElementState, f, g);
             return;
          }
 
-         computeAnchor(var1, var2, var3);
+         computeAnchor(hudElementState, f, g);
       }
    }
 
-   private static void rebaseToScreen(HudLayoutStore.HudElementState var0, float var1, float var2) {
-      float var3 = var1 - var0.refScreenW;
-      float var4 = var2 - var0.refScreenH;
+   private static void rebaseToScreen(HudLayoutStore.HudElementState hudElementState, float f, float g) {
+      float var3 = f - hudElementState.refScreenW;
+      float var4 = g - hudElementState.refScreenH;
       if (var3 != 0.0F || var4 != 0.0F) {
-         if (var0.anchorX == 2) {
-            var0.x += var3;
-         } else if (var0.anchorX == 1) {
-            var0.x += var3 * 0.5F;
+         if (hudElementState.anchorX == 2) {
+            hudElementState.x += var3;
+         } else if (hudElementState.anchorX == 1) {
+            hudElementState.x += var3 * 0.5F;
          }
 
-         if (var0.anchorBottom) {
-            var0.y += var4;
+         if (hudElementState.anchorBottom) {
+            hudElementState.y += var4;
          }
 
-         var0.refScreenW = var1;
-         var0.refScreenH = var2;
+         hudElementState.refScreenW = f;
+         hudElementState.refScreenH = g;
       }
    }
 
-   synchronized void moveTo(String var1, float var2, float var3, float var4, float var5) {
-      HudLayoutStore.HudElementState var6 = this.element(var1);
-      var6.x = var2;
-      var6.y = var3;
+   synchronized void moveTo(String string, float f, float g, float h, float i) {
+      HudLayoutStore.HudElementState var6 = this.element(string);
+      var6.x = f;
+      var6.y = g;
       var6.positioned = true;
       var6.autoPlaced = false;
-      clampToScreen(var6, var4, var5);
-      computeAnchor(var6, var4, var5);
+      clampToScreen(var6, h, i);
+      computeAnchor(var6, h, i);
    }
 
-   private static void computeAnchor(HudLayoutStore.HudElementState var0, float var1, float var2) {
-      float var3 = var0.x + var0.width * 0.5F;
-      var0.anchorX = Math.abs(var3 - var1 * 0.5F) <= 24.0F * uiScale() ? 1 : (var3 > var1 * 0.5F ? 2 : 0);
-      var0.anchorBottom = var0.y + var0.height * 0.5F > var2 * 0.5F;
-      var0.refScreenW = var1;
-      var0.refScreenH = var2;
-      var0.anchored = true;
+   private static void computeAnchor(HudLayoutStore.HudElementState hudElementState, float f, float g) {
+      float var3 = hudElementState.x + hudElementState.width * 0.5F;
+      hudElementState.anchorX = Math.abs(var3 - f * 0.5F) <= 24.0F * uiScale() ? 1 : (var3 > f * 0.5F ? 2 : 0);
+      hudElementState.anchorBottom = hudElementState.y + hudElementState.height * 0.5F > g * 0.5F;
+      hudElementState.refScreenW = f;
+      hudElementState.refScreenH = g;
+      hudElementState.anchored = true;
    }
 
    private static float uiScale() {
       return ImGuiManager.getInstance().uiScale();
    }
 
-   synchronized void resetToDefaults(float var1, float var2) {
+   synchronized void resetToDefaults(float f, float g) {
       LinkedHashMap var3 = new LinkedHashMap();
 
       for (String var7 : KNOWN_IDS) {
@@ -198,8 +198,8 @@ public final class HudLayoutStore {
 
       for (HudLayoutStore.HudElementState var13 : this.elements.values()) {
          if (!isCollapsed(var13)) {
-            this.placeDefault(var13, var1, var2);
-            clampToScreen(var13, var1, var2);
+            this.placeDefault(var13, f, g);
+            clampToScreen(var13, f, g);
          }
       }
 
@@ -211,9 +211,9 @@ public final class HudLayoutStore {
       return GSON.toJsonTree(this.buildConfigFile()).getAsJsonObject();
    }
 
-   public synchronized boolean applyProfile(JsonObject var1) {
+   public synchronized boolean applyProfile(JsonObject jsonObject) {
       this.loadIfNeeded();
-      HudLayoutStore.ConfigFile var2 = parse(var1);
+      HudLayoutStore.ConfigFile var2 = parse(jsonObject);
       if (var2 == null) {
          return false;
       } else {
@@ -223,15 +223,15 @@ public final class HudLayoutStore {
       }
    }
 
-   public static JsonObject shareable(JsonObject var0) {
-      HudLayoutStore.ConfigFile var1 = parse(var0);
+   public static JsonObject shareable(JsonObject jsonObject) {
+      HudLayoutStore.ConfigFile var1 = parse(jsonObject);
       return var1 == null ? null : GSON.toJsonTree(var1).getAsJsonObject();
    }
 
-   private static HudLayoutStore.ConfigFile parse(JsonObject var0) {
+   private static HudLayoutStore.ConfigFile parse(JsonObject jsonObject) {
       HudLayoutStore.ConfigFile var1;
       try {
-         var1 = (HudLayoutStore.ConfigFile)GSON.fromJson(var0, HudLayoutStore.ConfigFile.class);
+         var1 = GSON.fromJson(jsonObject, HudLayoutStore.ConfigFile.class);
       } catch (RuntimeException var5) {
          return null;
       }
@@ -252,16 +252,16 @@ public final class HudLayoutStore {
       }
    }
 
-   private static boolean finite(HudLayoutStore.HudElementState var0) {
-      return finite(var0.x)
-         && finite(var0.y)
-         && finite(var0.width)
-         && finite(var0.height)
-         && finite(var0.scale)
-         && finite(var0.refScreenW)
-         && finite(var0.refScreenH)
-         && finite(var0.placedGuiScale)
-         && finite(var0.placedUiScale);
+   private static boolean finite(HudLayoutStore.HudElementState hudElementState) {
+      return finite(hudElementState.x)
+         && finite(hudElementState.y)
+         && finite(hudElementState.width)
+         && finite(hudElementState.height)
+         && finite(hudElementState.scale)
+         && finite(hudElementState.refScreenW)
+         && finite(hudElementState.refScreenH)
+         && finite(hudElementState.placedGuiScale)
+         && finite(hudElementState.placedUiScale);
    }
 
    public synchronized void save() {
@@ -283,7 +283,7 @@ public final class HudLayoutStore {
             Files.move(var3, var2, StandardCopyOption.REPLACE_EXISTING);
          }
       } catch (IOException var10) {
-         EfnClientMod.LOGGER.warn("[EFN] Failed to save HUD layout config", var10);
+         EfnClientMod.LOGGER.warn("[EFN] Failed to save HUD layout config", (Throwable)var10);
       }
    }
 
@@ -295,14 +295,14 @@ public final class HudLayoutStore {
          if (Files.isRegularFile(var1)) {
             try {
                try (BufferedReader var2 = Files.newBufferedReader(var1)) {
-                  HudLayoutStore.ConfigFile var3 = (HudLayoutStore.ConfigFile)GSON.fromJson(var2, HudLayoutStore.ConfigFile.class);
+                  HudLayoutStore.ConfigFile var3 = GSON.fromJson(var2, HudLayoutStore.ConfigFile.class);
                   if (var3 != null && var3.elements != null) {
                      this.applyConfig(var3);
                      return;
                   }
                }
             } catch (RuntimeException | IOException var7) {
-               EfnClientMod.LOGGER.warn("[EFN] Failed to load HUD layout config; using defaults", var7);
+               EfnClientMod.LOGGER.warn("[EFN] Failed to load HUD layout config; using defaults", (Throwable)var7);
                this.elements.clear();
                this.installDefaults();
             }
@@ -324,12 +324,12 @@ public final class HudLayoutStore {
       return var1;
    }
 
-   private void applyConfig(HudLayoutStore.ConfigFile var1) {
+   private void applyConfig(HudLayoutStore.ConfigFile configFile) {
       this.elements.clear();
       this.installDefaults();
-      boolean var2 = var1.version < 11;
+      boolean var2 = configFile.version < 11;
 
-      for (HudLayoutStore.HudElementState var4 : var1.elements) {
+      for (HudLayoutStore.HudElementState var4 : configFile.elements) {
          if (var4 != null && var4.id != null && !var4.id.isBlank() && isKnownId(var4.id)) {
             normalize(var4);
             this.elements.put(var4.id, var4);
@@ -363,12 +363,12 @@ public final class HudLayoutStore {
       }
    }
 
-   private static HudLayoutStore.HudElementState defaultElement(String var0) {
+   private static HudLayoutStore.HudElementState defaultElement(String string) {
       HudLayoutStore.HudElementState var1 = new HudLayoutStore.HudElementState();
-      var1.id = var0;
+      var1.id = string;
       var1.x = 0.0F;
       var1.y = 0.0F;
-      var1.width = fallbackWidth(var0);
+      var1.width = fallbackWidth(string);
       var1.height = 26.0F;
       var1.visible = true;
       var1.scale = 1.0F;
@@ -376,97 +376,100 @@ public final class HudLayoutStore {
       return var1;
    }
 
-   private static void normalize(HudLayoutStore.HudElementState var0) {
-      var0.scale = finite(var0.scale) ? clamp(var0.scale, 0.5F, 3.0F) : 1.0F;
-      var0.width = finite(var0.width) && var0.width > 0.0F ? var0.width : 1.0F;
-      var0.height = finite(var0.height) && var0.height > 0.0F ? var0.height : 1.0F;
-      boolean var1 = var0.positioned = finite(var0.x) && finite(var0.y);
-      if (var0.anchorX < 0 || var0.anchorX > 2 || !finite(var0.refScreenW) || !finite(var0.refScreenH)) {
-         var0.refScreenW = 0.0F;
-         var0.refScreenH = 0.0F;
+   private static void normalize(HudLayoutStore.HudElementState hudElementState) {
+      hudElementState.scale = finite(hudElementState.scale) ? clamp(hudElementState.scale, 0.5F, 3.0F) : 1.0F;
+      hudElementState.width = finite(hudElementState.width) && hudElementState.width > 0.0F ? hudElementState.width : 1.0F;
+      hudElementState.height = finite(hudElementState.height) && hudElementState.height > 0.0F ? hudElementState.height : 1.0F;
+      boolean var1 = hudElementState.positioned = finite(hudElementState.x) && finite(hudElementState.y);
+      if (hudElementState.anchorX < 0 || hudElementState.anchorX > 2 || !finite(hudElementState.refScreenW) || !finite(hudElementState.refScreenH)) {
+         hudElementState.refScreenW = 0.0F;
+         hudElementState.refScreenH = 0.0F;
       }
    }
 
-   private void placeDefault(HudLayoutStore.HudElementState var1, float var2, float var3) {
+   private void placeDefault(HudLayoutStore.HudElementState hudElementState, float f, float g) {
       float var4 = Math.round(10.0F * uiScale());
       float var5 = Math.round(6.0F * uiScale());
       float var6 = var4 + this.existingHeight("coordinates", 28.0F) + var5;
-      String var7 = var1.id;
+      String var7 = hudElementState.id;
       switch (var7) {
          case "potion_tracker":
-            var1.x = Math.max(var4, var2 - var4 - Math.max(1.0F, var1.width));
-            var1.y = Math.max(var4, var3 - var4 - Math.max(1.0F, var1.height));
+            hudElementState.x = Math.max(var4, f - var4 - Math.max(1.0F, hudElementState.width));
+            hudElementState.y = Math.max(var4, g - var4 - Math.max(1.0F, hudElementState.height));
             break;
          case "info_bar":
-            var1.x = Math.max(var4, (var2 - var1.width) * 0.5F);
-            var1.y = var4;
+            hudElementState.x = Math.max(var4, (f - hudElementState.width) * 0.5F);
+            hudElementState.y = var4;
             break;
          case "module_list":
-            var1.x = Math.max(var4, var2 - var4 - Math.max(1.0F, var1.width));
-            var1.y = var4;
+            hudElementState.x = Math.max(var4, f - var4 - Math.max(1.0F, hudElementState.width));
+            hudElementState.y = var4;
             break;
          case "region_map":
-            var1.x = var4;
-            var1.y = this.firstFreeY(var1, var6, var5);
+            hudElementState.x = var4;
+            hudElementState.y = this.firstFreeY(hudElementState, var6, var5);
             break;
          case "anti_vanish":
-            var1.x = Math.max(var4, (var2 - var1.width) * 0.5F);
-            var1.y = var4 + this.existingHeight("info_bar", 28.0F) + var5;
+            hudElementState.x = Math.max(var4, (f - hudElementState.width) * 0.5F);
+            hudElementState.y = var4 + this.existingHeight("info_bar", 28.0F) + var5;
             break;
          case "spotify":
-            var1.x = var4;
-            var1.y = this.firstFreeY(var1, var6, var5);
+            hudElementState.x = var4;
+            hudElementState.y = this.firstFreeY(hudElementState, var6, var5);
             break;
          case "staff_list":
-            var1.x = var4;
-            var1.y = this.firstFreeY(var1, Math.round(var3 * 0.38F), var5);
+            hudElementState.x = var4;
+            hudElementState.y = this.firstFreeY(hudElementState, Math.round(g * 0.38F), var5);
             break;
          case "hotkeys":
-            var1.x = Math.max(var4, var2 - var4 - Math.max(1.0F, var1.width));
-            var1.y = this.firstFreeY(var1, Math.round(var3 * 0.36F), var5);
+            hudElementState.x = Math.max(var4, f - var4 - Math.max(1.0F, hudElementState.width));
+            hudElementState.y = this.firstFreeY(hudElementState, Math.round(g * 0.36F), var5);
             break;
          case "radar":
-            var1.x = Math.max(var4, var2 - var4 - Math.max(1.0F, var1.width));
-            var1.y = this.firstFreeY(var1, Math.round(var3 * 0.58F), var5);
+            hudElementState.x = Math.max(var4, f - var4 - Math.max(1.0F, hudElementState.width));
+            hudElementState.y = this.firstFreeY(hudElementState, Math.round(g * 0.58F), var5);
             break;
          case "target_card":
-            var1.x = Math.round(var2 * 0.5F + 44.0F * uiScale());
-            var1.y = this.firstFreeY(var1, Math.round(var3 * 0.5F + 30.0F * uiScale()), var5);
+            hudElementState.x = Math.round(f * 0.5F + 44.0F * uiScale());
+            hudElementState.y = this.firstFreeY(hudElementState, Math.round(g * 0.5F + 30.0F * uiScale()), var5);
             break;
          case "armor_status":
-            var1.x = Math.round(var2 * 0.5F + 119.0F * vanillaGuiScale());
-            var1.y = Math.max(var4, var3 - var4 - Math.max(1.0F, var1.height));
+            hudElementState.x = Math.round(f * 0.5F + 119.0F * vanillaGuiScale());
+            hudElementState.y = Math.max(var4, g - var4 - Math.max(1.0F, hudElementState.height));
             break;
          case "item_cooldowns":
-            var1.x = Math.max(var4, (float)Math.round((var2 - var1.width) * 0.5F));
-            var1.y = Math.max(var4, var3 - Math.round(76.0F * vanillaGuiScale()) - Math.max(1.0F, var1.height));
+            hudElementState.x = Math.max(var4, (float)Math.round((f - hudElementState.width) * 0.5F));
+            hudElementState.y = Math.max(var4, g - Math.round(76.0F * vanillaGuiScale()) - Math.max(1.0F, hudElementState.height));
             break;
          default:
-            var1.x = var4;
-            var1.y = var4;
+            hudElementState.x = var4;
+            hudElementState.y = var4;
       }
 
-      var1.positioned = true;
-      clampToScreen(var1, var2, var3);
-      computeAnchor(var1, var2, var3);
-      var1.autoPlaced = followsVanillaHud(var1.id);
-      if (var1.autoPlaced) {
-         var1.anchorX = "item_cooldowns".equals(var1.id) ? 1 : 0;
-         var1.placedGuiScale = vanillaGuiScale();
-         var1.placedUiScale = uiScale();
+      hudElementState.positioned = true;
+      clampToScreen(hudElementState, f, g);
+      computeAnchor(hudElementState, f, g);
+      hudElementState.autoPlaced = followsVanillaHud(hudElementState.id);
+      if (hudElementState.autoPlaced) {
+         hudElementState.anchorX = "item_cooldowns".equals(hudElementState.id) ? 1 : 0;
+         hudElementState.placedGuiScale = vanillaGuiScale();
+         hudElementState.placedUiScale = uiScale();
       }
    }
 
-   private static boolean followsVanillaHud(String var0) {
-      return "target_card".equals(var0) || "armor_status".equals(var0) || "item_cooldowns".equals(var0);
+   private static boolean followsVanillaHud(String string) {
+      return "target_card".equals(string) || "armor_status".equals(string) || "item_cooldowns".equals(string);
    }
 
-   private static boolean dockMoved(HudLayoutStore.HudElementState var0, float var1, float var2) {
-      return var1 != var0.refScreenW || var2 != var0.refScreenH || vanillaGuiScale() != var0.placedGuiScale || uiScale() != var0.placedUiScale;
+   private static boolean dockMoved(HudLayoutStore.HudElementState hudElementState, float f, float g) {
+      return f != hudElementState.refScreenW
+         || g != hudElementState.refScreenH
+         || vanillaGuiScale() != hudElementState.placedGuiScale
+         || uiScale() != hudElementState.placedUiScale;
    }
 
-   private static float fallbackWidth(String var0) {
-      return switch (var0) {
+   private static float fallbackWidth(String string) {
+      return switch (string) {
          case "module_list" -> 170.0F;
          case "info_bar" -> 290.0F;
          case "coordinates" -> 210.0F;
@@ -485,26 +488,26 @@ public final class HudLayoutStore {
    }
 
    private static float vanillaGuiScale() {
-      return Math.max(1, MinecraftClient.method_1551().method_22683().method_4495());
+      return Math.max(1, MinecraftClient.getInstance().getWindow().getScaleFactor());
    }
 
-   private float firstFreeY(HudLayoutStore.HudElementState var1, float var2, float var3) {
-      float var4 = var2;
-      float var5 = Math.max(1.0F, var1.width);
-      float var6 = Math.max(1.0F, var1.height);
+   private float firstFreeY(HudLayoutStore.HudElementState hudElementState, float f, float g) {
+      float var4 = f;
+      float var5 = Math.max(1.0F, hudElementState.width);
+      float var6 = Math.max(1.0F, hudElementState.height);
 
       for (int var7 = 0; var7 < this.elements.size(); var7++) {
          boolean var8 = false;
 
          for (HudLayoutStore.HudElementState var10 : this.elements.values()) {
-            if (var10 != var1
+            if (var10 != hudElementState
                && var10.positioned
                && !isCollapsed(var10)
-               && var1.x < var10.x + var10.width
-               && var10.x < var1.x + var5
+               && hudElementState.x < var10.x + var10.width
+               && var10.x < hudElementState.x + var5
                && var4 < var10.y + var10.height
                && var10.y < var4 + var6) {
-               var4 = var10.y + var10.height + var3;
+               var4 = var10.y + var10.height + g;
                var8 = true;
             }
          }
@@ -517,34 +520,34 @@ public final class HudLayoutStore {
       return var4;
    }
 
-   private static boolean isCollapsed(HudLayoutStore.HudElementState var0) {
-      return var0.width <= 1.0F;
+   private static boolean isCollapsed(HudLayoutStore.HudElementState hudElementState) {
+      return hudElementState.width <= 1.0F;
    }
 
-   private static void clampToScreen(HudLayoutStore.HudElementState var0, float var1, float var2) {
-      float var3 = Math.max(0.0F, var1 - Math.max(1.0F, var0.width));
-      float var4 = Math.max(0.0F, var2 - Math.max(1.0F, var0.height));
-      var0.x = clamp(var0.x, 0.0F, var3);
-      var0.y = clamp(var0.y, 0.0F, var4);
+   private static void clampToScreen(HudLayoutStore.HudElementState hudElementState, float f, float g) {
+      float var3 = Math.max(0.0F, f - Math.max(1.0F, hudElementState.width));
+      float var4 = Math.max(0.0F, g - Math.max(1.0F, hudElementState.height));
+      hudElementState.x = clamp(hudElementState.x, 0.0F, var3);
+      hudElementState.y = clamp(hudElementState.y, 0.0F, var4);
    }
 
-   private float existingWidth(String var1, float var2) {
-      HudLayoutStore.HudElementState var3 = this.elements.get(var1);
-      return var3 != null && finite(var3.width) && var3.width > 0.0F ? var3.width : var2;
+   private float existingWidth(String string, float f) {
+      HudLayoutStore.HudElementState var3 = this.elements.get(string);
+      return var3 != null && finite(var3.width) && var3.width > 0.0F ? var3.width : f;
    }
 
-   private float existingHeight(String var1, float var2) {
-      HudLayoutStore.HudElementState var3 = this.elements.get(var1);
-      return var3 != null && finite(var3.height) && var3.height > 0.0F ? var3.height : var2;
+   private float existingHeight(String string, float f) {
+      HudLayoutStore.HudElementState var3 = this.elements.get(string);
+      return var3 != null && finite(var3.height) && var3.height > 0.0F ? var3.height : f;
    }
 
    private static Path configPath() {
       return FabricLoader.getInstance().getConfigDir().resolve("efn").resolve("hud.json");
    }
 
-   private static boolean isKnownId(String var0) {
+   private static boolean isKnownId(String string) {
       for (String var4 : KNOWN_IDS) {
-         if (var4.equals(var0)) {
+         if (var4.equals(string)) {
             return true;
          }
       }
@@ -552,12 +555,12 @@ public final class HudLayoutStore {
       return false;
    }
 
-   private static boolean finite(float var0) {
-      return !Float.isNaN(var0) && !Float.isInfinite(var0);
+   private static boolean finite(float f) {
+      return !Float.isNaN(f) && !Float.isInfinite(f);
    }
 
-   private static float clamp(float var0, float var1, float var2) {
-      return Math.max(var1, Math.min(var2, var0));
+   private static float clamp(float f, float g, float h) {
+      return Math.max(g, Math.min(h, f));
    }
 
    @Environment(EnvType.CLIENT)

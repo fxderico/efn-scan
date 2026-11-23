@@ -50,9 +50,7 @@ public class NametagsModule extends ClientModule {
    private static final int STATUS_BAD = -47814;
    private static final int ITEM_COUNT_COLOR = -10742;
    private static final float TEXT_GUARD_BELOW = 0.55F;
-   private static final EquipmentSlot[] ARMOR_SLOTS = new EquipmentSlot[]{
-      EquipmentSlot.field_6169, EquipmentSlot.field_6174, EquipmentSlot.field_6172, EquipmentSlot.field_6166
-   };
+   private static final EquipmentSlot[] ARMOR_SLOTS = new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
    private static final int PADDING = 4;
    private static final int ROW_GAP = 3;
    private static final int ICON_SIZE = 10;
@@ -94,28 +92,28 @@ public class NametagsModule extends ClientModule {
    }
 
    @EventHandler
-   public void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      if (var2.field_1687 != this.seenLevel) {
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      if (var2.world != this.seenLevel) {
          this.seen.clear();
-         this.seenLevel = var2.field_1687;
+         this.seenLevel = var2.world;
       }
 
-      if (var2.field_1687 != null && this.sHeldItems.get() && this.sSeenItems.get()) {
-         for (AbstractClientPlayerEntity var4 : var2.field_1687.method_18456()) {
-            if (var4 != var2.field_1724) {
-               this.remember(var4.method_5667(), var4.method_6047());
-               this.remember(var4.method_5667(), var4.method_6079());
+      if (var2.world != null && this.sHeldItems.get() && this.sSeenItems.get()) {
+         for (AbstractClientPlayerEntity var4 : var2.world.getPlayers()) {
+            if (var4 != var2.player) {
+               this.remember(var4.getUuid(), var4.getMainHandStack());
+               this.remember(var4.getUuid(), var4.getOffHandStack());
             }
          }
       }
    }
 
-   private void remember(UUID var1, ItemStack var2) {
-      if (!var2.method_7960()) {
-         LinkedHashMap var3 = this.seen.computeIfAbsent(var1, var0 -> new LinkedHashMap<>());
-         ItemStack var4 = (ItemStack)var3.remove(var2.method_7909());
-         var3.put(var2.method_7909(), var4 != null && ItemStack.method_31577(var4, var2) ? var4 : var2.method_7972());
+   private void remember(UUID uUID, ItemStack itemStack) {
+      if (!itemStack.isEmpty()) {
+         LinkedHashMap var3 = this.seen.computeIfAbsent(uUID, uUIDx -> new LinkedHashMap<>());
+         ItemStack var4 = (ItemStack)var3.remove(itemStack.getItem());
+         var3.put(itemStack.getItem(), var4 != null && ItemStack.areItemsAndComponentsEqual(var4, itemStack) ? var4 : itemStack.copy());
 
          while (var3.size() > 9) {
             var3.remove(var3.keySet().iterator().next());
@@ -127,15 +125,15 @@ public class NametagsModule extends ClientModule {
       }
    }
 
-   private List<ItemStack> seenItems(AbstractClientPlayerEntity var1) {
-      LinkedHashMap var2 = this.seen.get(var1.method_5667());
+   private List<ItemStack> seenItems(AbstractClientPlayerEntity abstractClientPlayerEntity) {
+      LinkedHashMap var2 = this.seen.get(abstractClientPlayerEntity.getUuid());
       if (var2 != null && !var2.isEmpty()) {
-         Item var3 = var1.method_6047().method_7909();
-         Item var4 = var1.method_6079().method_7909();
+         Item var3 = abstractClientPlayerEntity.getMainHandStack().getItem();
+         Item var4 = abstractClientPlayerEntity.getOffHandStack().getItem();
          ArrayList var5 = new ArrayList(var2.size());
 
          for (ItemStack var7 : var2.values()) {
-            if (var7.method_7909() != var3 && var7.method_7909() != var4) {
+            if (var7.getItem() != var3 && var7.getItem() != var4) {
                var5.add(0, var7);
             }
          }
@@ -147,21 +145,21 @@ public class NametagsModule extends ClientModule {
    }
 
    @EventHandler
-   public void onRender2D(Render2DEvent var1) {
-      MinecraftClient var3 = MinecraftClient.method_1551();
-      if (var3.field_1687 != null && var3.field_1724 != null && !var3.field_1690.field_1842) {
-         Camera var4 = var3.field_1773.method_19418();
-         if (var4 != null && var4.method_19332()) {
-            float var5 = var1.partialTick;
-            Vec3d var6 = var3.field_1724.method_5836(var5);
+   public void onRender2D(Render2DEvent render2DEvent) {
+      MinecraftClient var3 = MinecraftClient.getInstance();
+      if (var3.world != null && var3.player != null && !var3.options.hudHidden) {
+         Camera var4 = var3.gameRenderer.getCamera();
+         if (var4 != null && var4.isReady()) {
+            float var5 = render2DEvent.partialTick;
+            Vec3d var6 = var3.player.getCameraPosVec(var5);
             double var7 = Math.max(1.0F, this.sRange.get());
             double var9 = var7 * var7;
             int var11 = Math.max(1, Math.min(64, this.sMaxTags.getInt()));
             ArrayList var12 = new ArrayList();
 
-            for (AbstractClientPlayerEntity var14 : var3.field_1687.method_18456()) {
+            for (AbstractClientPlayerEntity var14 : var3.world.getPlayers()) {
                double var15;
-               if (var14 != var3.field_1724 && !var14.method_31481() && !var14.method_29504() && (var15 = var14.method_30950(var5).method_1025(var6)) <= var9) {
+               if (var14 != var3.player && !var14.isRemoved() && !var14.isDead() && (var15 = var14.getLerpedPos(var5).squaredDistanceTo(var6)) <= var9) {
                   var12.add(new NametagsModule.Nearby(var14, var15));
                }
             }
@@ -170,13 +168,13 @@ public class NametagsModule extends ClientModule {
             int var22 = var11 - var21.size();
             Object var23 = new ArrayList();
             if (this.sItems.get() && var22 > 0) {
-               for (Entity var16 : var3.field_1687.method_18112()) {
+               for (Entity var16 : var3.world.getEntities()) {
                   double var17;
                   ItemEntity var19;
                   if (var16 instanceof ItemEntity
-                     && !(var19 = (ItemEntity)var16).method_31481()
-                     && !var19.method_6983().method_7960()
-                     && (var17 = var19.method_30950(var5).method_1025(var6)) <= var9) {
+                     && !(var19 = (ItemEntity)var16).isRemoved()
+                     && !var19.getStack().isEmpty()
+                     && (var17 = var19.getLerpedPos(var5).squaredDistanceTo(var6)) <= var9) {
                      var23.add(new NametagsModule.Nearby(var19, var17));
                   }
                }
@@ -185,60 +183,64 @@ public class NametagsModule extends ClientModule {
             }
 
             for (int var2 = var23.size() - 1; var2 >= 0; var2--) {
-               this.renderItemTag(var1.graphics, var3, var4, (ItemEntity)((NametagsModule.Nearby)var23.get(var2)).entity(), var5);
+               this.renderItemTag(render2DEvent.graphics, var3, var4, (ItemEntity)((NametagsModule.Nearby)var23.get(var2)).entity(), var5);
             }
 
             for (int var20 = var21.size() - 1; var20 >= 0; var20--) {
-               this.renderTag(var1.graphics, var3, var4, (AbstractClientPlayerEntity)((NametagsModule.Nearby)var21.get(var20)).entity(), var5);
+               this.renderTag(render2DEvent.graphics, var3, var4, (AbstractClientPlayerEntity)((NametagsModule.Nearby)var21.get(var20)).entity(), var5);
             }
          }
       }
    }
 
-   private static List<NametagsModule.Nearby> nearest(List<NametagsModule.Nearby> var0, int var1) {
-      var0.sort(NEAREST);
-      return var0.size() <= var1 ? var0 : var0.subList(0, var1);
+   private static List<NametagsModule.Nearby> nearest(List<NametagsModule.Nearby> list, int i) {
+      list.sort(NEAREST);
+      return list.size() <= i ? list : list.subList(0, i);
    }
 
-   private void renderTag(DrawContext var1, MinecraftClient var2, Camera var3, AbstractClientPlayerEntity var4, float var5) {
-      Vec3d var7 = var4.method_30950(var5).method_1031(0.0, var4.method_17682() + 0.15, 0.0);
-      float[] var8 = WorldLabel.project(var2, var7, var1.method_51421(), var1.method_51443());
+   private void renderTag(
+      DrawContext drawContext, MinecraftClient minecraftClient, Camera camera, AbstractClientPlayerEntity abstractClientPlayerEntity, float f
+   ) {
+      Vec3d var7 = abstractClientPlayerEntity.getLerpedPos(f).add(0.0, abstractClientPlayerEntity.getHeight() + 0.15, 0.0);
+      float[] var8 = WorldLabel.project(minecraftClient, var7, drawContext.getScaledWindowWidth(), drawContext.getScaledWindowHeight());
       if (var8 != null) {
-         TextRenderer var9 = var2.field_1772;
-         String var10 = NameFilter.apply(var4.method_7334().name());
+         TextRenderer var9 = minecraftClient.textRenderer;
+         String var10 = NameFilter.apply(abstractClientPlayerEntity.getGameProfile().name());
          String var11 = null;
          int var12 = -6052949;
          PlayerListEntry var6;
-         if (this.sPing.get() && var2.method_1562() != null && (var6 = var2.method_1562().method_2871(var4.method_5667())) != null) {
-            int var13 = var6.method_2959();
+         if (this.sPing.get()
+            && minecraftClient.getNetworkHandler() != null
+            && (var6 = minecraftClient.getNetworkHandler().getPlayerListEntry(abstractClientPlayerEntity.getUuid())) != null) {
+            int var13 = var6.getLatency();
             var11 = var13 + "ms";
             var12 = var13 < 60 ? -13577896 : (var13 < 130 ? -10742 : -47814);
          }
 
-         List var50 = this.sHeldItems.get() ? heldItems(var4) : List.of();
-         List var14 = this.sArmor.get() ? wornArmor(var4) : List.of();
-         List var15 = this.sHeldItems.get() && this.sSeenItems.get() ? this.seenItems(var4) : List.of();
+         List var50 = this.sHeldItems.get() ? heldItems(abstractClientPlayerEntity) : List.of();
+         List var14 = this.sArmor.get() ? wornArmor(abstractClientPlayerEntity) : List.of();
+         List var15 = this.sHeldItems.get() && this.sSeenItems.get() ? this.seenItems(abstractClientPlayerEntity) : List.of();
          String var16 = null;
          int var17 = -13577896;
-         float var18 = var4.method_6032() + var4.method_6067();
+         float var18 = abstractClientPlayerEntity.getHealth() + abstractClientPlayerEntity.getAbsorptionAmount();
          if (this.sHealth.get() && Float.isFinite(var18)) {
-            float var19 = Math.min(1.0F, var18 / Math.max(1.0F, var4.method_6063()));
+            float var19 = Math.min(1.0F, var18 / Math.max(1.0F, abstractClientPlayerEntity.getMaxHealth()));
             var16 = String.valueOf((int)Math.ceil(var18));
             var17 = var19 > 0.6F ? -13577896 : (var19 > 0.3F ? -10742 : -47814);
          }
 
-         double var51 = var7.method_1022(var3.method_71156());
+         double var51 = var7.distanceTo(camera.getCameraPos());
          String var21 = Math.round((float)var51) + "m";
          int var22 = iconsWidth(var50.size());
          int var23 = iconsWidth(var14.size());
-         int var24 = var16 != null ? var9.method_1727(var16) : 0;
-         int var25 = var9.method_1727(var21);
-         int var26 = var9.method_1727(var10) + (var11 != null ? 5 + var9.method_1727(var11) : 0);
+         int var24 = var16 != null ? var9.getWidth(var16) : 0;
+         int var25 = var9.getWidth(var21);
+         int var26 = var9.getWidth(var10) + (var11 != null ? 5 + var9.getWidth(var11) : 0);
          int var27 = extend(0, var22, 0);
          var27 = extend(var27, var23, 7);
          var27 = extend(var27, var24, 4);
          var27 = extend(var27, var25, 4);
-         int var28 = var15.isEmpty() ? 0 : var9.method_1727("Seen") + 4 + iconsWidth(var15.size());
+         int var28 = var15.isEmpty() ? 0 : var9.getWidth("Seen") + 4 + iconsWidth(var15.size());
          int var29 = Math.max(Math.max(var26, var27), var28);
          int var30 = var29 + 8;
          int var31 = 30 + (var15.isEmpty() ? 0 : 13);
@@ -249,18 +251,18 @@ public class NametagsModule extends ClientModule {
          float var37 = Math.max(0.0F, Math.min(1.0F, this.sBackgroundAlpha.get()));
          boolean var38 = var37 < 0.55F;
          float var39 = Math.min(1.0F, var37 * 2.0F);
-         Matrix3x2fStack var40 = var1.method_51448();
+         Matrix3x2fStack var40 = drawContext.getMatrices();
          var40.pushMatrix();
          var40.translate(var8[0], var8[1]);
          var40.scale(var36, var36);
          int var41 = -var30 / 2;
          int var42 = -var31 - 1;
-         drawPanel(var1, var41, var42, var41 + var30, var42 + var31, var37, var39);
+         drawPanel(drawContext, var41, var42, var41 + var30, var42 + var31, var37, var39);
          int var43 = var41 + 4;
          int var44 = var42 + 4;
-         var1.method_51433(var9, var10, var43, var44, -1447442, var38);
+         drawContext.drawText(var9, var10, var43, var44, -1447442, var38);
          if (var11 != null) {
-            var1.method_51433(var9, var11, var43 + var9.method_1727(var10) + 5, var44, var12, var38);
+            drawContext.drawText(var9, var11, var43 + var9.getWidth(var10) + 5, var44, var12, var38);
          }
 
          Objects.requireNonNull(var9);
@@ -270,18 +272,18 @@ public class NametagsModule extends ClientModule {
          int var47 = var43;
          boolean var48 = false;
          if (!var50.isEmpty()) {
-            var47 = this.drawIcons(var1, var9, var4, var50, 0, var43, var45, true, var39);
+            var47 = this.drawIcons(drawContext, var9, abstractClientPlayerEntity, var50, 0, var43, var45, true, var39);
             var48 = true;
          }
 
          if (!var14.isEmpty()) {
             if (var48) {
                int var49 = var47 + 3;
-               var1.method_25294(var49, var45 + 1, var49 + 1, var45 + 10 - 1, scaleAlpha(536870911, var39));
+               drawContext.fill(var49, var45 + 1, var49 + 1, var45 + 10 - 1, scaleAlpha(536870911, var39));
                var47 += 7;
             }
 
-            var47 = this.drawIcons(var1, var9, var4, var14, var50.size(), var47, var45, false, var39);
+            var47 = this.drawIcons(drawContext, var9, abstractClientPlayerEntity, var14, var50.size(), var47, var45, false, var39);
             var48 = true;
          }
 
@@ -290,7 +292,7 @@ public class NametagsModule extends ClientModule {
                var47 += 4;
             }
 
-            var1.method_51433(var9, var16, var47, var46, var17, var38);
+            drawContext.drawText(var9, var16, var47, var46, var17, var38);
             var47 += var24;
             var48 = true;
          }
@@ -299,30 +301,32 @@ public class NametagsModule extends ClientModule {
             var47 += 4;
          }
 
-         var1.method_51433(var9, var21, var47, var46, -6052949, var38);
+         drawContext.drawText(var9, var21, var47, var46, -6052949, var38);
          if (!var15.isEmpty()) {
             int var55 = var45 + 10 + 3;
             Objects.requireNonNull(var9);
-            var1.method_51433(var9, "Seen", var43, var55 + 0 + 1, -6052949, var38);
-            this.drawIcons(var1, var9, var4, var15, var50.size() + var14.size(), var43 + var9.method_1727("Seen") + 4, var55, false, var39);
+            drawContext.drawText(var9, "Seen", var43, var55 + 0 + 1, -6052949, var38);
+            this.drawIcons(
+               drawContext, var9, abstractClientPlayerEntity, var15, var50.size() + var14.size(), var43 + var9.getWidth("Seen") + 4, var55, false, var39
+            );
          }
 
          var40.popMatrix();
       }
    }
 
-   private static List<ItemStack> heldItems(AbstractClientPlayerEntity var0) {
-      ItemStack var1 = var0.method_6047();
-      ItemStack var2 = var0.method_6079();
-      return var1.method_7960() && var2.method_7960() ? List.of() : List.of(var1, var2);
+   private static List<ItemStack> heldItems(AbstractClientPlayerEntity abstractClientPlayerEntity) {
+      ItemStack var1 = abstractClientPlayerEntity.getMainHandStack();
+      ItemStack var2 = abstractClientPlayerEntity.getOffHandStack();
+      return var1.isEmpty() && var2.isEmpty() ? List.of() : List.of(var1, var2);
    }
 
-   private static List<ItemStack> wornArmor(AbstractClientPlayerEntity var0) {
+   private static List<ItemStack> wornArmor(AbstractClientPlayerEntity abstractClientPlayerEntity) {
       ArrayList var1 = new ArrayList(ARMOR_SLOTS.length);
 
       for (EquipmentSlot var5 : ARMOR_SLOTS) {
-         ItemStack var6 = var0.method_6118(var5);
-         if (!var6.method_7960()) {
+         ItemStack var6 = abstractClientPlayerEntity.getEquippedStack(var5);
+         if (!var6.isEmpty()) {
             var1.add(var6);
          }
       }
@@ -330,125 +334,143 @@ public class NametagsModule extends ClientModule {
       return var1;
    }
 
-   private static int iconsWidth(int var0) {
-      return var0 == 0 ? 0 : var0 * 12 - 2;
+   private static int iconsWidth(int i) {
+      return i == 0 ? 0 : i * 12 - 2;
    }
 
-   private static int extend(int var0, int var1, int var2) {
-      if (var1 <= 0) {
-         return var0;
+   private static int extend(int i, int j, int k) {
+      if (j <= 0) {
+         return i;
       } else {
-         return var0 == 0 ? var1 : var0 + var2 + var1;
+         return i == 0 ? j : i + k + j;
       }
    }
 
    private int drawIcons(
-      DrawContext var1, TextRenderer var2, AbstractClientPlayerEntity var3, List<ItemStack> var4, int var5, int var6, int var7, boolean var8, float var9
+      DrawContext drawContext,
+      TextRenderer textRenderer,
+      AbstractClientPlayerEntity abstractClientPlayerEntity,
+      List<ItemStack> list,
+      int i,
+      int j,
+      int k,
+      boolean bl,
+      float f
    ) {
-      for (int var10 = 0; var10 < var4.size(); var10++) {
+      for (int var10 = 0; var10 < list.size(); var10++) {
          if (var10 > 0) {
-            var6 += 2;
+            j += 2;
          }
 
-         this.drawIcon(var1, var2, var3, (ItemStack)var4.get(var10), var3.method_5628() * 8 + var5 + var10, var6, var7, var8, var9);
-         var6 += 10;
+         this.drawIcon(
+            drawContext, textRenderer, abstractClientPlayerEntity, (ItemStack)list.get(var10), abstractClientPlayerEntity.getId() * 8 + i + var10, j, k, bl, f
+         );
+         j += 10;
       }
 
-      return var6;
+      return j;
    }
 
    private void drawIcon(
-      DrawContext var1, TextRenderer var2, AbstractClientPlayerEntity var3, ItemStack var4, int var5, int var6, int var7, boolean var8, float var9
+      DrawContext drawContext,
+      TextRenderer textRenderer,
+      AbstractClientPlayerEntity abstractClientPlayerEntity,
+      ItemStack itemStack,
+      int i,
+      int j,
+      int k,
+      boolean bl,
+      float f
    ) {
-      if (var4.method_7960()) {
-         var1.method_25294(var6 + 2, var7 + 2, var6 + 10 - 2, var7 + 10 - 2, scaleAlpha(452984831, var9));
+      if (itemStack.isEmpty()) {
+         drawContext.fill(j + 2, k + 2, j + 10 - 2, k + 10 - 2, scaleAlpha(452984831, f));
       } else {
-         Matrix3x2fStack var10 = var1.method_51448();
+         Matrix3x2fStack var10 = drawContext.getMatrices();
          var10.pushMatrix();
-         var10.translate(var6, var7);
+         var10.translate(j, k);
          var10.scale(0.625F, 0.625F);
-         var1.method_51423(var3, var4, 0, 0, var5);
-         if (this.sDurability.get() && var4.method_31578()) {
-            var1.method_25294(2, 13, 15, 15, -16777216);
-            var1.method_25294(2, 13, 2 + var4.method_31579(), 14, 0xFF000000 | var4.method_31580());
+         drawContext.drawItem(abstractClientPlayerEntity, itemStack, 0, 0, i);
+         if (this.sDurability.get() && itemStack.isItemBarVisible()) {
+            drawContext.fill(2, 13, 15, 15, -16777216);
+            drawContext.fill(2, 13, 2 + itemStack.getItemBarStep(), 14, 0xFF000000 | itemStack.getItemBarColor());
          }
 
-         if (var8 && var4.method_7947() > 1) {
-            String var11 = String.valueOf(var4.method_7947());
-            var1.method_51433(var2, var11, 17 - var2.method_1727(var11), 9, -657929, true);
+         if (bl && itemStack.getCount() > 1) {
+            String var11 = String.valueOf(itemStack.getCount());
+            drawContext.drawText(textRenderer, var11, 17 - textRenderer.getWidth(var11), 9, -657929, true);
          }
 
          var10.popMatrix();
       }
    }
 
-   private void renderItemTag(DrawContext var1, MinecraftClient var2, Camera var3, ItemEntity var4, float var5) {
-      Vec3d var6 = var4.method_30950(var5).method_1031(0.0, 0.35, 0.0);
-      float[] var7 = WorldLabel.project(var2, var6, var1.method_51421(), var1.method_51443());
+   private void renderItemTag(DrawContext drawContext, MinecraftClient minecraftClient, Camera camera, ItemEntity itemEntity, float f) {
+      Vec3d var6 = itemEntity.getLerpedPos(f).add(0.0, 0.35, 0.0);
+      float[] var7 = WorldLabel.project(minecraftClient, var6, drawContext.getScaledWindowWidth(), drawContext.getScaledWindowHeight());
       if (var7 != null) {
-         ItemStack var8 = var4.method_6983();
-         String var9 = var8.method_7964().getString();
-         int var10 = var8.method_7947();
+         ItemStack var8 = itemEntity.getStack();
+         String var9 = var8.getName().getString();
+         int var10 = var8.getCount();
          String var11 = var10 > 1 ? "x" + var10 : null;
-         TextRenderer var12 = var2.field_1772;
-         int var13 = var12.method_1727(var9);
-         int var14 = var11 != null ? var12.method_1727(var11) : 0;
+         TextRenderer var12 = minecraftClient.textRenderer;
+         int var13 = var12.getWidth(var9);
+         int var14 = var11 != null ? var12.getWidth(var11) : 0;
          int var15 = var13 + (var11 != null ? 3 + var14 : 0);
-         double var16 = var6.method_1022(var3.method_71156());
+         double var16 = var6.distanceTo(camera.getCameraPos());
          float var18 = (float)Math.min(1.0, Math.max(0.25, 6.0 / Math.max(1.0, var16)));
-         Matrix3x2fStack var19 = var1.method_51448();
+         Matrix3x2fStack var19 = drawContext.getMatrices();
          var19.pushMatrix();
          var19.translate(var7[0], var7[1]);
          var19.scale(var18, var18);
          int var20 = -var15 / 2;
          byte var21 = -4;
-         var1.method_51433(var12, var9, var20, var21, -1447442, true);
+         drawContext.drawText(var12, var9, var20, var21, -1447442, true);
          if (var11 != null) {
-            var1.method_51433(var12, var11, var20 + var13 + 3, var21, -10742, true);
+            drawContext.drawText(var12, var11, var20 + var13 + 3, var21, -10742, true);
          }
 
          var19.popMatrix();
       }
    }
 
-   private static void drawPanel(DrawContext var0, int var1, int var2, int var3, int var4, float var5, float var6) {
-      drawR4Rect(var0, var1 - 1, var2 + 1, var3 + 1, var4 + 2, scaleAlpha(385875968, var6));
-      drawR4Rect(var0, var1, var2 + 1, var3, var4 + 1, scaleAlpha(771751936, var6));
-      drawR4Rect(var0, var1, var2, var3, var4, Math.round(var5 * 255.0F) << 24 | 1447965);
-      drawR4Border(var0, var1, var2, var3, var4, scaleAlpha(402653183, var6));
+   private static void drawPanel(DrawContext drawContext, int i, int j, int k, int l, float f, float g) {
+      drawR4Rect(drawContext, i - 1, j + 1, k + 1, l + 2, scaleAlpha(385875968, g));
+      drawR4Rect(drawContext, i, j + 1, k, l + 1, scaleAlpha(771751936, g));
+      drawR4Rect(drawContext, i, j, k, l, Math.round(f * 255.0F) << 24 | 1447965);
+      drawR4Border(drawContext, i, j, k, l, scaleAlpha(402653183, g));
    }
 
-   private static int scaleAlpha(int var0, float var1) {
-      int var2 = Math.round((var0 >>> 24 & 0xFF) * Math.max(0.0F, Math.min(1.0F, var1)));
-      return var2 << 24 | var0 & 16777215;
+   private static int scaleAlpha(int i, float f) {
+      int var2 = Math.round((i >>> 24 & 0xFF) * Math.max(0.0F, Math.min(1.0F, f)));
+      return var2 << 24 | i & 16777215;
    }
 
-   private static void drawR4Rect(DrawContext var0, int var1, int var2, int var3, int var4, int var5) {
-      if (var5 >>> 24 != 0) {
-         var0.method_25294(var1 + 4, var2, var3 - 4, var2 + 1, var5);
-         var0.method_25294(var1 + 2, var2 + 1, var3 - 2, var2 + 2, var5);
-         var0.method_25294(var1 + 1, var2 + 2, var3 - 1, var2 + 4, var5);
-         var0.method_25294(var1, var2 + 4, var3, var4 - 4, var5);
-         var0.method_25294(var1 + 1, var4 - 4, var3 - 1, var4 - 2, var5);
-         var0.method_25294(var1 + 2, var4 - 2, var3 - 2, var4 - 1, var5);
-         var0.method_25294(var1 + 4, var4 - 1, var3 - 4, var4, var5);
+   private static void drawR4Rect(DrawContext drawContext, int i, int j, int k, int l, int m) {
+      if (m >>> 24 != 0) {
+         drawContext.fill(i + 4, j, k - 4, j + 1, m);
+         drawContext.fill(i + 2, j + 1, k - 2, j + 2, m);
+         drawContext.fill(i + 1, j + 2, k - 1, j + 4, m);
+         drawContext.fill(i, j + 4, k, l - 4, m);
+         drawContext.fill(i + 1, l - 4, k - 1, l - 2, m);
+         drawContext.fill(i + 2, l - 2, k - 2, l - 1, m);
+         drawContext.fill(i + 4, l - 1, k - 4, l, m);
       }
    }
 
-   private static void drawR4Border(DrawContext var0, int var1, int var2, int var3, int var4, int var5) {
-      if (var5 >>> 24 != 0) {
-         var0.method_25294(var1 + 4, var2, var3 - 4, var2 + 1, var5);
-         var0.method_25294(var1 + 4, var4 - 1, var3 - 4, var4, var5);
-         var0.method_25294(var1, var2 + 4, var1 + 1, var4 - 4, var5);
-         var0.method_25294(var3 - 1, var2 + 4, var3, var4 - 4, var5);
-         var0.method_25294(var1 + 2, var2 + 1, var1 + 4, var2 + 2, var5);
-         var0.method_25294(var1 + 1, var2 + 2, var1 + 2, var2 + 4, var5);
-         var0.method_25294(var3 - 4, var2 + 1, var3 - 2, var2 + 2, var5);
-         var0.method_25294(var3 - 2, var2 + 2, var3 - 1, var2 + 4, var5);
-         var0.method_25294(var1 + 1, var4 - 4, var1 + 2, var4 - 2, var5);
-         var0.method_25294(var1 + 2, var4 - 2, var1 + 4, var4 - 1, var5);
-         var0.method_25294(var3 - 2, var4 - 4, var3 - 1, var4 - 2, var5);
-         var0.method_25294(var3 - 4, var4 - 2, var3 - 2, var4 - 1, var5);
+   private static void drawR4Border(DrawContext drawContext, int i, int j, int k, int l, int m) {
+      if (m >>> 24 != 0) {
+         drawContext.fill(i + 4, j, k - 4, j + 1, m);
+         drawContext.fill(i + 4, l - 1, k - 4, l, m);
+         drawContext.fill(i, j + 4, i + 1, l - 4, m);
+         drawContext.fill(k - 1, j + 4, k, l - 4, m);
+         drawContext.fill(i + 2, j + 1, i + 4, j + 2, m);
+         drawContext.fill(i + 1, j + 2, i + 2, j + 4, m);
+         drawContext.fill(k - 4, j + 1, k - 2, j + 2, m);
+         drawContext.fill(k - 2, j + 2, k - 1, j + 4, m);
+         drawContext.fill(i + 1, l - 4, i + 2, l - 2, m);
+         drawContext.fill(i + 2, l - 2, i + 4, l - 1, m);
+         drawContext.fill(k - 2, l - 4, k - 1, l - 2, m);
+         drawContext.fill(k - 4, l - 2, k - 2, l - 1, m);
       }
    }
 

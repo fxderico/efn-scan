@@ -77,12 +77,12 @@ final class LinuxSpotify extends ScriptedPlayer {
    }
 
    @Override
-   protected boolean send(ScriptedPlayer.Command var1) throws IOException, InterruptedException {
+   protected boolean send(ScriptedPlayer.Command command) throws IOException, InterruptedException {
       String var2 = this.busName(true);
       if (var2 == null) {
          return false;
       } else {
-         String var3 = switch (var1) {
+         String var3 = switch (command) {
             case PLAY_PAUSE -> "PlayPause";
             case NEXT -> "Next";
             case PREVIOUS -> "Previous";
@@ -105,12 +105,12 @@ final class LinuxSpotify extends ScriptedPlayer {
       }
    }
 
-   private String busName(boolean var1) throws IOException, InterruptedException {
+   private String busName(boolean bl) throws IOException, InterruptedException {
       if (this.busName != null) {
          return this.busName;
       } else {
          long var2 = System.currentTimeMillis();
-         if (!var1 && var2 < this.nextLookupAt) {
+         if (!bl && var2 < this.nextLookupAt) {
             return null;
          } else {
             this.nextLookupAt = var2 + 2000L;
@@ -136,15 +136,15 @@ final class LinuxSpotify extends ScriptedPlayer {
       }
    }
 
-   private static boolean gone(ScriptedPlayer.CommandFailed var0) {
-      String var1 = var0.getMessage();
+   private static boolean gone(ScriptedPlayer.CommandFailed commandFailed) {
+      String var1 = commandFailed.getMessage();
       return var1 != null && (var1.contains("ServiceUnknown") || var1.contains("NameHasNoOwner"));
    }
 
-   private static String text(Object var0) {
-      if (var0 instanceof String var6) {
+   private static String text(Object object) {
+      if (object instanceof String var6) {
          return var6.strip();
-      } else if (var0 instanceof List var1) {
+      } else if (object instanceof List var1) {
          ArrayList var2 = new ArrayList();
 
          for (Object var4 : var1) {
@@ -160,9 +160,9 @@ final class LinuxSpotify extends ScriptedPlayer {
       }
    }
 
-   private static long micros(Object var0) {
+   private static long micros(Object object) {
       long var1;
-      if (var0 instanceof Number var3) {
+      if (object instanceof Number var3) {
          var1 = Math.max(0L, var3.longValue() / 1000L);
       } else {
          var1 = 0L;
@@ -176,12 +176,12 @@ final class LinuxSpotify extends ScriptedPlayer {
       private final String[] lines;
       private int at;
 
-      private DbusReply(String[] var1) {
-         this.lines = var1;
+      private DbusReply(String[] strings) {
+         this.lines = strings;
       }
 
-      static Object parse(String var0) {
-         String[] var1 = var0.strip().split("\\R");
+      static Object parse(String string) {
+         String[] var1 = string.strip().split("\\R");
          LinuxSpotify.DbusReply var2 = new LinuxSpotify.DbusReply(var1);
          if (var1.length > 0 && var1[0].startsWith("method return")) {
             var2.at = 1;
@@ -194,30 +194,30 @@ final class LinuxSpotify extends ScriptedPlayer {
          return this.at < this.lines.length ? this.lines[this.at++].strip() : "]";
       }
 
-      private Object value(String var1) {
-         if (var1.startsWith("variant")) {
-            var1 = var1.substring("variant".length()).strip();
+      private Object value(String string) {
+         if (string.startsWith("variant")) {
+            string = string.substring("variant".length()).strip();
          }
 
-         if (var1.equals("array [")) {
+         if (string.equals("array [")) {
             return this.array();
-         } else if (!var1.startsWith("string ") && !var1.startsWith("object path ")) {
-            int var2 = var1.lastIndexOf(32);
-            String var3 = var2 < 0 ? var1 : var1.substring(0, var2);
-            String var4 = var2 < 0 ? "" : var1.substring(var2 + 1);
+         } else if (!string.startsWith("string ") && !string.startsWith("object path ")) {
+            int var2 = string.lastIndexOf(32);
+            String var3 = var2 < 0 ? string : string.substring(0, var2);
+            String var4 = var2 < 0 ? "" : string.substring(var2 + 1);
 
             try {
                return switch (var3) {
                   case "int64", "uint64", "int32", "uint32", "int16", "uint16", "byte" -> Long.parseLong(var4);
                   case "double" -> Double.parseDouble(var4);
                   case "boolean" -> Boolean.parseBoolean(var4);
-                  default -> var1;
+                  default -> string;
                };
             } catch (NumberFormatException var7) {
-               return var1;
+               return string;
             }
          } else {
-            return unquote(var1);
+            return unquote(string);
          }
       }
 
@@ -242,10 +242,10 @@ final class LinuxSpotify extends ScriptedPlayer {
          return var3.isEmpty() ? var2 : var3;
       }
 
-      private static String unquote(String var0) {
-         int var1 = var0.indexOf(34);
-         int var2 = var0.lastIndexOf(34);
-         return var1 >= 0 && var2 > var1 ? var0.substring(var1 + 1, var2).replace("\\\"", "\"") : "";
+      private static String unquote(String string) {
+         int var1 = string.indexOf(34);
+         int var2 = string.lastIndexOf(34);
+         return var1 >= 0 && var2 > var1 ? string.substring(var1 + 1, var2).replace("\\\"", "\"") : "";
       }
    }
 }

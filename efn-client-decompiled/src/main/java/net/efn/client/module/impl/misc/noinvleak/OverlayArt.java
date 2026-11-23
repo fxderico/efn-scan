@@ -69,20 +69,20 @@ final class OverlayArt {
       }
    }
 
-   private static OverlayArt.Image image(String var0) {
-      Resource var1 = (Resource)MinecraftClient.method_1551().method_1478().method_14486(Identifier.method_60656(var0)).orElse(null);
+   private static OverlayArt.Image image(String string) {
+      Resource var1 = MinecraftClient.getInstance().getResourceManager().getResource(Identifier.ofVanilla(string)).orElse(null);
       if (var1 == null) {
          return null;
       } else {
          try {
             OverlayArt.Image var14;
-            try (InputStream var2 = var1.method_14482()) {
-               NativeImage var4 = NativeImage.method_4309(var2);
+            try (InputStream var2 = var1.getInputStream()) {
+               NativeImage var4 = NativeImage.read(var2);
 
                OverlayArt.Image var3;
                label58: {
                   try {
-                     int[] var5 = var4.method_48463();
+                     int[] var5 = var4.copyPixelsAbgr();
                      int[] var6 = new int[var5.length];
 
                      for (int var7 = 0; var7 < var5.length; var7++) {
@@ -92,7 +92,7 @@ final class OverlayArt {
                         );
                      }
 
-                     var3 = new OverlayArt.Image(var6, var4.method_4307(), var4.method_4323());
+                     var3 = new OverlayArt.Image(var6, var4.getWidth(), var4.getHeight());
                      if (var4 == null) {
                         break label58;
                      }
@@ -121,51 +121,51 @@ final class OverlayArt {
       }
    }
 
-   private static OverlayArt.Slice slice(String var0, int var1, boolean var2) {
-      OverlayArt.Image var3 = image(var0);
+   private static OverlayArt.Slice slice(String string, int i, boolean bl) {
+      OverlayArt.Image var3 = image(string);
       if (var3 == null) {
          return null;
       } else {
-         Resource var4 = (Resource)MinecraftClient.method_1551().method_1478().method_14486(Identifier.method_60656(var0 + ".mcmeta")).orElse(null);
+         Resource var4 = MinecraftClient.getInstance().getResourceManager().getResource(Identifier.ofVanilla(string + ".mcmeta")).orElse(null);
          if (var4 != null) {
-            try (BufferedReader var5 = var4.method_43039()) {
+            try (BufferedReader var5 = var4.getReader()) {
                JsonObject var6 = JsonParser.parseReader(var5).getAsJsonObject().getAsJsonObject("gui").getAsJsonObject("scaling");
                if (var6.has("border")) {
-                  var1 = var6.get("border").getAsInt();
+                  i = var6.get("border").getAsInt();
                }
 
-               var2 = var6.has("stretch_inner") && var6.get("stretch_inner").getAsBoolean();
+               bl = var6.has("stretch_inner") && var6.get("stretch_inner").getAsBoolean();
             } catch (RuntimeException | IOException var10) {
             }
          }
 
-         return new OverlayArt.Slice(var3, var1, var2);
+         return new OverlayArt.Slice(var3, i, bl);
       }
    }
 
-   static void slice(Canvas var0, OverlayArt.Slice var1, int var2, int var3, int var4, int var5, int var6) {
-      if (var1 != null) {
-         OverlayArt.Image var8 = var1.image();
-         int var9 = var1.border();
+   static void slice(Canvas canvas, OverlayArt.Slice slice, int i, int j, int k, int l, int m) {
+      if (slice != null) {
+         OverlayArt.Image var8 = slice.image();
+         int var9 = slice.border();
          int var10 = var8.width() - 2 * var9;
          int var11 = var8.height() - 2 * var9;
          if (var10 > 0 && var11 > 0) {
-            int[] var12 = new int[var4];
-            int[] var13 = new int[var5];
+            int[] var12 = new int[k];
+            int[] var13 = new int[l];
 
-            for (int var14 = 0; var14 < var4; var14++) {
-               var12[var14] = sourceAt(var14, var4, var9, var10, var1.stretch());
+            for (int var14 = 0; var14 < k; var14++) {
+               var12[var14] = sourceAt(var14, k, var9, var10, slice.stretch());
             }
 
-            for (int var7 = 0; var7 < var5; var7++) {
-               var13[var7] = sourceAt(var7, var5, var9, var11, var1.stretch());
+            for (int var7 = 0; var7 < l; var7++) {
+               var13[var7] = sourceAt(var7, l, var9, var11, slice.stretch());
             }
 
-            for (int var16 = 0; var16 < var5; var16++) {
-               for (int var17 = 0; var17 < var4; var17++) {
+            for (int var16 = 0; var16 < l; var16++) {
+               for (int var17 = 0; var17 < k; var17++) {
                   int var15 = var8.pixels()[var13[var16] * var8.width() + var12[var17]];
                   if (var15 >>> 24 != 0) {
-                     var0.blendPixel(var15, (var2 + var17) * var6, (var3 + var16) * var6, var6);
+                     canvas.blendPixel(var15, (i + var17) * m, (j + var16) * m, m);
                   }
                }
             }
@@ -173,65 +173,65 @@ final class OverlayArt {
       }
    }
 
-   private static int sourceAt(int var0, int var1, int var2, int var3, boolean var4) {
-      if (var0 < var2) {
-         return var0;
-      } else if (var0 >= var1 - var2) {
-         return var2 + var3 + (var0 - (var1 - var2));
+   private static int sourceAt(int i, int j, int k, int l, boolean bl) {
+      if (i < k) {
+         return i;
+      } else if (i >= j - k) {
+         return k + l + (i - (j - k));
       } else {
-         int var5 = var0 - var2;
-         int var6 = var1 - 2 * var2;
-         return var2 + (var4 ? var5 * var3 / Math.max(var6, 1) : var5 % var3);
+         int var5 = i - k;
+         int var6 = j - 2 * k;
+         return k + (bl ? var5 * l / Math.max(var6, 1) : var5 % l);
       }
    }
 
-   static void text(Canvas var0, Text var1, int var2, int var3, int var4, int var5, boolean var6) {
+   static void text(Canvas canvas, Text text, int i, int j, int k, int l, boolean bl) {
       load();
       if (glyphs != null) {
-         int[] var7 = new int[]{var2};
-         var1.method_27658((var6x, var7x) -> {
-            int var8 = var6x.method_10973() != null ? var5 & 0xFF000000 | var6x.method_10973().method_27716() : var5;
+         int[] var7 = new int[]{i};
+         text.visit((style, string) -> {
+            int var8 = style.getColor() != null ? l & 0xFF000000 | style.getColor().getRgb() : l;
             int var9 = 0;
 
-            while (var9 < var7x.length()) {
-               int var10 = var7x.codePointAt(var9);
+            while (var9 < string.length()) {
+               int var10 = string.codePointAt(var9);
                var9 += Character.charCount(var10);
-               int var11 = advance(var10, var6x);
-               if (var10 < 128 && var10 > 32 && !var6x.method_10987()) {
-                  if (var6) {
-                     glyph(var0, var10, var7[0] + 1, var3 + 1, var4, var8 & 0xFF000000 | (var8 & 16579836) >> 2, var6x);
+               int var11 = advance(var10, style);
+               if (var10 < 128 && var10 > 32 && !style.isObfuscated()) {
+                  if (bl) {
+                     glyph(canvas, var10, var7[0] + 1, j + 1, k, var8 & 0xFF000000 | (var8 & 16579836) >> 2, style);
                   }
 
-                  glyph(var0, var10, var7[0], var3, var4, var8, var6x);
+                  glyph(canvas, var10, var7[0], j, k, var8, style);
                }
 
-               if (var6x.method_10986()) {
-                  var0.rect(var7[0] * var4, (var3 + 4) * var4, var11 * var4, var4, var8);
+               if (style.isStrikethrough()) {
+                  canvas.rect(var7[0] * k, (j + 4) * k, var11 * k, k, var8);
                }
 
-               if (var6x.method_10965()) {
-                  var0.rect(var7[0] * var4, (var3 + 8) * var4, var11 * var4, var4, var8);
+               if (style.isUnderlined()) {
+                  canvas.rect(var7[0] * k, (j + 8) * k, var11 * k, k, var8);
                }
 
                var7[0] += var11;
             }
 
             return Optional.empty();
-         }, Style.field_24360);
+         }, Style.EMPTY);
       }
    }
 
-   private static int advance(int var0, Style var1) {
-      return MinecraftClient.method_1551().field_1772.method_27525(StringVisitable.method_29431(new String(Character.toChars(var0)), var1));
+   private static int advance(int i, Style style) {
+      return MinecraftClient.getInstance().textRenderer.getWidth(StringVisitable.styled(new String(Character.toChars(i)), style));
    }
 
-   private static void glyph(Canvas var0, int var1, int var2, int var3, int var4, int var5, Style var6) {
-      int var7 = var1 % 16 * 8;
-      int var8 = var1 / 16 * 8;
+   private static void glyph(Canvas canvas, int i, int j, int k, int l, int m, Style style) {
+      int var7 = i % 16 * 8;
+      int var8 = i / 16 * 8;
       short var9 = 128;
 
       for (int var10 = 0; var10 < 8; var10++) {
-         int var11 = var6.method_10966() && var10 < 4 ? 1 : 0;
+         int var11 = style.isItalic() && var10 < 4 ? 1 : 0;
          int var12 = 0;
 
          while (var12 < 8) {
@@ -244,9 +244,9 @@ final class OverlayArt {
                   var12++;
                }
 
-               var0.rect((var2 + var13 + var11) * var4, (var3 + var10) * var4, (var12 - var13) * var4, var4, var5);
-               if (var6.method_10984()) {
-                  var0.rect((var2 + var13 + var11 + 1) * var4, (var3 + var10) * var4, (var12 - var13) * var4, var4, var5);
+               canvas.rect((j + var13 + var11) * l, (k + var10) * l, (var12 - var13) * l, l, m);
+               if (style.isBold()) {
+                  canvas.rect((j + var13 + var11 + 1) * l, (k + var10) * l, (var12 - var13) * l, l, m);
                }
             }
          }

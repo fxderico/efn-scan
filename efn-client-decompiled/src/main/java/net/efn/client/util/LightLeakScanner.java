@@ -36,16 +36,16 @@ public final class LightLeakScanner {
       this.queue.clear();
    }
 
-   public void queueLoaded(ClientWorld var1, BlockPos var2, int var3) {
-      int var4 = var2.method_10263() >> 4;
-      int var5 = var2.method_10260() >> 4;
+   public void queueLoaded(ClientWorld clientWorld, BlockPos blockPos, int i) {
+      int var4 = blockPos.getX() >> 4;
+      int var5 = blockPos.getZ() >> 4;
       LongArrayList var6 = new LongArrayList();
 
-      for (int var7 = 0; var7 <= var3; var7++) {
+      for (int var7 = 0; var7 <= i; var7++) {
          for (int var8 = -var7; var8 <= var7; var8++) {
             for (int var9 = -var7; var9 <= var7; var9++) {
-               if (Math.max(Math.abs(var8), Math.abs(var9)) == var7 && LevelUtil.isLoaded(var1, var4 + var8, var5 + var9)) {
-                  var6.add(ChunkPos.method_8331(var4 + var8, var5 + var9));
+               if (Math.max(Math.abs(var8), Math.abs(var9)) == var7 && LevelUtil.isLoaded(clientWorld, var4 + var8, var5 + var9)) {
+                  var6.add(ChunkPos.toLong(var4 + var8, var5 + var9));
                }
             }
          }
@@ -56,15 +56,15 @@ public final class LightLeakScanner {
       }
    }
 
-   public void onPacketApplied(Packet<?> var1) {
-      if (var1 instanceof ChunkDataS2CPacket var2) {
-         this.queue.add(ChunkPos.method_8331(var2.method_11523(), var2.method_11524()));
-      } else if (var1 instanceof LightUpdateS2CPacket var3) {
-         this.queue.add(ChunkPos.method_8331(var3.method_11558(), var3.method_11554()));
+   public void onPacketApplied(Packet<?> packet) {
+      if (packet instanceof ChunkDataS2CPacket var2) {
+         this.queue.add(ChunkPos.toLong(var2.getChunkX(), var2.getChunkZ()));
+      } else if (packet instanceof LightUpdateS2CPacket var3) {
+         this.queue.add(ChunkPos.toLong(var3.getChunkX(), var3.getChunkZ()));
       }
    }
 
-   public void tick(ClientWorld var1) {
+   public void tick(ClientWorld clientWorld) {
       if (!this.queue.isEmpty()) {
          boolean var4 = PerformanceModule.optimizationsEnabled();
          long var5 = System.nanoTime();
@@ -72,7 +72,7 @@ public final class LightLeakScanner {
 
          while (!this.queue.isEmpty() && System.nanoTime() < var2) {
             long var9 = this.queue.removeFirstLong();
-            scan(var1, ChunkPos.method_8325(var9), ChunkPos.method_8332(var9));
+            scan(clientWorld, ChunkPos.getPackedX(var9), ChunkPos.getPackedZ(var9));
          }
 
          if (var4) {
@@ -81,22 +81,22 @@ public final class LightLeakScanner {
       }
    }
 
-   private static void scan(ClientWorld var0, int var1, int var2) {
-      WorldChunk var4 = var0.method_2935().method_2857(var1, var2, ChunkStatus.field_12803, false);
+   private static void scan(ClientWorld clientWorld, int i, int j) {
+      WorldChunk var4 = clientWorld.getChunkManager().getChunk(i, j, ChunkStatus.FULL, false);
       if (var4 != null) {
-         ChunkSection[] var5 = var4.method_12006();
-         ChunkLightingView var6 = var0.method_22336().method_15562(LightType.field_9282);
+         ChunkSection[] var5 = var4.getSectionArray();
+         ChunkLightingView var6 = clientWorld.getLightingProvider().get(LightType.BLOCK);
          LongArrayList var7 = new LongArrayList();
 
          for (int var3 = 0; var3 < var5.length; var3++) {
             ChunkSection var10 = var5[var3];
             int var8;
             ChunkNibbleArray var9;
-            if (!var10.method_38292()
-               && (var9 = var6.method_15544(ChunkSectionPos.method_18676(var1, var8 = var4.method_31604(var3), var2))) != null
-               && !var9.method_12146()
+            if (!var10.isEmpty()
+               && (var9 = var6.getLightSection(ChunkSectionPos.from(i, var8 = var4.sectionIndexToCoord(var3), j))) != null
+               && !var9.isUninitialized()
                && anyLight(var9)) {
-               scanSection(var0, var10, var9, var1 << 4, var8 << 4, var2 << 4, var7);
+               scanSection(clientWorld, var10, var9, i << 4, var8 << 4, j << 4, var7);
                if (var7.size() > 512) {
                   return;
                }
@@ -104,28 +104,30 @@ public final class LightLeakScanner {
          }
 
          for (int var11 = 0; var11 < var7.size(); var11++) {
-            BlockEntityLeakTracker.hint(BlockPos.method_10092(var7.getLong(var11)), Blocks.field_10124, BlockEntityLeakTracker.Source.LIGHT);
+            BlockEntityLeakTracker.hint(BlockPos.fromLong(var7.getLong(var11)), Blocks.AIR, BlockEntityLeakTracker.Source.LIGHT);
          }
       }
    }
 
-   private static void scanSection(ClientWorld var0, ChunkSection var1, ChunkNibbleArray var2, int var3, int var4, int var5, LongArrayList var6) {
+   private static void scanSection(
+      ClientWorld clientWorld, ChunkSection chunkSection, ChunkNibbleArray chunkNibbleArray, int i, int j, int k, LongArrayList longArrayList
+   ) {
       for (int var7 = 0; var7 < 16; var7++) {
          for (int var8 = 0; var8 < 16; var8++) {
             for (int var9 = 0; var9 < 16; var9++) {
-               BlockState var11 = var1.method_12254(var9, var7, var8);
-               int var12 = var2.method_12139(var9, var7, var8);
-               if (var11.method_26193() >= 15) {
-                  if (var12 >= 2 && var12 > var11.method_26213()) {
-                     var6.add(BlockPos.method_10064(var3 + var9, var4 + var7, var5 + var8));
+               BlockState var11 = chunkSection.getBlockState(var9, var7, var8);
+               int var12 = chunkNibbleArray.get(var9, var7, var8);
+               if (var11.getOpacity() >= 15) {
+                  if (var12 >= 2 && var12 > var11.getLuminance()) {
+                     longArrayList.add(BlockPos.asLong(i + var9, j + var7, k + var8));
                   }
                } else {
                   BlockPos var10;
-                  if (var11.method_26215()
+                  if (var11.isAir()
                      && var12 <= 12
-                     && brightestInside(var2, var9, var7, var8) - var12 >= 3
-                     && !nextToGeode(var0, var10 = new BlockPos(var3 + var9, var4 + var7, var5 + var8))) {
-                     var6.add(var10.method_10063());
+                     && brightestInside(chunkNibbleArray, var9, var7, var8) - var12 >= 3
+                     && !nextToGeode(clientWorld, var10 = new BlockPos(i + var9, j + var7, k + var8))) {
+                     longArrayList.add(var10.asLong());
                   }
                }
             }
@@ -133,37 +135,37 @@ public final class LightLeakScanner {
       }
    }
 
-   private static int brightestInside(ChunkNibbleArray var0, int var1, int var2, int var3) {
+   private static int brightestInside(ChunkNibbleArray chunkNibbleArray, int i, int j, int k) {
       int var4 = 0;
-      if (var1 > 0) {
-         var4 = Math.max(var4, var0.method_12139(var1 - 1, var2, var3));
+      if (i > 0) {
+         var4 = Math.max(var4, chunkNibbleArray.get(i - 1, j, k));
       }
 
-      if (var1 < 15) {
-         var4 = Math.max(var4, var0.method_12139(var1 + 1, var2, var3));
+      if (i < 15) {
+         var4 = Math.max(var4, chunkNibbleArray.get(i + 1, j, k));
       }
 
-      if (var2 > 0) {
-         var4 = Math.max(var4, var0.method_12139(var1, var2 - 1, var3));
+      if (j > 0) {
+         var4 = Math.max(var4, chunkNibbleArray.get(i, j - 1, k));
       }
 
-      if (var2 < 15) {
-         var4 = Math.max(var4, var0.method_12139(var1, var2 + 1, var3));
+      if (j < 15) {
+         var4 = Math.max(var4, chunkNibbleArray.get(i, j + 1, k));
       }
 
-      if (var3 > 0) {
-         var4 = Math.max(var4, var0.method_12139(var1, var2, var3 - 1));
+      if (k > 0) {
+         var4 = Math.max(var4, chunkNibbleArray.get(i, j, k - 1));
       }
 
-      if (var3 < 15) {
-         var4 = Math.max(var4, var0.method_12139(var1, var2, var3 + 1));
+      if (k < 15) {
+         var4 = Math.max(var4, chunkNibbleArray.get(i, j, k + 1));
       }
 
       return var4;
    }
 
-   private static boolean anyLight(ChunkNibbleArray var0) {
-      for (byte var5 : var0.method_12137()) {
+   private static boolean anyLight(ChunkNibbleArray chunkNibbleArray) {
+      for (byte var5 : chunkNibbleArray.asByteArray()) {
          if (var5 != 0) {
             return true;
          }
@@ -172,12 +174,10 @@ public final class LightLeakScanner {
       return false;
    }
 
-   private static boolean nextToGeode(ClientWorld var0, BlockPos var1) {
-      for (BlockPos var5 : new BlockPos[]{
-         var1.method_10084(), var1.method_10074(), var1.method_10095(), var1.method_10072(), var1.method_10078(), var1.method_10067()
-      }) {
-         BlockState var6 = var0.method_8320(var5);
-         if (var6.method_27852(Blocks.field_27160) || var6.method_27852(Blocks.field_27159)) {
+   private static boolean nextToGeode(ClientWorld clientWorld, BlockPos blockPos) {
+      for (BlockPos var5 : new BlockPos[]{blockPos.up(), blockPos.down(), blockPos.north(), blockPos.south(), blockPos.east(), blockPos.west()}) {
+         BlockState var6 = clientWorld.getBlockState(var5);
+         if (var6.isOf(Blocks.BUDDING_AMETHYST) || var6.isOf(Blocks.AMETHYST_BLOCK)) {
             return true;
          }
       }

@@ -193,28 +193,28 @@ public final class EfnClickGui {
          : this.listeningModule != null || this.listeningKey != null || ImGuiManager.getInstance().typing();
    }
 
-   public void onFilesDropped(List<Path> var1) {
-      this.legacy.onFilesDropped(var1);
+   public void onFilesDropped(List<Path> list) {
+      this.legacy.onFilesDropped(list);
    }
 
-   private void renderWindow(ImDrawList var1, float var2, float var3, float var4, float var5) {
+   private void renderWindow(ImDrawList imDrawList, float f, float g, float h, float i) {
       float var6 = Math.max(EfnWidgets.s(8.0F), GuiPalette.rounding()) + EfnWidgets.s(6.0F);
-      ClickGuiRenderer.drawShadow(var2, var3, var4, var5, var6, 6);
-      var1.addRectFilled(var2, var3, var2 + var4, var3 + var5, this.f(BG_PANEL), var6);
-      var1.addRect(var2, var3, var2 + var4, var3 + var5, this.f(LINE), var6, 0, 1.0F);
+      ClickGuiRenderer.drawShadow(f, g, h, i, var6, 6);
+      imDrawList.addRectFilled(f, g, f + h, g + i, this.f(BG_PANEL), var6);
+      imDrawList.addRect(f, g, f + h, g + i, this.f(LINE), var6, 0, 1.0F);
       float var7 = EfnWidgets.s(12.0F);
       float var8 = EfnWidgets.s(232.0F);
-      this.renderSidebar(var1, var2 + var7, var3 + var7, var8, var5 - var7 * 2.0F);
-      float var9 = var2 + var7 + var8 + EfnWidgets.s(22.0F);
-      float var10 = var2 + var4 - var7 - EfnWidgets.s(14.0F) - var9;
-      float var11 = var3 + var7 + EfnWidgets.s(14.0F);
+      this.renderSidebar(imDrawList, f + var7, g + var7, var8, i - var7 * 2.0F);
+      float var9 = f + var7 + var8 + EfnWidgets.s(22.0F);
+      float var10 = f + h - var7 - EfnWidgets.s(14.0F) - var9;
+      float var11 = g + var7 + EfnWidgets.s(14.0F);
       float var12 = this.view != EfnClickGui.View.PAGE && this.detail != null ? EfnWidgets.s(96.0F) : EfnWidgets.s(72.0F);
-      this.renderHeader(var1, var9, var11, var10);
+      this.renderHeader(imDrawList, var9, var11, var10);
       float var13 = var11 + var12;
       int var14 = GuiPalette.accent();
-      var1.addRectFilled(var9, var13, var9 + var10, var13 + EfnWidgets.s(1.0F), this.f(LINE));
+      imDrawList.addRectFilled(var9, var13, var9 + var10, var13 + EfnWidgets.s(1.0F), this.f(LINE));
       float var15 = var13 + EfnWidgets.s(14.0F);
-      float var16 = var3 + var5 - var7 - EfnWidgets.s(10.0F) - var15;
+      float var16 = g + i - var7 - EfnWidgets.s(10.0F) - var15;
       if (this.view == EfnClickGui.View.PAGE) {
          this.renderPage(var9, var15, var10, var16);
       } else if (this.detail != null) {
@@ -224,24 +224,24 @@ public final class EfnClickGui {
       }
    }
 
-   private void renderSidebar(ImDrawList var1, float var2, float var3, float var4, float var5) {
+   private void renderSidebar(ImDrawList imDrawList, float f, float g, float h, float i) {
       float var6 = Math.max(EfnWidgets.s(8.0F), GuiPalette.rounding());
-      var1.addRectFilled(var2, var3, var2 + var4, var3 + var5, this.f(BG_SIDEBAR), var6);
-      var1.addRect(var2, var3, var2 + var4, var3 + var5, this.f(LINE), var6, 0, 1.0F);
+      imDrawList.addRectFilled(f, g, f + h, g + i, this.f(BG_SIDEBAR), var6);
+      imDrawList.addRect(f, g, f + h, g + i, this.f(LINE), var6, 0, 1.0F);
       int var7 = GuiPalette.accent();
       float var8 = EfnWidgets.s(18.0F);
-      float var9 = var3 + EfnWidgets.s(16.0F);
+      float var9 = g + EfnWidgets.s(16.0F);
       float var10 = EfnWidgets.s(36.0F);
-      this.drawLogo(var1, var2 + var8, var9, var10, var7);
-      float var11 = var2 + var8 + var10 + EfnWidgets.s(12.0F);
-      EfnWidgets.text(var1, this.fCat, var11, var9 - EfnWidgets.s(1.0F), this.f(TEXT), "efn".toUpperCase(Locale.ROOT));
-      EfnWidgets.text(var1, this.fSmall, var11, var9 + EfnWidgets.s(18.0F), this.f(MUTED), "v1.2.0");
+      this.drawLogo(imDrawList, f + var8, var9, var10, var7);
+      float var11 = f + var8 + var10 + EfnWidgets.s(12.0F);
+      EfnWidgets.text(imDrawList, this.fCat, var11, var9 - EfnWidgets.s(1.0F), this.f(TEXT), "efn".toUpperCase(Locale.ROOT));
+      EfnWidgets.text(imDrawList, this.fSmall, var11, var9 + EfnWidgets.s(18.0F), this.f(MUTED), "v1.2.0");
       float var12 = var9 + var10 + EfnWidgets.s(18.0F);
-      EfnWidgets.text(var1, this.fSmall, var2 + var8, var12, this.f(MUTED), "MODULES");
+      EfnWidgets.text(imDrawList, this.fSmall, f + var8, var12, this.f(MUTED), "MODULES");
       var12 += EfnWidgets.lineHeight(this.fSmall) + EfnWidgets.s(6.0F);
       float var13 = EfnWidgets.s(34.0F);
-      float var14 = var4 - EfnWidgets.s(20.0F);
-      float var15 = var2 + EfnWidgets.s(10.0F);
+      float var14 = h - EfnWidgets.s(20.0F);
+      float var15 = f + EfnWidgets.s(10.0F);
 
       for (ModuleCategory var17 : this.catCache) {
          boolean var18 = this.view != EfnClickGui.View.PAGE
@@ -251,22 +251,29 @@ public final class EfnClickGui {
          var20[0] += ((var19 ? 1.0F : 0.0F) - var20[0]) * Math.min(1.0F, this.dt * 14.0F);
          var20[1] += ((this.category == var17 && this.view != EfnClickGui.View.PAGE ? 1.0F : 0.0F) - var20[1]) * Math.min(1.0F, this.dt * 12.0F);
          if (var20[1] > 0.01F) {
-            var1.addRectFilled(var15, var12, var15 + var14, var12 + var13, this.f(a(var7, 0.16F * var20[1])), EfnWidgets.s(10.0F));
-            var1.addRectFilled(var15, var12 + var13 * 0.22F, var15 + EfnWidgets.s(3.0F), var12 + var13 * 0.78F, this.f(a(var7, var20[1])), EfnWidgets.s(2.0F));
+            imDrawList.addRectFilled(var15, var12, var15 + var14, var12 + var13, this.f(a(var7, 0.16F * var20[1])), EfnWidgets.s(10.0F));
+            imDrawList.addRectFilled(
+               var15, var12 + var13 * 0.22F, var15 + EfnWidgets.s(3.0F), var12 + var13 * 0.78F, this.f(a(var7, var20[1])), EfnWidgets.s(2.0F)
+            );
          } else if (var20[0] > 0.01F) {
-            var1.addRectFilled(var15, var12, var15 + var14, var12 + var13, this.f(a(rgba(255, 255, 255, 255), 0.05F * var20[0])), EfnWidgets.s(10.0F));
+            imDrawList.addRectFilled(var15, var12, var15 + var14, var12 + var13, this.f(a(rgba(255, 255, 255, 255), 0.05F * var20[0])), EfnWidgets.s(10.0F));
          }
 
          int var21 = EfnTheme.lerpColor(MUTED, var7, var20[1]);
-         this.drawIcon(var1, var17.icon(), var15 + EfnWidgets.s(22.0F), var12 + var13 * 0.5F, EfnWidgets.s(7.0F), this.f(var21));
+         this.drawIcon(imDrawList, var17.icon(), var15 + EfnWidgets.s(22.0F), var12 + var13 * 0.5F, EfnWidgets.s(7.0F), this.f(var21));
          int var22 = EfnTheme.lerpColor(rgba(189, 188, 200, 255), TEXT, Math.max(var20[1], var20[0]));
          EfnWidgets.text(
-            var1, this.fMod, var15 + EfnWidgets.s(42.0F), var12 + (var13 - EfnWidgets.lineHeight(this.fMod)) * 0.5F, this.f(var22), this.label(var17)
+            imDrawList, this.fMod, var15 + EfnWidgets.s(42.0F), var12 + (var13 - EfnWidgets.lineHeight(this.fMod)) * 0.5F, this.f(var22), this.label(var17)
          );
          String var23 = Integer.toString(ModuleRegistry.inCategory(var17).size());
          float var24 = EfnWidgets.textWidth(this.fSmall, var23);
          EfnWidgets.text(
-            var1, this.fSmall, var15 + var14 - var24 - EfnWidgets.s(12.0F), var12 + (var13 - EfnWidgets.lineHeight(this.fSmall)) * 0.5F, this.f(MUTED), var23
+            imDrawList,
+            this.fSmall,
+            var15 + var14 - var24 - EfnWidgets.s(12.0F),
+            var12 + (var13 - EfnWidgets.lineHeight(this.fSmall)) * 0.5F,
+            this.f(MUTED),
+            var23
          );
          if (var19 && this.clicked) {
             this.category = var17;
@@ -279,7 +286,7 @@ public final class EfnClickGui {
       }
 
       var12 += EfnWidgets.s(12.0F);
-      EfnWidgets.text(var1, this.fSmall, var2 + var8, var12, this.f(MUTED), "GENERAL");
+      EfnWidgets.text(imDrawList, this.fSmall, f + var8, var12, this.f(MUTED), "GENERAL");
       var12 += EfnWidgets.lineHeight(this.fSmall) + EfnWidgets.s(6.0F);
 
       for (int var28 = 0; var28 < GENERAL_LABELS.length; var28++) {
@@ -290,14 +297,16 @@ public final class EfnClickGui {
          var31[1] += ((var32 ? 1.0F : 0.0F) - var31[1]) * Math.min(1.0F, this.dt * 12.0F);
          if (var31[1] > 0.01F) {
             int var33 = GuiPalette.accent();
-            var1.addRectFilled(var15, var12, var15 + var14, var12 + var13, this.f(a(var33, 0.16F * var31[1])), EfnWidgets.s(10.0F));
-            var1.addRectFilled(var15, var12 + var13 * 0.22F, var15 + EfnWidgets.s(3.0F), var12 + var13 * 0.78F, this.f(a(var33, var31[1])), EfnWidgets.s(2.0F));
+            imDrawList.addRectFilled(var15, var12, var15 + var14, var12 + var13, this.f(a(var33, 0.16F * var31[1])), EfnWidgets.s(10.0F));
+            imDrawList.addRectFilled(
+               var15, var12 + var13 * 0.22F, var15 + EfnWidgets.s(3.0F), var12 + var13 * 0.78F, this.f(a(var33, var31[1])), EfnWidgets.s(2.0F)
+            );
          } else if (var31[0] > 0.01F) {
-            var1.addRectFilled(var15, var12, var15 + var14, var12 + var13, this.f(a(rgba(255, 255, 255, 255), 0.05F * var31[0])), EfnWidgets.s(10.0F));
+            imDrawList.addRectFilled(var15, var12, var15 + var14, var12 + var13, this.f(a(rgba(255, 255, 255, 255), 0.05F * var31[0])), EfnWidgets.s(10.0F));
          }
 
          this.drawGeneralIcon(
-            var1,
+            imDrawList,
             var28,
             var15 + EfnWidgets.s(22.0F),
             var12 + var13 * 0.5F,
@@ -305,7 +314,7 @@ public final class EfnClickGui {
             this.f(EfnTheme.lerpColor(EfnTheme.lerpColor(MUTED, TEXT, var31[0]), GuiPalette.accent(), var31[1]))
          );
          EfnWidgets.text(
-            var1,
+            imDrawList,
             this.fMod,
             var15 + EfnWidgets.s(42.0F),
             var12 + (var13 - EfnWidgets.lineHeight(this.fMod)) * 0.5F,
@@ -324,36 +333,36 @@ public final class EfnClickGui {
       }
 
       float var29 = EfnWidgets.textWidth(this.fSmall, "efn.lol");
-      EfnWidgets.text(var1, this.fSmall, var2 + (var4 - var29) * 0.5F, var3 + var5 - EfnWidgets.s(26.0F), this.f(a(MUTED, 0.8F)), "efn.lol");
+      EfnWidgets.text(imDrawList, this.fSmall, f + (h - var29) * 0.5F, g + i - EfnWidgets.s(26.0F), this.f(a(MUTED, 0.8F)), "efn.lol");
    }
 
-   private void renderHeader(ImDrawList var1, float var2, float var3, float var4) {
+   private void renderHeader(ImDrawList imDrawList, float f, float g, float h) {
       if (this.view == EfnClickGui.View.PAGE) {
-         this.renderPageHeader(var1, var2, var3, var4);
+         this.renderPageHeader(imDrawList, f, g, h);
       } else {
          int var5 = GuiPalette.accent();
          boolean var6 = this.detail == null && !this.search.get().trim().isEmpty();
          if (this.detail != null) {
             ClientModule var28 = this.detail;
-            EfnWidgets.text(var1, this.fTitle, var2, var3, this.f(TEXT), var28.name());
+            EfnWidgets.text(imDrawList, this.fTitle, f, g, this.f(TEXT), var28.name());
             String var29 = var28.description() == null ? "" : var28.description();
-            float var30 = var4 - EfnWidgets.s(260.0F);
+            float var30 = h - EfnWidgets.s(260.0F);
             EfnWidgets.text(
-               var1,
+               imDrawList,
                this.fSmall,
-               var2,
-               var3 + EfnWidgets.lineHeight(this.fTitle) + EfnWidgets.s(6.0F),
+               f,
+               g + EfnWidgets.lineHeight(this.fTitle) + EfnWidgets.s(6.0F),
                this.f(MUTED),
                EfnWidgets.ellipsize(this.fSmall, var29, var30)
             );
             float var31 = EfnWidgets.s(84.0F);
             float var33 = EfnWidgets.s(30.0F);
-            float var35 = var3 + EfnWidgets.s(54.0F);
-            boolean var36 = this.hot(var2, var35, var31, var33);
-            var1.addRectFilled(var2, var35, var2 + var31, var35 + var33, this.f(var36 ? BG_CARD_HOVER : BG_CARD), EfnWidgets.s(9.0F));
-            var1.addRect(var2, var35, var2 + var31, var35 + var33, this.f(LINE), EfnWidgets.s(9.0F), 0, 1.0F);
-            EfnWidgets.chevronLeft(var1, var2 + EfnWidgets.s(16.0F), var35 + var33 * 0.5F, EfnWidgets.s(4.5F), this.f(TEXT));
-            EfnWidgets.text(var1, this.fSmall, var2 + EfnWidgets.s(30.0F), var35 + (var33 - EfnWidgets.lineHeight(this.fSmall)) * 0.5F, this.f(TEXT), "Back");
+            float var35 = g + EfnWidgets.s(54.0F);
+            boolean var36 = this.hot(f, var35, var31, var33);
+            imDrawList.addRectFilled(f, var35, f + var31, var35 + var33, this.f(var36 ? BG_CARD_HOVER : BG_CARD), EfnWidgets.s(9.0F));
+            imDrawList.addRect(f, var35, f + var31, var35 + var33, this.f(LINE), EfnWidgets.s(9.0F), 0, 1.0F);
+            EfnWidgets.chevronLeft(imDrawList, f + EfnWidgets.s(16.0F), var35 + var33 * 0.5F, EfnWidgets.s(4.5F), this.f(TEXT));
+            EfnWidgets.text(imDrawList, this.fSmall, f + EfnWidgets.s(30.0F), var35 + (var33 - EfnWidgets.lineHeight(this.fSmall)) * 0.5F, this.f(TEXT), "Back");
             if (var36 && this.clicked) {
                this.detail = null;
                this.popupFor = null;
@@ -361,11 +370,11 @@ public final class EfnClickGui {
 
             float var37 = EfnWidgets.s(46.0F);
             float var38 = EfnWidgets.s(24.0F);
-            float var39 = var2 + var4 - var37;
-            float var18 = var3 + EfnWidgets.s(10.0F);
+            float var39 = f + h - var37;
+            float var18 = g + EfnWidgets.s(10.0F);
             float[] var19 = this.state("tog:" + var28.id(), var28.isEnabled());
             var19[1] += ((var28.isEnabled() ? 1.0F : 0.0F) - var19[1]) * Math.min(1.0F, this.dt * 10.0F);
-            this.drawSwitch(var1, var39, var18, var37, var38, var19[1]);
+            this.drawSwitch(imDrawList, var39, var18, var37, var38, var19[1]);
             if (this.hot(var39, var18, var37, var38) && this.clicked) {
                this.toggle(var28);
             }
@@ -373,7 +382,7 @@ public final class EfnClickGui {
             String var20 = var28.isEnabled() ? "Enabled" : "Disabled";
             float var21 = EfnWidgets.textWidth(this.fSmall, var20);
             EfnWidgets.text(
-               var1,
+               imDrawList,
                this.fSmall,
                var39 - var21 - EfnWidgets.s(12.0F),
                var18 + (var38 - EfnWidgets.lineHeight(this.fSmall)) * 0.5F,
@@ -383,14 +392,14 @@ public final class EfnClickGui {
             if (var28.hasModifiedSettings()) {
                float var22 = EfnWidgets.s(78.0F);
                float var23 = EfnWidgets.s(28.0F);
-               float var24 = var2 + var4 - var22;
-               float var25 = var3 + EfnWidgets.s(54.0F);
+               float var24 = f + h - var22;
+               float var25 = g + EfnWidgets.s(54.0F);
                boolean var26 = this.hot(var24, var25, var22, var23);
-               var1.addRectFilled(var24, var25, var24 + var22, var25 + var23, this.f(var26 ? BG_CARD_HOVER : BG_CARD), EfnWidgets.s(9.0F));
-               var1.addRect(var24, var25, var24 + var22, var25 + var23, this.f(LINE), EfnWidgets.s(9.0F), 0, 1.0F);
+               imDrawList.addRectFilled(var24, var25, var24 + var22, var25 + var23, this.f(var26 ? BG_CARD_HOVER : BG_CARD), EfnWidgets.s(9.0F));
+               imDrawList.addRect(var24, var25, var24 + var22, var25 + var23, this.f(LINE), EfnWidgets.s(9.0F), 0, 1.0F);
                float var27 = EfnWidgets.textWidth(this.fSmall, "Reset");
                EfnWidgets.text(
-                  var1, this.fSmall, var24 + (var22 - var27) * 0.5F, var25 + (var23 - EfnWidgets.lineHeight(this.fSmall)) * 0.5F, this.f(TEXT), "Reset"
+                  imDrawList, this.fSmall, var24 + (var22 - var27) * 0.5F, var25 + (var23 - EfnWidgets.lineHeight(this.fSmall)) * 0.5F, this.f(TEXT), "Reset"
                );
                if (var26 && this.clicked) {
                   var28.resetSettings();
@@ -398,9 +407,9 @@ public final class EfnClickGui {
             }
          } else {
             String var8 = var6 ? "Search" : (this.category == null ? "Modules" : this.label(this.category));
-            EfnWidgets.text(var1, this.fTitle, var2, var3, this.f(var5), var8);
+            EfnWidgets.text(imDrawList, this.fTitle, f, g, this.f(var5), var8);
             float var9 = EfnWidgets.textWidth(this.fTitle, var8 + " ");
-            EfnWidgets.text(var1, this.fTitle, var2 + var9, var3, this.f(TEXT), var6 ? "Results" : "Modules");
+            EfnWidgets.text(imDrawList, this.fTitle, f + var9, g, this.f(TEXT), var6 ? "Results" : "Modules");
             List var10 = this.currentModules();
             int var11 = 0;
 
@@ -411,23 +420,23 @@ public final class EfnClickGui {
             }
 
             EfnWidgets.text(
-               var1,
+               imDrawList,
                this.fSmall,
-               var2,
-               var3 + EfnWidgets.lineHeight(this.fTitle) + EfnWidgets.s(6.0F),
+               f,
+               g + EfnWidgets.lineHeight(this.fTitle) + EfnWidgets.s(6.0F),
                this.f(MUTED),
                var10.size() + " modules  \u00b7  " + var11 + " enabled"
             );
-            float var32 = Math.min(EfnWidgets.s(300.0F), var4 * 0.42F);
+            float var32 = Math.min(EfnWidgets.s(300.0F), h * 0.42F);
             float var34 = EfnWidgets.s(40.0F);
-            float var14 = var2 + var4 - var32;
-            float var15 = var3 + EfnWidgets.s(2.0F);
-            var1.addRectFilled(var14, var15, var14 + var32, var15 + var34, this.f(BG_FIELD), EfnWidgets.s(11.0F));
-            var1.addRect(var14, var15, var14 + var32, var15 + var34, this.f(var6 ? a(var5, 0.7F) : LINE), EfnWidgets.s(11.0F), 0, 1.0F);
-            EfnWidgets.magnifier(var1, var14 + EfnWidgets.s(20.0F), var15 + var34 * 0.5F, EfnWidgets.s(6.0F), this.f(MUTED));
+            float var14 = f + h - var32;
+            float var15 = g + EfnWidgets.s(2.0F);
+            imDrawList.addRectFilled(var14, var15, var14 + var32, var15 + var34, this.f(BG_FIELD), EfnWidgets.s(11.0F));
+            imDrawList.addRect(var14, var15, var14 + var32, var15 + var34, this.f(var6 ? a(var5, 0.7F) : LINE), EfnWidgets.s(11.0F), 0, 1.0F);
+            EfnWidgets.magnifier(imDrawList, var14 + EfnWidgets.s(20.0F), var15 + var34 * 0.5F, EfnWidgets.s(6.0F), this.f(MUTED));
             String var16 = "Ctrl K";
             float var17 = EfnWidgets.textWidth(this.fSmall, var16) + EfnWidgets.s(14.0F);
-            var1.addRectFilled(
+            imDrawList.addRectFilled(
                var14 + var32 - var17 - EfnWidgets.s(8.0F),
                var15 + EfnWidgets.s(8.0F),
                var14 + var32 - EfnWidgets.s(8.0F),
@@ -436,7 +445,12 @@ public final class EfnClickGui {
                EfnWidgets.s(6.0F)
             );
             EfnWidgets.text(
-               var1, this.fSmall, var14 + var32 - var17 - EfnWidgets.s(1.0F), var15 + (var34 - EfnWidgets.lineHeight(this.fSmall)) * 0.5F, this.f(MUTED), var16
+               imDrawList,
+               this.fSmall,
+               var14 + var32 - var17 - EfnWidgets.s(1.0F),
+               var15 + (var34 - EfnWidgets.lineHeight(this.fSmall)) * 0.5F,
+               this.f(MUTED),
+               var16
             );
             ImGui.setCursorScreenPos(var14 + EfnWidgets.s(40.0F), var15 + (var34 - EfnWidgets.lineHeight(this.fMod)) * 0.5F);
             ImGui.setNextItemWidth(var32 - EfnWidgets.s(40.0F) - var17 - EfnWidgets.s(18.0F));
@@ -458,33 +472,33 @@ public final class EfnClickGui {
       }
    }
 
-   private void renderGrid(float var1, float var2, float var3, float var4, List<ClientModule> var5) {
-      ImGui.setCursorScreenPos(var1, var2);
+   private void renderGrid(float f, float g, float h, float i, List<ClientModule> list) {
+      ImGui.setCursorScreenPos(f, g);
       this.pushChildStyle();
-      if (ImGui.beginChild("##efn_grid", var3, var4, false, 0)) {
+      if (ImGui.beginChild("##efn_grid", h, i, false, 0)) {
          this.winHover = ImGui.isWindowHovered();
          ImDrawList var6 = ImGui.getWindowDrawList();
          float var7 = ImGui.getCursorScreenPosX();
          float var8 = ImGui.getCursorScreenPosY() + EfnWidgets.s(6.0F);
          float var9 = EfnWidgets.s(12.0F);
          this.trackView();
-         float var10 = (var3 - EfnWidgets.s(12.0F) - var9) * 0.5F;
+         float var10 = (h - EfnWidgets.s(12.0F) - var9) * 0.5F;
          float var11 = EfnWidgets.s(70.0F);
-         if (var5.isEmpty()) {
+         if (list.isEmpty()) {
             String var12 = "No modules found";
             float var13 = EfnWidgets.textWidth(this.fMod, var12);
-            EfnWidgets.text(var6, this.fMod, var7 + (var3 - var13) * 0.5F, var8 + EfnWidgets.s(60.0F), this.f(MUTED), var12);
+            EfnWidgets.text(var6, this.fMod, var7 + (h - var13) * 0.5F, var8 + EfnWidgets.s(60.0F), this.f(MUTED), var12);
          }
 
-         int var18 = (var5.size() + 1) / 2;
+         int var18 = (list.size() + 1) / 2;
 
-         for (int var19 = 0; var19 < var5.size(); var19++) {
+         for (int var19 = 0; var19 < list.size(); var19++) {
             float var14 = var7 + var19 % 2 * (var10 + var9);
             float var15 = var8 + var19 / 2 * (var11 + var9);
             float var16 = ClickGuiRenderer.easeOut(Math.max(0.0F, Math.min(1.0F, (this.sinceViewChange() - Math.min(var19, 14) * 0.022F) / 0.32F)));
             float var17 = this.ga;
             this.ga = var17 * Math.max(0.01F, var16);
-            this.drawModuleCard(var6, (ClientModule)var5.get(var19), var14, var15 + (1.0F - var16) * EfnWidgets.s(10.0F), var10, var11);
+            this.drawModuleCard(var6, (ClientModule)list.get(var19), var14, var15 + (1.0F - var16) * EfnWidgets.s(10.0F), var10, var11);
             this.ga = var17;
          }
 
@@ -496,85 +510,85 @@ public final class EfnClickGui {
       this.popChildStyle();
    }
 
-   private void drawModuleCard(ImDrawList var1, ClientModule var2, float var3, float var4, float var5, float var6) {
+   private void drawModuleCard(ImDrawList imDrawList, ClientModule clientModule, float f, float g, float h, float i) {
       int var7 = GuiPalette.accent();
       float var8 = Math.max(EfnWidgets.s(8.0F), GuiPalette.rounding());
-      boolean var9 = this.hot(var3, var4, var5, var6);
-      boolean var10 = var2.isEnabled();
-      float[] var11 = this.state("card:" + var2.id(), var10);
+      boolean var9 = this.hot(f, g, h, i);
+      boolean var10 = clientModule.isEnabled();
+      float[] var11 = this.state("card:" + clientModule.id(), var10);
       var11[0] += ((var9 ? 1.0F : 0.0F) - var11[0]) * Math.min(1.0F, this.dt * 14.0F);
       var11[1] += ((var10 ? 1.0F : 0.0F) - var11[1]) * Math.min(1.0F, this.dt * 10.0F);
-      var1.addRectFilled(var3, var4, var3 + var5, var4 + var6, this.f(EfnTheme.lerpColor(BG_CARD, BG_CARD_HOVER, var11[0])), var8);
+      imDrawList.addRectFilled(f, g, f + h, g + i, this.f(EfnTheme.lerpColor(BG_CARD, BG_CARD_HOVER, var11[0])), var8);
       if (var11[1] > 0.01F) {
-         var1.addRectFilled(var3, var4, var3 + var5, var4 + var6, this.f(a(var7, 0.08F * var11[1])), var8);
+         imDrawList.addRectFilled(f, g, f + h, g + i, this.f(a(var7, 0.08F * var11[1])), var8);
       }
 
-      var1.addRect(var3, var4, var3 + var5, var4 + var6, this.f(EfnTheme.lerpColor(LINE, var7, var11[1])), var8, 0, EfnWidgets.s(1.0F));
+      imDrawList.addRect(f, g, f + h, g + i, this.f(EfnTheme.lerpColor(LINE, var7, var11[1])), var8, 0, EfnWidgets.s(1.0F));
       float var12 = EfnWidgets.s(18.0F);
       float var13 = EfnWidgets.s(44.0F);
       float var14 = EfnWidgets.s(24.0F);
-      float var15 = var3 + var5 - var12 - var13;
-      float var16 = var4 + (var6 - var14) * 0.5F;
+      float var15 = f + h - var12 - var13;
+      float var16 = g + (i - var14) * 0.5F;
       float var17 = var15 - EfnWidgets.s(26.0F);
-      float var18 = var4 + var6 * 0.5F;
-      float var19 = var17 - EfnWidgets.s(18.0F) - (var3 + var12);
-      String var20 = EfnWidgets.ellipsize(this.fMod, var2.name(), var19 - EfnWidgets.s(40.0F));
-      float var21 = var4 + EfnWidgets.s(13.0F);
-      EfnWidgets.text(var1, this.fMod, var3 + var12, var21, this.f(TEXT), var20);
+      float var18 = g + i * 0.5F;
+      float var19 = var17 - EfnWidgets.s(18.0F) - (f + var12);
+      String var20 = EfnWidgets.ellipsize(this.fMod, clientModule.name(), var19 - EfnWidgets.s(40.0F));
+      float var21 = g + EfnWidgets.s(13.0F);
+      EfnWidgets.text(imDrawList, this.fMod, f + var12, var21, this.f(TEXT), var20);
       boolean var22 = false;
-      int var23 = var2.isAction() ? -1 : var2.keybind();
+      int var23 = clientModule.isAction() ? -1 : clientModule.keybind();
       if (var23 >= 0) {
-         String var24 = this.keyLabel(var23) + (var2.isHoldMode() ? " hold" : "");
+         String var24 = this.keyLabel(var23) + (clientModule.isHoldMode() ? " hold" : "");
          float var25 = EfnWidgets.textWidth(this.fSmall, var24) + EfnWidgets.s(12.0F);
-         float var26 = var3 + var12 + EfnWidgets.textWidth(this.fMod, var20) + EfnWidgets.s(8.0F);
+         float var26 = f + var12 + EfnWidgets.textWidth(this.fMod, var20) + EfnWidgets.s(8.0F);
          float var27 = EfnWidgets.lineHeight(this.fSmall) + EfnWidgets.s(4.0F);
          float var28 = var21 + (EfnWidgets.lineHeight(this.fMod) - var27) * 0.5F;
-         var1.addRectFilled(var26, var28, var26 + var25, var28 + var27, this.f(rgba(255, 255, 255, 15)), EfnWidgets.s(5.0F));
-         EfnWidgets.text(var1, this.fSmall, var26 + EfnWidgets.s(6.0F), var28 + EfnWidgets.s(2.0F), this.f(MUTED), var24);
+         imDrawList.addRectFilled(var26, var28, var26 + var25, var28 + var27, this.f(rgba(255, 255, 255, 15)), EfnWidgets.s(5.0F));
+         EfnWidgets.text(imDrawList, this.fSmall, var26 + EfnWidgets.s(6.0F), var28 + EfnWidgets.s(2.0F), this.f(MUTED), var24);
       }
 
-      String var29 = var2.isAction() ? "Action" : (var2.description() == null ? "" : var2.description());
+      String var29 = clientModule.isAction() ? "Action" : (clientModule.description() == null ? "" : clientModule.description());
       EfnWidgets.text(
-         var1,
+         imDrawList,
          this.fSmall,
-         var3 + var12,
-         var4 + var6 - EfnWidgets.s(14.0F) - EfnWidgets.lineHeight(this.fSmall),
+         f + var12,
+         g + i - EfnWidgets.s(14.0F) - EfnWidgets.lineHeight(this.fSmall),
          this.f(MUTED),
          EfnWidgets.ellipsize(this.fSmall, var29, var19)
       );
       boolean var30 = this.hot(var17 - EfnWidgets.s(12.0F), var18 - EfnWidgets.s(12.0F), EfnWidgets.s(24.0F), EfnWidgets.s(24.0F));
-      this.drawCog(var1, var17, var18, EfnWidgets.s(7.5F), this.f(var30 ? TEXT : MUTED));
-      this.drawSwitch(var1, var15, var16, var13, var14, var11[1]);
+      this.drawCog(imDrawList, var17, var18, EfnWidgets.s(7.5F), this.f(var30 ? TEXT : MUTED));
+      this.drawSwitch(imDrawList, var15, var16, var13, var14, var11[1]);
       if (this.clicked) {
          if (var30) {
-            this.detail = var2;
+            this.detail = clientModule;
             this.popupFor = null;
          } else if (var9 && !var22) {
-            this.toggle(var2);
+            this.toggle(clientModule);
          }
       } else if (this.rclicked && var9) {
-         this.detail = var2;
+         this.detail = clientModule;
          this.popupFor = null;
       }
    }
 
-   private void renderDetail(float var1, float var2, float var3, float var4, ClientModule var5) {
-      ImGui.setCursorScreenPos(var1, var2);
+   private void renderDetail(float f, float g, float h, float i, ClientModule clientModule) {
+      ImGui.setCursorScreenPos(f, g);
       this.pushChildStyle();
-      if (ImGui.beginChild("##efn_detail", var3, var4, false, 0)) {
+      if (ImGui.beginChild("##efn_detail", h, i, false, 0)) {
          this.winHover = ImGui.isWindowHovered();
          ImDrawList var6 = ImGui.getWindowDrawList();
          float var7 = ImGui.getCursorScreenPosX();
          float var8 = ImGui.getCursorScreenPosY() + EfnWidgets.s(6.0F);
-         float var9 = var3 - EfnWidgets.s(12.0F);
+         float var9 = h - EfnWidgets.s(12.0F);
          float var10 = EfnWidgets.s(54.0F);
          float var11 = Math.max(EfnWidgets.s(8.0F), GuiPalette.rounding());
          float var12 = var8;
-         int var13 = var5.isAction() ? 0 : (var5.keybind() >= 0 ? 2 : 1);
+         int var13 = clientModule.isAction() ? 0 : (clientModule.keybind() >= 0 ? 2 : 1);
          if (var13 > 0) {
             this.beginContainer(var6, var7, var8, var9, var13 * var10, var11);
             this.rowLabel(var6, var7, var8, var10, "Keybind");
-            this.keyRow(var6, var7, var8, var9, var10, var5);
+            this.keyRow(var6, var7, var8, var9, var10, clientModule);
             if (var13 == 2) {
                float var14 = var8 + var10;
                var6.addLine(var7 + EfnWidgets.s(18.0F), var14, var7 + var9 - EfnWidgets.s(18.0F), var14, this.f(LINE), 1.0F);
@@ -583,11 +597,11 @@ public final class EfnClickGui {
                float var16 = EfnWidgets.s(24.0F);
                float var17 = var7 + var9 - EfnWidgets.s(18.0F) - var15;
                float var18 = var14 + (var10 - var16) * 0.5F;
-               float[] var19 = this.state("hold:" + var5.id(), var5.isHoldMode());
-               var19[1] += ((var5.isHoldMode() ? 1.0F : 0.0F) - var19[1]) * Math.min(1.0F, this.dt * 10.0F);
+               float[] var19 = this.state("hold:" + clientModule.id(), clientModule.isHoldMode());
+               var19[1] += ((clientModule.isHoldMode() ? 1.0F : 0.0F) - var19[1]) * Math.min(1.0F, this.dt * 10.0F);
                this.drawSwitch(var6, var17, var18, var15, var16, var19[1]);
                if (this.clicked && this.hot(var17, var18, var15, var16)) {
-                  var5.setHoldMode(!var5.isHoldMode());
+                  clientModule.setHoldMode(!clientModule.isHoldMode());
                }
             }
 
@@ -596,7 +610,7 @@ public final class EfnClickGui {
 
          ArrayList var20 = new ArrayList();
 
-         for (Setting var23 : var5.settings()) {
+         for (Setting var23 : clientModule.settings()) {
             if (var23.isVisible()) {
                var20.add(var23);
             }
@@ -611,7 +625,7 @@ public final class EfnClickGui {
                   var6.addLine(var7 + EfnWidgets.s(18.0F), var24, var7 + var9 - EfnWidgets.s(18.0F), var24, this.f(LINE), 1.0F);
                }
 
-               this.settingRow(var6, var7, var24, var9, var10, var5, (Setting)var20.get(var22));
+               this.settingRow(var6, var7, var24, var9, var10, clientModule, (Setting)var20.get(var22));
             }
 
             var12 += var20.size() * var10;
@@ -625,139 +639,139 @@ public final class EfnClickGui {
       this.popChildStyle();
    }
 
-   private void beginContainer(ImDrawList var1, float var2, float var3, float var4, float var5, float var6) {
-      var1.addRectFilled(var2, var3, var2 + var4, var3 + var5, this.f(BG_CARD), var6);
-      var1.addRect(var2, var3, var2 + var4, var3 + var5, this.f(LINE), var6, 0, 1.0F);
+   private void beginContainer(ImDrawList imDrawList, float f, float g, float h, float i, float j) {
+      imDrawList.addRectFilled(f, g, f + h, g + i, this.f(BG_CARD), j);
+      imDrawList.addRect(f, g, f + h, g + i, this.f(LINE), j, 0, 1.0F);
    }
 
-   private void rowLabel(ImDrawList var1, float var2, float var3, float var4, String var5) {
-      EfnWidgets.text(var1, this.fMod, var2 + EfnWidgets.s(18.0F), var3 + (var4 - EfnWidgets.lineHeight(this.fMod)) * 0.5F, this.f(TEXT), var5);
+   private void rowLabel(ImDrawList imDrawList, float f, float g, float h, String string) {
+      EfnWidgets.text(imDrawList, this.fMod, f + EfnWidgets.s(18.0F), g + (h - EfnWidgets.lineHeight(this.fMod)) * 0.5F, this.f(TEXT), string);
    }
 
-   private void keyRow(ImDrawList var1, float var2, float var3, float var4, float var5, ClientModule var6) {
+   private void keyRow(ImDrawList imDrawList, float f, float g, float h, float i, ClientModule clientModule) {
       float var7 = EfnWidgets.s(140.0F);
       float var8 = EfnWidgets.s(32.0F);
-      float var9 = var2 + var4 - EfnWidgets.s(18.0F) - var7;
-      float var10 = var3 + (var5 - var8) * 0.5F;
-      boolean var11 = this.listeningModule == var6;
-      String var12 = var11 ? "Press a key..." : (var6.keybind() < 0 ? "None" : this.keyLabel(var6.keybind()));
-      if (this.pill(var1, var9, var10, var7, var8, var12, var11) && this.clicked) {
+      float var9 = f + h - EfnWidgets.s(18.0F) - var7;
+      float var10 = g + (i - var8) * 0.5F;
+      boolean var11 = this.listeningModule == clientModule;
+      String var12 = var11 ? "Press a key..." : (clientModule.keybind() < 0 ? "None" : this.keyLabel(clientModule.keybind()));
+      if (this.pill(imDrawList, var9, var10, var7, var8, var12, var11) && this.clicked) {
          this.listeningKey = null;
-         this.listeningModule = var6;
+         this.listeningModule = clientModule;
          this.listenFirstFrame = true;
          this.popupFor = null;
       }
    }
 
-   private void settingRow(ImDrawList var1, float var2, float var3, float var4, float var5, ClientModule var6, Setting var7) {
-      this.settingRow(var1, var2, var3, var4, var5, var6.id(), var6, var7);
+   private void settingRow(ImDrawList imDrawList, float f, float g, float h, float i, ClientModule clientModule, Setting setting) {
+      this.settingRow(imDrawList, f, g, h, i, clientModule.id(), clientModule, setting);
    }
 
-   private void settingRow(ImDrawList var1, float var2, float var3, float var4, float var5, String var6, ClientModule var7, Setting var8) {
+   private void settingRow(ImDrawList imDrawList, float f, float g, float h, float i, String string, ClientModule clientModule, Setting setting) {
       float var9 = EfnWidgets.s(18.0F);
-      float var10 = var2 + var4 - var9;
-      String var11 = var6 + "/" + var8.id();
-      this.rowLabel(var1, var2, var3, var5, var8.name());
-      if (var8 instanceof BooleanSetting var12) {
+      float var10 = f + h - var9;
+      String var11 = string + "/" + setting.id();
+      this.rowLabel(imDrawList, f, g, i, setting.name());
+      if (setting instanceof BooleanSetting var12) {
          float var13 = EfnWidgets.s(44.0F);
          float var14 = EfnWidgets.s(24.0F);
          float var15 = var10 - var13;
-         float var16 = var3 + (var5 - var14) * 0.5F;
+         float var16 = g + (i - var14) * 0.5F;
          float[] var17 = this.state("bs:" + var11, var12.get());
          var17[1] += ((var12.get() ? 1.0F : 0.0F) - var17[1]) * Math.min(1.0F, this.dt * 10.0F);
-         this.drawSwitch(var1, var15, var16, var13, var14, var17[1]);
-         if (this.clicked && this.hot(var2, var3, var4, var5)) {
+         this.drawSwitch(imDrawList, var15, var16, var13, var14, var17[1]);
+         if (this.clicked && this.hot(f, g, h, i)) {
             var12.set(!var12.get());
          }
-      } else if (var8 instanceof NumberSetting) {
-         this.sliderRow(var1, var2, var3, var4, var5, var11, (NumberSetting)var8);
-      } else if (var8 instanceof ModeSetting) {
-         this.modeRow(var1, var10, var3, var5, var11, (ModeSetting)var8);
-      } else if (var8 instanceof ColorSetting) {
-         this.colorRow(var1, var10, var3, var5, var11, (ColorSetting)var8);
-      } else if (var8 instanceof KeySetting var19) {
+      } else if (setting instanceof NumberSetting) {
+         this.sliderRow(imDrawList, f, g, h, i, var11, (NumberSetting)setting);
+      } else if (setting instanceof ModeSetting) {
+         this.modeRow(imDrawList, var10, g, i, var11, (ModeSetting)setting);
+      } else if (setting instanceof ColorSetting) {
+         this.colorRow(imDrawList, var10, g, i, var11, (ColorSetting)setting);
+      } else if (setting instanceof KeySetting var19) {
          float var22 = EfnWidgets.s(140.0F);
          float var25 = EfnWidgets.s(32.0F);
          float var26 = var10 - var22;
-         float var27 = var3 + (var5 - var25) * 0.5F;
+         float var27 = g + (i - var25) * 0.5F;
          boolean var28 = this.listeningKey == var19;
          String var18 = var28 ? "Press a key..." : (var19.value() < 0 ? "None" : this.keyLabel(var19.value()));
-         if (this.pill(var1, var26, var27, var22, var25, var18, var28) && this.clicked) {
+         if (this.pill(imDrawList, var26, var27, var22, var25, var18, var28) && this.clicked) {
             this.listeningModule = null;
             this.listeningKey = var19;
             this.listenFirstFrame = true;
             this.popupFor = null;
          }
-      } else if (var8 instanceof StringSetting) {
-         this.stringRow(var1, var2, var10, var3, var5, var11, (StringSetting)var8);
-      } else if (var8 instanceof ActionSetting) {
+      } else if (setting instanceof StringSetting) {
+         this.stringRow(imDrawList, f, var10, g, i, var11, (StringSetting)setting);
+      } else if (setting instanceof ActionSetting) {
          float var20 = EfnWidgets.s(96.0F);
          float var23 = EfnWidgets.s(32.0F);
-         if (this.pill(var1, var10 - var20, var3 + (var5 - var23) * 0.5F, var20, var23, "Run", false) && this.clicked) {
-            ((ActionSetting)var8).run();
+         if (this.pill(imDrawList, var10 - var20, g + (i - var23) * 0.5F, var20, var23, "Run", false) && this.clicked) {
+            ((ActionSetting)setting).run();
          }
       } else {
          float var21 = EfnWidgets.s(130.0F);
          float var24 = EfnWidgets.s(32.0F);
-         if (var7 != null && this.pill(var1, var10 - var21, var3 + (var5 - var24) * 0.5F, var21, var24, "Open editor", false) && this.clicked) {
-            this.legacy.showModuleSettings(var7);
+         if (clientModule != null && this.pill(imDrawList, var10 - var21, g + (i - var24) * 0.5F, var21, var24, "Open editor", false) && this.clicked) {
+            this.legacy.showModuleSettings(clientModule);
             this.view = EfnClickGui.View.LEGACY;
          }
       }
    }
 
-   private void sliderRow(ImDrawList var1, float var2, float var3, float var4, float var5, String var6, NumberSetting var7) {
+   private void sliderRow(ImDrawList imDrawList, float f, float g, float h, float i, String string, NumberSetting numberSetting) {
       int var8 = GuiPalette.accent();
       float var9 = EfnWidgets.s(18.0F);
       float var10 = EfnWidgets.s(78.0F);
       float var11 = EfnWidgets.s(30.0F);
-      float var12 = var2 + var4 - var9 - var10;
-      float var13 = var3 + (var5 - var11) * 0.5F;
-      var1.addRectFilled(var12, var13, var12 + var10, var13 + var11, this.f(BG_FIELD), EfnWidgets.s(8.0F));
-      var1.addRect(var12, var13, var12 + var10, var13 + var11, this.f(LINE), EfnWidgets.s(8.0F), 0, 1.0F);
-      String var14 = var7.formatted();
+      float var12 = f + h - var9 - var10;
+      float var13 = g + (i - var11) * 0.5F;
+      imDrawList.addRectFilled(var12, var13, var12 + var10, var13 + var11, this.f(BG_FIELD), EfnWidgets.s(8.0F));
+      imDrawList.addRect(var12, var13, var12 + var10, var13 + var11, this.f(LINE), EfnWidgets.s(8.0F), 0, 1.0F);
+      String var14 = numberSetting.formatted();
       float var15 = EfnWidgets.textWidth(this.fSmall, var14);
-      EfnWidgets.text(var1, this.fSmall, var12 + (var10 - var15) * 0.5F, var13 + (var11 - EfnWidgets.lineHeight(this.fSmall)) * 0.5F, this.f(TEXT), var14);
-      float var16 = Math.min(EfnWidgets.s(320.0F), var4 * 0.38F);
+      EfnWidgets.text(imDrawList, this.fSmall, var12 + (var10 - var15) * 0.5F, var13 + (var11 - EfnWidgets.lineHeight(this.fSmall)) * 0.5F, this.f(TEXT), var14);
+      float var16 = Math.min(EfnWidgets.s(320.0F), h * 0.38F);
       float var17 = var12 - EfnWidgets.s(18.0F) - var16;
-      float var18 = var3 + var5 * 0.5F;
-      float var19 = var7.max() - var7.min();
-      float var20 = var19 <= 0.0F ? 0.0F : (var7.get() - var7.min()) / var19;
+      float var18 = g + i * 0.5F;
+      float var19 = numberSetting.max() - numberSetting.min();
+      float var20 = var19 <= 0.0F ? 0.0F : (numberSetting.get() - numberSetting.min()) / var19;
       var20 = Math.max(0.0F, Math.min(1.0F, var20));
-      float[] var21 = this.state("sl:" + var6, false);
+      float[] var21 = this.state("sl:" + string, false);
       var21[0] += (var20 - var21[0]) * Math.min(1.0F, this.dt * 20.0F);
       float var22 = EfnWidgets.s(6.0F);
-      var1.addRectFilled(var17, var18 - var22 * 0.5F, var17 + var16, var18 + var22 * 0.5F, this.f(SWITCH_OFF), var22 * 0.5F);
-      var1.addRectFilled(var17, var18 - var22 * 0.5F, var17 + var16 * var21[0], var18 + var22 * 0.5F, this.f(var8), var22 * 0.5F);
+      imDrawList.addRectFilled(var17, var18 - var22 * 0.5F, var17 + var16, var18 + var22 * 0.5F, this.f(SWITCH_OFF), var22 * 0.5F);
+      imDrawList.addRectFilled(var17, var18 - var22 * 0.5F, var17 + var16 * var21[0], var18 + var22 * 0.5F, this.f(var8), var22 * 0.5F);
       float var23 = var17 + var16 * var21[0];
-      var1.addCircleFilled(var23, var18, EfnWidgets.s(8.5F), this.f(a(var8, 0.25F)), 20);
-      var1.addCircleFilled(var23, var18, EfnWidgets.s(6.5F), this.f(KNOB), 20);
+      imDrawList.addCircleFilled(var23, var18, EfnWidgets.s(8.5F), this.f(a(var8, 0.25F)), 20);
+      imDrawList.addCircleFilled(var23, var18, EfnWidgets.s(6.5F), this.f(KNOB), 20);
       if (this.clicked && this.hot(var17 - EfnWidgets.s(8.0F), var18 - EfnWidgets.s(13.0F), var16 + EfnWidgets.s(16.0F), EfnWidgets.s(26.0F))) {
-         this.dragId = var6;
+         this.dragId = string;
       }
 
-      if (var6.equals(this.dragId)) {
+      if (string.equals(this.dragId)) {
          if (this.down) {
             float var24 = Math.max(0.0F, Math.min(1.0F, (this.mx - var17) / var16));
-            var7.set(var7.min() + var24 * var19);
+            numberSetting.set(numberSetting.min() + var24 * var19);
          } else {
             this.dragId = null;
          }
       }
    }
 
-   private void modeRow(ImDrawList var1, float var2, float var3, float var4, String var5, ModeSetting var6) {
+   private void modeRow(ImDrawList imDrawList, float f, float g, float h, String string, ModeSetting modeSetting) {
       float var7 = EfnWidgets.s(190.0F);
       float var8 = EfnWidgets.s(32.0F);
-      float var9 = var2 - var7;
-      float var10 = var3 + (var4 - var8) * 0.5F;
-      boolean var11 = var5.equals(this.popupFor);
-      if (this.pill(var1, var9, var10, var7, var8, var6.get(), var11) && this.clicked) {
-         this.popupFor = var5;
+      float var9 = f - var7;
+      float var10 = g + (h - var8) * 0.5F;
+      boolean var11 = string.equals(this.popupFor);
+      if (this.pill(imDrawList, var9, var10, var7, var8, modeSetting.get(), var11) && this.clicked) {
+         this.popupFor = string;
          ImGui.openPopup("##efn_mode");
       }
 
-      EfnWidgets.chevron(var1, var9 + var7 - EfnWidgets.s(16.0F), var10 + var8 * 0.5F, EfnWidgets.s(4.0F), this.f(MUTED), var11);
+      EfnWidgets.chevron(imDrawList, var9 + var7 - EfnWidgets.s(16.0F), var10 + var8 * 0.5F, EfnWidgets.s(4.0F), this.f(MUTED), var11);
       if (var11) {
          ImGui.setNextWindowPos(var9, var10 + var8 + EfnWidgets.s(4.0F));
          ImGui.setNextWindowSize(var7, 0.0F);
@@ -765,9 +779,9 @@ public final class EfnClickGui {
          if (!ImGui.beginPopup("##efn_mode")) {
             this.popupFor = null;
          } else {
-            for (String var13 : var6.modes()) {
-               if (ImGui.selectable(var13, var13.equals(var6.get()))) {
-                  var6.set(var13);
+            for (String var13 : modeSetting.modes()) {
+               if (ImGui.selectable(var13, var13.equals(modeSetting.get()))) {
+                  modeSetting.set(var13);
                   this.popupFor = null;
                   ImGui.closeCurrentPopup();
                }
@@ -780,17 +794,17 @@ public final class EfnClickGui {
       }
    }
 
-   private void colorRow(ImDrawList var1, float var2, float var3, float var4, String var5, ColorSetting var6) {
+   private void colorRow(ImDrawList imDrawList, float f, float g, float h, String string, ColorSetting colorSetting) {
       float var7 = EfnWidgets.s(64.0F);
       float var8 = EfnWidgets.s(28.0F);
-      float var9 = var2 - var7;
-      float var10 = var3 + (var4 - var8) * 0.5F;
-      boolean var11 = var5.equals(this.popupFor);
-      int var12 = var6.argbWithAlpha(255);
-      var1.addRectFilled(var9, var10, var9 + var7, var10 + var8, this.f(GuiPalette.abgr(var12)), EfnWidgets.s(8.0F));
-      var1.addRect(var9, var10, var9 + var7, var10 + var8, this.f(var11 ? GuiPalette.accent() : rgba(255, 255, 255, 60)), EfnWidgets.s(8.0F), 0, 1.4F);
+      float var9 = f - var7;
+      float var10 = g + (h - var8) * 0.5F;
+      boolean var11 = string.equals(this.popupFor);
+      int var12 = colorSetting.argbWithAlpha(255);
+      imDrawList.addRectFilled(var9, var10, var9 + var7, var10 + var8, this.f(GuiPalette.abgr(var12)), EfnWidgets.s(8.0F));
+      imDrawList.addRect(var9, var10, var9 + var7, var10 + var8, this.f(var11 ? GuiPalette.accent() : rgba(255, 255, 255, 60)), EfnWidgets.s(8.0F), 0, 1.4F);
       if (this.clicked && this.hot(var9, var10, var7, var8)) {
-         this.popupFor = var5;
+         this.popupFor = string;
          ImGui.openPopup("##efn_color");
       }
 
@@ -799,8 +813,8 @@ public final class EfnClickGui {
          this.pushPopupStyle();
          if (ImGui.beginPopup("##efn_color")) {
             int var13 = 65808;
-            if (ImGui.colorPicker4("##efn_cp", var6.value(), var13)) {
-               var6.notifyChanged();
+            if (ImGui.colorPicker4("##efn_cp", colorSetting.value(), var13)) {
+               colorSetting.notifyChanged();
             }
 
             ImGui.endPopup();
@@ -812,13 +826,13 @@ public final class EfnClickGui {
       }
    }
 
-   private void stringRow(ImDrawList var1, float var2, float var3, float var4, float var5, String var6, StringSetting var7) {
-      float var8 = Math.min(EfnWidgets.s(300.0F), (var3 - var2) * 0.45F);
+   private void stringRow(ImDrawList imDrawList, float f, float g, float h, float i, String string, StringSetting stringSetting) {
+      float var8 = Math.min(EfnWidgets.s(300.0F), (g - f) * 0.45F);
       float var9 = EfnWidgets.s(32.0F);
-      float var10 = var3 - var8;
-      float var11 = var4 + (var5 - var9) * 0.5F;
-      var1.addRectFilled(var10, var11, var10 + var8, var11 + var9, this.f(BG_FIELD), EfnWidgets.s(8.0F));
-      var1.addRect(var10, var11, var10 + var8, var11 + var9, this.f(LINE), EfnWidgets.s(8.0F), 0, 1.0F);
+      float var10 = g - var8;
+      float var11 = h + (i - var9) * 0.5F;
+      imDrawList.addRectFilled(var10, var11, var10 + var8, var11 + var9, this.f(BG_FIELD), EfnWidgets.s(8.0F));
+      imDrawList.addRect(var10, var11, var10 + var8, var11 + var9, this.f(LINE), EfnWidgets.s(8.0F), 0, 1.0F);
       ImGui.setCursorScreenPos(var10 + EfnWidgets.s(12.0F), var11 + (var9 - EfnWidgets.lineHeight(this.fMod)) * 0.5F);
       ImGui.setNextItemWidth(var8 - EfnWidgets.s(24.0F));
       ImGui.pushStyleColor(7, 0);
@@ -826,23 +840,23 @@ public final class EfnClickGui {
       ImGui.pushStyleColor(9, 0);
       ImGui.pushStyleColor(0, TEXT);
       ImGui.pushStyleVar(11, 0.0F, 0.0F);
-      ImString var12 = var7.getImString();
-      if (ImGui.inputText("##efn_s_" + var6, var12)) {
-         var7.set(var12.get());
+      ImString var12 = stringSetting.getImString();
+      if (ImGui.inputText("##efn_s_" + string, var12)) {
+         stringSetting.set(var12.get());
       }
 
       ImGui.popStyleVar(1);
       ImGui.popStyleColor(4);
    }
 
-   private void renderPageHeader(ImDrawList var1, float var2, float var3, float var4) {
+   private void renderPageHeader(ImDrawList imDrawList, float f, float g, float h) {
       int var5 = GuiPalette.accent();
       String var6 = PAGE_FIRST[this.page];
-      EfnWidgets.text(var1, this.fTitle, var2, var3, this.f(var5), var6);
+      EfnWidgets.text(imDrawList, this.fTitle, f, g, this.f(var5), var6);
       float var7 = EfnWidgets.textWidth(this.fTitle, var6 + " ");
-      EfnWidgets.text(var1, this.fTitle, var2 + var7, var3, this.f(TEXT), PAGE_REST[this.page]);
+      EfnWidgets.text(imDrawList, this.fTitle, f + var7, g, this.f(TEXT), PAGE_REST[this.page]);
 
-      EfnWidgets.text(var1, this.fSmall, var2, var3 + EfnWidgets.lineHeight(this.fTitle) + EfnWidgets.s(6.0F), this.f(MUTED), switch (this.page) {
+      EfnWidgets.text(imDrawList, this.fSmall, f, g + EfnWidgets.lineHeight(this.fTitle) + EfnWidgets.s(6.0F), this.f(MUTED), switch (this.page) {
          case 0 -> "Move and restyle your on-screen elements.";
          case 1 -> {
             int var11 = FriendStore.getInstance().all().size();
@@ -858,21 +872,21 @@ public final class EfnClickGui {
       if (this.page == 2) {
          float var12 = EfnWidgets.s(96.0F);
          float var13 = EfnWidgets.s(32.0F);
-         if (this.pill(var1, var2 + var4 - var12, var3 + EfnWidgets.s(4.0F), var12, var13, "Reset all", false) && this.clicked) {
+         if (this.pill(imDrawList, f + h - var12, g + EfnWidgets.s(4.0F), var12, var13, "Reset all", false) && this.clicked) {
             ThemeStore.get().resetToDefaults();
          }
       }
    }
 
-   private void renderPage(float var1, float var2, float var3, float var4) {
-      ImGui.setCursorScreenPos(var1, var2);
+   private void renderPage(float f, float g, float h, float i) {
+      ImGui.setCursorScreenPos(f, g);
       this.pushChildStyle();
-      if (ImGui.beginChild("##efn_page", var3, var4, false, 0)) {
+      if (ImGui.beginChild("##efn_page", h, i, false, 0)) {
          this.winHover = ImGui.isWindowHovered();
          ImDrawList var5 = ImGui.getWindowDrawList();
          float var6 = ImGui.getCursorScreenPosX();
          float var7 = ImGui.getCursorScreenPosY() + EfnWidgets.s(6.0F);
-         float var8 = var3 - EfnWidgets.s(12.0F);
+         float var8 = h - EfnWidgets.s(12.0F);
 
          float var10 = this.pageMessage(var5, var6, switch (this.page) {
             case 0 -> this.pageHud(var5, var6, var7, var8);
@@ -888,64 +902,64 @@ public final class EfnClickGui {
       this.popChildStyle();
    }
 
-   private void say(String var1, boolean var2) {
-      this.pageMsg = var1;
-      this.pageMsgErr = var2;
+   private void say(String string, boolean bl) {
+      this.pageMsg = string;
+      this.pageMsgErr = bl;
       this.pageMsgAt = System.nanoTime();
    }
 
-   private float pageMessage(ImDrawList var1, float var2, float var3, float var4) {
+   private float pageMessage(ImDrawList imDrawList, float f, float g, float h) {
       if (this.pageMsg.isEmpty()) {
-         return var3 - EfnWidgets.s(12.0F);
+         return g - EfnWidgets.s(12.0F);
       } else if ((float)(System.nanoTime() - this.pageMsgAt) / 1.0E9F > 6.0F) {
          this.pageMsg = "";
-         return var3 - EfnWidgets.s(12.0F);
+         return g - EfnWidgets.s(12.0F);
       } else {
          int var5 = this.pageMsgErr ? rgba(255, 110, 110, 255) : GuiPalette.accent();
-         EfnWidgets.text(var1, this.fSmall, var2 + EfnWidgets.s(4.0F), var3, this.f(var5), this.pageMsg);
-         return var3 + EfnWidgets.lineHeight(this.fSmall);
+         EfnWidgets.text(imDrawList, this.fSmall, f + EfnWidgets.s(4.0F), g, this.f(var5), this.pageMsg);
+         return g + EfnWidgets.lineHeight(this.fSmall);
       }
    }
 
-   private float rowsTop(ImDrawList var1, float var2, float var3, float var4, float var5, int var6) {
+   private float rowsTop(ImDrawList imDrawList, float f, float g, float h, float i, int j) {
       float var7 = Math.max(EfnWidgets.s(8.0F), GuiPalette.rounding());
-      this.beginContainer(var1, var2, var3, var4, var6 * var5, var7);
+      this.beginContainer(imDrawList, f, g, h, j * i, var7);
 
-      for (int var8 = 1; var8 < var6; var8++) {
-         float var9 = var3 + var8 * var5;
-         var1.addLine(var2 + EfnWidgets.s(18.0F), var9, var2 + var4 - EfnWidgets.s(18.0F), var9, this.f(LINE), 1.0F);
+      for (int var8 = 1; var8 < j; var8++) {
+         float var9 = g + var8 * i;
+         imDrawList.addLine(f + EfnWidgets.s(18.0F), var9, f + h - EfnWidgets.s(18.0F), var9, this.f(LINE), 1.0F);
       }
 
-      return var3 + var6 * var5;
+      return g + j * i;
    }
 
-   private boolean textField(String var1, float var2, float var3, float var4, float var5, String var6, ImString var7) {
+   private boolean textField(String string, float f, float g, float h, float i, String string2, ImString imString) {
       ImDrawList var8 = ImGui.getWindowDrawList();
-      var8.addRectFilled(var2, var3, var2 + var4, var3 + var5, this.f(BG_FIELD), EfnWidgets.s(8.0F));
-      var8.addRect(var2, var3, var2 + var4, var3 + var5, this.f(LINE), EfnWidgets.s(8.0F), 0, 1.0F);
-      ImGui.setCursorScreenPos(var2 + EfnWidgets.s(12.0F), var3 + (var5 - EfnWidgets.lineHeight(this.fMod)) * 0.5F);
-      ImGui.setNextItemWidth(var4 - EfnWidgets.s(24.0F));
+      var8.addRectFilled(f, g, f + h, g + i, this.f(BG_FIELD), EfnWidgets.s(8.0F));
+      var8.addRect(f, g, f + h, g + i, this.f(LINE), EfnWidgets.s(8.0F), 0, 1.0F);
+      ImGui.setCursorScreenPos(f + EfnWidgets.s(12.0F), g + (i - EfnWidgets.lineHeight(this.fMod)) * 0.5F);
+      ImGui.setNextItemWidth(h - EfnWidgets.s(24.0F));
       ImGui.pushStyleColor(7, 0);
       ImGui.pushStyleColor(8, 0);
       ImGui.pushStyleColor(9, 0);
       ImGui.pushStyleColor(0, TEXT);
       ImGui.pushStyleColor(1, MUTED);
       ImGui.pushStyleVar(11, 0.0F, 0.0F);
-      boolean var9 = ImGui.inputTextWithHint(var1, var6, var7, 64);
+      boolean var9 = ImGui.inputTextWithHint(string, string2, imString, 64);
       ImGui.popStyleVar(1);
       ImGui.popStyleColor(5);
       return var9;
    }
 
-   private float pageTheme(ImDrawList var1, float var2, float var3, float var4) {
+   private float pageTheme(ImDrawList imDrawList, float f, float g, float h) {
       ThemeStore var5 = ThemeStore.get();
       float var6 = EfnWidgets.s(54.0F);
-      float var7 = var3;
-      float var8 = this.rowsTop(var1, var2, var3, var4, var6, 2);
-      this.rowLabel(var1, var2, var3, var6, "Accent colour");
+      float var7 = g;
+      float var8 = this.rowsTop(imDrawList, f, g, h, var6, 2);
+      this.rowLabel(imDrawList, f, g, var6, "Accent colour");
       float var9 = EfnWidgets.s(11.0F);
       float var10 = EfnWidgets.s(12.0F);
-      float var11 = var2 + var4 - EfnWidgets.s(18.0F);
+      float var11 = f + h - EfnWidgets.s(18.0F);
       int var12 = ThemeStore.PRESETS.size();
       float var13 = var11 - var12 * (2.0F * var9) - (var12 - 1) * var10 + var9;
       int var14 = var5.accent.argbWithAlpha(255);
@@ -958,9 +972,9 @@ public final class EfnClickGui {
          float[] var20 = this.state("sw:" + var15, false);
          var20[0] += ((var19 ? 1.0F : 0.0F) - var20[0]) * Math.min(1.0F, this.dt * 14.0F);
          boolean var21 = (var16.accent() | 0xFF000000) == (var14 | 0xFF000000);
-         var1.addCircleFilled(var17, var18, var9 + EfnWidgets.s(1.5F) * var20[0], this.f(GuiPalette.abgr(var16.accent() | 0xFF000000)), 28);
+         imDrawList.addCircleFilled(var17, var18, var9 + EfnWidgets.s(1.5F) * var20[0], this.f(GuiPalette.abgr(var16.accent() | 0xFF000000)), 28);
          if (var21) {
-            var1.addCircle(var17, var18, var9 + EfnWidgets.s(5.0F), this.f(TEXT), 28, 1.6F);
+            imDrawList.addCircle(var17, var18, var9 + EfnWidgets.s(5.0F), this.f(TEXT), 28, 1.6F);
          }
 
          if (var19 && this.clicked) {
@@ -969,8 +983,8 @@ public final class EfnClickGui {
       }
 
       float var24 = var7 + var6;
-      this.rowLabel(var1, var2, var24, var6, "Custom colour");
-      this.colorRow(var1, var11, var24, var6, "theme/accent", var5.accent);
+      this.rowLabel(imDrawList, f, var24, var6, "Custom colour");
+      this.colorRow(imDrawList, var11, var24, var6, "theme/accent", var5.accent);
       var7 = var8 + EfnWidgets.s(14.0F);
       ArrayList var25 = new ArrayList();
       var25.add(var5.rounding);
@@ -980,29 +994,29 @@ public final class EfnClickGui {
       var25.add(var5.font);
       var25.add(var5.animationSpeed);
       var25.add(var5.customMainMenu);
-      var8 = this.rowsTop(var1, var2, var7, var4, var6, var25.size());
+      var8 = this.rowsTop(imDrawList, f, var7, h, var6, var25.size());
 
       for (int var26 = 0; var26 < var25.size(); var26++) {
-         this.settingRow(var1, var2, var7 + var26 * var6, var4, var6, "theme", null, (Setting)var25.get(var26));
+         this.settingRow(imDrawList, f, var7 + var26 * var6, h, var6, "theme", null, (Setting)var25.get(var26));
       }
 
       return var8;
    }
 
-   private float pageFriends(ImDrawList var1, float var2, float var3, float var4) {
+   private float pageFriends(ImDrawList imDrawList, float f, float g, float h) {
       FriendStore var5 = FriendStore.getInstance();
       float var6 = EfnWidgets.s(54.0F);
       float var7 = EfnWidgets.s(18.0F);
-      float var9 = this.rowsTop(var1, var2, var3, var4, var6, 1);
-      this.rowLabel(var1, var2, var3, var6, "Add player");
+      float var9 = this.rowsTop(imDrawList, f, g, h, var6, 1);
+      this.rowLabel(imDrawList, f, g, var6, "Add player");
       float var10 = EfnWidgets.s(84.0F);
       float var11 = EfnWidgets.s(32.0F);
-      float var12 = Math.min(EfnWidgets.s(280.0F), var4 * 0.4F);
-      float var13 = var2 + var4 - var7 - var10;
+      float var12 = Math.min(EfnWidgets.s(280.0F), h * 0.4F);
+      float var13 = f + h - var7 - var10;
       float var14 = var13 - EfnWidgets.s(10.0F) - var12;
-      float var15 = var3 + (var6 - var11) * 0.5F;
+      float var15 = g + (var6 - var11) * 0.5F;
       boolean var16 = this.textField("##efn_friend", var14, var15, var12, var11, "Exact username", this.friendInput);
-      boolean var17 = this.pill(var1, var13, var15, var10, var11, "Add", false) && this.clicked;
+      boolean var17 = this.pill(imDrawList, var13, var15, var10, var11, "Add", false) && this.clicked;
       if (var16 || var17) {
          String var18 = this.friendInput.get().trim();
          if (!FriendStore.isValidName(var18)) {
@@ -1020,22 +1034,22 @@ public final class EfnClickGui {
       List var24 = var5.all();
       if (var24.isEmpty()) {
          float var25 = Math.max(EfnWidgets.s(8.0F), GuiPalette.rounding());
-         this.beginContainer(var1, var2, var8, var4, var6 * 1.4F, var25);
+         this.beginContainer(imDrawList, f, var8, h, var6 * 1.4F, var25);
          String var26 = "No friends yet. Players you add are protected from your combat modules.";
          float var27 = EfnWidgets.textWidth(this.fSmall, var26);
          EfnWidgets.text(
-            var1, this.fSmall, var2 + (var4 - var27) * 0.5F, var8 + (var6 * 1.4F - EfnWidgets.lineHeight(this.fSmall)) * 0.5F, this.f(MUTED), var26
+            imDrawList, this.fSmall, f + (h - var27) * 0.5F, var8 + (var6 * 1.4F - EfnWidgets.lineHeight(this.fSmall)) * 0.5F, this.f(MUTED), var26
          );
          return var8 + var6 * 1.4F;
       } else {
-         var9 = this.rowsTop(var1, var2, var8, var4, var6, var24.size());
+         var9 = this.rowsTop(imDrawList, f, var8, h, var6, var24.size());
 
          for (int var19 = 0; var19 < var24.size(); var19++) {
             String var20 = (String)var24.get(var19);
             float var21 = var8 + var19 * var6;
-            this.rowLabel(var1, var2, var21, var6, var20);
+            this.rowLabel(imDrawList, f, var21, var6, var20);
             float var22 = EfnWidgets.s(90.0F);
-            if (this.pill(var1, var2 + var4 - var7 - var22, var21 + (var6 - var11) * 0.5F, var22, var11, "Remove", false) && this.clicked) {
+            if (this.pill(imDrawList, f + h - var7 - var22, var21 + (var6 - var11) * 0.5F, var22, var11, "Remove", false) && this.clicked) {
                var5.remove(var20);
                var5.save();
                this.say("Removed " + var20, false);
@@ -1046,20 +1060,20 @@ public final class EfnClickGui {
       }
    }
 
-   private float pageConfigs(ImDrawList var1, float var2, float var3, float var4) {
+   private float pageConfigs(ImDrawList imDrawList, float f, float g, float h) {
       ConfigProfiles var5 = ConfigProfiles.getInstance();
       float var6 = EfnWidgets.s(54.0F);
       float var7 = EfnWidgets.s(18.0F);
       float var8 = EfnWidgets.s(32.0F);
-      float var10 = this.rowsTop(var1, var2, var3, var4, var6, 2);
-      this.rowLabel(var1, var2, var3, var6, "New profile");
+      float var10 = this.rowsTop(imDrawList, f, g, h, var6, 2);
+      this.rowLabel(imDrawList, f, g, var6, "New profile");
       float var11 = EfnWidgets.s(110.0F);
-      float var12 = Math.min(EfnWidgets.s(280.0F), var4 * 0.4F);
-      float var13 = var2 + var4 - var7 - var11;
+      float var12 = Math.min(EfnWidgets.s(280.0F), h * 0.4F);
+      float var13 = f + h - var7 - var11;
       float var14 = var13 - EfnWidgets.s(10.0F) - var12;
-      float var15 = var3 + (var6 - var8) * 0.5F;
+      float var15 = g + (var6 - var8) * 0.5F;
       boolean var16 = this.textField("##efn_profile", var14, var15, var12, var8, "Profile name", this.profileInput);
-      boolean var17 = this.pill(var1, var13, var15, var11, var8, "Save current", false) && this.clicked;
+      boolean var17 = this.pill(imDrawList, var13, var15, var11, var8, "Save current", false) && this.clicked;
       if (var16 || var17) {
          try {
             String var18 = var5.create(this.profileInput.get());
@@ -1071,10 +1085,10 @@ public final class EfnClickGui {
          }
       }
 
-      float var44 = var3 + var6;
-      this.rowLabel(var1, var2, var44, var6, "Import from clipboard");
+      float var44 = g + var6;
+      this.rowLabel(imDrawList, f, var44, var6, "Import from clipboard");
       float var19 = EfnWidgets.s(110.0F);
-      if (this.pill(var1, var2 + var4 - var7 - var19, var44 + (var6 - var8) * 0.5F, var19, var8, "Import", false) && this.clicked) {
+      if (this.pill(imDrawList, f + h - var7 - var19, var44 + (var6 - var8) * 0.5F, var19, var8, "Import", false) && this.clicked) {
          try {
             String var20 = var5.importCode(ImGui.getClipboardText());
             this.say("Imported " + var20, false);
@@ -1087,11 +1101,11 @@ public final class EfnClickGui {
       List var45 = var5.list();
       if (var45.isEmpty()) {
          float var46 = Math.max(EfnWidgets.s(8.0F), GuiPalette.rounding());
-         this.beginContainer(var1, var2, var9, var4, var6 * 1.4F, var46);
+         this.beginContainer(imDrawList, f, var9, h, var6 * 1.4F, var46);
          String var47 = "No profiles yet. Name one above and save your current setup.";
          float var48 = EfnWidgets.textWidth(this.fSmall, var47);
          EfnWidgets.text(
-            var1, this.fSmall, var2 + (var4 - var48) * 0.5F, var9 + (var6 * 1.4F - EfnWidgets.lineHeight(this.fSmall)) * 0.5F, this.f(MUTED), var47
+            imDrawList, this.fSmall, f + (h - var48) * 0.5F, var9 + (var6 * 1.4F - EfnWidgets.lineHeight(this.fSmall)) * 0.5F, this.f(MUTED), var47
          );
          return var9 + var6 * 1.4F;
       } else {
@@ -1103,22 +1117,22 @@ public final class EfnClickGui {
          int var22 = GuiPalette.accent();
          float var23 = EfnWidgets.s(70.0F);
          float var24 = EfnWidgets.s(8.0F);
-         var10 = this.rowsTop(var1, var2, var9, var4, var6, var45.size());
+         var10 = this.rowsTop(imDrawList, f, var9, h, var6, var45.size());
 
          for (int var25 = 0; var25 < var45.size(); var25++) {
             ConfigProfiles.Profile var26 = (ConfigProfiles.Profile)var45.get(var25);
             float var27 = var9 + var25 * var6;
             float var28 = var27 + (var6 - var8) * 0.5F;
             boolean var29 = var26.name().equalsIgnoreCase(var21);
-            float var30 = var2 + var7;
+            float var30 = f + var7;
             if (var29) {
-               var1.addCircleFilled(var30 + EfnWidgets.s(4.0F), var27 + var6 * 0.5F, EfnWidgets.s(3.5F), this.f(var22), 12);
+               imDrawList.addCircleFilled(var30 + EfnWidgets.s(4.0F), var27 + var6 * 0.5F, EfnWidgets.s(3.5F), this.f(var22), 12);
                var30 += EfnWidgets.s(16.0F);
             }
 
             float var31 = var23 * 3.0F + EfnWidgets.s(80.0F) + var24 * 3.0F;
-            String var32 = EfnWidgets.ellipsize(this.fMod, var26.name(), var4 - var7 * 2.0F - var31 - EfnWidgets.s(20.0F));
-            EfnWidgets.text(var1, this.fMod, var30, var27 + var6 * 0.5F - EfnWidgets.lineHeight(this.fMod) + EfnWidgets.s(4.0F), this.f(TEXT), var32);
+            String var32 = EfnWidgets.ellipsize(this.fMod, var26.name(), h - var7 * 2.0F - var31 - EfnWidgets.s(20.0F));
+            EfnWidgets.text(imDrawList, this.fMod, var30, var27 + var6 * 0.5F - EfnWidgets.lineHeight(this.fMod) + EfnWidgets.s(4.0F), this.f(TEXT), var32);
             StringBuilder var33 = new StringBuilder();
 
             for (ConfigProfiles.Part var35 : var26.parts()) {
@@ -1130,16 +1144,16 @@ public final class EfnClickGui {
             }
 
             EfnWidgets.text(
-               var1,
+               imDrawList,
                this.fSmall,
                var30,
                var27 + var6 * 0.5F + EfnWidgets.s(6.0F),
                this.f(var26.broken() ? rgba(255, 110, 110, 255) : MUTED),
                var26.broken() ? "Could not be read" : var33.toString()
             );
-            float var49 = var2 + var4 - var7 - EfnWidgets.s(80.0F);
+            float var49 = f + h - var7 - EfnWidgets.s(80.0F);
             boolean var53 = var26.name().equals(this.armedDelete);
-            if (this.pill(var1, var49, var28, EfnWidgets.s(80.0F), var8, var53 ? "Sure?" : "Delete", var53) && this.clicked) {
+            if (this.pill(imDrawList, var49, var28, EfnWidgets.s(80.0F), var8, var53 ? "Sure?" : "Delete", var53) && this.clicked) {
                if (var53) {
                   try {
                      var5.delete(var26.name());
@@ -1156,7 +1170,7 @@ public final class EfnClickGui {
             }
 
             var49 -= var24 + var23;
-            if (this.pill(var1, var49, var28, var23, var8, "Share", false) && this.clicked) {
+            if (this.pill(imDrawList, var49, var28, var23, var8, "Share", false) && this.clicked) {
                try {
                   ImGui.setClipboardText(var5.shareCode(var26.name()));
                   this.say("Share code for " + var26.name() + " copied", false);
@@ -1166,7 +1180,7 @@ public final class EfnClickGui {
             }
 
             var49 -= var24 + var23;
-            if (this.pill(var1, var49, var28, var23, var8, "Save", false) && this.clicked) {
+            if (this.pill(imDrawList, var49, var28, var23, var8, "Save", false) && this.clicked) {
                try {
                   var5.save(var26.name());
                   this.say("Saved over " + var26.name(), false);
@@ -1176,7 +1190,7 @@ public final class EfnClickGui {
             }
 
             var49 -= var24 + var23;
-            if (this.pill(var1, var49, var28, var23, var8, "Load", var29) && this.clicked) {
+            if (this.pill(imDrawList, var49, var28, var23, var8, "Load", var29) && this.clicked) {
                try {
                   var5.load(var26.name());
                   this.say("Loaded " + var26.name(), false);
@@ -1190,20 +1204,20 @@ public final class EfnClickGui {
       }
    }
 
-   private float pageHud(ImDrawList var1, float var2, float var3, float var4) {
+   private float pageHud(ImDrawList imDrawList, float f, float g, float h) {
       float var5 = EfnWidgets.s(54.0F);
       float var6 = EfnWidgets.s(18.0F);
       float var7 = EfnWidgets.s(32.0F);
-      float var9 = this.rowsTop(var1, var2, var3, var4, var5, 2);
-      this.rowLabel(var1, var2, var3, var5, "Layout editor");
+      float var9 = this.rowsTop(imDrawList, f, g, h, var5, 2);
+      this.rowLabel(imDrawList, f, g, var5, "Layout editor");
       float var10 = EfnWidgets.s(110.0F);
-      if (this.pill(var1, var2 + var4 - var6 - var10, var3 + (var5 - var7) * 0.5F, var10, var7, "Open", false) && this.clicked) {
-         MinecraftClient.method_1551().method_1507(new HudEditorScreen());
+      if (this.pill(imDrawList, f + h - var6 - var10, g + (var5 - var7) * 0.5F, var10, var7, "Open", false) && this.clicked) {
+         MinecraftClient.getInstance().setScreen(new HudEditorScreen());
       }
 
-      float var11 = var3 + var5;
-      this.rowLabel(var1, var2, var11, var5, "Reset layout");
-      if (this.pill(var1, var2 + var4 - var6 - var10, var11 + (var5 - var7) * 0.5F, var10, var7, "Reset", false) && this.clicked) {
+      float var11 = g + var5;
+      this.rowLabel(imDrawList, f, var11, var5, "Reset layout");
+      if (this.pill(imDrawList, f + h - var6 - var10, var11 + (var5 - var7) * 0.5F, var10, var7, "Reset", false) && this.clicked) {
          HudLayoutStore.getInstance().resetToDefaults(ImGui.getIO().getDisplaySizeX(), ImGui.getIO().getDisplaySizeY());
          this.say("HUD layout reset", false);
       }
@@ -1232,10 +1246,10 @@ public final class EfnClickGui {
             return var9;
          } else {
             float var8 = var9 + EfnWidgets.s(14.0F);
-            var9 = this.rowsTop(var1, var2, var8, var4, var5, var17.size());
+            var9 = this.rowsTop(imDrawList, f, var8, h, var5, var17.size());
 
             for (int var19 = 0; var19 < var17.size(); var19++) {
-               this.settingRow(var1, var2, var8 + var19 * var5, var4, var5, var12, (Setting)var17.get(var19));
+               this.settingRow(imDrawList, f, var8 + var19 * var5, h, var5, var12, (Setting)var17.get(var19));
             }
 
             return var9;
@@ -1243,13 +1257,13 @@ public final class EfnClickGui {
       }
    }
 
-   private boolean pill(ImDrawList var1, float var2, float var3, float var4, float var5, String var6, boolean var7) {
-      boolean var8 = this.hot(var2, var3, var4, var5);
-      var1.addRectFilled(var2, var3, var2 + var4, var3 + var5, this.f(var8 ? BG_CARD_HOVER : BG_FIELD), EfnWidgets.s(9.0F));
-      var1.addRect(var2, var3, var2 + var4, var3 + var5, this.f(var7 ? GuiPalette.accent() : LINE), EfnWidgets.s(9.0F), 0, var7 ? 1.4F : 1.0F);
-      String var9 = EfnWidgets.ellipsize(this.fSmall, var6, var4 - EfnWidgets.s(24.0F));
+   private boolean pill(ImDrawList imDrawList, float f, float g, float h, float i, String string, boolean bl) {
+      boolean var8 = this.hot(f, g, h, i);
+      imDrawList.addRectFilled(f, g, f + h, g + i, this.f(var8 ? BG_CARD_HOVER : BG_FIELD), EfnWidgets.s(9.0F));
+      imDrawList.addRect(f, g, f + h, g + i, this.f(bl ? GuiPalette.accent() : LINE), EfnWidgets.s(9.0F), 0, bl ? 1.4F : 1.0F);
+      String var9 = EfnWidgets.ellipsize(this.fSmall, string, h - EfnWidgets.s(24.0F));
       float var10 = EfnWidgets.textWidth(this.fSmall, var9);
-      EfnWidgets.text(var1, this.fSmall, var2 + (var4 - var10) * 0.5F, var3 + (var5 - EfnWidgets.lineHeight(this.fSmall)) * 0.5F, this.f(TEXT), var9);
+      EfnWidgets.text(imDrawList, this.fSmall, f + (h - var10) * 0.5F, g + (i - EfnWidgets.lineHeight(this.fSmall)) * 0.5F, this.f(TEXT), var9);
       return var8;
    }
 
@@ -1265,9 +1279,9 @@ public final class EfnClickGui {
       return (float)((System.nanoTime() - this.viewChangedAt) / 1.0E9);
    }
 
-   private void drawLogo(ImDrawList var1, float var2, float var3, float var4, int var5) {
-      float var6 = var4 / 64.0F;
-      var1.addRectFilled(var2, var3, var2 + var4, var3 + var4, this.f(rgba(26, 29, 36, 255)), 15.0F * var6);
+   private void drawLogo(ImDrawList imDrawList, float f, float g, float h, int i) {
+      float var6 = h / 64.0F;
+      imDrawList.addRectFilled(f, g, f + h, g + h, this.f(rgba(26, 29, 36, 255)), 15.0F * var6);
       float[][] var7 = new float[][]{{14.0F, 12.0F, 50.0F, 22.0F}, {14.0F, 22.0F, 27.0F, 42.0F}, {27.0F, 27.0F, 44.0F, 37.0F}, {14.0F, 42.0F, 50.0F, 52.0F}};
 
       for (float[] var11 : var7) {
@@ -1275,94 +1289,94 @@ public final class EfnClickGui {
          float var13 = var11[1];
          float var14 = var11[2];
          float var15 = var11[3];
-         float var16 = var2 + (var12 - 0.25F * var13 + 8.0F) * var6;
-         float var17 = var3 + var13 * var6;
-         float var18 = var2 + (var14 - 0.25F * var13 + 8.0F) * var6;
-         float var19 = var2 + (var14 - 0.25F * var15 + 8.0F) * var6;
-         float var20 = var3 + var15 * var6;
-         float var21 = var2 + (var12 - 0.25F * var15 + 8.0F) * var6;
-         var1.addQuadFilled(var16, var17, var18, var17, var19, var20, var21, var20, this.f(var5));
+         float var16 = f + (var12 - 0.25F * var13 + 8.0F) * var6;
+         float var17 = g + var13 * var6;
+         float var18 = f + (var14 - 0.25F * var13 + 8.0F) * var6;
+         float var19 = f + (var14 - 0.25F * var15 + 8.0F) * var6;
+         float var20 = g + var15 * var6;
+         float var21 = f + (var12 - 0.25F * var15 + 8.0F) * var6;
+         imDrawList.addQuadFilled(var16, var17, var18, var17, var19, var20, var21, var20, this.f(i));
       }
    }
 
-   private void drawSwitch(ImDrawList var1, float var2, float var3, float var4, float var5, float var6) {
-      float var7 = var5 * 0.5F;
-      var1.addRectFilled(var2, var3, var2 + var4, var3 + var5, this.f(EfnTheme.lerpColor(SWITCH_OFF, GuiPalette.accent(), var6)), var7);
+   private void drawSwitch(ImDrawList imDrawList, float f, float g, float h, float i, float j) {
+      float var7 = i * 0.5F;
+      imDrawList.addRectFilled(f, g, f + h, g + i, this.f(EfnTheme.lerpColor(SWITCH_OFF, GuiPalette.accent(), j)), var7);
       float var8 = var7 - EfnWidgets.s(3.0F);
-      float var9 = var2 + var7 + (var4 - 2.0F * var7) * var6;
-      var1.addCircleFilled(var9, var3 + var7 + EfnWidgets.s(1.0F), var8, this.f(rgba(0, 0, 0, 50)), 20);
-      var1.addCircleFilled(var9, var3 + var7, var8, this.f(KNOB), 20);
+      float var9 = f + var7 + (h - 2.0F * var7) * j;
+      imDrawList.addCircleFilled(var9, g + var7 + EfnWidgets.s(1.0F), var8, this.f(rgba(0, 0, 0, 50)), 20);
+      imDrawList.addCircleFilled(var9, g + var7, var8, this.f(KNOB), 20);
    }
 
-   private void drawCog(ImDrawList var1, float var2, float var3, float var4, int var5) {
-      var1.addCircle(var2, var3, var4 * 0.55F, var5, 14, 1.5F);
+   private void drawCog(ImDrawList imDrawList, float f, float g, float h, int i) {
+      imDrawList.addCircle(f, g, h * 0.55F, i, 14, 1.5F);
 
       for (int var6 = 0; var6 < 8; var6++) {
          double var7 = 6.283185307179586 * var6 / 8.0;
          float var9 = (float)Math.cos(var7);
          float var10 = (float)Math.sin(var7);
-         var1.addLine(var2 + var9 * var4 * 0.85F, var3 + var10 * var4 * 0.85F, var2 + var9 * var4 * 1.15F, var3 + var10 * var4 * 1.15F, var5, 2.0F);
+         imDrawList.addLine(f + var9 * h * 0.85F, g + var10 * h * 0.85F, f + var9 * h * 1.15F, g + var10 * h * 1.15F, i, 2.0F);
       }
 
-      var1.addCircle(var2, var3, var4 * 0.95F, var5, 18, 1.5F);
+      imDrawList.addCircle(f, g, h * 0.95F, i, 18, 1.5F);
    }
 
-   private void drawIcon(ImDrawList var1, ModuleCategory.Icon var2, float var3, float var4, float var5, int var6) {
-      switch (var2) {
+   private void drawIcon(ImDrawList imDrawList, ModuleCategory.Icon icon, float f, float g, float h, int i) {
+      switch (icon) {
          case CROSSHAIR:
-            EfnWidgets.crosshair(var1, var3, var4, var5, var6);
+            EfnWidgets.crosshair(imDrawList, f, g, h, i);
             break;
          case MOVE:
-            EfnWidgets.move(var1, var3, var4, var5, var6);
+            EfnWidgets.move(imDrawList, f, g, h, i);
             break;
          case GRID:
-            EfnWidgets.grid(var1, var3, var4, var5, var6);
+            EfnWidgets.grid(imDrawList, f, g, h, i);
             break;
          case RING:
-            EfnWidgets.ring(var1, var3, var4, var5, var6);
+            EfnWidgets.ring(imDrawList, f, g, h, i);
             break;
          case EYE:
-            EfnWidgets.eye(var1, var3, var4, var5, var6);
+            EfnWidgets.eye(imDrawList, f, g, h, i);
             break;
          case MONITOR:
-            EfnWidgets.monitor(var1, var3, var4, var5, var6);
+            EfnWidgets.monitor(imDrawList, f, g, h, i);
             break;
          case HOUSE:
-            EfnWidgets.house(var1, var3, var4, var5, var6);
+            EfnWidgets.house(imDrawList, f, g, h, i);
             break;
          case SCROLL:
-            EfnWidgets.scroll(var1, var3, var4, var5, var6);
+            EfnWidgets.scroll(imDrawList, f, g, h, i);
             break;
          case BOLT:
-            EfnWidgets.bolt(var1, var3, var4, var5, var6);
+            EfnWidgets.bolt(imDrawList, f, g, h, i);
             break;
          default:
-            EfnWidgets.chevronRight(var1, var3, var4, var5, var6);
+            EfnWidgets.chevronRight(imDrawList, f, g, h, i);
       }
    }
 
-   private void drawGeneralIcon(ImDrawList var1, int var2, float var3, float var4, float var5, int var6) {
-      switch (var2) {
+   private void drawGeneralIcon(ImDrawList imDrawList, int i, float f, float g, float h, int j) {
+      switch (i) {
          case 0:
-            EfnWidgets.monitor(var1, var3, var4, var5, var6);
+            EfnWidgets.monitor(imDrawList, f, g, h, j);
             break;
          case 1:
-            EfnWidgets.ring(var1, var3, var4, var5, var6);
+            EfnWidgets.ring(imDrawList, f, g, h, j);
             break;
          case 2:
-            EfnWidgets.eye(var1, var3, var4, var5, var6);
+            EfnWidgets.eye(imDrawList, f, g, h, j);
             break;
          default:
-            EfnWidgets.grid(var1, var3, var4, var5, var6);
+            EfnWidgets.grid(imDrawList, f, g, h, j);
       }
    }
 
-   private void renderBackPill(float var1, float var2) {
+   private void renderBackPill(float f, float g) {
       ImDrawList var3 = ImGui.getForegroundDrawList();
       float var4 = EfnWidgets.s(118.0F);
       float var5 = EfnWidgets.s(36.0F);
       float var6 = EfnWidgets.s(20.0F);
-      float var7 = var2 - EfnWidgets.s(20.0F) - var5;
+      float var7 = g - EfnWidgets.s(20.0F) - var5;
       float var8 = ImGui.getMousePosX();
       float var9 = ImGui.getMousePosY();
       boolean var10 = var8 >= var6 && var8 < var6 + var4 && var9 >= var7 && var9 < var7 + var5;
@@ -1396,11 +1410,11 @@ public final class EfnClickGui {
       }
    }
 
-   private void toggle(ClientModule var1) {
-      if (var1.isAction()) {
-         var1.onClick();
+   private void toggle(ClientModule clientModule) {
+      if (clientModule.isAction()) {
+         clientModule.onClick();
       } else {
-         var1.setEnabled(!var1.isEnabled());
+         clientModule.setEnabled(!clientModule.isEnabled());
       }
    }
 
@@ -1442,32 +1456,32 @@ public final class EfnClickGui {
       }
    }
 
-   private String label(ModuleCategory var1) {
-      return var1.displayName().replace("EFN", "efn".toUpperCase(Locale.ROOT));
+   private String label(ModuleCategory moduleCategory) {
+      return moduleCategory.displayName().replace("EFN", "efn".toUpperCase(Locale.ROOT));
    }
 
-   private String keyLabel(int var1) {
-      String var2 = this.keyLabels.get(var1);
+   private String keyLabel(int i) {
+      String var2 = this.keyLabels.get(i);
       if (var2 == null) {
-         var2 = ClickGuiRenderer.keyName(var1);
-         this.keyLabels.put(var1, var2);
+         var2 = ClickGuiRenderer.keyName(i);
+         this.keyLabels.put(i, var2);
       }
 
       return var2;
    }
 
-   private float[] state(String var1, boolean var2) {
-      float[] var3 = this.anim.get(var1);
+   private float[] state(String string, boolean bl) {
+      float[] var3 = this.anim.get(string);
       if (var3 == null) {
-         var3 = new float[]{0.0F, var2 ? 1.0F : 0.0F};
-         this.anim.put(var1, var3);
+         var3 = new float[]{0.0F, bl ? 1.0F : 0.0F};
+         this.anim.put(string, var3);
       }
 
       return var3;
    }
 
-   private boolean hot(float var1, float var2, float var3, float var4) {
-      return this.winHover && !this.popupBlock && this.mx >= var1 && this.mx < var1 + var3 && this.my >= var2 && this.my < var2 + var4;
+   private boolean hot(float f, float g, float h, float i) {
+      return this.winHover && !this.popupBlock && this.mx >= f && this.mx < f + h && this.my >= g && this.my < g + i;
    }
 
    private void pushChildStyle() {
@@ -1503,17 +1517,17 @@ public final class EfnClickGui {
       ImGui.popStyleColor(6);
    }
 
-   private int f(int var1) {
-      return a(var1, this.ga);
+   private int f(int i) {
+      return a(i, this.ga);
    }
 
-   private static int a(int var0, float var1) {
-      int var2 = Math.round((var0 >>> 24) * Math.max(0.0F, Math.min(1.0F, var1)));
-      return var2 << 24 | var0 & 16777215;
+   private static int a(int i, float f) {
+      int var2 = Math.round((i >>> 24) * Math.max(0.0F, Math.min(1.0F, f)));
+      return var2 << 24 | i & 16777215;
    }
 
-   private static int rgba(int var0, int var1, int var2, int var3) {
-      return var3 << 24 | var2 << 16 | var1 << 8 | var0;
+   private static int rgba(int i, int j, int k, int l) {
+      return l << 24 | k << 16 | j << 8 | i;
    }
 
    private static enum View {

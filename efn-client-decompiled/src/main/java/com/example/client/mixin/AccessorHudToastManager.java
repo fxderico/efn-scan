@@ -10,6 +10,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Environment(EnvType.CLIENT)
 @Mixin({ToastManager.class})
 public interface AccessorHudToastManager {
-   @Accessor("field_2239")
+   @Accessor("visibleEntries")
    List<?> efn$hudVisibleToasts();
 }

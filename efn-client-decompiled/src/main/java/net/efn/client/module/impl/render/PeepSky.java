@@ -141,8 +141,8 @@ final class PeepSky {
       this.tTex = new int[MAX_SHOWN];
    }
 
-   private static PeepSky.Palette palette(PeepSong var0) {
-      return switch (var0) {
+   private static PeepSky.Palette palette(PeepSong peepSong) {
+      return switch (peepSong) {
          case STAR_SHOPPING -> new PeepSky.Palette(16732080, 12720235, 1574434, 394260, 3017786, 16766704, 16740296, 0.4F, 1.0F, 1.2F);
          case CRYBABY -> new PeepSky.Palette(15751854, 11016294, 1574426, 459791, 3412026, 16766704, 15755960, 0.38F, 0.92F, 0.9F);
          case CRY_ALONE -> new PeepSky.Palette(12073606, 7999568, 1114896, 262664, 2230304, 15760056, 12720235, 0.26F, 0.68F, 0.4F);
@@ -162,7 +162,7 @@ final class PeepSky {
       };
    }
 
-   void ready(SkyPaint var1, ExecutorService var2) {
+   void ready(SkyPaint skyPaint, ExecutorService executorService) {
       if (this.tattoos == null) {
          PeepSky.Built var3 = this.built;
          if (var3 != null && var3.generation() != this.generation) {
@@ -174,15 +174,15 @@ final class PeepSky {
             if (!this.building) {
                this.building = true;
                int var12 = this.generation;
-               var2.submit(() -> {
+               executorService.submit(() -> {
                   if (var12 == this.generation) {
                      try {
-                        PeepSky.Built var2x = build(var12);
+                        PeepSky.Built var2 = build(var12);
                         if (var12 == this.generation) {
-                           this.built = var2x;
+                           this.built = var2;
                         }
                      } catch (RuntimeException | Error var3x) {
-                        LOGGER.warn("[EFN] Sky easter egg textures couldn't be drawn", var3x);
+                        LOGGER.warn("[EFN] Sky easter egg textures couldn't be drawn", (Throwable)var3x);
                      }
                   }
                });
@@ -196,15 +196,15 @@ final class PeepSky {
 
             try {
                for (int var9 = 0; var9 < var4.length; var9++) {
-                  var4[var9] = var1.upload("peep_tattoo_" + var9, var3.widths()[var9], var3.heights()[var9], var3.tattoos()[var9]);
-                  var5[var9] = var1.upload("peep_rim_" + var9, var3.widths()[var9], var3.heights()[var9], var3.rims()[var9]);
-                  var6[var9] = var1.upload("peep_gold_" + var9, var3.widths()[var9], var3.heights()[var9], var3.golds()[var9]);
-                  var7[var9] = var1.upload("peep_veil_" + var9, var3.widths()[var9], var3.heights()[var9], var3.veils()[var9]);
+                  var4[var9] = skyPaint.upload("peep_tattoo_" + var9, var3.widths()[var9], var3.heights()[var9], var3.tattoos()[var9]);
+                  var5[var9] = skyPaint.upload("peep_rim_" + var9, var3.widths()[var9], var3.heights()[var9], var3.rims()[var9]);
+                  var6[var9] = skyPaint.upload("peep_gold_" + var9, var3.widths()[var9], var3.heights()[var9], var3.golds()[var9]);
+                  var7[var9] = skyPaint.upload("peep_veil_" + var9, var3.widths()[var9], var3.heights()[var9], var3.veils()[var9]);
                }
 
                for (int var13 = 0; var13 < var8.length; var13++) {
                   PeepArt.Art var10 = var3.art()[var13];
-                  var8[var13] = var1.upload("peep_fx_" + var13, var10.width(), var10.height(), var3.artLevels()[var13]);
+                  var8[var13] = skyPaint.upload("peep_fx_" + var13, var10.width(), var10.height(), var3.artLevels()[var13]);
                }
             } catch (RuntimeException | Error var11) {
                closeAll(var4);
@@ -231,9 +231,9 @@ final class PeepSky {
       return this.tattoos != null || this.building || this.built != null;
    }
 
-   private static void closeAll(SkyImage[] var0) {
-      if (var0 != null) {
-         for (SkyImage var4 : var0) {
+   private static void closeAll(SkyImage[] skyImages) {
+      if (skyImages != null) {
+         for (SkyImage var4 : skyImages) {
             if (var4 != null) {
                var4.close();
             }
@@ -271,45 +271,45 @@ final class PeepSky {
       Arrays.fill(this.pickRun, -2147483648);
    }
 
-   float anchor(int var1, int var2) {
-      if (this.anchorRun[var1] != var2) {
-         this.anchorRun[var1] = var2;
-         this.anchorU[var1] = Float.isNaN(this.stageU) ? this.viewU : this.stageU;
+   float anchor(int i, int j) {
+      if (this.anchorRun[i] != j) {
+         this.anchorRun[i] = j;
+         this.anchorU[i] = Float.isNaN(this.stageU) ? this.viewU : this.stageU;
       }
 
-      return this.anchorU[var1];
+      return this.anchorU[i];
    }
 
-   float anchored(int var1, int var2) {
-      return this.anchorRun[var1] == var2 ? this.anchorU[var1] : 0.0F / 0.0F;
+   float anchored(int i, int j) {
+      return this.anchorRun[i] == j ? this.anchorU[i] : 0.0F / 0.0F;
    }
 
-   int picked(int var1, int var2) {
-      return this.pickRun[var1] == var2 ? this.pick[var1] : -1;
+   int picked(int i, int j) {
+      return this.pickRun[i] == j ? this.pick[i] : -1;
    }
 
-   void pick(int var1, int var2, int var3) {
-      this.pickRun[var1] = var2;
-      this.pick[var1] = (byte)var3;
+   void pick(int i, int j, int k) {
+      this.pickRun[i] = j;
+      this.pick[i] = (byte)k;
    }
 
-   void lyrics(float var1, float var2, float var3, float var4, float var5, float var6, float var7, float var8) {
-      this.lyricsShown = !Float.isNaN(var2);
-      this.lyricU = wrap(var1);
-      this.titleU = wrap(var5);
-      this.lyricUp = this.lyricsShown ? var2 : 28.0F;
-      this.lineHalfTall = var4;
-      this.titleUp = var6;
-      this.titleHalfTall = var8;
-      this.wantLineWide = this.lyricsShown ? var3 : 0.0F;
-      this.wantTitleWide = this.lyricsShown ? var7 : 0.0F;
+   void lyrics(float f, float g, float h, float i, float j, float k, float l, float m) {
+      this.lyricsShown = !Float.isNaN(g);
+      this.lyricU = wrap(f);
+      this.titleU = wrap(j);
+      this.lyricUp = this.lyricsShown ? g : 28.0F;
+      this.lineHalfTall = i;
+      this.titleUp = k;
+      this.titleHalfTall = m;
+      this.wantLineWide = this.lyricsShown ? h : 0.0F;
+      this.wantTitleWide = this.lyricsShown ? l : 0.0F;
    }
 
-   void update(float var1, PeepSong var2, float var3, float var4, float var5, float var6, float var7) {
-      this.song = var2;
-      boolean var9 = var3 <= 0.0F || this.fresh;
+   void update(float f, PeepSong peepSong, float g, float h, float i, float j, float k) {
+      this.song = peepSong;
+      boolean var9 = g <= 0.0F || this.fresh;
       this.fresh = false;
-      float var10 = var1 / 2.0F;
+      float var10 = f / 2.0F;
       float var11 = 0.0F;
 
       for (int var8 = 0; var8 < this.weight.length; var8++) {
@@ -320,7 +320,7 @@ final class PeepSky {
             : (this.weight[var8] < var12 ? Math.min(var12, this.weight[var8] + var10) : Math.max(var12, this.weight[var8] - var10));
          this.shown[var8] = smootherstep(this.weight[var8]);
          var11 += this.shown[var8];
-         this.songAge[var8] = var13 ? Math.min(this.songAge[var8] + var1, 100000.0F) : (this.weight[var8] <= 0.0F ? 0.0F : this.songAge[var8]);
+         this.songAge[var8] = var13 ? Math.min(this.songAge[var8] + f, 100000.0F) : (this.weight[var8] <= 0.0F ? 0.0F : this.songAge[var8]);
       }
 
       if (var11 > 1.0F) {
@@ -332,22 +332,22 @@ final class PeepSky {
          }
       }
 
-      this.viewU = wrap(var4);
-      this.aimU = wrap(var5);
-      this.viewUp = var6;
+      this.viewU = wrap(h);
+      this.aimU = wrap(i);
+      this.viewUp = j;
       if (!this.lyricsShown) {
          this.lyricU = this.viewU;
          this.titleU = this.viewU;
       }
 
-      float var17 = var9 ? 1.0F : Math.min(1.0F, var1 * 3.0F);
+      float var17 = var9 ? 1.0F : Math.min(1.0F, f * 3.0F);
       this.lineHalfWide = this.lineHalfWide + (this.wantLineWide - this.lineHalfWide) * var17;
       this.titleHalfWide = this.titleHalfWide + (this.wantTitleWide - this.titleHalfWide) * var17;
-      this.pulse = var7;
-      this.stageU = !Float.isNaN(this.stageU) && !var9 ? wrap(this.stageU + wrapDelta(this.viewU - this.stageU) * Math.min(1.0F, var1 * 0.5F)) : this.viewU;
+      this.pulse = k;
+      this.stageU = !Float.isNaN(this.stageU) && !var9 ? wrap(this.stageU + wrapDelta(this.viewU - this.stageU) * Math.min(1.0F, f * 0.5F)) : this.viewU;
       float var18 = this.w(PeepSong.FALLING_DOWN);
       if (var18 > 0.001F) {
-         this.fall = MathHelper.method_22450(this.fall + var1 * 0.014285714F * var18);
+         this.fall = MathHelper.fractionalPart(this.fall + f * 0.014285714F * var18);
       }
 
       float var14 = this.fallFade = this.song == PeepSong.FALLING_DOWN ? Math.min(1.0F, this.fallFade + var10) : Math.max(0.0F, this.fallFade - var10);
@@ -356,18 +356,18 @@ final class PeepSky {
       }
    }
 
-   float w(PeepSong var1) {
-      return this.shown[var1.ordinal()];
+   float w(PeepSong peepSong) {
+      return this.shown[peepSong.ordinal()];
    }
 
-   float age(PeepSong var1) {
-      return this.songAge[var1.ordinal()];
+   float age(PeepSong peepSong) {
+      return this.songAge[peepSong.ordinal()];
    }
 
-   void draw(SkyPaint var1, float var2, float var3) {
-      this.time = var3;
-      float var11 = smootherstep(MathHelper.method_15363(var2 / 0.7F, 0.0F, 1.0F));
-      float var12 = smootherstep(MathHelper.method_15363((var2 - 0.7F) / 0.3F, 0.0F, 1.0F));
+   void draw(SkyPaint skyPaint, float f, float g) {
+      this.time = g;
+      float var11 = smootherstep(MathHelper.clamp(f / 0.7F, 0.0F, 1.0F));
+      float var12 = smootherstep(MathHelper.clamp((f - 0.7F) / 0.3F, 0.0F, 1.0F));
       if (var11 <= 0.0F) {
          this.horizonShare = 0.0F;
          PeepWorld.horizon(this.horizonRgb, 0.0F);
@@ -376,19 +376,19 @@ final class PeepSky {
          this.blendLook();
          float var13 = -0.78F;
          float var14 = 1.27F;
-         float var15 = MathHelper.method_16439(var11, var14, var13 - 0.05F);
-         this.horizon(var15, var11, var3);
+         float var15 = MathHelper.lerp(var11, var14, var13 - 0.05F);
+         this.horizon(var15, var11, g);
 
          for (int var16 = 0; var16 < 14; var16++) {
-            float var17 = MathHelper.method_16439(var16 / 14.0F, var15, var14);
-            float var18 = MathHelper.method_16439((var16 + 1) / 14.0F, var15, var14);
+            float var17 = MathHelper.lerp(var16 / 14.0F, var15, var14);
+            float var18 = MathHelper.lerp((var16 + 1) / 14.0F, var15, var14);
             int var19 = this.shade(var17 - var15, var17, 0.72F);
             int var20 = this.shade(var18 - var15, var18, 0.72F);
 
             for (int var21 = 0; var21 < 64; var21++) {
                float var22 = var21 / 64.0F;
                float var23 = (var21 + 1) / 64.0F;
-               var1.gradient(false, var22, var23, var17, var18, var19, var20);
+               skyPaint.gradient(false, var22, var23, var17, var18, var19, var20);
             }
          }
 
@@ -399,18 +399,18 @@ final class PeepSky {
          for (int var34 = 0; var34 < 64; var34++) {
             float var35 = var34 / 64.0F;
             float var37 = (var34 + 1) / 64.0F;
-            var1.gradient(true, var35, var37, var15 - var31, var15, var33, var32);
-            var1.gradient(true, var35, var37, var15, var15 + var31 * 2.2F, tint(0.55F, this.look.rimColor), var33);
+            skyPaint.gradient(true, var35, var37, var15 - var31, var15, var33, var32);
+            skyPaint.gradient(true, var35, var37, var15, var15 + var31 * 2.2F, tint(0.55F, this.look.rimColor), var33);
          }
 
          boolean var10 = this.art != null && var12 > 0.0F;
          if (var10) {
-            PeepEffects.skyLight(this, var1, var11, var3);
+            PeepEffects.skyLight(this, skyPaint, var11, g);
          }
 
-         this.horizonGlow(var1, var15, var11, var3);
+         this.horizonGlow(skyPaint, var15, var11, g);
          if (this.pulse > 0.0F && this.lyricsShown) {
-            var1.glow(this.lyricU, elevationToY(this.lyricUp + 1.0F), 0.4F, 16732080, 0.18F * this.pulse * var12);
+            skyPaint.glow(this.lyricU, elevationToY(this.lyricUp + 1.0F), 0.4F, 16732080, 0.18F * this.pulse * var12);
          }
 
          float var36 = this.fall;
@@ -418,20 +418,20 @@ final class PeepSky {
          float var39 = 1.0F - 0.5F * this.w(PeepSong.CRY_ALONE);
 
          for (int var9 = 0; var9 < 12; var9++) {
-            float var8 = MathHelper.method_22450(var9 * 0.2718F + var3 * (0.004F + 0.002F * (var9 % 3)) * (var9 % 2 == 0 ? 1.0F : -1.0F));
-            float var7 = MathHelper.method_16439(MathHelper.method_22450(var9 * 0.5713F + 0.21F), var13 + 0.45F, 0.67F);
+            float var8 = MathHelper.fractionalPart(var9 * 0.2718F + g * (0.004F + 0.002F * (var9 % 3)) * (var9 % 2 == 0 ? 1.0F : -1.0F));
+            float var7 = MathHelper.lerp(MathHelper.fractionalPart(var9 * 0.5713F + 0.21F), var13 + 0.45F, 0.67F);
             float var6 = 1.0F;
             if (var38 > 0.0F) {
                float var5 = (0.72F - var7) * 60.0F;
-               float var4 = MathHelper.method_22450((var5 - -1.5F) / 87.5F - var36);
-               var7 = elevationToY(MathHelper.method_16439(var38, var5, -1.5F + var4 * 87.5F));
-               var6 = MathHelper.method_16439(var38, 1.0F, smooth(0.0F, 0.08F, var4) * (1.0F - smooth(0.7F, 0.85F, var4)));
+               float var4 = MathHelper.fractionalPart((var5 - -1.5F) / 87.5F - var36);
+               var7 = elevationToY(MathHelper.lerp(var38, var5, -1.5F + var4 * 87.5F));
+               var6 = MathHelper.lerp(var38, 1.0F, smooth(0.0F, 0.08F, var4) * (1.0F - smooth(0.7F, 0.85F, var4)));
             }
 
             if (!(var7 < var15 + 0.05F)) {
-               float var40 = 0.6F + 0.4F * MathHelper.method_15374(var3 * (0.35F + 0.07F * var9) + var9 * 1.3F);
+               float var40 = 0.6F + 0.4F * MathHelper.sin(g * (0.35F + 0.07F * var9) + var9 * 1.3F);
                float var24 = 0.07F + 0.05F * (var9 % 4);
-               var1.glow(
+               skyPaint.glow(
                   var8,
                   var7,
                   var24,
@@ -442,19 +442,19 @@ final class PeepSky {
          }
 
          for (int var30 = 0; var30 < 140; var30++) {
-            float var29 = MathHelper.method_22450(var30 * 0.618034F);
-            float var28 = MathHelper.method_16439(MathHelper.method_22450(var30 * 0.41421F + 0.13F), var13 + 0.08F, 0.74F);
+            float var29 = MathHelper.fractionalPart(var30 * 0.618034F);
+            float var28 = MathHelper.lerp(MathHelper.fractionalPart(var30 * 0.41421F + 0.13F), var13 + 0.08F, 0.74F);
             float var27 = 1.0F;
             if (var38 > 0.0F) {
                float var26 = (0.72F - var28) * 60.0F;
-               float var25 = MathHelper.method_22450((var26 - -1.5F) / 87.5F - var36);
-               var28 = elevationToY(MathHelper.method_16439(var38, var26, -1.5F + var25 * 87.5F));
-               var27 = MathHelper.method_16439(var38, 1.0F, smooth(0.0F, 0.03F, var25) * (1.0F - smooth(0.9F, 0.99F, var25)));
+               float var25 = MathHelper.fractionalPart((var26 - -1.5F) / 87.5F - var36);
+               var28 = elevationToY(MathHelper.lerp(var38, var26, -1.5F + var25 * 87.5F));
+               var27 = MathHelper.lerp(var38, 1.0F, smooth(0.0F, 0.03F, var25) * (1.0F - smooth(0.9F, 0.99F, var25)));
             }
 
             if (!(var28 < var15 + 0.01F)) {
-               float var41 = 0.35F + 0.65F * Math.max(0.0F, MathHelper.method_15374(var3 * (0.9F + var30 % 7 * 0.31F) + var30 * 2.17F));
-               var1.glow(
+               float var41 = 0.35F + 0.65F * Math.max(0.0F, MathHelper.sin(g * (0.9F + var30 % 7 * 0.31F) + var30 * 2.17F));
+               skyPaint.glow(
                   var29,
                   var28,
                   0.004F + 0.0035F * (var30 % 4),
@@ -467,30 +467,30 @@ final class PeepSky {
          boolean var42 = var12 > 0.0F && this.tattoos != null;
          this.shownTattoos = 0;
          if (var42) {
-            this.layoutTattoos(smooth(0.35F, 1.0F, var12) * var12, var3);
+            this.layoutTattoos(smooth(0.35F, 1.0F, var12) * var12, g);
          }
 
          if (var10) {
-            PeepEffects.behind(this, var1, var3);
+            PeepEffects.behind(this, skyPaint, g);
          }
 
          if (var42) {
-            this.drawTattoos(var1, var3);
+            this.drawTattoos(skyPaint, g);
          }
 
          if (var10) {
-            PeepEffects.front(this, var1, var3);
+            PeepEffects.front(this, skyPaint, g);
          }
       }
    }
 
-   private void horizon(float var1, float var2, float var3) {
+   private void horizon(float f, float g, float h) {
       float var4 = 0.72F;
-      int var5 = this.shade(var4 - var1, var4, var4);
+      int var5 = this.shade(var4 - f, var4, var4);
       float var6 = 0.0F;
-      if (Math.max(var1, var4 - 0.42F) < var4) {
-         float var7 = 0.85F + 0.15F * MathHelper.method_15374(var3 * 0.6F);
-         var6 = MathHelper.method_15363(this.look.glowStrength * var2 * var7 * (1.0F + 0.45F * this.pulse), 0.0F, 1.0F);
+      if (Math.max(f, var4 - 0.42F) < var4) {
+         float var7 = 0.85F + 0.15F * MathHelper.sin(h * 0.6F);
+         var6 = MathHelper.clamp(this.look.glowStrength * g * var7 * (1.0F + 0.45F * this.pulse), 0.0F, 1.0F);
       }
 
       int var11 = this.look.glowColor;
@@ -498,19 +498,19 @@ final class PeepSky {
       int var9 = Math.min(255, Math.round((var5 >> 8 & 0xFF) + (var11 >> 8 & 0xFF) * var6));
       int var10 = Math.min(255, Math.round((var5 & 0xFF) + (var11 & 0xFF) * var6));
       this.horizonRgb = var8 << 16 | var9 << 8 | var10;
-      this.horizonShare = 0.97F * MathHelper.method_15363((var4 - var1) / 0.1F, 0.0F, 1.0F);
+      this.horizonShare = 0.97F * MathHelper.clamp((var4 - f) / 0.1F, 0.0F, 1.0F);
       PeepWorld.horizon(this.horizonRgb, this.horizonShare);
    }
 
-   private void horizonGlow(SkyPaint var1, float var2, float var3, float var4) {
-      float var5 = Math.max(var2, 0.30000004F);
+   private void horizonGlow(SkyPaint skyPaint, float f, float g, float h) {
+      float var5 = Math.max(f, 0.30000004F);
       float var6 = 0.72F;
       float var7 = 0.76000005F;
       float var8 = 1.08F;
       float var9 = 1.32F;
       if (!(var5 >= var6)) {
-         float var10 = 0.85F + 0.15F * MathHelper.method_15374(var4 * 0.6F);
-         float var11 = this.look.glowStrength * var3 * var10 * (1.0F + 0.45F * this.pulse);
+         float var10 = 0.85F + 0.15F * MathHelper.sin(h * 0.6F);
+         float var11 = this.look.glowStrength * g * var10 * (1.0F + 0.45F * this.pulse);
          int var12 = tint(var11, this.look.glowColor);
          int var13 = tint(var11 * 0.78F, this.look.glowColor);
          int var14 = tint(0.0F, this.look.glowColor);
@@ -518,37 +518,36 @@ final class PeepSky {
          for (int var15 = 0; var15 < 64; var15++) {
             float var16 = var15 / 64.0F;
             float var17 = (var15 + 1) / 64.0F;
-            var1.gradient(true, var16, var17, var5, var6, var14, var12);
-            var1.gradient(true, var16, var17, var6, var7, var12, var12);
-            var1.gradient(true, var16, var17, var7, var8, var12, var13);
-            var1.gradient(true, var16, var17, var8, var9, var13, var14);
+            skyPaint.gradient(true, var16, var17, var5, var6, var14, var12);
+            skyPaint.gradient(true, var16, var17, var6, var7, var12, var12);
+            skyPaint.gradient(true, var16, var17, var7, var8, var12, var13);
+            skyPaint.gradient(true, var16, var17, var8, var9, var13, var14);
          }
       }
    }
 
-   float lyricBox(float var1, float var2, float var3, float var4) {
+   float lyricBox(float f, float g, float h, float i) {
       if (!this.lyricsShown) {
          return 0.0F;
       } else {
-         float var5 = 360.0F * MathHelper.method_15362(var2 * 0.017453292F);
+         float var5 = 360.0F * MathHelper.cos(g * 0.017453292F);
          float var6 = this.lineHalfWide <= 0.05F
             ? 0.0F
             : smooth(0.0F, 3.0F, this.lineHalfWide)
-               * box(Math.abs(wrapDelta(var1 - this.lyricU)) * var5, var2 - this.lyricUp, this.lineHalfWide + var3 + 2.5F, this.lineHalfTall + var4 + 2.0F);
+               * box(Math.abs(wrapDelta(f - this.lyricU)) * var5, g - this.lyricUp, this.lineHalfWide + h + 2.5F, this.lineHalfTall + i + 2.0F);
          float var7 = this.titleHalfWide <= 0.05F
             ? 0.0F
             : smooth(0.0F, 3.0F, this.titleHalfWide)
-               * box(Math.abs(wrapDelta(var1 - this.titleU)) * var5, var2 - this.titleUp, this.titleHalfWide + var3 + 2.5F, this.titleHalfTall + var4 + 2.0F);
+               * box(Math.abs(wrapDelta(f - this.titleU)) * var5, g - this.titleUp, this.titleHalfWide + h + 2.5F, this.titleHalfTall + i + 2.0F);
          return Math.max(var6, var7);
       }
    }
 
-   float clear(float var1, float var2) {
-      float var3 = 1.0F - 1.0F * this.lyricBox(var1, var2, 0.8F, 0.8F);
-      float var4 = var2 * 0.017453292F;
+   float clear(float f, float g) {
+      float var3 = 1.0F - 1.0F * this.lyricBox(f, g, 0.8F, 0.8F);
+      float var4 = g * 0.017453292F;
       float var5 = this.viewUp * 0.017453292F;
-      float var6 = MathHelper.method_15374(var4) * MathHelper.method_15374(var5)
-         + MathHelper.method_15362(var4) * MathHelper.method_15362(var5) * MathHelper.method_15362((var1 - this.aimU) * 6.2831855F);
+      float var6 = MathHelper.sin(var4) * MathHelper.sin(var5) + MathHelper.cos(var4) * MathHelper.cos(var5) * MathHelper.cos((f - this.aimU) * 6.2831855F);
       if (var6 < 0.93F) {
          return var3;
       } else {
@@ -557,70 +556,70 @@ final class PeepSky {
       }
    }
 
-   private float aimClear(float var1, float var2, float var3, float var4) {
-      float var5 = Math.abs(wrapDelta(var1 - this.aimU)) * 360.0F * MathHelper.method_15362((var2 + this.viewUp) * 0.5F * 0.017453292F);
-      float var6 = Math.max(0.0F, var5 - var3);
-      float var7 = Math.max(0.0F, Math.abs(var2 - this.viewUp) - var4);
+   private float aimClear(float f, float g, float h, float i) {
+      float var5 = Math.abs(wrapDelta(f - this.aimU)) * 360.0F * MathHelper.cos((g + this.viewUp) * 0.5F * 0.017453292F);
+      float var6 = Math.max(0.0F, var5 - h);
+      float var7 = Math.max(0.0F, Math.abs(g - this.viewUp) - i);
       return smooth(6.0F, 15.0F, (float)Math.sqrt(var6 * var6 + var7 * var7));
    }
 
-   private float keepOut(float var1, float var2, float var3, float var4) {
-      return (1.0F - this.textRoom(var1, var2, var4, var3)) * this.aimClear(var1, var2, var4, var3);
+   private float keepOut(float f, float g, float h, float i) {
+      return (1.0F - this.textRoom(f, g, i, h)) * this.aimClear(f, g, i, h);
    }
 
-   private float textRoom(float var1, float var2, float var3, float var4) {
+   private float textRoom(float f, float g, float h, float i) {
       if (!this.lyricsShown) {
          return 0.0F;
       } else {
-         float var7 = 360.0F * MathHelper.method_15362(var2 * 0.017453292F);
+         float var7 = 360.0F * MathHelper.cos(g * 0.017453292F);
          float var8 = 0.0F;
          if (this.lineHalfWide > 0.05F) {
-            float var6 = Math.abs(wrapDelta(var1 - this.lyricU)) * var7;
+            float var6 = Math.abs(wrapDelta(f - this.lyricU)) * var7;
             float var5 = smooth(0.0F, 3.0F, this.lineHalfWide);
-            var8 = var5 * near(var6, this.lineHalfWide + var3) * nearUp(var2 - this.lyricUp, this.lineHalfTall + var4);
-            if (var2 > this.lyricUp) {
-               var8 = Math.max(var8, var5 * near(var6, 14.0F + var3));
+            var8 = var5 * near(var6, this.lineHalfWide + h) * nearUp(g - this.lyricUp, this.lineHalfTall + i);
+            if (g > this.lyricUp) {
+               var8 = Math.max(var8, var5 * near(var6, 14.0F + h));
             }
          }
 
          if (this.titleHalfWide > 0.05F) {
-            float var11 = Math.abs(wrapDelta(var1 - this.titleU)) * var7;
+            float var11 = Math.abs(wrapDelta(f - this.titleU)) * var7;
             float var10 = smooth(0.0F, 3.0F, this.titleHalfWide);
-            float var9 = var2 > this.titleUp ? 1.0F : nearUp(var2 - this.titleUp, this.titleHalfTall + var4);
-            var8 = Math.max(var8, var10 * near(var11, this.titleHalfWide + var3) * var9);
+            float var9 = g > this.titleUp ? 1.0F : nearUp(g - this.titleUp, this.titleHalfTall + i);
+            var8 = Math.max(var8, var10 * near(var11, this.titleHalfWide + h) * var9);
          }
 
          return var8;
       }
    }
 
-   private static float near(float var0, float var1) {
-      return 1.0F - smooth(var1 + 3.0F, var1 + 3.0F + 5.0F, Math.abs(var0));
+   private static float near(float f, float g) {
+      return 1.0F - smooth(g + 3.0F, g + 3.0F + 5.0F, Math.abs(f));
    }
 
-   private static float nearUp(float var0, float var1) {
-      return var0 >= 0.0F ? near(var0, var1) : 1.0F - smooth(var1 + 1.0F, var1 + 1.0F + 1.5F, -var0);
+   private static float nearUp(float f, float g) {
+      return f >= 0.0F ? near(f, g) : 1.0F - smooth(g + 1.0F, g + 1.0F + 1.5F, -f);
    }
 
-   private static float box(float var0, float var1, float var2, float var3) {
-      return (1.0F - smooth(var2 * 0.85F, var2, Math.abs(var0))) * (1.0F - smooth(var3 * 0.8F, var3, Math.abs(var1)));
+   private static float box(float f, float g, float h, float i) {
+      return (1.0F - smooth(h * 0.85F, h, Math.abs(f))) * (1.0F - smooth(i * 0.8F, i, Math.abs(g)));
    }
 
-   private static float artShare(int var0) {
-      return 1.0F - 52.0F / var0;
+   private static float artShare(int i) {
+      return 1.0F - 52.0F / i;
    }
 
-   int kindAt(int var1) {
-      return this.kinds[this.tTex[var1]];
+   int kindAt(int i) {
+      return this.kinds[this.tTex[i]];
    }
 
-   private void layoutTattoos(float var1, float var2) {
+   private void layoutTattoos(float f, float g) {
       int var3 = this.tattoos.length;
       float var4 = this.w(PeepSong.CRY_ALONE);
       float var5 = this.w(PeepSong.GHOST_BOY);
       float var6 = this.w(PeepSong.GHOST_GIRL);
       float var7 = this.w(PeepSong.SPOTLIGHT);
-      float var8 = MathHelper.method_16439(0.5F, 1.0F, this.look.light);
+      float var8 = MathHelper.lerp(0.5F, 1.0F, this.look.light);
       float var9 = 1.0F + 0.1F * this.pulse;
       float var10 = smootherstep(this.fallFade);
       int var11 = 0;
@@ -628,31 +627,31 @@ final class PeepSky {
       for (int var12 = 0; var12 < var3; var12++) {
          SkyImage var13 = this.tattoos[var12];
          int var14 = this.kinds[var12] % ELEVATION.length;
-         float var15 = var1 * (1.0F - var4) * var8;
+         float var15 = f * (1.0F - var4) * var8;
          if (!(var15 <= 0.003F)) {
-            float var16 = 0.85F + 0.15F * MathHelper.method_15374(var2 * 2.8F + var12);
+            float var16 = 0.85F + 0.15F * MathHelper.sin(g * 2.8F + var12);
             float var17 = (float)var13.width() / var13.height();
-            float var18 = MathHelper.method_22450((float)var12 / var3 + var2 * 0.02F);
-            float var19 = ELEVATION[var14] + 2.2F * MathHelper.method_15374(var2 * 0.8F + var12 * 1.7F);
+            float var18 = MathHelper.fractionalPart((float)var12 / var3 + g * 0.02F);
+            float var19 = ELEVATION[var14] + 2.2F * MathHelper.sin(g * 0.8F + var12 * 1.7F);
             float var20 = 1.0F;
             if (var10 > 0.0F) {
-               float var21 = MathHelper.method_22450((var19 - 12.0F) / 52.0F - this.fall);
-               var19 = MathHelper.method_16439(var10, var19, 12.0F + var21 * 52.0F);
-               var20 = MathHelper.method_16439(var10, 1.0F, smooth(0.0F, 0.12F, var21) * (1.0F - smooth(0.88F, 0.98F, var21)));
+               float var21 = MathHelper.fractionalPart((var19 - 12.0F) / 52.0F - this.fall);
+               var19 = MathHelper.lerp(var10, var19, 12.0F + var21 * 52.0F);
+               var20 = MathHelper.lerp(var10, 1.0F, smooth(0.0F, 0.12F, var21) * (1.0F - smooth(0.88F, 0.98F, var21)));
             }
 
             if (var5 > 0.0F) {
-               float var26 = (var2 * 0.42F + var12 * 3.5F) / 6.2831855F + 0.25F;
-               int var22 = MathHelper.method_15375(var26);
+               float var26 = (g * 0.42F + var12 * 3.5F) / 6.2831855F + 0.25F;
+               int var22 = MathHelper.floor(var26);
                int var23 = var12 % HAUNT_AZIMUTH.length;
                float var24 = (HAUNT_HIGH[var23] ? 41.0F : 12.5F) + 6.0F * hash01(var12, var22, 1);
                float var25 = this.anchor(GHOST_SLOTS + var12, var22)
-                  + (HAUNT_AZIMUTH[var23] + 8.0F * (hash01(var12, var22, 2) - 0.5F)) / (360.0F * MathHelper.method_15362(var24 * 0.017453292F));
+                  + (HAUNT_AZIMUTH[var23] + 8.0F * (hash01(var12, var22, 2) - 0.5F)) / (360.0F * MathHelper.cos(var24 * 0.017453292F));
                var18 = wrap(var18 + wrapDelta(var25 - var18) * var5);
-               var19 = MathHelper.method_16439(var5, var19, var24);
+               var19 = MathHelper.lerp(var5, var19, var24);
             }
 
-            float var27 = SIZE[var14] * (0.94F + 0.06F * MathHelper.method_15374(var2 * 2.0F + var12)) * (1.0F + 0.15F * var5);
+            float var27 = SIZE[var14] * (0.94F + 0.06F * MathHelper.sin(g * 2.0F + var12)) * (1.0F + 0.15F * var5);
             float var28 = this.keepOut(var18, var19, var27 * 0.5F * artShare(var13.height()), var27 * var17 * 0.5F * artShare(var13.width()));
             var11 = this.place(
                var11,
@@ -661,9 +660,9 @@ final class PeepSky {
                var19,
                var27 / 60.0F,
                var17,
-               0.1F * MathHelper.method_15374(var2 * 0.7F + var12 * 2.1F),
+               0.1F * MathHelper.sin(g * 0.7F + var12 * 2.1F),
                var15 * (var20 * (var28 * smooth(0.15F, 0.45F, var28))) * var16,
-               var2,
+               g,
                var6,
                var5,
                var7,
@@ -675,18 +674,18 @@ final class PeepSky {
       this.shownTattoos = var11;
    }
 
-   float clearOfTattoos(float var1, float var2, float var3) {
+   float clearOfTattoos(float f, float g, float h) {
       float var4 = 1.0F;
-      float var5 = 360.0F * MathHelper.method_15362(var2 * 0.017453292F);
+      float var5 = 360.0F * MathHelper.cos(g * 0.017453292F);
 
       for (int var6 = 0; var6 < this.shownTattoos && var4 > 0.0F; var6++) {
          if (!(this.tGlow[var6] <= 0.05F)) {
             float var7 = (0.72F - this.ty[var6]) * 1.0471976F * 57.295776F;
-            float var8 = Math.abs(wrapDelta(var1 - this.tu[var6])) * var5;
+            float var8 = Math.abs(wrapDelta(f - this.tu[var6])) * var5;
             float var9 = this.tw[var6] * 30.0F * 0.8F;
             float var10 = this.th[var6] * 30.0F * 0.8F;
-            float var11 = Math.max(0.0F, var8 - var9 - var3);
-            float var12 = Math.max(0.0F, Math.abs(var2 - var7) - var10 - var3);
+            float var11 = Math.max(0.0F, var8 - var9 - h);
+            float var12 = Math.max(0.0F, Math.abs(g - var7) - var10 - h);
             if (!(var11 > 1.5F) && !(var12 > 1.5F)) {
                var4 *= 1.0F - Math.min(1.0F, this.tGlow[var6]) * (1.0F - smooth(0.0F, 1.5F, (float)Math.sqrt(var11 * var11 + var12 * var12)));
             }
@@ -696,7 +695,7 @@ final class PeepSky {
       return var4;
    }
 
-   private void drawTattoos(SkyPaint var1, float var2) {
+   private void drawTattoos(SkyPaint skyPaint, float f) {
       int var5 = this.shownTattoos;
       float var6 = this.w(PeepSong.GHOST_BOY);
       float var7 = this.w(PeepSong.GHOST_GIRL);
@@ -707,7 +706,7 @@ final class PeepSky {
       int var12 = mix(mix(mix(16732080, 16757575, var9 * 0.4F), 14208255, var6 * 0.7F), 16763118, var7 * 0.3F);
 
       for (int var13 = 0; var13 < var5; var13++) {
-         var1.glow(
+         skyPaint.glow(
             this.tu[var13],
             this.ty[var13],
             Math.max(this.th[var13], this.tw[var13]) * 0.6F,
@@ -746,7 +745,7 @@ final class PeepSky {
             var3 = mix(var3, 12720235, 0.4F * var9);
          }
 
-         var1.sprite(this.tattoos[this.tTex[var4]], this.tu[var4], this.ty[var4], this.tw[var4], this.th[var4], this.tSpin[var4], tint(var20, var3), true);
+         skyPaint.sprite(this.tattoos[this.tTex[var4]], this.tu[var4], this.ty[var4], this.tw[var4], this.th[var4], this.tSpin[var4], tint(var20, var3), true);
       }
 
       if (var6 > 0.003F) {
@@ -759,7 +758,7 @@ final class PeepSky {
                * this.haunt(var24);
             if (!(var28 <= 0.003F)) {
                int var32 = mix(11697407, 13145855, this.tGhost[var24]);
-               var1.sprite(
+               skyPaint.sprite(
                   this.veils[this.tTex[var24]], this.tu[var24], this.ty[var24], this.tw[var24], this.th[var24], this.tSpin[var24], tint(var28, var32), true
                );
             }
@@ -770,7 +769,7 @@ final class PeepSky {
          for (int var25 = 0; var25 < var5; var25++) {
             float var29 = var9 * smooth(0.12F, 0.6F, this.tGlow[var25]);
             if (!(var29 <= 0.003F)) {
-               var1.sprite(
+               skyPaint.sprite(
                   this.golds[this.tTex[var25]],
                   this.tu[var25],
                   this.ty[var25],
@@ -780,7 +779,7 @@ final class PeepSky {
                   tint(0.95F * var29, 4859392),
                   false
                );
-               var1.sprite(
+               skyPaint.sprite(
                   this.golds[this.tTex[var25]],
                   this.tu[var25],
                   this.ty[var25],
@@ -798,7 +797,7 @@ final class PeepSky {
          float var30 = this.filled(var26, var9, var6);
          if (!(var30 <= 0.003F)) {
             float var33 = (this.kindAt(var26) == 9 ? 0.92F : 0.8F) * Math.min(1.0F, var30 * 1.35F) * this.tGlow[var26];
-            var1.sprite(
+            skyPaint.sprite(
                this.golds[this.tTex[var26]], this.tu[var26], this.ty[var26], this.tw[var26], this.th[var26], this.tSpin[var26], tint(var33, 16749268), true
             );
          }
@@ -813,7 +812,7 @@ final class PeepSky {
          float var22 = var35 + var36 + var37;
          if (!(var22 <= 0.003F)) {
             int var23 = mix(var31, average(16743115, var35, 15916287, var36, 16732080, var37), smooth(0.2F, 0.8F, this.tGlow[var34]));
-            var1.sprite(
+            skyPaint.sprite(
                this.rims[this.tTex[var34]],
                this.tu[var34],
                this.ty[var34],
@@ -827,75 +826,61 @@ final class PeepSky {
       }
 
       if (var10 > 0.0F) {
-         PeepEffects.orbits(this, var1, var2, var10);
+         PeepEffects.orbits(this, skyPaint, f, var10);
       }
 
       if (var9 > 0.0F) {
-         PeepEffects.goldSparkles(this, var1, var2, var9);
+         PeepEffects.goldSparkles(this, skyPaint, f, var9);
       }
    }
 
-   private static float bodyBack(int var0) {
-      return var0 == 9 ? 0.45F : 0.25F;
+   private static float bodyBack(int i) {
+      return i == 9 ? 0.45F : 0.25F;
    }
 
-   private float haunt(int var1) {
-      boolean var2 = HAUNT_HIGH[this.tTex[var1] % HAUNT_HIGH.length];
-      return (var2 ? 1.0F : 0.8F) * (1.0F - 0.4F * this.hazeAt(this.ty[var1]));
+   private float haunt(int i) {
+      boolean var2 = HAUNT_HIGH[this.tTex[i] % HAUNT_HIGH.length];
+      return (var2 ? 1.0F : 0.8F) * (1.0F - 0.4F * this.hazeAt(this.ty[i]));
    }
 
-   private float filled(int var1, float var2, float var3) {
-      float var4 = this.kindAt(var1) == 9 ? 0.6F : 0.0F;
-      return var4 * (1.0F - var2) * (1.0F - var3);
+   private float filled(int i, float f, float g) {
+      float var4 = this.kindAt(i) == 9 ? 0.6F : 0.0F;
+      return var4 * (1.0F - f) * (1.0F - g);
    }
 
-   private int place(
-      int var1,
-      int var2,
-      float var3,
-      float var4,
-      float var5,
-      float var6,
-      float var7,
-      float var8,
-      float var9,
-      float var10,
-      float var11,
-      float var12,
-      float var13
-   ) {
-      if (var1 >= MAX_SHOWN) {
-         return var1;
+   private int place(int i, int j, float f, float g, float h, float k, float l, float m, float n, float o, float p, float q, float r) {
+      if (i >= MAX_SHOWN) {
+         return i;
       } else {
-         if (var10 > 0.0F) {
-            var3 += var10
+         if (o > 0.0F) {
+            f += o
                * 0.35F
-               * (MathHelper.method_15374(var9 * 2.3F + var2 * 1.1F) + 0.5F * MathHelper.method_15374(var9 * 3.7F + var2 * 2.9F))
-               / (360.0F * Math.max(0.2F, MathHelper.method_15362(var4 * 0.017453292F)));
-            var4 += var10 * 0.3F * (MathHelper.method_15374(var9 * 2.9F + var2 * 1.7F) + 0.5F * MathHelper.method_15374(var9 * 4.3F + var2));
-            var8 *= 1.0F - var10 * 0.15F * (0.5F + 0.5F * MathHelper.method_15374(var9 * 3.1F + var2));
+               * (MathHelper.sin(n * 2.3F + j * 1.1F) + 0.5F * MathHelper.sin(n * 3.7F + j * 2.9F))
+               / (360.0F * Math.max(0.2F, MathHelper.cos(g * 0.017453292F)));
+            g += o * 0.3F * (MathHelper.sin(n * 2.9F + j * 1.7F) + 0.5F * MathHelper.sin(n * 4.3F + j));
+            m *= 1.0F - o * 0.15F * (0.5F + 0.5F * MathHelper.sin(n * 3.1F + j));
          }
 
          float var14 = 1.0F;
-         if (var11 > 0.0F) {
-            float var15 = 0.5F + 0.5F * MathHelper.method_15374(var9 * 0.42F + var2 * 3.5F);
+         if (p > 0.0F) {
+            float var15 = 0.5F + 0.5F * MathHelper.sin(n * 0.42F + j * 3.5F);
             var14 = smootherstep(smooth(0.38F, 0.68F, var15));
-            var4 += var11 * 1.5F * var15;
+            g += p * 1.5F * var15;
          }
 
-         float var17 = var12 > 0.0F ? var12 * PeepEffects.spotlightOn(this, var3, var4) : 0.0F;
-         float var16 = var13 * (1.0F + 0.06F * var17);
-         this.tTex[var1] = var2;
-         this.tu[var1] = wrap(var3);
-         this.ty[var1] = elevationToY(var4);
-         this.th[var1] = var5 * var16;
-         this.tw[var1] = var5 * var6 * var16;
-         this.tSpin[var1] = var7;
-         this.tGhost[var1] = var14;
-         this.tLit[var1] = var17;
-         this.tAlpha[var1] = Math.min(var8 * MathHelper.method_16439(var11, 1.0F, var14 * 0.85F), 1.0F - 0.3F * var11);
-         this.tGlow[var1] = var8 * MathHelper.method_16439(var11, 1.0F, var14);
-         return var1 + 1;
+         float var17 = q > 0.0F ? q * PeepEffects.spotlightOn(this, f, g) : 0.0F;
+         float var16 = r * (1.0F + 0.06F * var17);
+         this.tTex[i] = j;
+         this.tu[i] = wrap(f);
+         this.ty[i] = elevationToY(g);
+         this.th[i] = h * var16;
+         this.tw[i] = h * k * var16;
+         this.tSpin[i] = l;
+         this.tGhost[i] = var14;
+         this.tLit[i] = var17;
+         this.tAlpha[i] = Math.min(m * MathHelper.lerp(p, 1.0F, var14 * 0.85F), 1.0F - 0.3F * p);
+         this.tGlow[i] = m * MathHelper.lerp(p, 1.0F, var14);
+         return i + 1;
       }
    }
 
@@ -929,48 +914,48 @@ final class PeepSky {
       this.look.duskColor = packed(var1, 2);
       this.look.nightColor = packed(var1, 3);
       this.look.hazeColor = packed(var1, 4);
-      this.look.hazeLight = MathHelper.method_15363((0.6F * luma(this.look.hazeColor) + this.look.glowStrength * luma(packed(var1, 6))) / 255.0F, 0.0F, 1.0F);
+      this.look.hazeLight = MathHelper.clamp((0.6F * luma(this.look.hazeColor) + this.look.glowStrength * luma(packed(var1, 6))) / 255.0F, 0.0F, 1.0F);
       this.look.rimColor = packed(var1, 5);
       this.look.glowColor = packed(var1, 6);
    }
 
-   private static void add(float[] var0, PeepSky.Palette var1, float var2) {
-      if (!(var2 <= 0.0F)) {
-         add(var0, 0, var1.top(), var2);
-         add(var0, 1, var1.deep(), var2);
-         add(var0, 2, var1.dusk(), var2);
-         add(var0, 3, var1.night(), var2);
-         add(var0, 4, var1.haze(), var2);
-         add(var0, 5, var1.rim(), var2);
-         add(var0, 6, var1.glow(), var2);
+   private static void add(float[] fs, PeepSky.Palette palette, float f) {
+      if (!(f <= 0.0F)) {
+         add(fs, 0, palette.top(), f);
+         add(fs, 1, palette.deep(), f);
+         add(fs, 2, palette.dusk(), f);
+         add(fs, 3, palette.night(), f);
+         add(fs, 4, palette.haze(), f);
+         add(fs, 5, palette.rim(), f);
+         add(fs, 6, palette.glow(), f);
       }
    }
 
-   private static void add(float[] var0, int var1, int var2, float var3) {
-      int var4 = var1 * 3;
-      var0[var4] += var3 * (var2 >> 16 & 0xFF);
-      int var5 = var1 * 3 + 1;
-      var0[var5] += var3 * (var2 >> 8 & 0xFF);
-      int var6 = var1 * 3 + 2;
-      var0[var6] += var3 * (var2 & 0xFF);
+   private static void add(float[] fs, int i, int j, float f) {
+      int var4 = i * 3;
+      fs[var4] += f * (j >> 16 & 0xFF);
+      int var5 = i * 3 + 1;
+      fs[var5] += f * (j >> 8 & 0xFF);
+      int var6 = i * 3 + 2;
+      fs[var6] += f * (j & 0xFF);
    }
 
-   private static int packed(float[] var0, int var1) {
-      return MathHelper.method_15340(Math.round(var0[var1 * 3]), 0, 255) << 16
-         | MathHelper.method_15340(Math.round(var0[var1 * 3 + 1]), 0, 255) << 8
-         | MathHelper.method_15340(Math.round(var0[var1 * 3 + 2]), 0, 255);
+   private static int packed(float[] fs, int i) {
+      return MathHelper.clamp(Math.round(fs[i * 3]), 0, 255) << 16
+         | MathHelper.clamp(Math.round(fs[i * 3 + 1]), 0, 255) << 8
+         | MathHelper.clamp(Math.round(fs[i * 3 + 2]), 0, 255);
    }
 
-   float hazeAt(float var1) {
-      return MathHelper.method_15363(1.0F - Math.max(0.0F, 0.72F - var1) / 0.4F, 0.0F, 1.0F) * this.look.hazeLight;
+   float hazeAt(float f) {
+      return MathHelper.clamp(1.0F - Math.max(0.0F, 0.72F - f) / 0.4F, 0.0F, 1.0F) * this.look.hazeLight;
    }
 
-   private static float luma(int var0) {
-      return 0.2126F * (var0 >> 16 & 0xFF) + 0.7152F * (var0 >> 8 & 0xFF) + 0.0722F * (var0 & 0xFF);
+   private static float luma(int i) {
+      return 0.2126F * (i >> 16 & 0xFF) + 0.7152F * (i >> 8 & 0xFF) + 0.0722F * (i & 0xFF);
    }
 
-   private int shade(float var1, float var2, float var3) {
-      float var4 = Math.max(0.0F, var1);
+   private int shade(float f, float g, float h) {
+      float var4 = Math.max(0.0F, f);
       int var5 = var4 < 0.05F
          ? mix(this.look.topColor, this.look.deepColor, var4 / 0.05F)
          : (
@@ -978,37 +963,37 @@ final class PeepSky {
                ? mix(this.look.deepColor, this.look.duskColor, (var4 - 0.05F) / 0.25F)
                : mix(this.look.duskColor, this.look.nightColor, Math.min(1.0F, (var4 - 0.3F) / 0.5F))
          );
-      float var6 = MathHelper.method_15363(1.0F - Math.max(0.0F, var3 - var2) / 0.4F, 0.0F, 1.0F);
+      float var6 = MathHelper.clamp(1.0F - Math.max(0.0F, h - g) / 0.4F, 0.0F, 1.0F);
       var5 = mix(var5, this.look.hazeColor, var6 * 0.6F);
       return tint(var4 < 0.02F ? 0.92F : 0.97F, var5);
    }
 
-   static float heartbeat(float var0) {
-      return Math.max(beat(var0, 0.17F), 0.6F * beat(var0 - 0.3F, 0.42F));
+   static float heartbeat(float f) {
+      return Math.max(beat(f, 0.17F), 0.6F * beat(f - 0.3F, 0.42F));
    }
 
-   private static float beat(float var0, float var1) {
-      if (var0 < 0.0F) {
+   private static float beat(float f, float g) {
+      if (f < 0.0F) {
          return 0.0F;
       } else {
-         return var0 < 0.14F ? smooth(0.0F, 0.14F, var0) : (float)Math.exp(-(var0 - 0.14F) / var1);
+         return f < 0.14F ? smooth(0.0F, 0.14F, f) : (float)Math.exp(-(f - 0.14F) / g);
       }
    }
 
-   private static int average(int var0, float var1, int var2, float var3, int var4, float var5) {
-      float var6 = Math.max(var1 + var3 + var5, 1.0E-4F);
-      int var7 = Math.round(((var0 >> 16 & 0xFF) * var1 + (var2 >> 16 & 0xFF) * var3 + (var4 >> 16 & 0xFF) * var5) / var6);
-      int var8 = Math.round(((var0 >> 8 & 0xFF) * var1 + (var2 >> 8 & 0xFF) * var3 + (var4 >> 8 & 0xFF) * var5) / var6);
-      int var9 = Math.round(((var0 & 0xFF) * var1 + (var2 & 0xFF) * var3 + (var4 & 0xFF) * var5) / var6);
-      return MathHelper.method_15340(var7, 0, 255) << 16 | MathHelper.method_15340(var8, 0, 255) << 8 | MathHelper.method_15340(var9, 0, 255);
+   private static int average(int i, float f, int j, float g, int k, float h) {
+      float var6 = Math.max(f + g + h, 1.0E-4F);
+      int var7 = Math.round(((i >> 16 & 0xFF) * f + (j >> 16 & 0xFF) * g + (k >> 16 & 0xFF) * h) / var6);
+      int var8 = Math.round(((i >> 8 & 0xFF) * f + (j >> 8 & 0xFF) * g + (k >> 8 & 0xFF) * h) / var6);
+      int var9 = Math.round(((i & 0xFF) * f + (j & 0xFF) * g + (k & 0xFF) * h) / var6);
+      return MathHelper.clamp(var7, 0, 255) << 16 | MathHelper.clamp(var8, 0, 255) << 8 | MathHelper.clamp(var9, 0, 255);
    }
 
-   static float elevationToY(float var0) {
-      return 0.72F - var0 * 0.017453292F / 1.0471976F;
+   static float elevationToY(float f) {
+      return 0.72F - f * 0.017453292F / 1.0471976F;
    }
 
-   static float hash01(int var0) {
-      int var1 = var0 * -1640531535;
+   static float hash01(int i) {
+      int var1 = i * -1640531535;
       var1 ^= var1 >>> 15;
       var1 *= -2048144777;
       var1 ^= var1 >>> 13;
@@ -1017,36 +1002,36 @@ final class PeepSky {
       return (var1 >>> 8) * 5.9604645E-8F;
    }
 
-   static float hash01(int var0, int var1, int var2) {
-      return hash01(var0 * 73856093 ^ var1 * 19349663 ^ var2 * 83492791);
+   static float hash01(int i, int j, int k) {
+      return hash01(i * 73856093 ^ j * 19349663 ^ k * 83492791);
    }
 
-   static int tint(float var0, int var1) {
-      return ColorHelper.method_71346(MathHelper.method_15363(var0, 0.0F, 1.0F), var1);
+   static int tint(float f, int i) {
+      return ColorHelper.withAlpha(MathHelper.clamp(f, 0.0F, 1.0F), i);
    }
 
-   static int mix(int var0, int var1, float var2) {
-      return ColorHelper.method_61319(MathHelper.method_15363(var2, 0.0F, 1.0F), var0, var1) & 16777215;
+   static int mix(int i, int j, float f) {
+      return ColorHelper.lerp(MathHelper.clamp(f, 0.0F, 1.0F), i, j) & 16777215;
    }
 
-   static float smootherstep(float var0) {
-      return var0 * var0 * var0 * (var0 * (var0 * 6.0F - 15.0F) + 10.0F);
+   static float smootherstep(float f) {
+      return f * f * f * (f * (f * 6.0F - 15.0F) + 10.0F);
    }
 
-   static float smooth(float var0, float var1, float var2) {
-      float var3 = MathHelper.method_15363((var2 - var0) / (var1 - var0), 0.0F, 1.0F);
+   static float smooth(float f, float g, float h) {
+      float var3 = MathHelper.clamp((h - f) / (g - f), 0.0F, 1.0F);
       return var3 * var3 * (3.0F - 2.0F * var3);
    }
 
-   static float wrap(float var0) {
-      return var0 - (float)Math.floor(var0);
+   static float wrap(float f) {
+      return f - (float)Math.floor(f);
    }
 
-   static float wrapDelta(float var0) {
-      return var0 - Math.round(var0);
+   static float wrapDelta(float f) {
+      return f - Math.round(f);
    }
 
-   private static PeepSky.Built build(int var0) {
+   private static PeepSky.Built build(int i) {
       ArrayList var1 = new ArrayList();
       ArrayList var2 = new ArrayList();
       ArrayList var3 = new ArrayList();
@@ -1086,7 +1071,7 @@ final class PeepSky {
       }
 
       return new PeepSky.Built(
-         var0,
+         i,
          var1.toArray(new int[0][][]),
          var2.toArray(new int[0][][]),
          var3.toArray(new int[0][][]),
@@ -1099,12 +1084,12 @@ final class PeepSky {
       );
    }
 
-   private static BufferedImage load(String var0) {
+   private static BufferedImage load(String string) {
       try {
          BufferedImage var3;
-         try (InputStream var1 = PeepSky.class.getResourceAsStream("/assets/efn/textures/peep/" + var0 + ".png")) {
+         try (InputStream var1 = PeepSky.class.getResourceAsStream("/assets/efn/textures/peep/" + string + ".png")) {
             if (var1 == null) {
-               LOGGER.warn("[EFN] Sky easter egg tattoo {} is missing", var0);
+               LOGGER.warn("[EFN] Sky easter egg tattoo {} is missing", string);
                return null;
             }
 
@@ -1114,28 +1099,28 @@ final class PeepSky {
 
          return var3;
       } catch (IOException var6) {
-         LOGGER.warn("[EFN] Sky easter egg tattoo {} couldn't be read", var0, var6);
+         LOGGER.warn("[EFN] Sky easter egg tattoo {} couldn't be read", string, var6);
          return null;
       }
    }
 
-   private static int[] neon(int[] var0, int var1, int var2) {
-      float[] var3 = new float[var1 * var2];
+   private static int[] neon(int[] is, int i, int j) {
+      float[] var3 = new float[i * j];
 
       for (int var4 = 0; var4 < var3.length; var4++) {
-         var3[var4] = (var0[var4] >>> 24) / 255.0F;
+         var3[var4] = (is[var4] >>> 24) / 255.0F;
       }
 
-      float[] var13 = blur(var3, var1, var2, 9);
-      float[] var5 = new float[var1 * var2];
+      float[] var13 = blur(var3, i, j, 9);
+      float[] var5 = new float[i * j];
 
       for (int var6 = 0; var6 < var5.length; var6++) {
          var5[var6] = smooth(0.6F, 0.9F, var3[var6]);
       }
 
-      float[] var14 = blur(var5, var1, var2, 7);
-      float[] var7 = blur(var5, var1, var2, 1);
-      int[] var8 = new int[var1 * var2];
+      float[] var14 = blur(var5, i, j, 7);
+      float[] var7 = blur(var5, i, j, 1);
+      int[] var8 = new int[i * j];
 
       for (int var9 = 0; var9 < var8.length; var9++) {
          float var10 = Math.max(var3[var9], Math.min(1.0F, var7[var9] * 1.6F) * (1.0F - smooth(0.2F, 0.4F, var14[var9])));
@@ -1147,34 +1132,34 @@ final class PeepSky {
       return var8;
    }
 
-   static float[] blur(float[] var0, int var1, int var2, int var3) {
-      float[] var4 = (float[])var0.clone();
-      float[] var5 = new float[var0.length];
+   static float[] blur(float[] fs, int i, int j, int k) {
+      float[] var4 = (float[])fs.clone();
+      float[] var5 = new float[fs.length];
 
       for (int var6 = 0; var6 < 2; var6++) {
-         for (int var8 = 0; var8 < var2; var8++) {
+         for (int var8 = 0; var8 < j; var8++) {
             float var7 = 0.0F;
 
-            for (int var9 = -var3; var9 <= var3; var9++) {
-               var7 += var4[var8 * var1 + MathHelper.method_15340(var9, 0, var1 - 1)];
+            for (int var9 = -k; var9 <= k; var9++) {
+               var7 += var4[var8 * i + MathHelper.clamp(var9, 0, i - 1)];
             }
 
-            for (int var12 = 0; var12 < var1; var12++) {
-               var5[var8 * var1 + var12] = var7 / (var3 * 2 + 1);
-               var7 += var4[var8 * var1 + Math.min(var1 - 1, var12 + var3 + 1)] - var4[var8 * var1 + Math.max(0, var12 - var3)];
+            for (int var12 = 0; var12 < i; var12++) {
+               var5[var8 * i + var12] = var7 / (k * 2 + 1);
+               var7 += var4[var8 * i + Math.min(i - 1, var12 + k + 1)] - var4[var8 * i + Math.max(0, var12 - k)];
             }
          }
 
-         for (int var11 = 0; var11 < var1; var11++) {
+         for (int var11 = 0; var11 < i; var11++) {
             float var10 = 0.0F;
 
-            for (int var13 = -var3; var13 <= var3; var13++) {
-               var10 += var5[MathHelper.method_15340(var13, 0, var2 - 1) * var1 + var11];
+            for (int var13 = -k; var13 <= k; var13++) {
+               var10 += var5[MathHelper.clamp(var13, 0, j - 1) * i + var11];
             }
 
-            for (int var14 = 0; var14 < var2; var14++) {
-               var4[var14 * var1 + var11] = var10 / (var3 * 2 + 1);
-               var10 += var5[Math.min(var2 - 1, var14 + var3 + 1) * var1 + var11] - var5[Math.max(0, var14 - var3) * var1 + var11];
+            for (int var14 = 0; var14 < j; var14++) {
+               var4[var14 * i + var11] = var10 / (k * 2 + 1);
+               var10 += var5[Math.min(j - 1, var14 + k + 1) * i + var11] - var5[Math.max(0, var14 - k) * i + var11];
             }
          }
       }

@@ -26,7 +26,7 @@ public final class TimeChangerModule extends ClientModule {
    protected void onEnable() {
       active = this;
       this.on(TickEvent.TYPE, Stage.POST, this::onPostTick);
-      ClientWorld var1 = MinecraftClient.method_1551().field_1687;
+      ClientWorld var1 = MinecraftClient.getInstance().world;
       if (var1 != null) {
          this.applyForcedTime(var1);
       }
@@ -35,7 +35,7 @@ public final class TimeChangerModule extends ClientModule {
    @Override
    protected void onDisable() {
       active = null;
-      ClientWorld var1 = MinecraftClient.method_1551().field_1687;
+      ClientWorld var1 = MinecraftClient.getInstance().world;
       if (var1 != null && var1 == this.trackedLevel) {
          writeDayTime(var1, this.currentServerDayTime(var1));
       }
@@ -43,8 +43,8 @@ public final class TimeChangerModule extends ClientModule {
       this.trackedLevel = null;
    }
 
-   private void onPostTick(TickEvent var1) {
-      ClientWorld var2 = MinecraftClient.method_1551().field_1687;
+   private void onPostTick(TickEvent tickEvent) {
+      ClientWorld var2 = MinecraftClient.getInstance().world;
       if (var2 == null) {
          this.trackedLevel = null;
       } else {
@@ -52,27 +52,27 @@ public final class TimeChangerModule extends ClientModule {
       }
    }
 
-   private void applyForcedTime(ClientWorld var1) {
-      this.serverDayTime = var1 == this.trackedLevel ? this.currentServerDayTime(var1) : var1.method_8532();
-      this.trackedLevel = var1;
+   private void applyForcedTime(ClientWorld clientWorld) {
+      this.serverDayTime = clientWorld == this.trackedLevel ? this.currentServerDayTime(clientWorld) : clientWorld.getTimeOfDay();
+      this.trackedLevel = clientWorld;
       this.appliedDayTime = this.forcedDayTime();
-      writeDayTime(var1, this.appliedDayTime);
+      writeDayTime(clientWorld, this.appliedDayTime);
    }
 
-   private static void writeDayTime(ClientWorld var0, long var1) {
-      if (var0.method_8532() != var1) {
-         var0.method_28104().method_165(var1);
-         var0.method_75728().method_76405();
+   private static void writeDayTime(ClientWorld clientWorld, long l) {
+      if (clientWorld.getTimeOfDay() != l) {
+         clientWorld.getLevelProperties().setTimeOfDay(l);
+         clientWorld.getEnvironmentAttributes().tick();
       }
    }
 
-   private long currentServerDayTime(ClientWorld var1) {
-      return this.serverDayTime + (var1.method_8532() - this.appliedDayTime);
+   private long currentServerDayTime(ClientWorld clientWorld) {
+      return this.serverDayTime + (clientWorld.getTimeOfDay() - this.appliedDayTime);
    }
 
-   public long interceptServerDayTime(ClientWorld var1, long var2) {
-      this.trackedLevel = var1;
-      this.serverDayTime = var2;
+   public long interceptServerDayTime(ClientWorld clientWorld, long l) {
+      this.trackedLevel = clientWorld;
+      this.serverDayTime = l;
       this.appliedDayTime = this.forcedDayTime();
       return this.appliedDayTime;
    }

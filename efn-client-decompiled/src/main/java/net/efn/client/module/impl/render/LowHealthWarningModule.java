@@ -77,8 +77,8 @@ public final class LowHealthWarningModule extends ClientModule implements HudOve
    }
 
    @Override
-   public void renderHudOverlay(ImDrawList var1, float var2, float var3) {
-      MinecraftClient var7 = MinecraftClient.method_1551();
+   public void renderHudOverlay(ImDrawList imDrawList, float f, float g) {
+      MinecraftClient var7 = MinecraftClient.getInstance();
       float var8 = Math.min(Math.max(ImGui.getIO().getDeltaTime(), 0.0F), 0.1F);
       long var9 = System.nanoTime();
       if (var9 - this.lastFrame > 250000000L) {
@@ -87,16 +87,16 @@ public final class LowHealthWarningModule extends ClientModule implements HudOve
       }
 
       this.lastFrame = var9;
-      ClientPlayerEntity var11 = var7.field_1724;
-      boolean var12 = var11 == null || var11.method_29504();
+      ClientPlayerEntity var11 = var7.player;
+      boolean var12 = var11 == null || var11.isDead();
       float var13 = 0.0F;
       float var5;
       float var6;
       if (!var12
-         && !var7.field_1690.field_1842
-         && !var11.method_7325()
-         && !var11.method_31549().field_7480
-         && (var6 = var11.method_6032() + (this.countAbsorption.get() ? var11.method_6067() : 0.0F)) < (var5 = this.warnBelow.get())) {
+         && !var7.options.hudHidden
+         && !var11.isSpectator()
+         && !var11.getAbilities().invulnerable
+         && (var6 = var11.getHealth() + (this.countAbsorption.get() ? var11.getAbsorptionAmount() : 0.0F)) < (var5 = this.warnBelow.get())) {
          var13 = 1.0F;
          this.danger = Math.max(0.0F, Math.min(1.0F, (var5 - var6) / var5));
       }
@@ -116,21 +116,21 @@ public final class LowHealthWarningModule extends ClientModule implements HudOve
          float var16 = this.beat();
          float var17 = this.level * this.level * (3.0F - 2.0F * this.level);
          float var18 = this.intensity.get() * var17 * (0.45F + 0.55F * this.danger);
-         float var19 = this.reach.get() * Math.min(var2, var3) * (1.0F + 0.12F * var16);
+         float var19 = this.reach.get() * Math.min(f, g) * (1.0F + 0.12F * var16);
          boolean var20 = this.manual();
          int var21 = var20 ? 0 : CosmeticAccent.argb();
          int var22 = GuiPalette.abgr(var20 ? this.glowColor.argb() | 0xFF000000 : var21);
 
          for (int var23 = 0; var23 < BAND_REACH.length; var23++) {
             float var4 = var18 * BAND_WEIGHT[var23] * (0.6F + 0.4F * var16);
-            frame(var1, var2, var3, var19 * BAND_REACH[var23], withAlpha(var22, var4));
+            frame(imDrawList, f, g, var19 * BAND_REACH[var23], withAlpha(var22, var4));
          }
 
          if (this.edgeLine.get()) {
             float var26 = Math.max(2.0F, var19 * 0.07F);
             float var25 = this.intensity.get() * var17 * (0.2F + 0.55F * var16);
-            int var24 = var20 ? this.edgeColor.argb() | 0xFF000000 : ColorHelper.method_61319(0.5F, var21, -1);
-            frame(var1, var2, var3, var26, HudDraw.col(var24, var25));
+            int var24 = var20 ? this.edgeColor.argb() | 0xFF000000 : ColorHelper.lerp(0.5F, var21, -1);
+            frame(imDrawList, f, g, var26, HudDraw.col(var24, var25));
          }
       }
    }
@@ -145,8 +145,8 @@ public final class LowHealthWarningModule extends ClientModule implements HudOve
       }
    }
 
-   private static float bump(float var0, float var1) {
-      float var2 = Math.abs(var0 - var1);
+   private static float bump(float f, float g) {
+      float var2 = Math.abs(f - g);
       var2 = Math.min(var2, 1.0F - var2) / 0.065F;
       return (float)Math.exp(-var2 * var2);
    }
@@ -155,18 +155,18 @@ public final class LowHealthWarningModule extends ClientModule implements HudOve
       return this.colorMode.is("Manual");
    }
 
-   private static int withAlpha(int var0, float var1) {
-      int var2 = Math.round(255.0F * Math.max(0.0F, Math.min(1.0F, var1)));
-      return var0 & 16777215 | var2 << 24;
+   private static int withAlpha(int i, float f) {
+      int var2 = Math.round(255.0F * Math.max(0.0F, Math.min(1.0F, f)));
+      return i & 16777215 | var2 << 24;
    }
 
-   private static void frame(ImDrawList var0, float var1, float var2, float var3, int var4) {
-      if (!(var3 < 1.0F) && var4 >>> 24 != 0) {
-         int var5 = var4 & 16777215;
-         var0.addRectFilledMultiColor(0.0F, 0.0F, var1, var3, var4, var4, var5, var5);
-         var0.addRectFilledMultiColor(0.0F, var2 - var3, var1, var2, var5, var5, var4, var4);
-         var0.addRectFilledMultiColor(0.0F, 0.0F, var3, var2, var4, var5, var5, var4);
-         var0.addRectFilledMultiColor(var1 - var3, 0.0F, var1, var2, var5, var4, var4, var5);
+   private static void frame(ImDrawList imDrawList, float f, float g, float h, int i) {
+      if (!(h < 1.0F) && i >>> 24 != 0) {
+         int var5 = i & 16777215;
+         imDrawList.addRectFilledMultiColor(0.0F, 0.0F, f, h, i, i, var5, var5);
+         imDrawList.addRectFilledMultiColor(0.0F, g - h, f, g, var5, var5, i, i);
+         imDrawList.addRectFilledMultiColor(0.0F, 0.0F, h, g, i, var5, var5, i);
+         imDrawList.addRectFilledMultiColor(f - h, 0.0F, f, g, var5, i, i, var5);
       }
    }
 }

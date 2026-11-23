@@ -12,7 +12,6 @@ import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult.Type;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
@@ -50,12 +49,12 @@ public final class Ballistics {
       private final boolean movesFirst;
       private final double size;
 
-      private Body(double nullxx, double nullxxx, double nullxxxx, boolean nullxxxxx, double nullxxxxxx) {
-         this.gravity = nullxx;
-         this.airKeep = nullxxx;
-         this.waterKeep = nullxxxx;
-         this.movesFirst = nullxxxxx;
-         this.size = nullxxxxxx;
+      private Body(double d, double e, double f, boolean bl, double g) {
+         this.gravity = d;
+         this.airKeep = e;
+         this.waterKeep = f;
+         this.movesFirst = bl;
+         this.size = g;
       }
 
       public double gravity() {
@@ -72,7 +71,7 @@ public final class Ballistics {
       private int ticks;
       private double length;
       private Ballistics.Outcome outcome = Ballistics.Outcome.OPEN;
-      private Direction face = Direction.field_11036;
+      private Direction face = Direction.UP;
       private Entity struck;
       private Ballistics.Body body = Ballistics.Body.ARROW;
       private double px;
@@ -99,17 +98,17 @@ public final class Ballistics {
       public Flight() {
       }
 
-      public Ballistics.Flight launch(Ballistics.Body var1, Vec3d var2, Vec3d var3) {
-         this.body = var1;
-         this.px = var2.field_1352;
-         this.py = var2.field_1351;
-         this.pz = var2.field_1350;
-         this.vx = var3.field_1352;
-         this.vy = var3.field_1351;
-         this.vz = var3.field_1350;
-         this.gravity = var1.gravity;
-         this.width = var1.size;
-         this.height = var1.size;
+      public Ballistics.Flight launch(Ballistics.Body body, Vec3d vec3d, Vec3d vec3d2) {
+         this.body = body;
+         this.px = vec3d.x;
+         this.py = vec3d.y;
+         this.pz = vec3d.z;
+         this.vx = vec3d2.x;
+         this.vy = vec3d2.y;
+         this.vz = vec3d2.z;
+         this.gravity = body.gravity;
+         this.width = body.size;
+         this.height = body.size;
          this.wet = false;
          this.age = 0;
          this.lifetime = 240;
@@ -119,50 +118,50 @@ public final class Ballistics {
          return this;
       }
 
-      public Ballistics.Flight gravity(double var1) {
-         this.gravity = var1;
+      public Ballistics.Flight gravity(double d) {
+         this.gravity = d;
          return this;
       }
 
-      public Ballistics.Flight bounds(double var1, double var3) {
-         this.width = var1;
-         this.height = var3;
+      public Ballistics.Flight bounds(double d, double e) {
+         this.width = d;
+         this.height = e;
          return this;
       }
 
-      public Ballistics.Flight wet(boolean var1) {
-         this.wet = var1;
+      public Ballistics.Flight wet(boolean bl) {
+         this.wet = bl;
          return this;
       }
 
-      public Ballistics.Flight age(int var1) {
-         this.age = var1;
+      public Ballistics.Flight age(int i) {
+         this.age = i;
          return this;
       }
 
-      public Ballistics.Flight lifetime(int var1) {
-         this.lifetime = Math.max(1, var1);
+      public Ballistics.Flight lifetime(int i) {
+         this.lifetime = Math.max(1, i);
          return this;
       }
 
-      public Ballistics.Flight ignoring(Entity var1, Entity var2) {
-         this.shooter = var1;
-         this.self = var2;
+      public Ballistics.Flight ignoring(Entity entity, Entity entity2) {
+         this.shooter = entity;
+         this.self = entity2;
          return this;
       }
 
-      public Ballistics.Flight leftShooter(boolean var1) {
-         this.leftShooter = var1;
+      public Ballistics.Flight leftShooter(boolean bl) {
+         this.leftShooter = bl;
          return this;
       }
 
-      public Ballistics.Flight solve(World var1) {
+      public Ballistics.Flight solve(World world) {
          this.size = 0;
          this.struck = null;
          this.outcome = Ballistics.Outcome.OPEN;
-         this.face = Direction.field_11036;
-         this.trace(var1);
-         this.strike(var1);
+         this.face = Direction.UP;
+         this.trace(world);
+         this.strike(world);
          this.measure();
          this.release();
          return this;
@@ -188,20 +187,20 @@ public final class Ballistics {
          return this.size;
       }
 
-      public double x(int var1) {
-         return this.xs[var1];
+      public double x(int i) {
+         return this.xs[i];
       }
 
-      public double y(int var1) {
-         return this.ys[var1];
+      public double y(int i) {
+         return this.ys[i];
       }
 
-      public double z(int var1) {
-         return this.zs[var1];
+      public double z(int i) {
+         return this.zs[i];
       }
 
-      public Vec3d point(int var1) {
-         return new Vec3d(this.xs[var1], this.ys[var1], this.zs[var1]);
+      public Vec3d point(int i) {
+         return new Vec3d(this.xs[i], this.ys[i], this.zs[i]);
       }
 
       public Vec3d impact() {
@@ -210,7 +209,7 @@ public final class Ballistics {
 
       public Vec3d heading() {
          if (this.size < 2) {
-            return Vec3d.field_1353;
+            return Vec3d.ZERO;
          } else {
             int var1 = this.size - 1;
             return new Vec3d(this.xs[var1] - this.xs[var1 - 1], this.ys[var1] - this.ys[var1 - 1], this.zs[var1] - this.zs[var1 - 1]);
@@ -241,9 +240,9 @@ public final class Ballistics {
          return this.leftShooter;
       }
 
-      private void trace(World var1) {
-         ShapeContext var2 = this.self != null ? ShapeContext.method_16195(this.self) : ShapeContext.method_16194();
-         double var3 = var1.method_31607() - 64.0;
+      private void trace(World world) {
+         ShapeContext var2 = this.self != null ? ShapeContext.of(this.self) : ShapeContext.absent();
+         double var3 = world.getBottomY() - 64.0;
          double var5 = this.px;
          double var7 = this.py;
          double var9 = this.pz;
@@ -268,20 +267,20 @@ public final class Ballistics {
             double var21;
             double var23;
             BlockHitResult var25;
-            if ((var25 = var1.method_61717(
+            if ((var25 = world.getCollisionsIncludingWorldBorder(
                      new RaycastContext(
                         new Vec3d(var5, var7, var9),
                         new Vec3d(var23 = var5 + var11, var21 = var7 + var13, var19 = var9 + var15),
-                        ShapeType.field_17558,
-                        FluidHandling.field_1348,
+                        ShapeType.COLLIDER,
+                        FluidHandling.NONE,
                         var2
                      )
                   ))
-                  .method_17783()
-               != Type.field_1333) {
-               Vec3d var30 = var25.method_17784();
-               this.push(var30.field_1352, var30.field_1351, var30.field_1350);
-               this.face = var25.method_17780();
+                  .getType()
+               != Type.MISS) {
+               Vec3d var30 = var25.getPos();
+               this.push(var30.x, var30.y, var30.z);
+               this.face = var25.getSide();
                this.outcome = Ballistics.Outcome.BLOCK;
                this.ticks = var18;
                return;
@@ -298,7 +297,7 @@ public final class Ballistics {
                var15 *= var29;
             }
 
-            var17 = this.submerged(var1, var23, var21, var19);
+            var17 = this.submerged(world, var23, var21, var19);
             if (var21 < var3) {
                break;
             }
@@ -310,7 +309,7 @@ public final class Ballistics {
          }
       }
 
-      private void strike(World var1) {
+      private void strike(World world) {
          if (this.size >= 2) {
             boolean var2;
             this.leftShooter = var2 = this.leftShooter || this.departs();
@@ -330,8 +329,8 @@ public final class Ballistics {
                var13 = Math.max(var13, this.zs[var15]);
             }
 
-            Box var40 = new Box(var3, var5, var7, var9, var11, var13).method_1014(1.3);
-            List var16 = var1.method_8333(this.self, var40, this::canStrike);
+            Box var40 = new Box(var3, var5, var7, var9, var11, var13).expand(1.3);
+            List var16 = world.getOtherEntities(this.self, var40, this::canStrike);
             if (!var16.isEmpty()) {
                for (int var17 = 1; var17 < this.size; var17++) {
                   if (!var2 && var17 > 1) {
@@ -344,15 +343,15 @@ public final class Ballistics {
                   double var24 = this.xs[var17] - var18;
                   double var26 = this.ys[var17] - var20;
                   double var28 = this.zs[var17] - var22;
-                  double var30 = MathHelper.method_15350((this.age + var17 - 2) / 20.0, 0.0, 0.3);
+                  double var30 = MathHelper.clamp((this.age + var17 - 2) / 20.0, 0.0, 0.3);
                   double var32 = 1.7976931348623157E308;
                   Entity var34 = null;
 
                   for (int var35 = 0; var35 < var16.size(); var35++) {
                      Entity var39 = (Entity)var16.get(var35);
                      double var37;
-                     if ((var2 || var39.method_5668() != this.shooterRoot)
-                        && (var37 = this.entry(var18, var20, var22, var24, var26, var28, var39.method_5829(), var30)) < var32) {
+                     if ((var2 || var39.getRootVehicle() != this.shooterRoot)
+                        && (var37 = this.entry(var18, var20, var22, var24, var26, var28, var39.getBoundingBox(), var30)) < var32) {
                         var32 = var37;
                         var34 = var39;
                      }
@@ -373,23 +372,23 @@ public final class Ballistics {
          }
       }
 
-      private boolean canStrike(Entity var1) {
-         return !var1.method_7325() && var1.method_49108();
+      private boolean canStrike(Entity entity) {
+         return !entity.isSpectator() && entity.canBeHitByProjectile();
       }
 
       private boolean departs() {
-         Entity var1 = this.shooterRoot = this.shooter != null ? this.shooter.method_5668() : null;
+         Entity var1 = this.shooterRoot = this.shooter != null ? this.shooter.getRootVehicle() : null;
          if (this.shooterRoot == null) {
             return true;
          } else {
             this.shooterBoxes.clear();
-            if (EntityPredicates.field_52443.test(this.shooterRoot)) {
-               this.shooterBoxes.add(this.shooterRoot.method_5829());
+            if (EntityPredicates.CAN_HIT.test(this.shooterRoot)) {
+               this.shooterBoxes.add(this.shooterRoot.getBoundingBox());
             }
 
-            for (Entity var3 : this.shooterRoot.method_5736()) {
-               if (EntityPredicates.field_52443.test(var3)) {
-                  this.shooterBoxes.add(var3.method_5829());
+            for (Entity var3 : this.shooterRoot.getPassengersDeep()) {
+               if (EntityPredicates.CAN_HIT.test(var3)) {
+                  this.shooterBoxes.add(var3.getBoundingBox());
                }
             }
 
@@ -397,13 +396,13 @@ public final class Ballistics {
          }
       }
 
-      private boolean outside(int var1) {
-         double var2 = this.xs[var1];
-         double var4 = this.ys[var1];
-         double var6 = this.zs[var1];
-         double var8 = this.xs[var1 + 1] - var2;
-         double var10 = this.ys[var1 + 1] - var4;
-         double var12 = this.zs[var1 + 1] - var6;
+      private boolean outside(int i) {
+         double var2 = this.xs[i];
+         double var4 = this.ys[i];
+         double var6 = this.zs[i];
+         double var8 = this.xs[i + 1] - var2;
+         double var10 = this.ys[i + 1] - var4;
+         double var12 = this.zs[i + 1] - var6;
          double var14 = this.width * 0.5;
          double var16 = var2 - var14 + Math.min(var8, 0.0) - 1.0;
          double var18 = var2 + var14 + Math.max(var8, 0.0) + 1.0;
@@ -413,7 +412,7 @@ public final class Ballistics {
          double var26 = var6 + var14 + Math.max(var12, 0.0) + 1.0;
 
          for (int var28 = 0; var28 < this.shooterBoxes.size(); var28++) {
-            if (this.shooterBoxes.get(var28).method_1003(var16, var20, var24, var18, var22, var26)) {
+            if (this.shooterBoxes.get(var28).intersects(var16, var20, var24, var18, var22, var26)) {
                return false;
             }
          }
@@ -421,24 +420,24 @@ public final class Ballistics {
          return true;
       }
 
-      private double entry(double var1, double var3, double var5, double var7, double var9, double var11, Box var13, double var14) {
+      private double entry(double d, double e, double f, double g, double h, double i, Box box, double j) {
          this.near = 0.0;
          this.far = 1.0;
-         if (!this.slab(var1, var7, var13.field_1323 - var14, var13.field_1320 + var14)) {
+         if (!this.slab(d, g, box.minX - j, box.maxX + j)) {
             return 1.7976931348623157E308;
-         } else if (!this.slab(var3, var9, var13.field_1322 - var14, var13.field_1325 + var14)) {
+         } else if (!this.slab(e, h, box.minY - j, box.maxY + j)) {
             return 1.7976931348623157E308;
-         } else if (!this.slab(var5, var11, var13.field_1321 - var14, var13.field_1324 + var14)) {
+         } else if (!this.slab(f, i, box.minZ - j, box.maxZ + j)) {
             return 1.7976931348623157E308;
          } else {
             return this.near > 0.0 ? this.near : 1.7976931348623157E308;
          }
       }
 
-      private boolean slab(double var1, double var3, double var5, double var7) {
-         if (!(Math.abs(var3) < 1.0E-12)) {
-            double var9 = (var5 - var1) / var3;
-            double var11 = (var7 - var1) / var3;
+      private boolean slab(double d, double e, double f, double g) {
+         if (!(Math.abs(e) < 1.0E-12)) {
+            double var9 = (f - d) / e;
+            double var11 = (g - d) / e;
             if (var9 > var11) {
                double var13 = var9;
                var9 = var11;
@@ -455,25 +454,25 @@ public final class Ballistics {
 
             return this.near <= this.far;
          } else {
-            return var1 >= var5 && var1 <= var7;
+            return d >= f && d <= g;
          }
       }
 
-      private boolean submerged(World var1, double var2, double var4, double var6) {
+      private boolean submerged(World world, double d, double e, double f) {
          double var8 = this.width * 0.5 - 0.001;
-         double var10 = var4 + 0.001;
-         int var12 = MathHelper.method_15357(var2 - var8);
-         int var13 = MathHelper.method_15357(var2 + var8);
-         int var14 = MathHelper.method_15357(var10);
-         int var15 = MathHelper.method_15357(var4 + this.height - 0.001);
-         int var16 = MathHelper.method_15357(var6 - var8);
-         int var17 = MathHelper.method_15357(var6 + var8);
+         double var10 = e + 0.001;
+         int var12 = MathHelper.floor(d - var8);
+         int var13 = MathHelper.floor(d + var8);
+         int var14 = MathHelper.floor(var10);
+         int var15 = MathHelper.floor(e + this.height - 0.001);
+         int var16 = MathHelper.floor(f - var8);
+         int var17 = MathHelper.floor(f + var8);
 
          for (int var18 = var12; var18 <= var13; var18++) {
             for (int var19 = var14; var19 <= var15; var19++) {
                for (int var20 = var16; var20 <= var17; var20++) {
-                  FluidState var21 = var1.method_8316((BlockPos)this.cursor.method_10103(var18, var19, var20));
-                  if (var21.method_15767(FluidTags.field_15517) && var19 + var21.method_15763(var1, (BlockPos)this.cursor) >= var10) {
+                  FluidState var21 = world.getFluidState(this.cursor.set(var18, var19, var20));
+                  if (var21.isIn(FluidTags.WATER) && var19 + var21.getHeight(world, this.cursor) >= var10) {
                      return true;
                   }
                }
@@ -496,7 +495,7 @@ public final class Ballistics {
          this.length = var1;
       }
 
-      private void push(double var1, double var3, double var5) {
+      private void push(double d, double e, double f) {
          if (this.size == this.xs.length) {
             int var7 = this.size * 2;
             this.xs = Arrays.copyOf(this.xs, var7);
@@ -504,9 +503,9 @@ public final class Ballistics {
             this.zs = Arrays.copyOf(this.zs, var7);
          }
 
-         this.xs[this.size] = var1;
-         this.ys[this.size] = var3;
-         this.zs[this.size] = var5;
+         this.xs[this.size] = d;
+         this.ys[this.size] = e;
+         this.zs[this.size] = f;
          this.size++;
       }
    }

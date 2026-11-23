@@ -25,12 +25,12 @@ public final class SpiderModule extends ClientModule {
       this.on(TickEvent.TYPE, Stage.POST, this::onPostTick);
    }
 
-   private void onPostTick(TickEvent var1) {
-      ClientPlayerEntity var2 = MinecraftClient.method_1551().field_1724;
-      if (var2 != null && var2.field_5976) {
-         Vec3d var3 = var2.method_18798();
-         if (!(var3.field_1351 >= 0.2)) {
-            var2.method_18800(var3.field_1352, this.climbSpeed.get(), var3.field_1350);
+   private void onPostTick(TickEvent tickEvent) {
+      ClientPlayerEntity var2 = MinecraftClient.getInstance().player;
+      if (var2 != null && var2.horizontalCollision) {
+         Vec3d var3 = var2.getVelocity();
+         if (!(var3.y >= 0.2)) {
+            var2.setVelocity(var3.x, this.climbSpeed.get(), var3.z);
          }
       }
    }

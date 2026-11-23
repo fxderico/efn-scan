@@ -7,16 +7,16 @@ import net.minecraft.util.Hand;
 
 @Environment(EnvType.CLIENT)
 public record InventoryPickResult(InventoryPickResult.Status status, Item item, Hand hand, int slot) {
-   public static InventoryPickResult ready(Item var0, Hand var1, int var2) {
-      return new InventoryPickResult(InventoryPickResult.Status.READY, var0, var1, var2);
+   public static InventoryPickResult ready(Item item, Hand hand, int i) {
+      return new InventoryPickResult(InventoryPickResult.Status.READY, item, hand, i);
    }
 
-   public static InventoryPickResult waiting(Item var0, int var1) {
-      return new InventoryPickResult(InventoryPickResult.Status.WAITING, var0, null, var1);
+   public static InventoryPickResult waiting(Item item, int i) {
+      return new InventoryPickResult(InventoryPickResult.Status.WAITING, item, null, i);
    }
 
-   public static InventoryPickResult missing(Item var0) {
-      return new InventoryPickResult(InventoryPickResult.Status.MISSING, var0, null, -1);
+   public static InventoryPickResult missing(Item item) {
+      return new InventoryPickResult(InventoryPickResult.Status.MISSING, item, null, -1);
    }
 
    @Environment(EnvType.CLIENT)

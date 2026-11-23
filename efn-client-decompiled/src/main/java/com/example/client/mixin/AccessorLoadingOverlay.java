@@ -9,15 +9,15 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Environment(EnvType.CLIENT)
 @Mixin({SplashOverlay.class})
 public interface AccessorLoadingOverlay {
-   @Accessor("field_17770")
+   @Accessor("progress")
    float efn$getProgress();
 
-   @Accessor("field_17771")
+   @Accessor("reloadCompleteTime")
    long efn$getFadeOutStart();
 
-   @Accessor("field_18220")
+   @Accessor("reloadStartTime")
    long efn$getFadeInStart();
 
-   @Accessor("field_18219")
+   @Accessor("reloading")
    boolean efn$isFadeIn();
 }

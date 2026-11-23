@@ -17,14 +17,14 @@ public final class MouseInputEvent extends CancellableEvent {
    private MouseInputEvent() {
    }
 
-   public static boolean dispatch(long var0, int var2, int var3, int var4) {
+   public static boolean dispatch(long l, int i, int j, int k) {
       if (!TYPE.hasPreListeners()) {
          return false;
       } else {
-         INSTANCE.window = var0;
-         INSTANCE.button = var2;
-         INSTANCE.action = var3;
-         INSTANCE.mods = var4;
+         INSTANCE.window = l;
+         INSTANCE.button = i;
+         INSTANCE.action = j;
+         INSTANCE.mods = k;
          INSTANCE.resetCancellation();
          TYPE.dispatch(INSTANCE);
          return INSTANCE.isCancelled();

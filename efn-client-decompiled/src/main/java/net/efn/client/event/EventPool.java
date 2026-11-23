@@ -10,9 +10,9 @@ public final class EventPool<E extends Event> {
    private final ArrayBlockingQueue<E> pool;
    private final Supplier<E> factory;
 
-   public EventPool(Supplier<E> var1, int var2) {
-      this.factory = var1;
-      this.pool = new ArrayBlockingQueue<>(var2);
+   public EventPool(Supplier<E> supplier, int i) {
+      this.factory = supplier;
+      this.pool = new ArrayBlockingQueue<>(i);
    }
 
    public E acquire() {
@@ -24,7 +24,7 @@ public final class EventPool<E extends Event> {
       return (E)var1;
    }
 
-   public void release(E var1) {
-      this.pool.offer((E)var1);
+   public void release(E event) {
+      this.pool.offer((E)event);
    }
 }

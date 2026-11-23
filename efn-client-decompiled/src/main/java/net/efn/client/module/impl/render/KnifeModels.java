@@ -17,8 +17,8 @@ final class KnifeModels {
    private KnifeModels() {
    }
 
-   private static float grain(int var0, int var1, int var2) {
-      int var3 = var0 * 73856093 ^ var1 * 19349663 ^ var2 * 83492791;
+   private static float grain(int i, int j, int k) {
+      int var3 = i * 73856093 ^ j * 19349663 ^ k * 83492791;
       var3 ^= var3 >>> 13;
       var3 *= 1540483477;
       var3 ^= var3 >>> 15;
@@ -41,11 +41,11 @@ final class KnifeModels {
       return var0.mesh(0.0F, 22.0F);
    }
 
-   static KnifeMesh butterflyHandle(int var0) {
+   static KnifeMesh butterflyHandle(int i) {
       KnifeMesh.Voxels var1 = new KnifeMesh.Voxels();
-      int var2 = var0 > 0 ? 1 : -1;
-      int var3 = var0 > 0 ? 2 : -2;
-      int var4 = var0 > 0 ? 3 : -3;
+      int var2 = i > 0 ? 1 : -1;
+      int var3 = i > 0 ? 2 : -2;
+      int var4 = i > 0 ? 3 : -3;
 
       for (int var5 = -27; var5 <= 0; var5++) {
          for (int var6 = -2; var6 <= 2; var6++) {
@@ -69,7 +69,7 @@ final class KnifeModels {
 
       var1.set(-2, 0, var4, 5, 1.0F);
       var1.set(-25, 0, var4, 5, 1.0F);
-      if (var0 < 0) {
+      if (i < 0) {
          var1.set(-28, 1, var2, 5, 1.0F);
          var1.set(-28, 2, var2, 5, 1.0F);
          var1.set(-29, 2, var2, 5, 1.0F);
@@ -78,18 +78,18 @@ final class KnifeModels {
       return var1.mesh(-29.0F, 0.0F);
    }
 
-   private static float[] karambitCurve(float var0) {
+   private static float[] karambitCurve(float f) {
       float var1 = 5.5F;
       float var2 = 0.5F;
       float var3 = 0.05F;
 
-      for (float var4 = 0.0F; var4 < var0; var4 += var3) {
+      for (float var4 = 0.0F; var4 < f; var4 += var3) {
          float var5 = -(0.04F * var4 + 0.0026F * var4 * var4);
          var1 += (float)Math.cos(var5) * var3;
          var2 += (float)Math.sin(var5) * var3;
       }
 
-      float var6 = -(0.04F * var0 + 0.0026F * var0 * var0);
+      float var6 = -(0.04F * f + 0.0026F * f * f);
       return new float[]{var1, var2, (float)Math.cos(var6), (float)Math.sin(var6)};
    }
 
@@ -213,12 +213,12 @@ final class KnifeModels {
       return var0.mesh(1.0F, 51.0F);
    }
 
-   static float katanaCentre(float var0) {
-      return 0.0016F * (var0 - 3.0F) * (var0 - 3.0F);
+   static float katanaCentre(float f) {
+      return 0.0016F * (f - 3.0F) * (f - 3.0F);
    }
 
-   static int katanaBow(int var0) {
-      return Math.round(0.0016F * (var0 - 3.0F) * (var0 - 3.0F));
+   static int katanaBow(int i) {
+      return Math.round(0.0016F * (i - 3.0F) * (i - 3.0F));
    }
 
    static KnifeMesh katana() {

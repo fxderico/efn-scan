@@ -20,18 +20,18 @@ public abstract class MixinClientLevel {
    }
 
    @Inject(
-      method = {"method_53875"},
+      method = {"addEntity"},
       at = {@At("HEAD")}
    )
-   private void efn$onEntityAdd(Entity var1, CallbackInfo var2) {
-      WorldEntityAddEvent.dispatch(var1);
+   private void efn$onEntityAdd(Entity entity, CallbackInfo callbackInfo) {
+      WorldEntityAddEvent.dispatch(entity);
    }
 
    @Inject(
-      method = {"method_8413"},
+      method = {"updateListeners"},
       at = {@At("HEAD")}
    )
-   private void efn$onBlockUpdated(BlockPos var1, BlockState var2, BlockState var3, int var4, CallbackInfo var5) {
-      BlockUpdateEvent.dispatch(var1, var2, var3);
+   private void efn$onBlockUpdated(BlockPos blockPos, BlockState blockState, BlockState blockState2, int i, CallbackInfo callbackInfo) {
+      BlockUpdateEvent.dispatch(blockPos, blockState, blockState2);
    }
 }

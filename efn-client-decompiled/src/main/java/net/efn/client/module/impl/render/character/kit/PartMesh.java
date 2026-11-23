@@ -32,57 +32,57 @@ public final class PartMesh {
    public final float lookLimit;
 
    PartMesh(
-      String var1,
-      Bone var2,
-      int var3,
-      boolean var4,
-      float var5,
-      float var6,
-      float var7,
-      float var8,
-      float var9,
-      float var10,
-      Motion var11,
-      Surface var12,
-      Surface var13,
-      Surface var14,
-      int var15,
-      float var16,
-      float var17,
-      boolean var18,
-      float var19,
-      float var20,
-      float var21,
-      boolean var22,
-      float var23,
-      float var24,
-      float var25
+      String string,
+      Bone bone,
+      int i,
+      boolean bl,
+      float f,
+      float g,
+      float h,
+      float j,
+      float k,
+      float l,
+      Motion motion,
+      Surface surface,
+      Surface surface2,
+      Surface surface3,
+      int m,
+      float n,
+      float o,
+      boolean bl2,
+      float p,
+      float q,
+      float r,
+      boolean bl3,
+      float s,
+      float t,
+      float u
    ) {
-      this.name = var1;
-      this.bone = var2;
-      this.parent = var3;
-      this.extra = var4;
-      this.pivotX = var5;
-      this.pivotY = var6;
-      this.pivotZ = var7;
-      this.gripX = var8;
-      this.gripY = var9;
-      this.gripZ = var10;
-      this.motion = var11;
-      this.base = var12;
-      this.outline = var13;
-      this.decals = var14;
-      this.motionSlot = var15;
-      this.swingScale = var16;
-      this.swingLimit = var17;
-      this.jointed = var18;
-      this.jointX = var19;
-      this.jointY = var20;
-      this.jointZ = var21;
-      this.neck = var22;
-      this.lookPitch = var23;
-      this.lookYaw = var24;
-      this.lookLimit = var25;
+      this.name = string;
+      this.bone = bone;
+      this.parent = i;
+      this.extra = bl;
+      this.pivotX = f;
+      this.pivotY = g;
+      this.pivotZ = h;
+      this.gripX = j;
+      this.gripY = k;
+      this.gripZ = l;
+      this.motion = motion;
+      this.base = surface;
+      this.outline = surface2;
+      this.decals = surface3;
+      this.motionSlot = m;
+      this.swingScale = n;
+      this.swingLimit = o;
+      this.jointed = bl2;
+      this.jointX = p;
+      this.jointY = q;
+      this.jointZ = r;
+      this.neck = bl3;
+      this.lookPitch = s;
+      this.lookYaw = t;
+      this.lookLimit = u;
    }
 
    public boolean bends() {
@@ -93,12 +93,12 @@ public final class PartMesh {
       return this.swingScale != 1.0F || this.swingLimit > 0.0F;
    }
 
-   public float swingPitch(float var1, float var2, float var3) {
-      if (var3 > 0.0F && this.swings()) {
-         float var4 = Motion.soft(var2 * this.swingScale, this.swingLimit);
-         return var1 + Math.min(1.0F, var3) * (var4 - var2);
+   public float swingPitch(float f, float g, float h) {
+      if (h > 0.0F && this.swings()) {
+         float var4 = Motion.soft(g * this.swingScale, this.swingLimit);
+         return f + Math.min(1.0F, h) * (var4 - g);
       } else {
-         return var1;
+         return f;
       }
    }
 

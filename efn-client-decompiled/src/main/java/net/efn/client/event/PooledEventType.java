@@ -8,12 +8,12 @@ import net.fabricmc.api.Environment;
 public class PooledEventType<E extends Event> extends EventType<E> {
    public final EventPool<E> pool;
 
-   public PooledEventType(Supplier<E> var1, int var2) {
-      this.pool = new EventPool<>(var1, var2);
+   public PooledEventType(Supplier<E> supplier, int i) {
+      this.pool = new EventPool<>(supplier, i);
    }
 
-   public PooledEventType(String var1, Supplier<E> var2, int var3) {
-      super(var1);
-      this.pool = new EventPool<>(var2, var3);
+   public PooledEventType(String string, Supplier<E> supplier, int i) {
+      super(string);
+      this.pool = new EventPool<>(supplier, i);
    }
 }

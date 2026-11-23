@@ -53,78 +53,82 @@ public final class KeyThrowModule extends ClientModule {
    @Override
    protected void onDisable() {
       this.pending = null;
-      this.slots.drop(MinecraftClient.method_1551(), true);
+      this.slots.drop(MinecraftClient.getInstance(), true);
    }
 
-   private void onKey(KeyInputEvent var1) {
-      if (var1.action == 1) {
-         this.onPress(var1.key);
+   private void onKey(KeyInputEvent keyInputEvent) {
+      if (keyInputEvent.action == 1) {
+         this.onPress(keyInputEvent.key);
       }
    }
 
-   private void onMouse(MouseInputEvent var1) {
-      if (var1.action == 1) {
-         this.onPress(1000 + var1.button);
+   private void onMouse(MouseInputEvent mouseInputEvent) {
+      if (mouseInputEvent.action == 1) {
+         this.onPress(1000 + mouseInputEvent.button);
       }
    }
 
-   private void onPress(int var1) {
-      if (ModuleKeybinds.isBindable(var1)) {
-         Item var2 = var1 == this.pearlKey.value() ? Items.field_8634 : (var1 == this.windChargeKey.value() ? Items.field_49098 : null);
-         MinecraftClient var3 = MinecraftClient.method_1551();
-         if (var2 != null && var3.field_1755 == null && var3.field_1724 != null) {
+   private void onPress(int i) {
+      if (ModuleKeybinds.isBindable(i)) {
+         Item var2 = i == this.pearlKey.value() ? Items.ENDER_PEARL : (i == this.windChargeKey.value() ? Items.WIND_CHARGE : null);
+         MinecraftClient var3 = MinecraftClient.getInstance();
+         if (var2 != null && var3.currentScreen == null && var3.player != null) {
             this.pending = var2;
             this.pendingTicks = 0;
          }
       }
    }
 
-   private void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
+   private void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
       this.slots.tick(var2, true);
-      if (var2.field_1724 == null) {
+      if (var2.player == null) {
          this.pending = null;
       } else if (this.pending != null) {
-         this.tryThrow(var2, var2.field_1724);
+         this.tryThrow(var2, var2.player);
       }
    }
 
-   private void tryThrow(MinecraftClient var1, ClientPlayerEntity var2) {
+   private void tryThrow(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
       if (++this.pendingTicks > 10) {
          this.pending = null;
-      } else if (MeleeAttacks.canAct(var1) && MeleeAttacks.handsFree(var1, var2) && !MeleeAttacks.actedThisTick(var2)) {
+      } else if (MeleeAttacks.canAct(minecraftClient)
+         && MeleeAttacks.handsFree(minecraftClient, clientPlayerEntity)
+         && !MeleeAttacks.actedThisTick(clientPlayerEntity)) {
          if (!CombatMacroLock.heldByOther(this) && !AutoInvTotemModule.wantsHotbar()) {
-            PlayerInventory var8 = var2.method_31548();
-            boolean var9 = var2.method_6079().method_31574(this.pending);
-            int var7 = var2.method_6047().method_31574(this.pending) ? var8.method_67532() : Crystals.hotbarSlotOf(var8, this.pending);
+            PlayerInventory var8 = clientPlayerEntity.getInventory();
+            boolean var9 = clientPlayerEntity.getOffHandStack().isOf(this.pending);
+            int var7 = clientPlayerEntity.getMainHandStack().isOf(this.pending) ? var8.getSelectedSlot() : Crystals.hotbarSlotOf(var8, this.pending);
             if (!var9 && var7 < 0) {
                this.pending = null;
             } else {
-               ItemStack var6 = var9 ? var2.method_6079() : var8.method_5438(var7);
-               if (!var2.method_7357().method_7904(var6)) {
-                  boolean var5 = this.pending == Items.field_49098;
-                  if (!ServerRotation.pending() && (!var5 || ServerRotation.canRotate(var2))) {
-                     if (var9 || this.slots.take(var2, var7)) {
+               ItemStack var6 = var9 ? clientPlayerEntity.getOffHandStack() : var8.getStack(var7);
+               if (!clientPlayerEntity.getItemCooldownManager().isCoolingDown(var6)) {
+                  boolean var5 = this.pending == Items.WIND_CHARGE;
+                  if (!ServerRotation.pending() && (!var5 || ServerRotation.canRotate(clientPlayerEntity))) {
+                     if (var9 || this.slots.take(clientPlayerEntity, var7)) {
                         this.pending = null;
                         if (var5) {
-                           ServerRotation.request(new Rotation(var2.method_36454(), 90.0F));
-                           if (var2.method_24828()) {
+                           ServerRotation.request(new Rotation(clientPlayerEntity.getYaw(), 90.0F));
+                           if (clientPlayerEntity.isOnGround()) {
                               InputControl.jump();
                            }
                         }
 
                         Hand var3;
                         ActionResult var4;
-                        if ((var4 = var1.field_1761.method_2919(var2, var3 = var9 ? Hand.field_5810 : Hand.field_5808)) instanceof Success) {
+                        if ((var4 = minecraftClient.interactionManager.interactItem(clientPlayerEntity, var3 = var9 ? Hand.OFF_HAND : Hand.MAIN_HAND)) instanceof Success
+                           )
+                         {
                            Success var13 = (Success)var4;
-                           if (var13.comp_2909() == SwingSource.field_52427) {
-                              var2.method_6104(var3);
+                           if (var13.swingSource() == SwingSource.CLIENT) {
+                              clientPlayerEntity.swingHand(var3);
                            }
 
-                           var1.field_1773.field_4012.method_3215(var3);
+                           minecraftClient.gameRenderer.firstPersonRenderer.resetEquipProgress(var3);
                         }
 
-                        MeleeAttacks.claimTick(var1);
+                        MeleeAttacks.claimTick(minecraftClient);
                      }
                   }
                }

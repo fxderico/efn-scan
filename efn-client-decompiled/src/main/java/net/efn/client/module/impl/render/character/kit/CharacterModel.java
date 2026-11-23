@@ -23,39 +23,39 @@ public final class CharacterModel {
    public final long buildMillis;
 
    CharacterModel(
-      String var1,
-      String var2,
-      Detail var3,
-      float var4,
-      PartMesh[] var5,
-      int var6,
-      int var7,
-      int var8,
-      int[][] var9,
-      float var10,
-      float var11,
-      float var12,
-      float var13,
-      float var14,
-      boolean var15,
-      long var16
+      String string,
+      String string2,
+      Detail detail,
+      float f,
+      PartMesh[] partMeshs,
+      int i,
+      int j,
+      int k,
+      int[][] is,
+      float g,
+      float h,
+      float l,
+      float m,
+      float n,
+      boolean bl,
+      long o
    ) {
-      this.id = var1;
-      this.name = var2;
-      this.detail = var3;
-      this.scale = var4;
-      this.parts = var5;
-      this.motionSlots = var6;
-      this.atlasWidth = var7;
-      this.atlasHeight = var8;
-      this.atlasMips = var9;
-      this.whiteU = var10;
-      this.whiteV = var11;
-      this.minY = var12;
-      this.maxY = var13;
-      this.hipY = var14;
-      this.firstPersonArms = var15;
-      this.buildMillis = var16;
+      this.id = string;
+      this.name = string2;
+      this.detail = detail;
+      this.scale = f;
+      this.parts = partMeshs;
+      this.motionSlots = i;
+      this.atlasWidth = j;
+      this.atlasHeight = k;
+      this.atlasMips = is;
+      this.whiteU = g;
+      this.whiteV = h;
+      this.minY = l;
+      this.maxY = m;
+      this.hipY = n;
+      this.firstPersonArms = bl;
+      this.buildMillis = o;
    }
 
    public int triangles() {
@@ -68,9 +68,9 @@ public final class CharacterModel {
       return var1;
    }
 
-   public PartMesh part(Bone var1) {
+   public PartMesh part(Bone bone) {
       for (PartMesh var5 : this.parts) {
-         if (!var5.extra && var5.bone == var1) {
+         if (!var5.extra && var5.bone == bone) {
             return var5;
          }
       }

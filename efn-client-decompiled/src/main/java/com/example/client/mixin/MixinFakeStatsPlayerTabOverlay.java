@@ -26,47 +26,49 @@ public abstract class MixinFakeStatsPlayerTabOverlay {
    }
 
    @ModifyReturnValue(
-      method = {"method_1918"},
+      method = {"getPlayerName"},
       at = {@At("RETURN")}
    )
-   private Text efn$fakeStatsTabName(Text var1, @Local(argsOnly = true) PlayerListEntry var2) {
-      return FakeStats.tabName(var2.method_2966().id(), var1);
+   private Text efn$fakeStatsTabName(Text text, @Local(argsOnly = true) PlayerListEntry playerListEntry) {
+      return FakeStats.tabName(playerListEntry.getProfile().id(), text);
    }
 
    @WrapOperation(
-      method = {"method_1919"},
+      method = {"render"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_269;method_55430(Lnet/minecraft/class_9015;Lnet/minecraft/class_266;)Lnet/minecraft/class_9013;"
+         target = "Lnet/minecraft/scoreboard/Scoreboard;getScore(Lnet/minecraft/scoreboard/ScoreHolder;Lnet/minecraft/scoreboard/ScoreboardObjective;)Lnet/minecraft/scoreboard/ReadableScoreboardScore;"
       )}
    )
-   private ReadableScoreboardScore efn$fakeStatsTabScore(Scoreboard var1, ScoreHolder var2, ScoreboardObjective var3, Operation<ReadableScoreboardScore> var4) {
-      return FakeStats.tabScore(var2, (ReadableScoreboardScore)var4.call(new Object[]{var1, var2, var3}));
+   private ReadableScoreboardScore efn$fakeStatsTabScore(
+      Scoreboard scoreboard, ScoreHolder scoreHolder, ScoreboardObjective scoreboardObjective, Operation<ReadableScoreboardScore> operation
+   ) {
+      return FakeStats.tabScore(scoreHolder, (ReadableScoreboardScore)operation.call(scoreboard, scoreHolder, scoreboardObjective));
    }
 
    @ModifyArg(
-      method = {"method_1919"},
+      method = {"render"},
       at = {@At(
          value = "INVOKE",
          ordinal = 0,
-         target = "Lnet/minecraft/class_327;method_1728(Lnet/minecraft/class_5348;I)Ljava/util/List;"
+         target = "Lnet/minecraft/client/font/TextRenderer;wrapLines(Lnet/minecraft/text/StringVisitable;I)Ljava/util/List;"
       )},
       index = 0
    )
-   private StringVisitable efn$fakeStatsTabHeader(StringVisitable var1) {
-      return FakeStats.tabText(var1);
+   private StringVisitable efn$fakeStatsTabHeader(StringVisitable stringVisitable) {
+      return FakeStats.tabText(stringVisitable);
    }
 
    @ModifyArg(
-      method = {"method_1919"},
+      method = {"render"},
       at = {@At(
          value = "INVOKE",
          ordinal = 1,
-         target = "Lnet/minecraft/class_327;method_1728(Lnet/minecraft/class_5348;I)Ljava/util/List;"
+         target = "Lnet/minecraft/client/font/TextRenderer;wrapLines(Lnet/minecraft/text/StringVisitable;I)Ljava/util/List;"
       )},
       index = 0
    )
-   private StringVisitable efn$fakeStatsTabFooter(StringVisitable var1) {
-      return FakeStats.tabText(var1);
+   private StringVisitable efn$fakeStatsTabFooter(StringVisitable stringVisitable) {
+      return FakeStats.tabText(stringVisitable);
    }
 }

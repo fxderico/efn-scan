@@ -23,7 +23,6 @@ import net.minecraft.block.enums.SlabType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.EntityPose;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
@@ -40,9 +39,6 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.World;
-import net.minecraft.world.WorldView;
 
 @Environment(EnvType.CLIENT)
 public final class DependencyManager {
@@ -58,79 +54,77 @@ public final class DependencyManager {
    private static final double STEADY_SHIFT = 0.02;
    private static final float[][] STEADY_TURNS = new float[][]{{0.5F, 0.0F}, {-0.5F, 0.0F}, {0.0F, 0.5F}, {0.0F, -0.5F}};
 
-   public DependencyManager(MinecraftClient var1) {
-      this.mc = var1;
+   public DependencyManager(MinecraftClient minecraftClient) {
+      this.mc = minecraftClient;
    }
 
    public PlacementTarget searchForPlaceables(
-      WorldSchematic var1, boolean var2, boolean var3, float var4, double var5, float var7, BuildScope var8, LongPredicate var9
+      WorldSchematic worldSchematic, boolean bl, boolean bl2, float f, double d, float g, BuildScope buildScope, LongPredicate longPredicate
    ) {
-      if (this.mc.field_1724 != null && this.mc.field_1687 != null && var1 != null) {
-         BlockPos var10 = this.mc.field_1724.method_24515();
-         Vec3d var11 = new Vec3d(this.mc.field_1724.method_23317(), this.mc.field_1724.method_23320(), this.mc.field_1724.method_23321());
-         this.feetY = this.mc.field_1724.method_23318();
-         this.builderEyes = var8 != null;
-         this.reachSpare = var8 != null ? 0.3 : 0.0;
-         float var12 = this.mc.field_1724.method_36454();
+      if (this.mc.player != null && this.mc.world != null && worldSchematic != null) {
+         BlockPos var10 = this.mc.player.getBlockPos();
+         Vec3d var11 = new Vec3d(this.mc.player.getX(), this.mc.player.getEyeY(), this.mc.player.getZ());
+         this.feetY = this.mc.player.getY();
+         this.builderEyes = buildScope != null;
+         this.reachSpare = buildScope != null ? 0.3 : 0.0;
+         float var12 = this.mc.player.getYaw();
          PlacementTarget var13 = null;
          double var14 = 1.7976931348623157E308;
 
          for (int var16 = -5; var16 <= 5; var16++) {
             for (int var17 = -5; var17 <= 5; var17++) {
                for (int var18 = -5; var18 <= 5; var18++) {
-                  int var26 = var10.method_10263() + var16;
-                  int var27 = var10.method_10264() + var17;
-                  int var28 = var10.method_10260() + var18;
+                  int var26 = var10.getX() + var16;
+                  int var27 = var10.getY() + var17;
+                  int var28 = var10.getZ() + var18;
                   BlockPos var29 = new BlockPos(var26, var27, var28);
                   BlockState var23;
                   boolean var24;
                   BlockState var25;
-                  if ((var8 == null || var8.allows(var29))
-                     && !var9.test(var29.method_10063())
-                     && !(var25 = var1.method_8320(var29)).method_26215()
+                  if ((buildScope == null || buildScope.allows(var29))
+                     && !longPredicate.test(var29.asLong())
+                     && !(var25 = worldSchematic.getBlockState(var29)).isAir()
                      && BlockStateUtil.isPrimaryPlacementState(var25)
-                     && (var8 != null || this.isInRenderLayer(var29))
-                     && ((var24 = StateRules.slabHalf(var23 = this.mc.field_1687.method_8320(var29), var25)) || isReplaceable(var23))
+                     && (buildScope != null || this.isInRenderLayer(var29))
+                     && ((var24 = StateRules.slabHalf(var23 = this.mc.world.getBlockState(var29), var25)) || isReplaceable(var23))
                      && !StateRules.placed(var23, var25)
-                     && (var24 || !this.mc.field_1724.method_5829().method_994(new Box(var29)))) {
-                     this.currentScope = var8;
+                     && (var24 || !this.mc.player.getBoundingBox().intersects(new Box(var29)))) {
+                     this.currentScope = buildScope;
                      PlacementTarget var30 = var24
-                        ? this.secondSlab(var25, var23, var29, var11, var8 != null)
-                        : this.possibleToPlace(var25, var26, var27, var28, var11, var2, var8 != null);
+                        ? this.secondSlab(var25, var23, var29, var11, buildScope != null)
+                        : this.possibleToPlace(var25, var26, var27, var28, var11, bl, buildScope != null);
                      if (var30 != null) {
-                        if (var3) {
-                           double var31 = var26 + 0.5 - var11.field_1352;
-                           double var33 = var27 + 0.5 - var11.field_1351;
-                           double var35 = var28 + 0.5 - var11.field_1350;
+                        if (bl2) {
+                           double var31 = var26 + 0.5 - var11.x;
+                           double var33 = var27 + 0.5 - var11.y;
+                           double var35 = var28 + 0.5 - var11.z;
                            double var37 = var31 * var31 + var33 * var33 + var35 * var35;
                            if (var37 < 1.0E-4) {
                               continue;
                            }
 
                            double var39 = Math.toRadians(var12);
-                           double var41 = Math.toRadians(this.mc.field_1724.method_36455());
+                           double var41 = Math.toRadians(this.mc.player.getPitch());
                            double var43 = -Math.sin(var39) * Math.cos(var41);
                            double var45 = -Math.sin(var41);
                            double var47 = Math.cos(var39) * Math.cos(var41);
                            double var49 = (var31 * var43 + var33 * var45 + var35 * var47) / Math.sqrt(var37);
                            double var51 = Math.toDegrees(Math.acos(Math.max(-1.0, Math.min(1.0, var49))));
-                           if (var51 > var4 * 0.5) {
+                           if (var51 > f * 0.5) {
                               continue;
                            }
                         }
 
                         double var21;
-                        if (!((var21 = Math.abs(MathHelper.method_15393(var30.yaw() - var12))) > var5)) {
-                           double var53 = var11.method_1025(new Vec3d(var26 + 0.5, var27 + 0.5, var28 + 0.5));
+                        if (!((var21 = Math.abs(MathHelper.wrapDegrees(var30.yaw() - var12))) > d)) {
+                           double var53 = var11.squaredDistanceTo(new Vec3d(var26 + 0.5, var27 + 0.5, var28 + 0.5));
                            double var54 = var21 * 2.0 + var53 * 0.5;
-                           if (var8 != null) {
-                              var54 = var21 * 0.2 - Math.sqrt(var53) * 20.0 + (var27 - var10.method_10264() + 5) * var8.lowWeight();
+                           if (buildScope != null) {
+                              var54 = var21 * 0.2 - Math.sqrt(var53) * 20.0 + (var27 - var10.getY() + 5) * buildScope.lowWeight();
                            }
 
                            double var19;
-                           if (var7 != 0.0F
-                              && Math.signum(var19 = MathHelper.method_15393(var30.yaw() - var12)) == -Math.signum(var7)
-                              && Math.abs(var19) > 10.0) {
+                           if (g != 0.0F && Math.signum(var19 = MathHelper.wrapDegrees(var30.yaw() - var12)) == -Math.signum(g) && Math.abs(var19) > 10.0) {
                               var54 += Math.abs(var19) * 5.0;
                            }
 
@@ -151,34 +145,34 @@ public final class DependencyManager {
       }
    }
 
-   private PlacementTarget possibleToPlace(BlockState var1, int var2, int var3, int var4, Vec3d var5, boolean var6, boolean var7) {
-      BlockPos var8 = new BlockPos(var2, var3, var4);
-      boolean var9 = this.partnerMissing(var1, var8);
-      int var10 = this.findItem(var1, var7);
+   private PlacementTarget possibleToPlace(BlockState blockState, int i, int j, int k, Vec3d vec3d, boolean bl, boolean bl2) {
+      BlockPos var8 = new BlockPos(i, j, k);
+      boolean var9 = this.partnerMissing(blockState, var8);
+      int var10 = this.findItem(blockState, bl2);
       if (var10 < 0) {
          return null;
       } else {
          for (Direction var14 : Direction.values()) {
-            BlockPos var17 = var8.method_10093(var14);
-            BlockState var18 = this.mc.field_1687.method_8320(var17);
-            if (!isReplaceable(var18) && var1.method_26184((WorldView)this.mc.field_1687, var8)) {
-               Direction var19 = var14.method_10153();
-               if (!var6 || this.hopperHandler.faceCanProduceExpectedFacing(var1, var19)) {
-                  boolean var20 = !var17.equals(var8) && Clicks.usesClick((World)this.mc.field_1687, var17, this.wholeInventory(var10));
-                  boolean var16 = PlacementUtil.isFaceVisibleToEye(var17, var19, this.builderEye(var5, var20))
-                     || this.builderEyes && !var20 && PlacementUtil.isFaceVisibleToEye(var17, var19, this.builderEye(var5, true));
+            BlockPos var17 = var8.offset(var14);
+            BlockState var18 = this.mc.world.getBlockState(var17);
+            if (!isReplaceable(var18) && blockState.canPlaceAt(this.mc.world, var8)) {
+               Direction var19 = var14.getOpposite();
+               if (!bl || this.hopperHandler.faceCanProduceExpectedFacing(blockState, var19)) {
+                  boolean var20 = !var17.equals(var8) && Clicks.usesClick(this.mc.world, var17, this.wholeInventory(var10));
+                  boolean var16 = PlacementUtil.isFaceVisibleToEye(var17, var19, this.builderEye(vec3d, var20))
+                     || this.builderEyes && !var20 && PlacementUtil.isFaceVisibleToEye(var17, var19, this.builderEye(vec3d, true));
                   VoxelShape var15;
-                  if (var16 && !(var15 = var18.method_26218((BlockView)this.mc.field_1687, var17)).method_1110()) {
-                     Box var22 = var15.method_1107();
+                  if (var16 && !(var15 = var18.getOutlineShape(this.mc.world, var17)).isEmpty()) {
+                     Box var22 = var15.getBoundingBox();
 
                      for (Vec3d var26 : aabbSideMultipliers(var14)) {
-                        double var31 = var17.method_10263() + var22.field_1323 * var26.field_1352 + var22.field_1320 * (1.0 - var26.field_1352);
+                        double var31 = var17.getX() + var22.minX * var26.x + var22.maxX * (1.0 - var26.x);
                         Vec3d var33 = new Vec3d(
                            var31,
-                           var17.method_10264() + var22.field_1322 * var26.field_1351 + var22.field_1325 * (1.0 - var26.field_1351),
-                           var17.method_10260() + var22.field_1321 * var26.field_1350 + var22.field_1324 * (1.0 - var26.field_1350)
+                           var17.getY() + var22.minY * var26.y + var22.maxY * (1.0 - var26.y),
+                           var17.getZ() + var22.minZ * var26.z + var22.maxZ * (1.0 - var26.z)
                         );
-                        PlacementTarget var34 = this.tryAim(var1, var8, var17, var19, var33, var5, var10, var9);
+                        PlacementTarget var34 = this.tryAim(blockState, var8, var17, var19, var33, vec3d, var10, var9);
                         if (var34 != null) {
                            return var34;
                         }
@@ -192,26 +186,26 @@ public final class DependencyManager {
       }
    }
 
-   public boolean placeableFrom(BlockState var1, BlockPos var2, Vec3d var3, boolean var4) {
-      if (this.mc.field_1724 != null && this.mc.field_1687 != null) {
-         BlockState var5 = this.mc.field_1687.method_8320(var2);
+   public boolean placeableFrom(BlockState blockState, BlockPos blockPos, Vec3d vec3d, boolean bl) {
+      if (this.mc.player != null && this.mc.world != null) {
+         BlockState var5 = this.mc.world.getBlockState(blockPos);
          this.reachSpare = 0.6499999999999999;
          double var6 = this.feetY;
          boolean var8 = this.builderEyes;
-         this.feetY = var3.field_1351 - this.mc.field_1724.method_18381(EntityPose.field_18076);
+         this.feetY = vec3d.y - this.mc.player.getEyeHeight(EntityPose.STANDING);
          this.builderEyes = true;
 
          boolean var10;
          try {
-            if (StateRules.slabHalf(var5, var1)) {
-               return this.secondSlab(var1, var5, var2, var3, true) != null;
+            if (StateRules.slabHalf(var5, blockState)) {
+               return this.secondSlab(blockState, var5, blockPos, vec3d, true) != null;
             }
 
-            if (!isReplaceable(var5) || StateRules.placed(var5, var1)) {
+            if (!isReplaceable(var5) || StateRules.placed(var5, blockState)) {
                return false;
             }
 
-            boolean var9 = this.possibleToPlace(var1, var2.method_10263(), var2.method_10264(), var2.method_10260(), var3, var4, true) != null;
+            boolean var9 = this.possibleToPlace(blockState, blockPos.getX(), blockPos.getY(), blockPos.getZ(), vec3d, bl, true) != null;
             var10 = var9;
          } finally {
             this.reachSpare = 0.0;
@@ -225,65 +219,63 @@ public final class DependencyManager {
       }
    }
 
-   private boolean partnerMissing(BlockState var1, BlockPos var2) {
-      if (!var1.method_28498(Properties.field_12506)) {
+   private boolean partnerMissing(BlockState blockState, BlockPos blockPos) {
+      if (!blockState.contains(Properties.CHEST_TYPE)) {
          return true;
       } else {
-         ChestType var3 = (ChestType)var1.method_11654(Properties.field_12506);
-         if (var3 == ChestType.field_12569) {
+         ChestType var3 = blockState.get(Properties.CHEST_TYPE);
+         if (var3 == ChestType.SINGLE) {
             return true;
          } else {
-            Direction var4 = (Direction)var1.method_11654(Properties.field_12481);
-            Direction var5 = var3 == ChestType.field_12574 ? var4.method_10170() : var4.method_10160();
-            BlockState var6 = this.mc.field_1687.method_8320(var2.method_10093(var5));
-            return !var6.method_28498(Properties.field_12506)
-               || var6.method_11654(Properties.field_12506) != ChestType.field_12569
-               || var6.method_11654(Properties.field_12481) != var4;
+            Direction var4 = blockState.get(Properties.HORIZONTAL_FACING);
+            Direction var5 = var3 == ChestType.LEFT ? var4.rotateYClockwise() : var4.rotateYCounterclockwise();
+            BlockState var6 = this.mc.world.getBlockState(blockPos.offset(var5));
+            return !var6.contains(Properties.CHEST_TYPE)
+               || var6.get(Properties.CHEST_TYPE) != ChestType.SINGLE
+               || var6.get(Properties.HORIZONTAL_FACING) != var4;
          }
       }
    }
 
-   public boolean verify(BlockState var1, BlockPos var2, BlockHitResult var3, float var4, float var5, int var6, boolean var7) {
-      return this.mc.field_1724 != null && this.mc.field_1687 != null && var6 >= 0
-         ? this.wouldPlace(var1, var2, var3, new float[]{var4, var5}, var6, this.partnerMissing(var1, var2), var7)
+   public boolean verify(BlockState blockState, BlockPos blockPos, BlockHitResult blockHitResult, float f, float g, int i, boolean bl) {
+      return this.mc.player != null && this.mc.world != null && i >= 0
+         ? this.wouldPlace(blockState, blockPos, blockHitResult, new float[]{f, g}, i, this.partnerMissing(blockState, blockPos), bl)
          : false;
    }
 
-   public String wouldBe(BlockPos var1, BlockHitResult var2, float var3, float var4, int var5, boolean var6) {
-      if (this.mc.field_1724 != null && this.mc.field_1687 != null && var5 >= 0) {
-         ClientPlayerEntity var7 = this.mc.field_1724;
-         PlayerInput var8 = var7.field_3913.field_54155;
-         ItemStack var9 = var7.method_31548().method_5438(var5);
-         if (!(var9.method_7909() instanceof BlockItem var11)) {
+   public String wouldBe(BlockPos blockPos, BlockHitResult blockHitResult, float f, float g, int i, boolean bl) {
+      if (this.mc.player != null && this.mc.world != null && i >= 0) {
+         ClientPlayerEntity var7 = this.mc.player;
+         PlayerInput var8 = var7.input.playerInput;
+         ItemStack var9 = var7.getInventory().getStack(i);
+         if (!(var9.getItem() instanceof BlockItem var11)) {
             return "no block item";
          } else {
-            float var12 = var7.method_36454();
-            float var13 = var7.method_36455();
-            var7.method_36456(var3);
-            var7.method_36457(var4);
-            var7.field_3913.field_54155 = new PlayerInput(
-               var8.comp_3159(), var8.comp_3160(), var8.comp_3161(), var8.comp_3162(), var8.comp_3163(), var6, var8.comp_3165()
-            );
+            float var12 = var7.getYaw();
+            float var13 = var7.getPitch();
+            var7.setYaw(f);
+            var7.setPitch(g);
+            var7.input.playerInput = new PlayerInput(var8.forward(), var8.backward(), var8.left(), var8.right(), var8.jump(), bl, var8.sprint());
 
             String var25;
             try {
-               ItemPlacementContext var14 = new ItemPlacementContext(var7, Hand.field_5808, var9, var2);
-               if (!var14.method_7716()) {
+               ItemPlacementContext var14 = new ItemPlacementContext(var7, Hand.MAIN_HAND, var9, blockHitResult);
+               if (!var14.canPlace()) {
                   return "cannot place";
                }
 
-               if (var14.method_8037().equals(var1)) {
-                  return ((InvokerBlockItem)var11).easyplace$getPlacementState(var14) + " facing " + var14.method_8042();
+               if (var14.getBlockPos().equals(blockPos)) {
+                  return ((InvokerBlockItem)var11).easyplace$getPlacementState(var14) + " facing " + var14.getHorizontalPlayerFacing();
                }
 
-               String var22 = "goes to " + var14.method_8037().method_23854();
+               String var22 = "goes to " + var14.getBlockPos().toShortString();
                var25 = var22;
             } catch (Exception var20) {
                return var20.toString();
             } finally {
-               var7.method_36456(var12);
-               var7.method_36457(var13);
-               var7.field_3913.field_54155 = var8;
+               var7.setYaw(var12);
+               var7.setPitch(var13);
+               var7.input.playerInput = var8;
             }
 
             return var25;
@@ -293,18 +285,18 @@ public final class DependencyManager {
       }
    }
 
-   private PlacementTarget secondSlab(BlockState var1, BlockState var2, BlockPos var3, Vec3d var4, boolean var5) {
-      int var6 = this.findItem(var1, var5);
+   private PlacementTarget secondSlab(BlockState blockState, BlockState blockState2, BlockPos blockPos, Vec3d vec3d, boolean bl) {
+      int var6 = this.findItem(blockState, bl);
       if (var6 < 0) {
          return null;
       } else {
-         boolean var7 = var2.method_11654(Properties.field_12485) == SlabType.field_12681;
-         Direction var8 = var7 ? Direction.field_11036 : Direction.field_11033;
-         double var9 = var3.method_10264() + 0.5;
-         if (var7 ? !(var4.field_1351 <= var9 + 0.05) : !(var4.field_1351 >= var9 - 0.05)) {
+         boolean var7 = blockState2.get(Properties.SLAB_TYPE) == SlabType.BOTTOM;
+         Direction var8 = var7 ? Direction.UP : Direction.DOWN;
+         double var9 = blockPos.getY() + 0.5;
+         if (var7 ? !(vec3d.y <= var9 + 0.05) : !(vec3d.y >= var9 - 0.05)) {
             for (double[] var14 : new double[][]{{0.5, 0.5}, {0.25, 0.5}, {0.75, 0.5}, {0.5, 0.25}, {0.5, 0.75}}) {
-               Vec3d var15 = new Vec3d(var3.method_10263() + var14[0], var9, var3.method_10260() + var14[1]);
-               PlacementTarget var16 = this.tryAim(var1, var3, var3, var8, var15, var4, var6, true);
+               Vec3d var15 = new Vec3d(blockPos.getX() + var14[0], var9, blockPos.getZ() + var14[1]);
+               PlacementTarget var16 = this.tryAim(blockState, blockPos, blockPos, var8, var15, vec3d, var6, true);
                if (var16 != null) {
                   return var16;
                }
@@ -317,69 +309,67 @@ public final class DependencyManager {
       }
    }
 
-   private PlacementTarget tryAim(BlockState var1, BlockPos var2, BlockPos var3, Direction var4, Vec3d var5, Vec3d var6, int var7, boolean var8) {
-      boolean var9 = !var3.equals(var2) && Clicks.usesClick((World)this.mc.field_1687, var3, this.wholeInventory(var7));
-      PlacementTarget var10 = this.aimWith(var1, var2, var3, var4, var5, var6, var7, var8, var9, false);
+   private PlacementTarget tryAim(
+      BlockState blockState, BlockPos blockPos, BlockPos blockPos2, Direction direction, Vec3d vec3d, Vec3d vec3d2, int i, boolean bl
+   ) {
+      boolean var9 = !blockPos2.equals(blockPos) && Clicks.usesClick(this.mc.world, blockPos2, this.wholeInventory(i));
+      PlacementTarget var10 = this.aimWith(blockState, blockPos, blockPos2, direction, vec3d, vec3d2, i, bl, var9, false);
       if (var10 != null) {
          return var10;
       } else {
-         return var9 || !(var1.method_26204() instanceof ChestBlock) && !this.builderEyes
+         return var9 || !(blockState.getBlock() instanceof ChestBlock) && !this.builderEyes
             ? null
-            : this.aimWith(var1, var2, var3, var4, var5, var6, var7, var8, true, true);
+            : this.aimWith(blockState, blockPos, blockPos2, direction, vec3d, vec3d2, i, bl, true, true);
       }
    }
 
    private PlacementTarget aimWith(
-      BlockState var1, BlockPos var2, BlockPos var3, Direction var4, Vec3d var5, Vec3d var6, int var7, boolean var8, boolean var9, boolean var10
+      BlockState blockState, BlockPos blockPos, BlockPos blockPos2, Direction direction, Vec3d vec3d, Vec3d vec3d2, int i, boolean bl, boolean bl2, boolean bl3
    ) {
-      Vec3d var14 = this.builderEye(var6, var9);
+      Vec3d var14 = this.builderEye(vec3d2, bl2);
       float[] var13;
       BlockHitResult var15 = PlacementUtil.rayTraceFrom(
-         (PlayerEntity)this.mc.field_1724,
-         var14,
-         (var13 = PlacementUtil.calcRotation(var14, var5))[0],
-         var13[1],
-         this.mc.field_1724.method_55754() - this.reachSpare
+         this.mc.player, var14, (var13 = PlacementUtil.calcRotation(var14, vec3d))[0], var13[1], this.mc.player.getBlockInteractionRange() - this.reachSpare
       );
-      if (var15 == null || var15.method_17783() != Type.field_1332) {
+      if (var15 == null || var15.getType() != Type.BLOCK) {
          return null;
-      } else if (!var15.method_17777().equals(var3) || var15.method_17780() != var4) {
+      } else if (!var15.getBlockPos().equals(blockPos2) || var15.getSide() != direction) {
          return null;
-      } else if (!this.wouldPlace(var1, var2, var15, var13, var7, var8, var9)) {
+      } else if (!this.wouldPlace(blockState, blockPos, var15, var13, i, bl, bl2)) {
          return null;
       } else {
-         return !this.steady(var1, var2, var15, var13, var7, var8, var9)
+         return !this.steady(blockState, blockPos, var15, var13, i, bl, bl2)
             ? null
-            : new PlacementTarget(var2, var3, var4, var4, var7, var13[0], var13[1], 0, var15.method_17784(), var10);
+            : new PlacementTarget(blockPos, blockPos2, direction, direction, i, var13[0], var13[1], 0, var15.getPos(), bl3);
       }
    }
 
-   private boolean steady(BlockState var1, BlockPos var2, BlockHitResult var3, float[] var4, int var5, boolean var6, boolean var7) {
-      Vec3d var8 = var3.method_17784();
-      Direction var9 = var3.method_17780();
+   private boolean steady(BlockState blockState, BlockPos blockPos, BlockHitResult blockHitResult, float[] fs, int i, boolean bl, boolean bl2) {
+      Vec3d var8 = blockHitResult.getPos();
+      Direction var9 = blockHitResult.getSide();
 
       for (Direction var13 : Direction.values()) {
-         if (var13.method_10166() != var9.method_10166()
+         if (var13.getAxis() != var9.getAxis()
             && !this.wouldPlace(
-               var1,
-               var2,
+               blockState,
+               blockPos,
                new BlockHitResult(
-                  var8.method_1031(var13.method_10148() * 0.02, var13.method_10164() * 0.02, var13.method_10165() * 0.02),
+                  var8.add(var13.getOffsetX() * 0.02, var13.getOffsetY() * 0.02, var13.getOffsetZ() * 0.02),
                   var9,
-                  var3.method_17777(),
-                  var3.method_17781()
+                  blockHitResult.getBlockPos(),
+                  blockHitResult.isInsideBlock()
                ),
-               var4,
-               var5,
-               var6,
-               var7
+               fs,
+               i,
+               bl,
+               bl2
             )) {
             return false;
          }
       }
 
       for (float[] var19 : STEADY_TURNS) {
-         if (!this.wouldPlace(var1, var2, var3, new float[]{var4[0] + var19[0], var4[1] + var19[1]}, var5, var6, var7)) {
+         if (!this.wouldPlace(blockState, blockPos, blockHitResult, new float[]{fs[0] + var19[0], fs[1] + var19[1]}, i, bl, bl2)) {
             return false;
          }
       }
@@ -387,20 +377,20 @@ public final class DependencyManager {
       return true;
    }
 
-   private Vec3d builderEye(Vec3d var1, boolean var2) {
+   private Vec3d builderEye(Vec3d vec3d, boolean bl) {
       return this.builderEyes && !Double.isNaN(this.feetY)
-         ? new Vec3d(var1.field_1352, this.feetY + this.mc.field_1724.method_18381(var2 ? EntityPose.field_18081 : EntityPose.field_18076), var1.field_1350)
-         : var1;
+         ? new Vec3d(vec3d.x, this.feetY + this.mc.player.getEyeHeight(bl ? EntityPose.CROUCHING : EntityPose.STANDING), vec3d.z)
+         : vec3d;
    }
 
-   private int findItem(BlockState var1, boolean var2) {
-      Item var3 = BlockStateUtil.requiredItem(var1);
-      if (var3 != null && var3 instanceof BlockItem && this.mc.field_1724 != null) {
-         PlayerInventory var4 = this.mc.field_1724.method_31548();
-         int var5 = var2 ? 36 : 9;
+   private int findItem(BlockState blockState, boolean bl) {
+      Item var3 = BlockStateUtil.requiredItem(blockState);
+      if (var3 != null && var3 instanceof BlockItem && this.mc.player != null) {
+         PlayerInventory var4 = this.mc.player.getInventory();
+         int var5 = bl ? 36 : 9;
 
          for (int var6 = 0; var6 < var5; var6++) {
-            if (var4.method_5438(var6).method_31574(var3)) {
+            if (var4.getStack(var6).isOf(var3)) {
                return var6;
             }
          }
@@ -411,30 +401,28 @@ public final class DependencyManager {
       }
    }
 
-   private boolean wholeInventory(int var1) {
-      return var1 >= 9 || this.currentScope != null;
+   private boolean wholeInventory(int i) {
+      return i >= 9 || this.currentScope != null;
    }
 
-   private boolean wouldPlace(BlockState var1, BlockPos var2, BlockHitResult var3, float[] var4, int var5, boolean var6, boolean var7) {
-      ClientPlayerEntity var8 = this.mc.field_1724;
-      PlayerInput var9 = var8.field_3913.field_54155;
-      ItemStack var10 = var8.method_31548().method_5438(var5);
-      if (!(var10.method_7909() instanceof BlockItem var12)) {
+   private boolean wouldPlace(BlockState blockState, BlockPos blockPos, BlockHitResult blockHitResult, float[] fs, int i, boolean bl, boolean bl2) {
+      ClientPlayerEntity var8 = this.mc.player;
+      PlayerInput var9 = var8.input.playerInput;
+      ItemStack var10 = var8.getInventory().getStack(i);
+      if (!(var10.getItem() instanceof BlockItem var12)) {
          return false;
       } else {
-         float var13 = var8.method_36454();
-         float var14 = var8.method_36455();
-         float var15 = MathHelper.method_15393(var4[0] - var13);
-         var8.method_36456(var13 + var15);
-         var8.method_36457(var4[1]);
-         var8.field_3913.field_54155 = new PlayerInput(
-            var9.comp_3159(), var9.comp_3160(), var9.comp_3161(), var9.comp_3162(), var9.comp_3163(), var7, var9.comp_3165()
-         );
+         float var13 = var8.getYaw();
+         float var14 = var8.getPitch();
+         float var15 = MathHelper.wrapDegrees(fs[0] - var13);
+         var8.setYaw(var13 + var15);
+         var8.setPitch(fs[1]);
+         var8.input.playerInput = new PlayerInput(var9.forward(), var9.backward(), var9.left(), var9.right(), var9.jump(), bl2, var9.sprint());
 
          boolean var21;
          try {
-            ItemPlacementContext var16 = new ItemPlacementContext(var8, Hand.field_5808, var10, var3);
-            if (!var16.method_7716() || !var16.method_8037().equals(var2)) {
+            ItemPlacementContext var16 = new ItemPlacementContext(var8, Hand.MAIN_HAND, var10, blockHitResult);
+            if (!var16.canPlace() || !var16.getBlockPos().equals(blockPos)) {
                return false;
             }
 
@@ -443,34 +431,34 @@ public final class DependencyManager {
                return false;
             }
 
-            if (!(var1.method_26204() instanceof ChestBlock) || !(var27.method_26204() instanceof ChestBlock)) {
-               return StateRules.wouldFit(var27, var1, false);
+            if (!(blockState.getBlock() instanceof ChestBlock) || !(var27.getBlock() instanceof ChestBlock)) {
+               return StateRules.wouldFit(var27, blockState, false);
             }
 
-            ChestType var29 = (ChestType)var1.method_11654(Properties.field_12506);
-            ChestType var19 = (ChestType)var27.method_11654(Properties.field_12506);
-            if (var19 != var29 && (var19 != ChestType.field_12569 || !var6)) {
+            ChestType var29 = blockState.get(Properties.CHEST_TYPE);
+            ChestType var19 = var27.get(Properties.CHEST_TYPE);
+            if (var19 != var29 && (var19 != ChestType.SINGLE || !bl)) {
                return false;
             }
 
-            boolean var20 = StateRules.wouldFit(var27, var1, true);
+            boolean var20 = StateRules.wouldFit(var27, blockState, true);
             var21 = var20;
          } catch (Exception var25) {
             return false;
          } finally {
-            var8.method_36456(var13);
-            var8.method_36457(var14);
-            var8.field_3913.field_54155 = var9;
+            var8.setYaw(var13);
+            var8.setPitch(var14);
+            var8.input.playerInput = var9;
          }
 
          return var21;
       }
    }
 
-   private static Vec3d[] aabbSideMultipliers(Direction var0) {
+   private static Vec3d[] aabbSideMultipliers(Direction direction) {
       Vec3d[] var1;
-      switch (var0) {
-         case field_11033:
+      switch (direction) {
+         case DOWN:
             Vec3d[] var8 = new Vec3d[]{
                new Vec3d(0.5, 0.0, 0.5),
                new Vec3d(0.1, 0.0, 0.5),
@@ -489,7 +477,7 @@ public final class DependencyManager {
             var1 = var8;
             var8[12] = new Vec3d(0.75, 0.0, 0.75);
             break;
-         case field_11036:
+         case UP:
             Vec3d[] var7 = new Vec3d[]{
                new Vec3d(0.5, 1.0, 0.5),
                new Vec3d(0.1, 1.0, 0.5),
@@ -505,41 +493,41 @@ public final class DependencyManager {
             var7[8] = new Vec3d(0.75, 1.0, 0.75);
             break;
          default:
-            double var2 = var0.method_10148() == 0 ? 0.5 : (1 + var0.method_10148()) / 2.0;
-            double var4 = var0.method_10165() == 0 ? 0.5 : (1 + var0.method_10165()) / 2.0;
+            double var2 = direction.getOffsetX() == 0 ? 0.5 : (1 + direction.getOffsetX()) / 2.0;
+            double var4 = direction.getOffsetZ() == 0 ? 0.5 : (1 + direction.getOffsetZ()) / 2.0;
             Vec3d[] var6 = new Vec3d[]{
                new Vec3d(var2, 0.5, var4),
                new Vec3d(var2, 0.25, var4),
                new Vec3d(var2, 0.75, var4),
-               new Vec3d(var0.method_10148() == 0 ? 0.15 : var2, 0.5, var0.method_10165() == 0 ? 0.15 : var4),
+               new Vec3d(direction.getOffsetX() == 0 ? 0.15 : var2, 0.5, direction.getOffsetZ() == 0 ? 0.15 : var4),
                null
             };
             var1 = var6;
-            var6[4] = new Vec3d(var0.method_10148() == 0 ? 0.85 : var2, 0.5, var0.method_10165() == 0 ? 0.85 : var4);
+            var6[4] = new Vec3d(direction.getOffsetX() == 0 ? 0.85 : var2, 0.5, direction.getOffsetZ() == 0 ? 0.85 : var4);
       }
 
       return var1;
    }
 
-   private static boolean isReplaceable(BlockState var0) {
-      if (var0.method_26215()) {
+   private static boolean isReplaceable(BlockState blockState) {
+      if (blockState.isAir()) {
          return true;
       } else {
-         Block var1 = var0.method_26204();
+         Block var1 = blockState.getBlock();
          if (var1 instanceof FluidBlock) {
             return true;
-         } else if (var1 instanceof CropBlock && var0.method_28498(CropBlock.field_10835) && (Integer)var0.method_11654(CropBlock.field_10835) == 7) {
+         } else if (var1 instanceof CropBlock && blockState.contains(CropBlock.AGE) && blockState.get(CropBlock.AGE) == 7) {
             return true;
          } else {
-            return !(var1 instanceof FireBlock) && !(var1 instanceof ChorusFlowerBlock) ? var0.method_45474() : true;
+            return !(var1 instanceof FireBlock) && !(var1 instanceof ChorusFlowerBlock) ? blockState.isReplaceable() : true;
          }
       }
    }
 
-   private boolean isInRenderLayer(BlockPos var1) {
+   private boolean isInRenderLayer(BlockPos blockPos) {
       try {
          LayerRange var2 = DataManager.getRenderLayerRange();
-         return var2 == null || var2.isPositionWithinRange(var1);
+         return var2 == null || var2.isPositionWithinRange(blockPos);
       } catch (Exception var3) {
          return true;
       }

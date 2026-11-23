@@ -35,45 +35,45 @@ final class PlayerFaces {
    private PlayerFaces() {
    }
 
-   static void draw(ImDrawList var0, Account var1, float var2, float var3, float var4, float var5, float var6) {
+   static void draw(ImDrawList imDrawList, Account account, float f, float g, float h, float i, float j) {
       UUID var7;
       try {
-         var7 = UUID.fromString(var1.uuid());
+         var7 = UUID.fromString(account.uuid());
       } catch (IllegalArgumentException var9) {
-         placeholder(var0, var2, var3, var4, var5, var6);
+         placeholder(imDrawList, f, g, h, i, j);
          return;
       }
 
-      draw(var0, var7, var1.type() == AccountType.CRACKED, var2, var3, var4, var5, var6);
+      draw(imDrawList, var7, account.type() == AccountType.CRACKED, f, g, h, i, j);
    }
 
-   static void draw(ImDrawList var0, UUID var1, boolean var2, float var3, float var4, float var5, float var6, float var7) {
-      int var8 = texture(skin(var1, var2).comp_1626().comp_3627());
+   static void draw(ImDrawList imDrawList, UUID uUID, boolean bl, float f, float g, float h, float i, float j) {
+      int var8 = texture(skin(uUID, bl).body().texturePath());
       if (var8 == 0) {
-         placeholder(var0, var3, var4, var5, var6, var7);
+         placeholder(imDrawList, f, g, h, i, j);
       } else {
-         float var9 = Math.max(1.0F, (float)Math.round(3.0F * var6));
-         int var10 = HudDraw.col(-1, var7);
-         var0.addImageRounded(var8, var3, var4, var3 + var5, var4 + var5, 0.125F, 0.125F, 0.25F, 0.25F, var10, var9, 240);
-         var0.addImageRounded(var8, var3, var4, var3 + var5, var4 + var5, 0.625F, 0.125F, 0.75F, 0.25F, var10, var9, 240);
+         float var9 = Math.max(1.0F, (float)Math.round(3.0F * i));
+         int var10 = HudDraw.col(-1, j);
+         imDrawList.addImageRounded(var8, f, g, f + h, g + h, 0.125F, 0.125F, 0.25F, 0.25F, var10, var9, 240);
+         imDrawList.addImageRounded(var8, f, g, f + h, g + h, 0.625F, 0.125F, 0.75F, 0.25F, var10, var9, 240);
       }
    }
 
-   private static void placeholder(ImDrawList var0, float var1, float var2, float var3, float var4, float var5) {
-      var0.addRectFilled(var1, var2, var1 + var3, var2 + var3, HudDraw.col(-7693914, 0.3F * var5), Math.round(3.0F * var4));
+   private static void placeholder(ImDrawList imDrawList, float f, float g, float h, float i, float j) {
+      imDrawList.addRectFilled(f, g, f + h, g + h, HudDraw.col(-7693914, 0.3F * j), Math.round(3.0F * i));
    }
 
-   private static SkinTextures skin(UUID var0, boolean var1) {
-      return var1 ? DefaultSkinHelper.method_4648(var0) : SKINS.computeIfAbsent(var0, var0x -> {
-         Supplier var1x = MinecraftClient.method_1551().method_73362().method_74050(ProfileComponent.method_73312(var0x));
-         return () -> ((Entry)var1x.get()).method_73503();
+   private static SkinTextures skin(UUID uUID, boolean bl) {
+      return bl ? DefaultSkinHelper.getSkinTextures(uUID) : SKINS.computeIfAbsent(uUID, uUIDx -> {
+         Supplier var1 = MinecraftClient.getInstance().getPlayerSkinCache().getSupplier(ProfileComponent.ofDynamic(uUIDx));
+         return () -> ((Entry)var1.get()).getTextures();
       }).get();
    }
 
-   private static int texture(Identifier var0) {
+   private static int texture(Identifier identifier) {
       GpuTexture var2;
       try {
-         var2 = MinecraftClient.method_1551().method_1531().method_4619(var0).method_68004();
+         var2 = MinecraftClient.getInstance().getTextureManager().getTexture(identifier).getGlTexture();
       } catch (IllegalStateException var4) {
          return 0;
       }
@@ -82,13 +82,13 @@ final class PlayerFaces {
       if (var2 instanceof GlTexture && !(var1 = (GlTexture)var2).isClosed()) {
          if (NEAREST.add(var2)) {
             int var3 = GL11.glGetInteger(32873);
-            GL11.glBindTexture(3553, var1.method_68427());
+            GL11.glBindTexture(3553, var1.getGlId());
             GL11.glTexParameteri(3553, 10241, 9728);
             GL11.glTexParameteri(3553, 10240, 9728);
             GL11.glBindTexture(3553, var3);
          }
 
-         return var1.method_68427();
+         return var1.getGlId();
       } else {
          return 0;
       }

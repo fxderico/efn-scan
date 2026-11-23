@@ -66,21 +66,21 @@ public final class CharacterCatalog {
       return names(designs);
    }
 
-   private static List<String> names(List<CharacterDesign> var0) {
-      ArrayList var1 = new ArrayList(var0.size());
+   private static List<String> names(List<CharacterDesign> list) {
+      ArrayList var1 = new ArrayList(list.size());
 
-      for (CharacterDesign var3 : var0) {
+      for (CharacterDesign var3 : list) {
          var1.add(var3.name());
       }
 
       return var1;
    }
 
-   static CharacterDesign byName(String var0) {
+   static CharacterDesign byName(String string) {
       List var1 = designs;
 
       for (CharacterDesign var3 : var1) {
-         if (var3.name().equals(var0)) {
+         if (var3.name().equals(string)) {
             return var3;
          }
       }

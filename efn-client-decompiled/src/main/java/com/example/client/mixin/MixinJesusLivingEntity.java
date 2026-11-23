@@ -17,15 +17,15 @@ public abstract class MixinJesusLivingEntity {
    }
 
    @ModifyReturnValue(
-      method = {"method_26319"},
+      method = {"canWalkOnFluid"},
       at = {@At("RETURN")}
    )
-   private boolean efn$jesusCanStandOnFluid(boolean var1, FluidState var2) {
-      if (var1) {
+   private boolean efn$jesusCanStandOnFluid(boolean bl, FluidState fluidState) {
+      if (bl) {
          return true;
       } else {
          JesusModule var3 = JesusModule.active;
-         return var3 != null && this == MinecraftClient.method_1551().field_1724 ? var3.canWalkOnFluid(var2) : false;
+         return var3 != null && this == MinecraftClient.getInstance().player ? var3.canWalkOnFluid(fluidState) : false;
       }
    }
 }

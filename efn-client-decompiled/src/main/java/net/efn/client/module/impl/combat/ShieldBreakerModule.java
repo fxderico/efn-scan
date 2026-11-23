@@ -51,15 +51,15 @@ public final class ShieldBreakerModule extends ClientModule {
 
    @Override
    protected void onDisable() {
-      this.slots.drop(MinecraftClient.method_1551(), this.switchBack.get());
+      this.slots.drop(MinecraftClient.getInstance(), this.switchBack.get());
    }
 
-   public void beforeAttack(ClientPlayerEntity var1, Entity var2) {
-      if (var2 instanceof PlayerEntity var3 && !MeleeAttacks.disablesShields(var1.method_6047())) {
-         if (fightingHand(var1)) {
-            if (!MeleeAttacks.shieldBroken(var3) && blocksSoon(var1, var3)) {
-               int var4 = bestAxe(var1);
-               if (var4 >= 0 && this.slots.take(var1, var4)) {
+   public void beforeAttack(ClientPlayerEntity clientPlayerEntity, Entity entity) {
+      if (entity instanceof PlayerEntity var3 && !MeleeAttacks.disablesShields(clientPlayerEntity.getMainHandStack())) {
+         if (fightingHand(clientPlayerEntity)) {
+            if (!MeleeAttacks.shieldBroken(var3) && blocksSoon(clientPlayerEntity, var3)) {
+               int var4 = bestAxe(clientPlayerEntity);
+               if (var4 >= 0 && this.slots.take(clientPlayerEntity, var4)) {
                   this.takenTick = this.ticks;
                   MeleeAttacks.noteShieldBroken(var3);
                }
@@ -68,42 +68,42 @@ public final class ShieldBreakerModule extends ClientModule {
       }
    }
 
-   private static boolean fightingHand(ClientPlayerEntity var0) {
-      ItemStack var1 = var0.method_6047();
-      return var1.method_7960() || MeleeAttacks.isMeleeWeapon(var1);
+   private static boolean fightingHand(ClientPlayerEntity clientPlayerEntity) {
+      ItemStack var1 = clientPlayerEntity.getMainHandStack();
+      return var1.isEmpty() || MeleeAttacks.isMeleeWeapon(var1);
    }
 
    @EventHandler(
       priority = EventPriority.HIGH
    )
-   public void onTick(TickEvent var1) {
+   public void onTick(TickEvent tickEvent) {
       this.ticks++;
       if (this.ticks - this.takenTick >= 2) {
-         this.slots.tick(MinecraftClient.method_1551(), this.switchBack.get());
+         this.slots.tick(MinecraftClient.getInstance(), this.switchBack.get());
       }
    }
 
    @EventHandler
-   public void onAutoTick(TickEvent var1) {
+   public void onAutoTick(TickEvent tickEvent) {
       if (this.mode.is("Auto")) {
-         this.tryHit(MinecraftClient.method_1551());
+         this.tryHit(MinecraftClient.getInstance());
       }
    }
 
-   private void tryHit(MinecraftClient var1) {
-      if (this.ticks >= this.rearmTick && MeleeAttacks.canAct(var1)) {
+   private void tryHit(MinecraftClient minecraftClient) {
+      if (this.ticks >= this.rearmTick && MeleeAttacks.canAct(minecraftClient)) {
          if (!CombatMacroLock.heldByOther(this) && !AutoInvTotemModule.wantsHotbar()) {
-            ClientPlayerEntity var4 = var1.field_1724;
-            if (!MeleeAttacks.actedThisTick(var4) && !ServerRotation.pending() && !MeleeAttacks.clickPending(var1)) {
-               EntityHitResult var5 = MeleeAttacks.crosshairHit(var1);
+            ClientPlayerEntity var4 = minecraftClient.player;
+            if (!MeleeAttacks.actedThisTick(var4) && !ServerRotation.pending() && !MeleeAttacks.clickPending(minecraftClient)) {
+               EntityHitResult var5 = MeleeAttacks.crosshairHit(minecraftClient);
                PlayerEntity var2;
                Entity var3;
-               if (var5 != null && (var3 = var5.method_17782()) instanceof PlayerEntity && MeleeAttacks.isEnemy(var4, var2 = (PlayerEntity)var3)) {
+               if (var5 != null && (var3 = var5.getEntity()) instanceof PlayerEntity && MeleeAttacks.isEnemy(var4, var2 = (PlayerEntity)var3)) {
                   if (!MeleeAttacks.shieldBroken(var2) && blocksSoon(var4, var2)) {
-                     if (MeleeAttacks.disablesShields(var4.method_6047()) || bestAxe(var4) >= 0 && fightingHand(var4)) {
-                        if (MeleeAttacks.attack(var1, var5)) {
+                     if (MeleeAttacks.disablesShields(var4.getMainHandStack()) || bestAxe(var4) >= 0 && fightingHand(var4)) {
+                        if (MeleeAttacks.attack(minecraftClient, var5)) {
                            this.rearmTick = this.ticks + 10;
-                           MeleeAttacks.claimTick(var1);
+                           MeleeAttacks.claimTick(minecraftClient);
                         }
                      }
                   }
@@ -113,30 +113,32 @@ public final class ShieldBreakerModule extends ClientModule {
       }
    }
 
-   private static boolean blocksSoon(ClientPlayerEntity var0, PlayerEntity var1) {
-      if (!var1.method_6115()) {
+   private static boolean blocksSoon(ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity) {
+      if (!playerEntity.isUsingItem()) {
          return false;
       } else {
-         ItemStack var2 = var1.method_6030();
-         BlocksAttacksComponent var3 = (BlocksAttacksComponent)var2.method_58694(DataComponentTypes.field_56396);
-         return var3 != null && var1.method_6048() + leadTicks(var0) >= var3.method_67197() ? MeleeAttacks.shieldBlocks(var1, var0, var2) : false;
+         ItemStack var2 = playerEntity.getActiveItem();
+         BlocksAttacksComponent var3 = var2.get(DataComponentTypes.BLOCKS_ATTACKS);
+         return var3 != null && playerEntity.getItemUseTime() + leadTicks(clientPlayerEntity) >= var3.getBlockDelayTicks()
+            ? MeleeAttacks.shieldBlocks(playerEntity, clientPlayerEntity, var2)
+            : false;
       }
    }
 
-   private static int leadTicks(ClientPlayerEntity var0) {
-      PlayerListEntry var1 = var0.field_3944.method_2871(var0.method_5667());
-      return var1 == null ? 0 : MathHelper.method_15340(Math.round(var1.method_2959() / 50.0F), 0, 4);
+   private static int leadTicks(ClientPlayerEntity clientPlayerEntity) {
+      PlayerListEntry var1 = clientPlayerEntity.networkHandler.getPlayerListEntry(clientPlayerEntity.getUuid());
+      return var1 == null ? 0 : MathHelper.clamp(Math.round(var1.getLatency() / 50.0F), 0, 4);
    }
 
-   static int bestAxe(ClientPlayerEntity var0) {
-      PlayerInventory var1 = var0.method_31548();
+   static int bestAxe(ClientPlayerEntity clientPlayerEntity) {
+      PlayerInventory var1 = clientPlayerEntity.getInventory();
       int var2 = -1;
       double var3 = -1.0 / 0.0;
 
-      for (int var5 = 0; var5 < PlayerInventory.method_7368(); var5++) {
-         ItemStack var8 = var1.method_5438(var5);
+      for (int var5 = 0; var5 < PlayerInventory.getHotbarSize(); var5++) {
+         ItemStack var8 = var1.getStack(var5);
          double var6;
-         if (MeleeAttacks.disablesShields(var8) && !var8.method_63692() && (var6 = MeleeAttacks.attackDamage(var8)) > var3) {
+         if (MeleeAttacks.disablesShields(var8) && !var8.willBreakNextUse() && (var6 = MeleeAttacks.attackDamage(var8)) > var3) {
             var2 = var5;
             var3 = var6;
          }

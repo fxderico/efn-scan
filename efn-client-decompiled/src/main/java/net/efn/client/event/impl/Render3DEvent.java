@@ -19,11 +19,11 @@ public final class Render3DEvent extends Event {
    private Render3DEvent() {
    }
 
-   public static void dispatch(float var0) {
-      dispatch(var0, null);
+   public static void dispatch(float f) {
+      dispatch(f, null);
    }
 
-   public static void dispatch(float var0, Frustum var1) {
+   public static void dispatch(float f, Frustum frustum) {
       if (!TYPE.hasListeners()) {
          lastDurationNanos = 0L;
       } else if (rendering) {
@@ -31,8 +31,8 @@ public final class Render3DEvent extends Event {
       } else {
          rendering = true;
          long var2 = System.nanoTime();
-         INSTANCE.partialTick = var0;
-         INSTANCE.frustum = var1;
+         INSTANCE.partialTick = f;
+         INSTANCE.frustum = frustum;
 
          try {
             TYPE.dispatchPre(INSTANCE);

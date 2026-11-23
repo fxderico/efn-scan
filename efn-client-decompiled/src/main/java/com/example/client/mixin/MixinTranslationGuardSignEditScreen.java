@@ -18,21 +18,21 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin({AbstractSignEditScreen.class})
 public abstract class MixinTranslationGuardSignEditScreen {
    @Shadow
-   private SignText field_43362;
+   private SignText text;
    @Shadow
    @Final
-   private String[] field_40425;
+   private String[] messages;
 
    public MixinTranslationGuardSignEditScreen() {
    }
 
    @Inject(
-      method = {"<init>(Lnet/minecraft/class_2625;ZZLnet/minecraft/class_2561;)V"},
+      method = {"<init>(Lnet/minecraft/block/entity/SignBlockEntity;ZZLnet/minecraft/text/Text;)V"},
       at = {@At("TAIL")}
    )
-   private void efn$guardMessages(SignBlockEntity var1, boolean var2, boolean var3, Text var4, CallbackInfo var5) {
-      for (int var6 = 0; var6 < this.field_40425.length; var6++) {
-         this.field_40425[var6] = TranslationGuard.plain(this.field_43362.method_49859(var6, var3));
+   private void efn$guardMessages(SignBlockEntity signBlockEntity, boolean bl, boolean bl2, Text text, CallbackInfo callbackInfo) {
+      for (int var6 = 0; var6 < this.messages.length; var6++) {
+         this.messages[var6] = TranslationGuard.plain(this.text.getMessage(var6, bl2));
       }
    }
 }

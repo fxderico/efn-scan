@@ -4,7 +4,6 @@ import com.mojang.authlib.GameProfile;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap.Entry;
-import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -115,46 +114,46 @@ final class PlayerBypassAutoRtp {
    private long lastBarAt;
 
    PlayerBypassAutoRtp(
-      PlayerBypassModule var1,
-      BooleanSetting var2,
-      StringSetting var3,
-      NumberSetting var4,
-      NumberSetting var5,
-      NumberSetting var6,
-      NumberSetting var7,
-      BooleanSetting var8,
-      StringSetting var9,
-      BooleanSetting var10,
-      BooleanSetting var11
+      PlayerBypassModule playerBypassModule,
+      BooleanSetting booleanSetting,
+      StringSetting stringSetting,
+      NumberSetting numberSetting,
+      NumberSetting numberSetting2,
+      NumberSetting numberSetting3,
+      NumberSetting numberSetting4,
+      BooleanSetting booleanSetting2,
+      StringSetting stringSetting2,
+      BooleanSetting booleanSetting3,
+      BooleanSetting booleanSetting4
    ) {
-      this.module = var1;
-      this.enabled = var2;
-      this.command = var3;
-      this.scanTime = var4;
-      this.delay = var5;
-      this.timeout = var6;
-      this.maxRtps = var7;
-      this.stopOnSuspect = var8;
-      this.menuItem = var9;
-      this.sound = var10;
-      this.showCoordinates = var11;
+      this.module = playerBypassModule;
+      this.enabled = booleanSetting;
+      this.command = stringSetting;
+      this.scanTime = numberSetting;
+      this.delay = numberSetting2;
+      this.timeout = numberSetting3;
+      this.maxRtps = numberSetting4;
+      this.stopOnSuspect = booleanSetting2;
+      this.menuItem = stringSetting2;
+      this.sound = booleanSetting3;
+      this.showCoordinates = booleanSetting4;
    }
 
    void start() {
       if (!this.loop.running()) {
-         MinecraftClient var3 = MinecraftClient.method_1551();
-         ClientPlayerEntity var4 = var3.field_1724;
-         ClientPlayNetworkHandler var5 = var3.method_1562();
-         if (var4 != null && var3.field_1687 != null && var5 != null && var5.method_48296().method_10758()) {
+         MinecraftClient var3 = MinecraftClient.getInstance();
+         ClientPlayerEntity var4 = var3.player;
+         ClientPlayNetworkHandler var5 = var3.getNetworkHandler();
+         if (var4 != null && var3.world != null && var5 != null && var5.getConnection().isOpen()) {
             long var6 = System.currentTimeMillis();
             AutoRtpLoop.Config var8 = this.config();
             this.loop.start(var6, var8);
-            this.link = var5.method_48296();
-            this.level = var3.field_1687;
-            this.anchor = var4.method_73189();
-            this.startChunkX = var4.method_24515().method_10263() >> 4;
-            this.startChunkZ = var4.method_24515().method_10260() >> 4;
-            this.wasDead = var4.method_29504();
+            this.link = var5.getConnection();
+            this.level = var3.world;
+            this.anchor = var4.getEntityPos();
+            this.startChunkX = var4.getBlockPos().getX() >> 4;
+            this.startChunkZ = var4.getBlockPos().getZ() >> 4;
+            this.wasDead = var4.isDead();
             this.offlineSince = 0L;
             this.lastRevision = PlayerBypassLightTracker.visibilityRevision();
             this.lastTryLanded = false;
@@ -163,15 +162,15 @@ final class PlayerBypassAutoRtp {
             this.resetMenu();
             this.rememberSuspects();
             if (this.tickHandle == null) {
-               this.tickHandle = TickEvent.TYPE.listen(this, var1x -> this.tick());
+               this.tickHandle = TickEvent.TYPE.listen(this, tickEvent -> this.tick());
             }
 
             if (this.packetHandle == null) {
-               this.packetHandle = PacketReceiveEvent.TYPE.listen(this, var1x -> this.onPacket(var1x.packet));
+               this.packetHandle = PacketReceiveEvent.TYPE.listen(this, packetReceiveEvent -> this.onPacket(packetReceiveEvent.packet));
             }
 
             if (this.sendHandle == null) {
-               this.sendHandle = PacketSendEvent.TYPE.listen(this, var1x -> this.onPacketSent(var1x.packet));
+               this.sendHandle = PacketSendEvent.TYPE.listen(this, packetSendEvent -> this.onPacketSent(packetSendEvent.packet));
             }
 
             ModuleChat.Body var9 = ModuleChat.body()
@@ -216,7 +215,7 @@ final class PlayerBypassAutoRtp {
       this.loop.forgetCooldown();
    }
 
-   private void stop(ModuleChat.Body var1) {
+   private void stop(ModuleChat.Body body) {
       boolean var2 = this.loop.running() || this.tickHandle != null;
       this.loop.stop();
       this.unlisten();
@@ -224,13 +223,13 @@ final class PlayerBypassAutoRtp {
       this.link = null;
       this.level = null;
       this.anchor = null;
-      if (var2 && var1 != null) {
-         this.say(var1);
+      if (var2 && body != null) {
+         this.say(body);
       }
    }
 
-   private void stopWithRestartHint(ModuleChat.Body var1) {
-      this.stop(var1.text(" Turn ").value("Auto RTP").text(" off and on to start again."));
+   private void stopWithRestartHint(ModuleChat.Body body) {
+      this.stop(body.text(" Turn ").value("Auto RTP").text(" off and on to start again."));
    }
 
    private void unlisten() {
@@ -251,29 +250,29 @@ final class PlayerBypassAutoRtp {
       this.sendHandle = null;
    }
 
-   boolean baseSpotted(int var1, int var2, boolean var3) {
-      if (this.loop.running() && !this.atStartSpot(var1 >> 4, var2 >> 4)) {
-         this.found("Base", var1, var2, var3);
+   boolean baseSpotted(int i, int j, boolean bl) {
+      if (this.loop.running() && !this.atStartSpot(i >> 4, j >> 4)) {
+         this.found("Base", i, j, bl);
          return true;
       } else {
          return false;
       }
    }
 
-   private void found(String var1, int var2, int var3, boolean var4) {
-      ClientPlayerEntity var5 = MinecraftClient.method_1551().field_1724;
+   private void found(String string, int i, int j, boolean bl) {
+      ClientPlayerEntity var5 = MinecraftClient.getInstance().player;
       boolean var6 = this.loop.phase() == AutoRtpLoop.Phase.TELEPORTING;
-      boolean var7 = var5 != null && this.anchor != null && (var5.method_73183() != this.level || var5.method_73189().method_1025(this.anchor) > 256.0);
+      boolean var7 = var5 != null && this.anchor != null && (var5.getEntityWorld() != this.level || var5.getEntityPos().squaredDistanceTo(this.anchor) > 256.0);
       boolean var8 = this.loop.awaitingTeleport() && var5 != null && !var7;
       int var9 = this.loop.landings() + (var6 && var7 ? 1 : 0);
       boolean var10 = this.showCoordinates.get();
-      ModuleChat.Body var11 = ModuleChat.body().good(var1 + " found");
+      ModuleChat.Body var11 = ModuleChat.body().good(string + " found");
       if (var10) {
-         var11.text(" at ").value(var2 + ", " + var3);
+         var11.text(" at ").value(i + ", " + j);
       }
 
       this.stopWithRestartHint(var11.text(" after ").value(var9).text(rtpWord(var9) + ". Auto RTP stopped."));
-      if (var8 && !var4) {
+      if (var8 && !bl) {
          this.say(
             ModuleChat.body()
                .warn("Your /" + this.command() + " is still pending")
@@ -283,24 +282,24 @@ final class PlayerBypassAutoRtp {
       }
 
       ChallengeToast.addOrUpdate(
-         new ItemStack(var1.equals("Base") ? Items.field_8575 : Items.field_27070),
-         var1 + " Found - Auto RTP",
-         Text.method_43470(var10 ? "at " + var2 + ", " + var3 : "after " + var9 + rtpWord(var9)),
+         new ItemStack(string.equals("Base") ? Items.PLAYER_HEAD : Items.SPYGLASS),
+         string + " Found - Auto RTP",
+         Text.literal(var10 ? "at " + i + ", " + j : "after " + var9 + rtpWord(var9)),
          this.sound.get()
       );
       if (this.sound.get()) {
-         MinecraftClient.method_1551().method_1483().method_4873(PositionedSoundInstance.method_4758(SoundEvents.field_14709, 1.0F));
+         MinecraftClient.getInstance().getSoundManager().play(PositionedSoundInstance.ui(SoundEvents.ENTITY_PLAYER_LEVELUP, 1.0F));
       }
    }
 
    private void tick() {
       if (this.loop.running()) {
-         MinecraftClient var5 = MinecraftClient.method_1551();
-         ClientPlayerEntity var6 = var5.field_1724;
-         ClientPlayNetworkHandler var7 = var5.method_1562();
+         MinecraftClient var5 = MinecraftClient.getInstance();
+         ClientPlayerEntity var6 = var5.player;
+         ClientPlayNetworkHandler var7 = var5.getNetworkHandler();
          long var8 = System.currentTimeMillis();
-         if (this.link != null && this.link.method_10758() && (var7 == null || var7.method_48296() == this.link)) {
-            if (var6 != null && var5.field_1687 != null && var7 != null && var5.field_1761 != null) {
+         if (this.link != null && this.link.isOpen() && (var7 == null || var7.getConnection() == this.link)) {
+            if (var6 != null && var5.world != null && var7 != null && var5.interactionManager != null) {
                this.offlineSince = 0L;
                AutoRtpLoop.Config var10 = this.config();
                long var11 = PlayerBypassLightTracker.visibilityRevision();
@@ -309,7 +308,7 @@ final class PlayerBypassAutoRtp {
                   this.loop.dataArrived(var8);
                }
 
-               if (var6.method_29504()) {
+               if (var6.isDead()) {
                   if (!this.wasDead) {
                      this.wasDead = true;
                      this.loop.interrupt(var8, var10);
@@ -321,29 +320,29 @@ final class PlayerBypassAutoRtp {
                } else {
                   if (this.wasDead) {
                      this.wasDead = false;
-                     this.level = var5.field_1687;
-                     this.anchor = var6.method_73189();
+                     this.level = var5.world;
+                     this.anchor = var6.getEntityPos();
                      this.loop.holdUntil(var8 + 3000L);
                   }
 
-                  boolean var4 = var5.field_1687 != this.level;
+                  boolean var4 = var5.world != this.level;
                   if (var4) {
-                     this.level = var5.field_1687;
+                     this.level = var5.world;
                      this.knownSuspects.clear();
                   }
 
-                  if (var4 || this.anchor != null && var6.method_73189().method_1025(this.anchor) > 256.0) {
+                  if (var4 || this.anchor != null && var6.getEntityPos().squaredDistanceTo(this.anchor) > 256.0) {
                      switch (this.loop.phase()) {
                         case TELEPORTING:
                            this.land(var6, var8, var10);
                            break;
                         case SCANNING:
-                           this.anchor = var6.method_73189();
+                           this.anchor = var6.getEntityPos();
                            this.loop.relanded(var8, var10);
                            break;
                         default:
                            if (this.loop.landedLate(var8, var10)) {
-                              this.anchor = var6.method_73189();
+                              this.anchor = var6.getEntityPos();
                               this.closeMenu(var6);
                               this.resetMenu();
                            } else if (var4) {
@@ -355,9 +354,9 @@ final class PlayerBypassAutoRtp {
 
                   long var2;
                   if (this.stopOnSuspect.get() && !var4 && (var2 = this.newSuspectNear(var5, var6)) != -9223372036854775808L) {
-                     this.found("Suspect", (ChunkPos.method_8325(var2) << 4) + 8, (ChunkPos.method_8332(var2) << 4) + 8, false);
+                     this.found("Suspect", (ChunkPos.getPackedX(var2) << 4) + 8, (ChunkPos.getPackedZ(var2) << 4) + 8, false);
                   } else if (!this.handleMenu(var5, var6, var8, var10)) {
-                     String var1 = var5.field_1755 != null && !this.ourMenuOpen(var5, var6) ? "a menu is open" : null;
+                     String var1 = var5.currentScreen != null && !this.ourMenuOpen(var5, var6) ? "a menu is open" : null;
                      if (var1 != null) {
                         this.loop.holdUntil(var8 + 1000L);
                      }
@@ -410,76 +409,79 @@ final class PlayerBypassAutoRtp {
       }
    }
 
-   private void send(ClientPlayerEntity var1, ClientPlayNetworkHandler var2, long var3) {
-      this.anchor = var1.method_73189();
+   private void send(ClientPlayerEntity clientPlayerEntity, ClientPlayNetworkHandler clientPlayNetworkHandler, long l) {
+      this.anchor = clientPlayerEntity.getEntityPos();
       this.resetMenu();
       this.rememberSuspects();
-      this.commandSentAt = var3;
+      this.commandSentAt = l;
       this.sendingCommand = true;
 
       try {
-         var2.method_45730(this.command());
+         clientPlayNetworkHandler.sendChatCommand(this.command());
       } finally {
          this.sendingCommand = false;
       }
    }
 
-   private void land(ClientPlayerEntity var1, long var2, AutoRtpLoop.Config var4) {
-      this.anchor = var1.method_73189();
-      this.closeMenu(var1);
+   private void land(ClientPlayerEntity clientPlayerEntity, long l, AutoRtpLoop.Config config) {
+      this.anchor = clientPlayerEntity.getEntityPos();
+      this.closeMenu(clientPlayerEntity);
       this.resetMenu();
-      this.loop.landed(var2, var4);
+      this.loop.landed(l, config);
    }
 
-   private void onPacket(Packet<?> var1) {
+   private void onPacket(Packet<?> packet) {
       if (this.loop.running()) {
-         if (var1 instanceof EntityDamageS2CPacket var2) {
+         if (packet instanceof EntityDamageS2CPacket var2) {
             this.onDamage(var2);
-         } else if (var1 instanceof GameMessageS2CPacket var3) {
-            this.onServerText(var3.comp_763().getString(), !var3.comp_906());
-         } else if (var1 instanceof TitleS2CPacket var4) {
-            this.onServerText(var4.comp_2281().getString(), false);
-         } else if (var1 instanceof SubtitleS2CPacket var5) {
-            this.onServerText(var5.comp_2280().getString(), false);
+         } else if (packet instanceof GameMessageS2CPacket var3) {
+            this.onServerText(var3.content().getString(), !var3.overlay());
+         } else if (packet instanceof TitleS2CPacket var4) {
+            this.onServerText(var4.text().getString(), false);
+         } else if (packet instanceof SubtitleS2CPacket var5) {
+            this.onServerText(var5.text().getString(), false);
          }
       }
    }
 
-   private void onPacketSent(Packet<?> var1) {
+   private void onPacketSent(Packet<?> packet) {
       if (!this.sendingCommand) {
          PlayerInteractEntityC2SPacket var2;
-         if (var1 instanceof PlayerInteractBlockC2SPacket
-            || var1 instanceof CommandExecutionC2SPacket
-            || var1 instanceof ChatCommandSignedC2SPacket
-            || var1 instanceof PlayerInteractEntityC2SPacket && isInteraction(var2 = (PlayerInteractEntityC2SPacket)var1)) {
+         if (packet instanceof PlayerInteractBlockC2SPacket
+            || packet instanceof CommandExecutionC2SPacket
+            || packet instanceof ChatCommandSignedC2SPacket
+            || packet instanceof PlayerInteractEntityC2SPacket && isInteraction(var2 = (PlayerInteractEntityC2SPacket)packet)) {
             this.userActionAt = System.currentTimeMillis();
          }
       }
    }
 
-   private static boolean isInteraction(PlayerInteractEntityC2SPacket var0) {
+   private static boolean isInteraction(PlayerInteractEntityC2SPacket playerInteractEntityC2SPacket) {
       final boolean[] var1 = new boolean[]{false};
-      var0.method_34209(new Handler() {
-         public void method_34219(Hand var1x) {
+      playerInteractEntityC2SPacket.handle(new Handler() {
+         @Override
+         public void interact(Hand hand) {
             var1[0] = true;
          }
 
-         public void method_34220(Hand var1x, Vec3d var2) {
+         @Override
+         public void interactAt(Hand hand, Vec3d pos) {
             var1[0] = true;
          }
 
-         public void method_34218() {
+         @Override
+         public void attack() {
          }
       });
       return var1[0];
    }
 
-   private void onServerText(String var1, boolean var2) {
+   private void onServerText(String string, boolean bl) {
       long var4 = System.currentTimeMillis();
       boolean var3 = this.loop.phase() == AutoRtpLoop.Phase.TELEPORTING;
       if (var3 || this.loop.sentWithin(var4, 5000L)) {
-         if (!var2 || !RtpReply.looksLikePlayerChat(var1, otherPlayerNames())) {
-            RtpReply var7 = RtpReply.parse(var1);
+         if (!bl || !RtpReply.looksLikePlayerChat(string, otherPlayerNames())) {
+            RtpReply var7 = RtpReply.parse(string);
             boolean var8 = this.loop.sentWithin(var4, 2500L);
             switch (var7.kind()) {
                case COOLDOWN:
@@ -522,27 +524,27 @@ final class PlayerBypassAutoRtp {
       }
    }
 
-   private void noticeCooldown(long var1, long var3) {
-      long var5 = var1 + var3;
-      if (var3 >= 60000L && var5 > this.noticedCooldownUntil + 5000L) {
+   private void noticeCooldown(long l, long m) {
+      long var5 = l + m;
+      if (m >= 60000L && var5 > this.noticedCooldownUntil + 5000L) {
          this.noticedCooldownUntil = var5;
-         this.say(ModuleChat.body().text("Server cooldown ").value(seconds(var3)).text(", Auto RTP waits."));
+         this.say(ModuleChat.body().text("Server cooldown ").value(seconds(m)).text(", Auto RTP waits."));
       }
    }
 
    private static List<String> otherPlayerNames() {
-      MinecraftClient var0 = MinecraftClient.method_1551();
-      ClientPlayNetworkHandler var1 = var0.method_1562();
+      MinecraftClient var0 = MinecraftClient.getInstance();
+      ClientPlayNetworkHandler var1 = var0.getNetworkHandler();
       if (var1 == null) {
          return List.of();
       } else {
-         ClientPlayerEntity var2 = var0.field_1724;
-         UUID var3 = var2 == null ? null : var2.method_5667();
-         String var4 = var2 == null ? null : var2.method_7334().name();
+         ClientPlayerEntity var2 = var0.player;
+         UUID var3 = var2 == null ? null : var2.getUuid();
+         String var4 = var2 == null ? null : var2.getGameProfile().name();
          ArrayList var5 = new ArrayList();
 
-         for (PlayerListEntry var7 : var1.method_2880()) {
-            GameProfile var8 = var7.method_2966();
+         for (PlayerListEntry var7 : var1.getPlayerList()) {
+            GameProfile var8 = var7.getProfile();
             if (var8 != null && var8.name() != null && !Objects.equals(var8.id(), var3) && !var8.name().equalsIgnoreCase(var4)) {
                var5.add(var8.name());
             }
@@ -552,19 +554,19 @@ final class PlayerBypassAutoRtp {
       }
    }
 
-   private void onDamage(EntityDamageS2CPacket var1) {
-      MinecraftClient var4 = MinecraftClient.method_1551();
-      ClientPlayerEntity var5 = var4.field_1724;
-      if (var5 != null && var4.field_1687 != null && var1.comp_1267() == var5.method_5628()) {
-         Entity var3 = var1.comp_1269() >= 0 ? var4.field_1687.method_8469(var1.comp_1269()) : null;
+   private void onDamage(EntityDamageS2CPacket entityDamageS2CPacket) {
+      MinecraftClient var4 = MinecraftClient.getInstance();
+      ClientPlayerEntity var5 = var4.player;
+      if (var5 != null && var4.world != null && entityDamageS2CPacket.entityId() == var5.getId()) {
+         Entity var3 = entityDamageS2CPacket.sourceCauseId() >= 0 ? var4.world.getEntityById(entityDamageS2CPacket.sourceCauseId()) : null;
          if (var3 != var5) {
             boolean var2 = var3 instanceof PlayerEntity
-               || var1.comp_1268().method_40225(DamageTypes.field_42320)
-               || var1.comp_1268().method_40225(DamageTypes.field_42332);
+               || entityDamageS2CPacket.sourceType().matchesKey(DamageTypes.PLAYER_ATTACK)
+               || entityDamageS2CPacket.sourceType().matchesKey(DamageTypes.PLAYER_EXPLOSION);
             if (var2) {
                ModuleChat.Body var8 = ModuleChat.body().danger("Hit by ");
                if (var3 instanceof PlayerEntity var9) {
-                  var8.name(var9.method_7334().name());
+                  var8.name(var9.getGameProfile().name());
                } else {
                   var8.text("a player");
                }
@@ -575,16 +577,16 @@ final class PlayerBypassAutoRtp {
       }
    }
 
-   private boolean handleMenu(MinecraftClient var1, ClientPlayerEntity var2, long var3, AutoRtpLoop.Config var5) {
-      if (this.loop.phase() == AutoRtpLoop.Phase.TELEPORTING && containerOpen(var1, var2)) {
-         ScreenHandler var7 = var2.field_7512;
-         if (var7.field_7763 != this.menuId) {
-            if (var7.field_7763 == this.ignoredMenuId) {
+   private boolean handleMenu(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, long l, AutoRtpLoop.Config config) {
+      if (this.loop.phase() == AutoRtpLoop.Phase.TELEPORTING && containerOpen(minecraftClient, clientPlayerEntity)) {
+         ScreenHandler var7 = clientPlayerEntity.currentScreenHandler;
+         if (var7.syncId != this.menuId) {
+            if (var7.syncId == this.ignoredMenuId) {
                return false;
             }
 
-            if (!this.menuMayBeOurs(var3)) {
-               this.ignoredMenuId = var7.field_7763;
+            if (!this.menuMayBeOurs(l)) {
+               this.ignoredMenuId = var7.syncId;
                return false;
             }
 
@@ -593,17 +595,17 @@ final class PlayerBypassAutoRtp {
                return true;
             }
 
-            this.menuId = var7.field_7763;
-            this.menuSeenAt = var3;
+            this.menuId = var7.syncId;
+            this.menuSeenAt = l;
             this.menuClicked = false;
-            this.loop.extend(var3, var5);
+            this.loop.extend(l, config);
          }
 
-         if (!this.menuClicked && var3 - this.menuSeenAt >= 300L) {
+         if (!this.menuClicked && l - this.menuSeenAt >= 300L) {
             ArrayList var8 = new ArrayList();
             String var9 = this.menuItem.get().trim();
             int var10 = findSlot(var7, var9, var8);
-            boolean var6 = var3 - this.menuSeenAt < 2500L;
+            boolean var6 = l - this.menuSeenAt < 2500L;
             if (var9.isEmpty()) {
                if (var8.isEmpty() && var6) {
                   return false;
@@ -620,11 +622,11 @@ final class PlayerBypassAutoRtp {
                   return true;
                }
             } else if (var10 >= 0) {
-               var1.field_1761.method_2906(var7.field_7763, var10, 0, SlotActionType.field_7790, var2);
+               minecraftClient.interactionManager.clickSlot(var7.syncId, var10, 0, SlotActionType.PICKUP, clientPlayerEntity);
                this.menuClicked = true;
                this.menuClicks++;
-               this.lastMenuClickAt = var3;
-               this.loop.extend(var3, var5);
+               this.lastMenuClickAt = l;
+               this.loop.extend(l, config);
                return false;
             } else if (var6) {
                return false;
@@ -640,44 +642,44 @@ final class PlayerBypassAutoRtp {
       }
    }
 
-   private boolean menuMayBeOurs(long var1) {
+   private boolean menuMayBeOurs(long l) {
       if (this.commandSentAt != -9223372036854775808L && this.userActionAt < this.commandSentAt) {
-         return var1 - this.commandSentAt <= 4000L ? true : this.menuClicks > 0 && var1 - this.lastMenuClickAt <= 4000L;
+         return l - this.commandSentAt <= 4000L ? true : this.menuClicks > 0 && l - this.lastMenuClickAt <= 4000L;
       } else {
          return false;
       }
    }
 
-   private static int findSlot(ScreenHandler var0, String var1, List<String> var2) {
+   private static int findSlot(ScreenHandler screenHandler, String string, List<String> list) {
       ArrayList var3 = new ArrayList();
       ArrayList var4 = new ArrayList();
       ArrayList var5 = new ArrayList();
 
-      for (Slot var7 : var0.field_7761) {
-         if (var7.field_7871 instanceof PlayerInventory) {
+      for (Slot var7 : screenHandler.slots) {
+         if (var7.inventory instanceof PlayerInventory) {
             break;
          }
 
-         ItemStack var8 = var7.method_7677();
-         if (!var8.method_7960()) {
-            String var9 = RtpReply.normalize(var8.method_7964().getString());
+         ItemStack var8 = var7.getStack();
+         if (!var8.isEmpty()) {
+            String var9 = RtpReply.normalize(var8.getName().getString());
             var3.add(var7);
             var4.add(var9);
-            var5.add(Registries.field_41178.method_10221(var8.method_7909()).method_12832());
-            if (!var9.isEmpty() && !var2.contains(var9)) {
-               var2.add(var9);
+            var5.add(Registries.ITEM.getId(var8.getItem()).getPath());
+            if (!var9.isEmpty() && !list.contains(var9)) {
+               list.add(var9);
             }
          }
       }
 
-      for (String var16 : var1.split(",")) {
+      for (String var16 : string.split(",")) {
          String var10 = RtpReply.normalize(var16);
          if (!var10.isEmpty()) {
             String var11 = var10.replace(' ', '_');
 
             for (int var12 = 0; var12 < var3.size(); var12++) {
                if (((String)var4.get(var12)).contains(var10) || ((String)var5.get(var12)).equals(var11)) {
-                  return ((Slot)var3.get(var12)).field_7874;
+                  return ((Slot)var3.get(var12)).id;
                }
             }
          }
@@ -686,26 +688,28 @@ final class PlayerBypassAutoRtp {
       return -1;
    }
 
-   private static String nameList(List<String> var0) {
-      if (var0.isEmpty()) {
+   private static String nameList(List<String> list) {
+      if (list.isEmpty()) {
          return "";
       } else {
-         List var1 = var0.size() > 10 ? var0.subList(0, 10) : var0;
-         return " (items: " + String.join(", ", var1) + (var0.size() > var1.size() ? ", ..." : "") + ")";
+         List var1 = list.size() > 10 ? list.subList(0, 10) : list;
+         return " (items: " + String.join(", ", var1) + (list.size() > var1.size() ? ", ..." : "") + ")";
       }
    }
 
-   private static boolean containerOpen(MinecraftClient var0, ClientPlayerEntity var1) {
-      return var1.field_7512 != var1.field_7498 && var0.field_1755 instanceof HandledScreen;
+   private static boolean containerOpen(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      return clientPlayerEntity.currentScreenHandler != clientPlayerEntity.playerScreenHandler && minecraftClient.currentScreen instanceof HandledScreen;
    }
 
-   private boolean ourMenuOpen(MinecraftClient var1, ClientPlayerEntity var2) {
-      return this.menuId >= 0 && containerOpen(var1, var2) && var2.field_7512.field_7763 == this.menuId;
+   private boolean ourMenuOpen(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      return this.menuId >= 0 && containerOpen(minecraftClient, clientPlayerEntity) && clientPlayerEntity.currentScreenHandler.syncId == this.menuId;
    }
 
-   private void closeMenu(ClientPlayerEntity var1) {
-      if (this.menuId >= 0 && var1.field_7512 != var1.field_7498 && var1.field_7512.field_7763 == this.menuId) {
-         var1.method_7346();
+   private void closeMenu(ClientPlayerEntity clientPlayerEntity) {
+      if (this.menuId >= 0
+         && clientPlayerEntity.currentScreenHandler != clientPlayerEntity.playerScreenHandler
+         && clientPlayerEntity.currentScreenHandler.syncId == this.menuId) {
+         clientPlayerEntity.closeHandledScreen();
       }
    }
 
@@ -728,20 +732,18 @@ final class PlayerBypassAutoRtp {
       }
    }
 
-   private long newSuspectNear(MinecraftClient var1, ClientPlayerEntity var2) {
-      int var3 = var1.field_1690.method_38521() + 1;
-      int var4 = var2.method_24515().method_10263() >> 4;
-      int var5 = var2.method_24515().method_10260() >> 4;
-      ObjectIterator var6 = PlayerBypassLightTracker.snapshots().long2ObjectEntrySet().iterator();
+   private long newSuspectNear(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      int var3 = minecraftClient.options.getClampedViewDistance() + 1;
+      int var4 = clientPlayerEntity.getBlockPos().getX() >> 4;
+      int var5 = clientPlayerEntity.getBlockPos().getZ() >> 4;
 
-      while (var6.hasNext()) {
-         Entry var7 = (Entry)var6.next();
+      for (Entry var7 : PlayerBypassLightTracker.snapshots().long2ObjectEntrySet()) {
          long var8 = var7.getLongKey();
          if (!this.knownSuspects.contains(var8)
             && PlayerBypassLightTracker.isSuspect(var8)
             && PlayerBypassLightTracker.isFlagged(var8, (ChunkLightSnapshot)var7.getValue())) {
-            int var10 = ChunkPos.method_8325(var8);
-            int var11 = ChunkPos.method_8332(var8);
+            int var10 = ChunkPos.getPackedX(var8);
+            int var11 = ChunkPos.getPackedZ(var8);
             if (Math.abs(var10 - var4) <= var3 && Math.abs(var11 - var5) <= var3 && !this.atStartSpot(var10, var11)) {
                return var8;
             }
@@ -751,27 +753,27 @@ final class PlayerBypassAutoRtp {
       return -9223372036854775808L;
    }
 
-   private boolean atStartSpot(int var1, int var2) {
+   private boolean atStartSpot(int i, int j) {
       if (this.loop.landings() > 0) {
          return false;
       } else {
-         int var3 = MinecraftClient.method_1551().field_1690.method_38521() + 1;
-         return Math.abs(var1 - this.startChunkX) <= var3 && Math.abs(var2 - this.startChunkZ) <= var3;
+         int var3 = MinecraftClient.getInstance().options.getClampedViewDistance() + 1;
+         return Math.abs(i - this.startChunkX) <= var3 && Math.abs(j - this.startChunkZ) <= var3;
       }
    }
 
-   private void progress(long var1, String var3, AutoRtpLoop.Config var4) {
-      String var6 = this.label(var4);
+   private void progress(long l, String string, AutoRtpLoop.Config config) {
+      String var6 = this.label(config);
       String var5;
-      if (var3 != null) {
-         var5 = var6 + " - paused, " + var3;
+      if (string != null) {
+         var5 = var6 + " - paused, " + string;
       } else {
-         long var7 = this.loop.nextSendIn(var1);
+         long var7 = this.loop.nextSendIn(l);
 
          var5 = switch (this.loop.phase()) {
             case TELEPORTING -> var6 + " - waiting for the teleport";
-            case SCANNING -> var6 + " - scanning, " + seconds(this.loop.scanLeft(var1)) + " left";
-            case WAITING -> this.loop.cooldownLeft(var1) > 0L
+            case SCANNING -> var6 + " - scanning, " + seconds(this.loop.scanLeft(l)) + " left";
+            case WAITING -> this.loop.cooldownLeft(l) > 0L
                ? var6 + " - server cooldown, next in " + seconds(var7)
                : (
                   this.loop.landings() == 0 && this.loop.sent() == 0
@@ -779,26 +781,26 @@ final class PlayerBypassAutoRtp {
                      : (
                         !this.lastTryLanded
                            ? var6 + " - no teleport, retry in " + seconds(var7)
-                           : (this.loop.settling(var1) ? var6 + " - no base yet, chunks still loading" : var6 + " - no base, next in " + seconds(var7))
+                           : (this.loop.settling(l) ? var6 + " - no base yet, chunks still loading" : var6 + " - no base, next in " + seconds(var7))
                      )
                );
             default -> "";
          };
       }
 
-      boolean var9 = this.loop.phase() != AutoRtpLoop.Phase.TELEPORTING && var1 - this.lastBarAt >= 2000L;
-      this.bar(var1, var5, var9);
+      boolean var9 = this.loop.phase() != AutoRtpLoop.Phase.TELEPORTING && l - this.lastBarAt >= 2000L;
+      this.bar(l, var5, var9);
    }
 
-   private String label(AutoRtpLoop.Config var1) {
-      return "Auto RTP #" + this.loop.sent() + (var1.maxRtps() > 0 ? "/" + var1.maxRtps() : "");
+   private String label(AutoRtpLoop.Config config) {
+      return "Auto RTP #" + this.loop.sent() + (config.maxRtps() > 0 ? "/" + config.maxRtps() : "");
    }
 
-   private void bar(long var1, String var3, boolean var4) {
-      if (!var3.isEmpty() && (!var3.equals(this.lastBar) || var4)) {
-         this.lastBar = var3;
-         this.lastBarAt = var1;
-         ModuleChat.actionBarAlways(this.module, ModuleChat.body().text(var3));
+   private void bar(long l, String string, boolean bl) {
+      if (!string.isEmpty() && (!string.equals(this.lastBar) || bl)) {
+         this.lastBar = string;
+         this.lastBarAt = l;
+         ModuleChat.actionBarAlways(this.module, ModuleChat.body().text(string));
       }
    }
 
@@ -816,20 +818,20 @@ final class PlayerBypassAutoRtp {
       return var1.isEmpty() ? "rtp" : var1;
    }
 
-   private void say(ModuleChat.Body var1) {
-      ModuleChat.sendAlways(this.module, var1);
+   private void say(ModuleChat.Body body) {
+      ModuleChat.sendAlways(this.module, body);
    }
 
-   private static long millis(NumberSetting var0) {
-      return Math.round(var0.get() * 1000.0);
+   private static long millis(NumberSetting numberSetting) {
+      return Math.round(numberSetting.get() * 1000.0);
    }
 
-   private static String seconds(long var0) {
-      long var2 = (var0 + 999L) / 1000L;
+   private static String seconds(long l) {
+      long var2 = (l + 999L) / 1000L;
       return var2 >= 120L ? String.format(Locale.ROOT, "%dm %ds", var2 / 60L, var2 % 60L) : var2 + "s";
    }
 
-   private static String rtpWord(int var0) {
-      return var0 == 1 ? " RTP" : " RTPs";
+   private static String rtpWord(int i) {
+      return i == 1 ? " RTP" : " RTPs";
    }
 }

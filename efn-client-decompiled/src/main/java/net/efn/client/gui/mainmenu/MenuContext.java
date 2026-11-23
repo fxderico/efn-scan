@@ -27,19 +27,19 @@ public final class MenuContext extends MenuFrame {
    private float lookX;
    private float lookY;
 
-   public MenuContext(Screen var1, Runnable var2, Runnable var3) {
-      this.screen = var1;
-      this.openAccounts = var2;
-      this.openCredits = var3;
+   public MenuContext(Screen screen, Runnable runnable, Runnable runnable2) {
+      this.screen = screen;
+      this.openAccounts = runnable;
+      this.openCredits = runnable2;
    }
 
    @Override
-   public void begin(ImDrawList var1, ImDrawList var2, float var3, float var4, float var5, float var6, float var7, float var8, float var9, boolean var10) {
-      super.begin(var1, var2, var3, var4, var5, var6, var7, var8, var9, var10);
-      boolean var11 = var8 >= 0.0F && var9 >= 0.0F && var8 <= var3 && var9 <= var4;
-      float var12 = var11 ? var8 / var3 * 2.0F - 1.0F : 0.0F;
-      float var13 = var11 ? var9 / var4 * 2.0F - 1.0F : 0.0F;
-      float var14 = Math.min(1.0F, var7 * 2.5F);
+   public void begin(ImDrawList imDrawList, ImDrawList imDrawList2, float f, float g, float h, float i, float j, float k, float l, boolean bl) {
+      super.begin(imDrawList, imDrawList2, f, g, h, i, j, k, l, bl);
+      boolean var11 = k >= 0.0F && l >= 0.0F && k <= f && l <= g;
+      float var12 = var11 ? k / f * 2.0F - 1.0F : 0.0F;
+      float var13 = var11 ? l / g * 2.0F - 1.0F : 0.0F;
+      float var14 = Math.min(1.0F, j * 2.5F);
       this.lookX = this.lookX + (var12 - this.lookX) * var14;
       this.lookY = this.lookY + (var13 - this.lookY) * var14;
    }
@@ -56,60 +56,62 @@ public final class MenuContext extends MenuFrame {
       return this.lookY;
    }
 
-   public boolean enabled(MenuAction var1) {
-      return var1 != MenuAction.MULTIPLAYER && var1 != MenuAction.REALMS || MinecraftClient.method_1551().method_29043();
+   public boolean enabled(MenuAction menuAction) {
+      return menuAction != MenuAction.MULTIPLAYER && menuAction != MenuAction.REALMS || MinecraftClient.getInstance().isMultiplayerEnabled();
    }
 
-   public float control(MenuAction var1, float var2, float var3, float var4, float var5) {
-      boolean var6 = this.inside(var2, var3, var4, var5);
-      if (!this.enabled(var1)) {
+   public float control(MenuAction menuAction, float f, float g, float h, float i) {
+      boolean var6 = this.inside(f, g, h, i);
+      if (!this.enabled(menuAction)) {
          if (var6) {
-            this.tooltip("Multiplayer is disabled", this.mouseX(), var3 + var5 + this.px(6.0F));
+            this.tooltip("Multiplayer is disabled", this.mouseX(), g + i + this.px(6.0F));
          }
 
-         return this.hover(var1, false);
+         return this.hover(menuAction, false);
       } else {
          if (var6 && this.clicked()) {
-            this.activate(var1);
+            this.activate(menuAction);
          }
 
-         return this.hover(var1, var6);
+         return this.hover(menuAction, var6);
       }
    }
 
-   public float hover(MenuAction var1, boolean var2) {
-      float var3 = this.hover[var1.ordinal()];
-      var3 += ((var2 ? 1.0F : 0.0F) - var3) * Math.min(1.0F, this.dt() * 12.0F);
-      this.hover[var1.ordinal()] = var3;
+   public float hover(MenuAction menuAction, boolean bl) {
+      float var3 = this.hover[menuAction.ordinal()];
+      var3 += ((bl ? 1.0F : 0.0F) - var3) * Math.min(1.0F, this.dt() * 12.0F);
+      this.hover[menuAction.ordinal()] = var3;
       return var3;
    }
 
-   public void activate(MenuAction var1) {
-      if (this.enabled(var1)) {
-         MinecraftClient var3 = MinecraftClient.method_1551();
+   public void activate(MenuAction menuAction) {
+      if (this.enabled(menuAction)) {
+         MinecraftClient var3 = MinecraftClient.getInstance();
 
-         Supplier var2 = switch (var1) {
+         Supplier var2 = switch (menuAction) {
             case SINGLEPLAYER -> () -> new SelectWorldScreen(this.screen);
-            case MULTIPLAYER -> () -> (Screen)(var3.field_1690.field_21840 ? new MultiplayerScreen(this.screen) : new MultiplayerWarningScreen(this.screen));
+            case MULTIPLAYER -> () -> (Screen)(var3.options.skipMultiplayerWarning
+               ? new MultiplayerScreen(this.screen)
+               : new MultiplayerWarningScreen(this.screen));
             case REALMS -> () -> new RealmsMainScreen(this.screen);
-            case OPTIONS -> () -> new OptionsScreen(this.screen, var3.field_1690);
-            case LANGUAGE -> () -> new LanguageOptionsScreen(this.screen, var3.field_1690, var3.method_1526());
-            case ACCESSIBILITY -> () -> new AccessibilityOptionsScreen(this.screen, var3.field_1690);
+            case OPTIONS -> () -> new OptionsScreen(this.screen, var3.options);
+            case LANGUAGE -> () -> new LanguageOptionsScreen(this.screen, var3.options, var3.getLanguageManager());
+            case ACCESSIBILITY -> () -> new AccessibilityOptionsScreen(this.screen, var3.options);
             case EFN -> ImGuiScreen::new;
             case QUIT, MODS, ACCOUNTS, CREDITS -> null;
          };
-         if (var1 == MenuAction.QUIT) {
-            var3.execute(() -> var3.method_1592());
-         } else if (var1 == MenuAction.ACCOUNTS) {
+         if (menuAction == MenuAction.QUIT) {
+            var3.execute(() -> var3.scheduleStop());
+         } else if (menuAction == MenuAction.ACCOUNTS) {
             if (this.openAccounts != null) {
                this.openAccounts.run();
             }
-         } else if (var1 == MenuAction.CREDITS) {
+         } else if (menuAction == MenuAction.CREDITS) {
             this.openCredits.run();
-         } else if (var1 == MenuAction.MODS) {
-            var3.execute(() -> Util.method_668().method_60932(FabricLoader.getInstance().getGameDir().resolve("mods")));
+         } else if (menuAction == MenuAction.MODS) {
+            var3.execute(() -> Util.getOperatingSystem().open(FabricLoader.getInstance().getGameDir().resolve("mods")));
          } else if (var2 != null) {
-            var3.method_63588(() -> var3.method_1507((Screen)var2.get()));
+            var3.send(() -> var3.setScreen((Screen)var2.get()));
          }
       }
    }

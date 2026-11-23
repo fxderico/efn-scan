@@ -65,92 +65,92 @@ public final class AutoWalkModule extends ClientModule {
       releaseKeys();
    }
 
-   private void onPreTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientPlayerEntity var3 = var2.field_1724;
-      if (var3 != null && var2.field_1687 != null) {
-         if (this.disableOnY.get() && var3.field_6036 != var3.method_23318()) {
+   private void onPreTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientPlayerEntity var3 = var2.player;
+      if (var3 != null && var2.world != null) {
+         if (this.disableOnY.get() && var3.lastY != var3.getY()) {
             this.requestDisable();
          } else {
-            this.keyFor(var2.field_1690).method_23481(true);
+            this.keyFor(var2.options).setPressed(true);
          }
       }
    }
 
-   private void onKey(KeyInputEvent var1) {
-      if (var1.action == 1 && this.disableOnInput.get()) {
-         if (var1.key != -1) {
-            GameOptions var2 = MinecraftClient.method_1551().field_1690;
-            KeyInput var3 = new KeyInput(var1.key, var1.scancode, var1.mods);
-            if (var2.field_1894.method_1417(var3)
-               || var2.field_1881.method_1417(var3)
-               || var2.field_1913.method_1417(var3)
-               || var2.field_1849.method_1417(var3)
-               || var2.field_1832.method_1417(var3)
-               || var2.field_1903.method_1417(var3)) {
+   private void onKey(KeyInputEvent keyInputEvent) {
+      if (keyInputEvent.action == 1 && this.disableOnInput.get()) {
+         if (keyInputEvent.key != -1) {
+            GameOptions var2 = MinecraftClient.getInstance().options;
+            KeyInput var3 = new KeyInput(keyInputEvent.key, keyInputEvent.scancode, keyInputEvent.mods);
+            if (var2.forwardKey.matchesKey(var3)
+               || var2.backKey.matchesKey(var3)
+               || var2.leftKey.matchesKey(var3)
+               || var2.rightKey.matchesKey(var3)
+               || var2.sneakKey.matchesKey(var3)
+               || var2.jumpKey.matchesKey(var3)) {
                this.onMovementInput();
             }
          }
       }
    }
 
-   private void onMouseButton(MouseInputEvent var1) {
-      if (var1.action == 1 && this.disableOnInput.get()) {
-         GameOptions var2 = MinecraftClient.method_1551().field_1690;
-         Click var3 = new Click(0.0, 0.0, new MouseInput(var1.button, var1.mods));
-         if (var2.field_1894.method_1433(var3)
-            || var2.field_1881.method_1433(var3)
-            || var2.field_1913.method_1433(var3)
-            || var2.field_1849.method_1433(var3)
-            || var2.field_1832.method_1433(var3)
-            || var2.field_1903.method_1433(var3)) {
+   private void onMouseButton(MouseInputEvent mouseInputEvent) {
+      if (mouseInputEvent.action == 1 && this.disableOnInput.get()) {
+         GameOptions var2 = MinecraftClient.getInstance().options;
+         Click var3 = new Click(0.0, 0.0, new MouseInput(mouseInputEvent.button, mouseInputEvent.mods));
+         if (var2.forwardKey.matchesMouse(var3)
+            || var2.backKey.matchesMouse(var3)
+            || var2.leftKey.matchesMouse(var3)
+            || var2.rightKey.matchesMouse(var3)
+            || var2.sneakKey.matchesMouse(var3)
+            || var2.jumpKey.matchesMouse(var3)) {
             this.onMovementInput();
          }
       }
    }
 
    private void onMovementInput() {
-      if (MinecraftClient.method_1551().field_1755 == null) {
+      if (MinecraftClient.getInstance().currentScreen == null) {
          this.requestDisable();
       }
    }
 
-   private void onPlayerMove(PlayerMoveEvent var1) {
+   private void onPlayerMove(PlayerMoveEvent playerMoveEvent) {
       if (this.waitForChunks.get()) {
-         MinecraftClient var2 = MinecraftClient.method_1551();
-         ClientPlayerEntity var3 = var2.field_1724;
-         ClientWorld var4 = var2.field_1687;
+         MinecraftClient var2 = MinecraftClient.getInstance();
+         ClientPlayerEntity var3 = var2.player;
+         ClientWorld var4 = var2.world;
          if (var3 != null && var4 != null) {
-            int var5 = ChunkSectionPos.method_42615(var3.method_23317() + var1.x * 2.0);
-            int var6 = ChunkSectionPos.method_42615(var3.method_23321() + var1.z * 2.0);
-            if (!var4.method_2935().method_12123(var5, var6)) {
-               var1.x = 0.0;
-               var1.z = 0.0;
+            int var5 = ChunkSectionPos.getSectionCoordFloored(var3.getX() + playerMoveEvent.x * 2.0);
+            int var6 = ChunkSectionPos.getSectionCoordFloored(var3.getZ() + playerMoveEvent.z * 2.0);
+            if (!var4.getChunkManager().isChunkLoaded(var5, var6)) {
+               playerMoveEvent.x = 0.0;
+               playerMoveEvent.z = 0.0;
             }
          }
       }
    }
 
-   private KeyBinding keyFor(GameOptions var1) {
+   private KeyBinding keyFor(GameOptions gameOptions) {
       String var2 = this.direction.get();
 
       return switch (var2) {
-         case "Backwards" -> var1.field_1881;
-         case "Left" -> var1.field_1913;
-         case "Right" -> var1.field_1849;
-         default -> var1.field_1894;
+         case "Backwards" -> gameOptions.backKey;
+         case "Left" -> gameOptions.leftKey;
+         case "Right" -> gameOptions.rightKey;
+         default -> gameOptions.forwardKey;
       };
    }
 
    private static void releaseKeys() {
-      MinecraftClient var0 = MinecraftClient.method_1551();
-      GameOptions var1 = var0.field_1690;
+      MinecraftClient var0 = MinecraftClient.getInstance();
+      GameOptions var1 = var0.options;
       if (var1 != null) {
-         boolean var2 = var0.field_1755 == null && !isFreecamActive();
-         restore(var0, var1.field_1894, var2);
-         restore(var0, var1.field_1881, var2);
-         restore(var0, var1.field_1913, var2);
-         restore(var0, var1.field_1849, var2);
+         boolean var2 = var0.currentScreen == null && !isFreecamActive();
+         restore(var0, var1.forwardKey, var2);
+         restore(var0, var1.backKey, var2);
+         restore(var0, var1.leftKey, var2);
+         restore(var0, var1.rightKey, var2);
       }
    }
 
@@ -159,20 +159,20 @@ public final class AutoWalkModule extends ClientModule {
       return var0 != null && var0.isEnabled();
    }
 
-   private static void restore(MinecraftClient var0, KeyBinding var1, boolean var2) {
-      var1.method_23481(var2 && isPhysicallyHeld(var0, var1));
+   private static void restore(MinecraftClient minecraftClient, KeyBinding keyBinding, boolean bl) {
+      keyBinding.setPressed(bl && isPhysicallyHeld(minecraftClient, keyBinding));
    }
 
-   private static boolean isPhysicallyHeld(MinecraftClient var0, KeyBinding var1) {
-      if (var1.method_1415()) {
+   private static boolean isPhysicallyHeld(MinecraftClient minecraftClient, KeyBinding keyBinding) {
+      if (keyBinding.isUnbound()) {
          return false;
       } else {
-         Key var2 = InputUtil.method_15981(var1.method_1428());
-         Type var3 = var2.method_1442();
-         if (var3 == Type.field_1668) {
-            return EfnKeyPolling.isKeyDown(var0.method_22683(), var2.method_1444());
+         Key var2 = InputUtil.fromTranslationKey(keyBinding.getBoundKeyTranslationKey());
+         Type var3 = var2.getCategory();
+         if (var3 == Type.KEYSYM) {
+            return EfnKeyPolling.isKeyDown(minecraftClient.getWindow(), var2.getCode());
          } else {
-            return var3 == Type.field_1672 ? GLFW.glfwGetMouseButton(var0.method_22683().method_4490(), var2.method_1444()) == 1 : false;
+            return var3 == Type.MOUSE ? GLFW.glfwGetMouseButton(minecraftClient.getWindow().getHandle(), var2.getCode()) == 1 : false;
          }
       }
    }

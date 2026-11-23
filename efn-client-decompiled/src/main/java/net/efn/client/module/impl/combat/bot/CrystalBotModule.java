@@ -76,7 +76,6 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 import net.minecraft.world.RaycastContext.FluidHandling;
@@ -87,12 +86,12 @@ public final class CrystalBotModule extends ClientModule {
    private static final double MIN = 2.4;
    private static final double IDEAL = 3.2;
    private static final double MAX = 4.0;
-   private static final Predicate<ItemStack> GAPPLE = var0 -> var0.method_31574(Items.field_8463) || var0.method_31574(Items.field_8367);
-   private static final Predicate<ItemStack> XP = var0 -> var0.method_31574(Items.field_8287);
-   private static final Predicate<ItemStack> PEARL = var0 -> var0.method_31574(Items.field_8634);
-   private static final Predicate<ItemStack> OBSIDIAN = var0 -> var0.method_31574(Items.field_8281);
-   private static final Predicate<ItemStack> ANCHOR = var0 -> var0.method_31574(Items.field_23141);
-   private static final Predicate<ItemStack> GLOWSTONE = var0 -> var0.method_31574(Items.field_8801);
+   private static final Predicate<ItemStack> GAPPLE = itemStack -> itemStack.isOf(Items.GOLDEN_APPLE) || itemStack.isOf(Items.ENCHANTED_GOLDEN_APPLE);
+   private static final Predicate<ItemStack> XP = itemStack -> itemStack.isOf(Items.EXPERIENCE_BOTTLE);
+   private static final Predicate<ItemStack> PEARL = itemStack -> itemStack.isOf(Items.ENDER_PEARL);
+   private static final Predicate<ItemStack> OBSIDIAN = itemStack -> itemStack.isOf(Items.OBSIDIAN);
+   private static final Predicate<ItemStack> ANCHOR = itemStack -> itemStack.isOf(Items.RESPAWN_ANCHOR);
+   private static final Predicate<ItemStack> GLOWSTONE = itemStack -> itemStack.isOf(Items.GLOWSTONE);
    private static final float ARMOR_LOW = 0.3F;
    private static final int RUN_HOLD = 40;
    private static final int POP_COVER = 40;
@@ -154,7 +153,7 @@ public final class CrystalBotModule extends ClientModule {
    private final BooleanSetting refill = this.addSetting("refill", new BooleanSetting("Refill Hotbar", true));
    private final BooleanSetting learn = this.addSetting("learn", new BooleanSetting("Learn Rivals", true));
    private final BooleanSetting dance = this.addSetting("strafe", new BooleanSetting("Strafe", true));
-   private final MinecraftClient mc = MinecraftClient.method_1551();
+   private final MinecraftClient mc = MinecraftClient.getInstance();
    private final BotBody body = new BotBody();
    private final BotKit kit = new BotKit();
    private final RivalBook book = new RivalBook();
@@ -286,7 +285,7 @@ public final class CrystalBotModule extends ClientModule {
       this.crystalWasOn = null;
       this.popStreak = 0;
       this.forgetDig();
-      this.on(TickEvent.TYPE, Stage.PRE, var1 -> this.tick());
+      this.on(TickEvent.TYPE, Stage.PRE, tickEvent -> this.tick());
    }
 
    @Override
@@ -305,16 +304,16 @@ public final class CrystalBotModule extends ClientModule {
    }
 
    @EventHandler
-   public void onPacketApplied(PacketAppliedEvent var1) {
-      ClientPlayerEntity var3 = this.mc.field_1724;
-      if (var3 != null && this.mc.field_1687 != null) {
-         Packet var4 = var1.packet;
+   public void onPacketApplied(PacketAppliedEvent packetAppliedEvent) {
+      ClientPlayerEntity var3 = this.mc.player;
+      if (var3 != null && this.mc.world != null) {
+         Packet var4 = packetAppliedEvent.packet;
          EntityStatusS2CPacket var2;
-         if (var4 instanceof EntityStatusS2CPacket && (var2 = (EntityStatusS2CPacket)var4).method_11470() == 35) {
-            if (var2.method_11469((World)this.mc.field_1687) == var3) {
+         if (var4 instanceof EntityStatusS2CPacket && (var2 = (EntityStatusS2CPacket)var4).getStatus() == 35) {
+            if (var2.getEntity(this.mc.world) == var3) {
                this.popStreak = this.tick - this.ownPopAt <= 600 ? this.popStreak + 1 : 1;
                this.ownPopAt = this.tick;
-            } else if (this.fought != null && var2.method_11469((World)this.mc.field_1687) == this.fought) {
+            } else if (this.fought != null && var2.getEntity(this.mc.world) == this.fought) {
                this.theirPopAt = this.tick;
                this.openerPops++;
             }
@@ -323,31 +322,31 @@ public final class CrystalBotModule extends ClientModule {
    }
 
    @EventHandler
-   public void onPacketReceive(PacketReceiveEvent var1) {
-      ClientPlayerEntity var2 = this.mc.field_1724;
+   public void onPacketReceive(PacketReceiveEvent packetReceiveEvent) {
+      ClientPlayerEntity var2 = this.mc.player;
       if (var2 != null) {
-         if (var1.packet instanceof PlayerPositionLookS2CPacket var4) {
-            Vec3d var5 = var4.comp_3228().comp_3148();
-            Vec3d var6 = var2.method_73189();
-            Set var7 = var4.comp_3229();
+         if (packetReceiveEvent.packet instanceof PlayerPositionLookS2CPacket var4) {
+            Vec3d var5 = var4.change().position();
+            Vec3d var6 = var2.getEntityPos();
+            Set var7 = var4.relatives();
             this.pause
                .moved(
                   new Vec3d(
-                     var7.contains(PositionFlag.field_12400) ? var6.field_1352 + var5.field_1352 : var5.field_1352,
-                     var7.contains(PositionFlag.field_12398) ? var6.field_1351 + var5.field_1351 : var5.field_1351,
-                     var7.contains(PositionFlag.field_12403) ? var6.field_1350 + var5.field_1350 : var5.field_1350
+                     var7.contains(PositionFlag.X) ? var6.x + var5.x : var5.x,
+                     var7.contains(PositionFlag.Y) ? var6.y + var5.y : var5.y,
+                     var7.contains(PositionFlag.Z) ? var6.z + var5.z : var5.z
                   ),
                   this.tick - this.pearlAt
                );
-         } else if (var1.packet instanceof WorldTimeUpdateS2CPacket var11) {
-            this.pause.time(var11.comp_3219());
-         } else if (var1.packet instanceof ExplosionS2CPacket var12) {
-            this.air.blast(var12.comp_2883());
+         } else if (packetReceiveEvent.packet instanceof WorldTimeUpdateS2CPacket var11) {
+            this.pause.time(var11.time());
+         } else if (packetReceiveEvent.packet instanceof ExplosionS2CPacket var12) {
+            this.air.blast(var12.center());
          } else {
-            Packet var10 = var1.packet;
+            Packet var10 = packetReceiveEvent.packet;
             EntityDamageS2CPacket var13;
-            if (var10 instanceof EntityDamageS2CPacket && (var13 = (EntityDamageS2CPacket)var10).comp_1267() == var2.method_5628() && var13.comp_1269() >= 0) {
-               this.attackedBy = var13.comp_1269();
+            if (var10 instanceof EntityDamageS2CPacket && (var13 = (EntityDamageS2CPacket)var10).entityId() == var2.getId() && var13.sourceCauseId() >= 0) {
+               this.attackedBy = var13.sourceCauseId();
                this.attackedAt = this.tick;
             }
          }
@@ -356,10 +355,10 @@ public final class CrystalBotModule extends ClientModule {
 
    private void tick() {
       this.tick++;
-      ClientPlayerEntity var5 = this.mc.field_1724;
-      ClientWorld var6 = this.mc.field_1687;
+      ClientPlayerEntity var5 = this.mc.player;
+      ClientWorld var6 = this.mc.world;
       this.body.release(this.mc);
-      if (var5 != null && var6 != null && MeleeAttacks.canAct(this.mc) && !var5.method_29504()) {
+      if (var5 != null && var6 != null && MeleeAttacks.canAct(this.mc) && !var5.isDead()) {
          CombatMacroLock.release(this);
          this.keepTotem();
          this.body.stayGrounded(blastNear(var6, var5));
@@ -385,8 +384,8 @@ public final class CrystalBotModule extends ClientModule {
                this.newFight(var8);
             }
 
-            boolean var3 = var5.method_6032() <= this.eatAt() && var5.method_6067() < 4.0F;
-            if (var5.method_6032() > this.eatAt() + 4.0F || var5.method_6067() >= 4.0F) {
+            boolean var3 = var5.getHealth() <= this.eatAt() && var5.getAbsorptionAmount() < 4.0F;
+            if (var5.getHealth() > this.eatAt() + 4.0F || var5.getAbsorptionAmount() >= 4.0F) {
                this.needsGapple = false;
             }
 
@@ -394,7 +393,7 @@ public final class CrystalBotModule extends ClientModule {
                this.launching = false;
                this.throwing = null;
                CombatMacroLock.release(this);
-               if ((var3 || this.needsGapple || this.eating && var5.method_6115()) && this.hands() && this.body.use(this.mc, var5, GAPPLE)) {
+               if ((var3 || this.needsGapple || this.eating && var5.isUsingItem()) && this.hands() && this.body.use(this.mc, var5, GAPPLE)) {
                   this.eating = true;
                } else {
                   this.eating = false;
@@ -405,15 +404,15 @@ public final class CrystalBotModule extends ClientModule {
                   }
                }
             } else {
-               RivalBook.Rival var10 = this.learn.get() ? this.book.of(var8.method_5667()) : null;
+               RivalBook.Rival var10 = this.learn.get() ? this.book.of(var8.getUuid()) : null;
                this.watch(var6, var8, var10);
-               if (feetY(var5) < MathHelper.method_15357(var8.method_23318() + 0.01)) {
+               if (feetY(var5) < MathHelper.floor(var8.getY() + 0.01)) {
                   this.body.stayGrounded(true);
                }
 
                this.air.note(var8, this.tick, var10);
                Combo.prefer(var5, var8);
-               Combo.flight(var5, var8, var1x -> this.air.lead(var1x, this.tick));
+               Combo.flight(var5, var8, i -> this.air.lead(i, this.tick));
                this.runAuras(var6);
                CrystalBotModule.Stance var11 = this.stance;
                this.stance = this.stance(var6, var5, var8, var10);
@@ -428,7 +427,7 @@ public final class CrystalBotModule extends ClientModule {
 
                this.poppedOut = false;
                this.steer(var5, var8, var10);
-               double var12 = var5.method_5739(var8);
+               double var12 = var5.distanceTo(var8);
                if (var12 < this.closest - 0.5) {
                   this.closest = var12;
                   this.closerAt = this.tick;
@@ -440,15 +439,15 @@ public final class CrystalBotModule extends ClientModule {
                         if (!this.guardAnchors.get() || !this.defuse(var6, var5) && !this.guard(var6, var5, var8)) {
                            if (!this.launching || !this.launch(var5, var8)) {
                               if (this.followLaid || this.tick > this.followUntil || !this.followUp(var6, var5, var8)) {
-                                 boolean var2 = var8.method_6115()
-                                    && var8.method_6030().method_57826(DataComponentTypes.field_50075)
+                                 boolean var2 = var8.isUsingItem()
+                                    && var8.getActiveItem().contains(DataComponentTypes.FOOD)
                                     && totems(var5) >= 1
-                                    && var5.method_6032() > 8.0F;
+                                    && var5.getHealth() > 8.0F;
                                  if (var3 && !var2) {
                                     this.needsGapple = true;
                                  }
 
-                                 if (this.needsGapple || this.eating && var5.method_6115()) {
+                                 if (this.needsGapple || this.eating && var5.isUsingItem()) {
                                     if (var12 >= 8.0) {
                                        if (BotBody.hotbarSlot(var5, GAPPLE) >= 0) {
                                           if (this.hands() && this.body.use(this.mc, var5, GAPPLE)) {
@@ -480,7 +479,7 @@ public final class CrystalBotModule extends ClientModule {
                                     if (!this.mendArmor.get() || !(var12 >= 12.0) || !armorLow(var5) || !this.hands() || !this.throwXp(var5)) {
                                        this.mending = false;
                                        if (!this.chase.get() || !this.chasePearl(var6, var5, var8, var10)) {
-                                          boolean var1 = var12 >= 8.0 || BotBody.hotbarSlot(var5, var0 -> var0.method_31574(Items.field_8301)) < 0;
+                                          boolean var1 = var12 >= 8.0 || BotBody.hotbarSlot(var5, itemStack -> itemStack.isOf(Items.END_CRYSTAL)) < 0;
                                           if (this.refill.get()
                                              && var1
                                              && this.kit.needed(var5, this.anchors.get())
@@ -530,38 +529,38 @@ public final class CrystalBotModule extends ClientModule {
       }
    }
 
-   private PlayerEntity choose(ClientWorld var1, ClientPlayerEntity var2, PlayerEntity var3) {
+   private PlayerEntity choose(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity) {
       PlayerEntity var4 = null;
       double var5 = -1.0 / 0.0;
 
-      for (PlayerEntity var8 : enemies(var1, var2, this.range.get())) {
-         double var9 = this.worth(var2, var8);
+      for (PlayerEntity var8 : enemies(clientWorld, clientPlayerEntity, this.range.get())) {
+         double var9 = this.worth(clientPlayerEntity, var8);
          if (var9 > var5) {
             var4 = var8;
             var5 = var9;
          }
       }
 
-      if (var3 == null || !var3.method_5805() || this.fought == null) {
+      if (playerEntity == null || !playerEntity.isAlive() || this.fought == null) {
          this.challenger = null;
          if (var4 != null) {
             this.body.hold(var4);
          }
 
          return var4;
-      } else if (var4 != null && var4 != var3) {
-         boolean var12 = var2.method_5739(var3) <= 6.0;
-         double var13 = this.worth(var2, var3);
+      } else if (var4 != null && var4 != playerEntity) {
+         boolean var12 = clientPlayerEntity.distanceTo(playerEntity) <= 6.0;
+         double var13 = this.worth(clientPlayerEntity, playerEntity);
          double var10 = var12 ? 8.0 : 2.0;
          if (var5 < var13 + var10) {
             this.challenger = null;
-            return var3;
+            return playerEntity;
          } else if (var4 != this.challenger) {
             this.challenger = var4;
             this.challengerSince = this.tick;
-            return var3;
+            return playerEntity;
          } else if (this.tick - this.challengerSince < (var12 ? 20 : 6)) {
-            return var3;
+            return playerEntity;
          } else {
             this.challenger = null;
             this.body.hold(var4);
@@ -569,49 +568,49 @@ public final class CrystalBotModule extends ClientModule {
          }
       } else {
          this.challenger = null;
-         return var3;
+         return playerEntity;
       }
    }
 
-   private double worth(ClientPlayerEntity var1, PlayerEntity var2) {
-      double var3 = var1.method_5739(var2);
+   private double worth(ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity) {
+      double var3 = clientPlayerEntity.distanceTo(playerEntity);
       double var5 = var3 <= 6.0 ? 1.0 : (var3 >= 10.0 ? 0.0 : (10.0 - var3) / 4.0);
-      double var7 = 4.0 * var5 - 0.2 * var3 + (20.0F - Math.min(20.0F, CrystalDamage.health(var2))) / 5.0;
-      if (!var2.method_6079().method_31574(Items.field_8288) && !var2.method_6047().method_31574(Items.field_8288)) {
+      double var7 = 4.0 * var5 - 0.2 * var3 + (20.0F - Math.min(20.0F, CrystalDamage.health(playerEntity))) / 5.0;
+      if (!playerEntity.getOffHandStack().isOf(Items.TOTEM_OF_UNDYING) && !playerEntity.getMainHandStack().isOf(Items.TOTEM_OF_UNDYING)) {
          var7++;
       }
 
-      if (armorLow(var2)) {
+      if (armorLow(playerEntity)) {
          var7++;
       }
 
-      if (var2.method_5628() == this.attackedBy && this.tick - this.attackedAt <= 60 && var3 <= 4.5) {
+      if (playerEntity.getId() == this.attackedBy && this.tick - this.attackedAt <= 60 && var3 <= 4.5) {
          var7 += 4.0;
       }
 
       return var7;
    }
 
-   private boolean finish(ClientPlayerEntity var1, PlayerEntity var2) {
-      if (this.pause.slowServer() || var2.field_6235 > 0 || reach(var1, var2) > 2.95 || CrystalDamage.health(var2) > 3.0F) {
+   private boolean finish(ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity) {
+      if (this.pause.slowServer() || playerEntity.hurtTime > 0 || reach(clientPlayerEntity, playerEntity) > 2.95 || CrystalDamage.health(playerEntity) > 3.0F) {
          return false;
-      } else if (!MeleeAttacks.isMeleeWeapon(var1.method_6047()) || MeleeAttacks.charge(var1) < 0.9F) {
+      } else if (!MeleeAttacks.isMeleeWeapon(clientPlayerEntity.getMainHandStack()) || MeleeAttacks.charge(clientPlayerEntity) < 0.9F) {
          return false;
       } else if (!this.hands()) {
          return true;
       } else {
-         this.body.face(this.mc, var1, var2, 1.0F);
-         this.strike(var1, var2);
+         this.body.face(this.mc, clientPlayerEntity, playerEntity, 1.0F);
+         this.strike(clientPlayerEntity, playerEntity);
          return true;
       }
    }
 
-   private void newFight(PlayerEntity var1) {
+   private void newFight(PlayerEntity playerEntity) {
       if (this.fought != null && this.lowSpell && this.pearledInSpell && this.learn.get()) {
-         this.book.of(this.fought.method_5667()).lowSpell(true);
+         this.book.of(this.fought.getUuid()).lowSpell(true);
       }
 
-      this.fought = var1;
+      this.fought = playerEntity;
       this.launching = false;
       this.holeSince = -1;
       this.theirPopAt = -1;
@@ -630,22 +629,22 @@ public final class CrystalBotModule extends ClientModule {
       this.air.forget();
       this.forgetDig();
       this.progressAt = this.hurtAt = this.tick;
-      float var2 = this.lastTheirHealth = var1 == null ? 0.0F : CrystalDamage.health(var1);
-      if (var1 != null) {
-         ModuleChat.send(this, ModuleChat.body().text("Fighting ").name(var1.method_5477().getString()).text("."));
+      float var2 = this.lastTheirHealth = playerEntity == null ? 0.0F : CrystalDamage.health(playerEntity);
+      if (playerEntity != null) {
+         ModuleChat.send(this, ModuleChat.body().text("Fighting ").name(playerEntity.getName().getString()).text("."));
          if (this.learn.get()) {
-            this.book.of(var1.method_5667()).fought();
+            this.book.of(playerEntity.getUuid()).fought();
          }
       } else {
          ModuleChat.send(this, ModuleChat.body().text("No enemy in range, waiting."));
       }
    }
 
-   private CrystalBotModule.Stance stance(ClientWorld var1, ClientPlayerEntity var2, PlayerEntity var3, RivalBook.Rival var4) {
-      int var6 = totems(var2);
-      float var7 = var2.method_6032() + var2.method_6067();
-      float var8 = worstThreat(var1, var2, this.digAnchor) / Math.max(1.0F, var7);
-      int var9 = enemiesWithin(var1, var2, 8.0);
+   private CrystalBotModule.Stance stance(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity, RivalBook.Rival rival) {
+      int var6 = totems(clientPlayerEntity);
+      float var7 = clientPlayerEntity.getHealth() + clientPlayerEntity.getAbsorptionAmount();
+      float var8 = worstThreat(clientWorld, clientPlayerEntity, this.digAnchor) / Math.max(1.0F, var7);
+      int var9 = enemiesWithin(clientWorld, clientPlayerEntity, 8.0);
       boolean var5 = var6 == 0 && var9 >= 2;
       if (var5) {
          this.runUntil = Math.max(this.runUntil, this.tick + 40);
@@ -661,7 +660,7 @@ public final class CrystalBotModule extends ClientModule {
          return CrystalBotModule.Stance.RUN;
       } else if (this.tick - this.ownPopAt <= 40) {
          return CrystalBotModule.Stance.GUARD;
-      } else if (this.finishing(var3, var4)) {
+      } else if (this.finishing(playerEntity, rival)) {
          return CrystalBotModule.Stance.PRESS;
       } else {
          boolean var11 = var7 <= this.retreatAt() + 2.0F || var6 <= 1 || var8 >= 0.35F;
@@ -669,37 +668,37 @@ public final class CrystalBotModule extends ClientModule {
       }
    }
 
-   private boolean finishing(PlayerEntity var1, RivalBook.Rival var2) {
-      if (this.theirPopAt >= 0 && !var1.method_6079().method_31574(Items.field_8288)) {
-         int var3 = var2 == null ? 8 : MathHelper.method_15340(var2.retotemWindow(8), 3, 30);
+   private boolean finishing(PlayerEntity playerEntity, RivalBook.Rival rival) {
+      if (this.theirPopAt >= 0 && !playerEntity.getOffHandStack().isOf(Items.TOTEM_OF_UNDYING)) {
+         int var3 = rival == null ? 8 : MathHelper.clamp(rival.retotemWindow(8), 3, 30);
          return this.tick - this.theirPopAt <= var3;
       } else {
          return false;
       }
    }
 
-   private void steer(ClientPlayerEntity var1, PlayerEntity var2, RivalBook.Rival var3) {
+   private void steer(ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity, RivalBook.Rival rival) {
       float var8 = 2.0F;
-      float var9 = var1.method_6032() + var1.method_6067();
-      float var10 = var9 - (var1.method_6079().method_31574(Items.field_8288) ? 1.0F : 4.0F);
+      float var9 = clientPlayerEntity.getHealth() + clientPlayerEntity.getAbsorptionAmount();
+      float var10 = var9 - (clientPlayerEntity.getOffHandStack().isOf(Items.TOTEM_OF_UNDYING) ? 1.0F : 4.0F);
       float var7;
       this.selfCapNow = var7 = Math.max(0.5F, Math.min(this.stance.selfCap + var8, var10));
-      float var6 = this.finishing(var2, var3) ? 2.0F : this.stance.minDamage;
-      if (feetY(var1) >= MathHelper.method_15357(var2.method_23318() + 0.01) && !Combo.inHole(var2)) {
+      float var6 = this.finishing(playerEntity, rival) ? 2.0F : this.stance.minDamage;
+      if (feetY(clientPlayerEntity) >= MathHelper.floor(playerEntity.getY() + 0.01) && !Combo.inHole(playerEntity)) {
          var6 = Math.min(var6, 2.5F);
       }
 
       CrystalAuraModule var5;
       if ((var5 = ModuleRegistry.get(CrystalAuraModule.class)) != null) {
-         var5.steer(var1, var6, var7);
-         var5.crystalsFrom(var1, feetY(var1) + 1);
-         var5.fullSpeed(var1);
-         var5.buildEagerly(var1);
+         var5.steer(clientPlayerEntity, var6, var7);
+         var5.crystalsFrom(clientPlayerEntity, feetY(clientPlayerEntity) + 1);
+         var5.fullSpeed(clientPlayerEntity);
+         var5.buildEagerly(clientPlayerEntity);
       }
 
       AnchorAuraModule var4;
       if ((var4 = ModuleRegistry.get(AnchorAuraModule.class)) != null) {
-         var4.steer(var1, this.finishing(var2, var3) ? 2.0F : this.stance.anchorMin, Math.min(var7, 11.0F));
+         var4.steer(clientPlayerEntity, this.finishing(playerEntity, rival) ? 2.0F : this.stance.anchorMin, Math.min(var7, 11.0F));
       }
    }
 
@@ -711,46 +710,47 @@ public final class CrystalBotModule extends ClientModule {
       return 4.0F;
    }
 
-   private boolean critical(ClientPlayerEntity var1) {
-      return var1.method_6032() + var1.method_6067() <= this.retreatAt() && !var1.method_6079().method_31574(Items.field_8288);
+   private boolean critical(ClientPlayerEntity clientPlayerEntity) {
+      return clientPlayerEntity.getHealth() + clientPlayerEntity.getAbsorptionAmount() <= this.retreatAt()
+         && !clientPlayerEntity.getOffHandStack().isOf(Items.TOTEM_OF_UNDYING);
    }
 
-   private static int totems(ClientPlayerEntity var0) {
-      int var1 = var0.method_6079().method_31574(Items.field_8288) ? 1 : 0;
-      PlayerInventory var2 = var0.method_31548();
+   private static int totems(ClientPlayerEntity clientPlayerEntity) {
+      int var1 = clientPlayerEntity.getOffHandStack().isOf(Items.TOTEM_OF_UNDYING) ? 1 : 0;
+      PlayerInventory var2 = clientPlayerEntity.getInventory();
 
       for (int var3 = 0; var3 < 36; var3++) {
-         if (var2.method_5438(var3).method_31574(Items.field_8288)) {
-            var1 += var2.method_5438(var3).method_7947();
+         if (var2.getStack(var3).isOf(Items.TOTEM_OF_UNDYING)) {
+            var1 += var2.getStack(var3).getCount();
          }
       }
 
       return var1;
    }
 
-   private static float worstThreat(ClientWorld var0, ClientPlayerEntity var1, BlockPos var2) {
-      List var3 = enemies(var0, var1, 16.0);
+   private static float worstThreat(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, BlockPos blockPos) {
+      List var3 = enemies(clientWorld, clientPlayerEntity, 16.0);
       float var4 = 0.0F;
 
-      for (EndCrystalEntity var6 : var0.method_18467(EndCrystalEntity.class, var1.method_5829().method_1014(12.0))) {
-         Vec3d var7 = var6.method_73189();
-         float var8 = CrystalDamage.estimate(var7, var1);
-         if (var8 > var4 && worthIt(var3, var6.method_5829(), var7, var8, 4.0, 6.0F, null)) {
+      for (EndCrystalEntity var6 : clientWorld.getNonSpectatingEntities(EndCrystalEntity.class, clientPlayerEntity.getBoundingBox().expand(12.0))) {
+         Vec3d var7 = var6.getEntityPos();
+         float var8 = CrystalDamage.estimate(var7, clientPlayerEntity);
+         if (var8 > var4 && worthIt(var3, var6.getBoundingBox(), var7, var8, 4.0, 6.0F, null)) {
             var4 = var8;
          }
       }
 
-      BlockPos var12 = var1.method_24515();
+      BlockPos var12 = clientPlayerEntity.getBlockPos();
 
-      for (BlockPos var14 : BlockPos.method_10097(var12.method_10069(-5, -2, -5), var12.method_10069(5, 3, 5))) {
-         BlockState var11 = var0.method_8320(var14);
+      for (BlockPos var14 : BlockPos.iterate(var12.add(-5, -2, -5), var12.add(5, 3, 5))) {
+         BlockState var11 = clientWorld.getBlockState(var14);
          Vec3d var9;
          float var10;
          BlockPos var15;
-         if (var11.method_27852(Blocks.field_23152)
-            && (Integer)var11.method_11654(RespawnAnchorBlock.field_23153) > 0
-            && !var14.equals(var2)
-            && (var10 = CrystalDamage.estimate(var9 = Vec3d.method_24953(var15 = var14.method_10062()), var1, 5.0F, var15)) > var4
+         if (var11.isOf(Blocks.RESPAWN_ANCHOR)
+            && var11.get(RespawnAnchorBlock.CHARGES) > 0
+            && !var14.equals(blockPos)
+            && (var10 = CrystalDamage.estimate(var9 = Vec3d.ofCenter(var15 = var14.toImmutable()), clientPlayerEntity, 5.0F, var15)) > var4
             && worthIt(var3, new Box(var15), var9, var10, 5.5, 5.0F, var15)) {
             var4 = var10;
          }
@@ -759,10 +759,10 @@ public final class CrystalBotModule extends ClientModule {
       return var4;
    }
 
-   private static boolean worthIt(List<PlayerEntity> var0, Box var1, Vec3d var2, float var3, double var4, float var6, BlockPos var7) {
-      for (PlayerEntity var9 : var0) {
-         Vec3d var10 = var9.method_33571();
-         if (!(var10.method_1025(TargetingUtils.closestPoint(var10, var1)) > var4 * var4) && CrystalDamage.estimate(var2, var9, var6, var7) < var3) {
+   private static boolean worthIt(List<PlayerEntity> list, Box box, Vec3d vec3d, float f, double d, float g, BlockPos blockPos) {
+      for (PlayerEntity var9 : list) {
+         Vec3d var10 = var9.getEyePos();
+         if (!(var10.squaredDistanceTo(TargetingUtils.closestPoint(var10, box)) > d * d) && CrystalDamage.estimate(vec3d, var9, g, blockPos) < f) {
             return true;
          }
       }
@@ -770,11 +770,11 @@ public final class CrystalBotModule extends ClientModule {
       return false;
    }
 
-   private static int enemiesWithin(ClientWorld var0, ClientPlayerEntity var1, double var2) {
+   private static int enemiesWithin(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, double d) {
       int var4 = 0;
 
-      for (PlayerEntity var6 : var0.method_18456()) {
-         if (var6 != var1 && var6.method_5805() && MeleeAttacks.isEnemy(var1, var6) && var6.method_5739(var1) <= var2) {
+      for (PlayerEntity var6 : clientWorld.getPlayers()) {
+         if (var6 != clientPlayerEntity && var6.isAlive() && MeleeAttacks.isEnemy(clientPlayerEntity, var6) && var6.distanceTo(clientPlayerEntity) <= d) {
             var4++;
          }
       }
@@ -782,11 +782,11 @@ public final class CrystalBotModule extends ClientModule {
       return var4;
    }
 
-   private static List<PlayerEntity> enemies(ClientWorld var0, ClientPlayerEntity var1, double var2) {
+   private static List<PlayerEntity> enemies(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, double d) {
       ArrayList var4 = new ArrayList();
 
-      for (PlayerEntity var6 : var0.method_18456()) {
-         if (var6 != var1 && var6.method_5805() && MeleeAttacks.isEnemy(var1, var6) && var6.method_5739(var1) <= var2) {
+      for (PlayerEntity var6 : clientWorld.getPlayers()) {
+         if (var6 != clientPlayerEntity && var6.isAlive() && MeleeAttacks.isEnemy(clientPlayerEntity, var6) && var6.distanceTo(clientPlayerEntity) <= d) {
             var4.add(var6);
          }
       }
@@ -794,7 +794,7 @@ public final class CrystalBotModule extends ClientModule {
       return var4;
    }
 
-   private void runAuras(ClientWorld var1) {
+   private void runAuras(ClientWorld clientWorld) {
       CrystalAuraModule var3 = ModuleRegistry.get(CrystalAuraModule.class);
       if (var3 != null && !var3.isEnabled()) {
          if (this.crystalWasOn == null) {
@@ -805,7 +805,7 @@ public final class CrystalBotModule extends ClientModule {
       }
 
       AnchorAuraModule var4 = ModuleRegistry.get(AnchorAuraModule.class);
-      boolean var2 = this.anchors.get() && var1.method_27983() != World.field_25180;
+      boolean var2 = this.anchors.get() && clientWorld.getRegistryKey() != World.NETHER;
       if (var4 != null && var2 && !var4.isEnabled()) {
          if (this.anchorWasOn == null) {
             this.anchorWasOn = false;
@@ -848,21 +848,21 @@ public final class CrystalBotModule extends ClientModule {
       this.crystalWasOn = null;
    }
 
-   private static boolean blastNear(ClientWorld var0, ClientPlayerEntity var1) {
-      for (EndCrystalEntity var3 : var0.method_18467(EndCrystalEntity.class, var1.method_5829().method_1014(7.0))) {
-         if (CrystalDamage.estimate(var3.method_73189(), var1) >= 1.0F) {
+   private static boolean blastNear(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity) {
+      for (EndCrystalEntity var3 : clientWorld.getNonSpectatingEntities(EndCrystalEntity.class, clientPlayerEntity.getBoundingBox().expand(7.0))) {
+         if (CrystalDamage.estimate(var3.getEntityPos(), clientPlayerEntity) >= 1.0F) {
             return true;
          }
       }
 
-      BlockPos var7 = var1.method_24515();
+      BlockPos var7 = clientPlayerEntity.getBlockPos();
       int var8 = (int)Math.ceil(7.0);
 
-      for (BlockPos var5 : BlockPos.method_10097(var7.method_10069(-var8, -2, -var8), var7.method_10069(var8, 3, var8))) {
-         BlockState var6 = var0.method_8320(var5);
-         if (var6.method_27852(Blocks.field_23152)
-            && (Integer)var6.method_11654(RespawnAnchorBlock.field_23153) > 0
-            && Vec3d.method_24953(var5).method_1022(var1.method_73189()) <= 7.0) {
+      for (BlockPos var5 : BlockPos.iterate(var7.add(-var8, -2, -var8), var7.add(var8, 3, var8))) {
+         BlockState var6 = clientWorld.getBlockState(var5);
+         if (var6.isOf(Blocks.RESPAWN_ANCHOR)
+            && var6.get(RespawnAnchorBlock.CHARGES) > 0
+            && Vec3d.ofCenter(var5).distanceTo(clientPlayerEntity.getEntityPos()) <= 7.0) {
             return true;
          }
       }
@@ -870,79 +870,79 @@ public final class CrystalBotModule extends ClientModule {
       return false;
    }
 
-   private static void handBack(ClientPlayerEntity var0) {
-      ItemStack var1 = var0.method_6047();
-      if (!var1.method_31574(Items.field_8301)
-         && !var1.method_31574(Items.field_8281)
-         && !var1.method_31574(Items.field_23141)
-         && !var1.method_31574(Items.field_8801)
+   private static void handBack(ClientPlayerEntity clientPlayerEntity) {
+      ItemStack var1 = clientPlayerEntity.getMainHandStack();
+      if (!var1.isOf(Items.END_CRYSTAL)
+         && !var1.isOf(Items.OBSIDIAN)
+         && !var1.isOf(Items.RESPAWN_ANCHOR)
+         && !var1.isOf(Items.GLOWSTONE)
          && !Crystals.isCombatItem(var1)) {
-         int var2 = BotBody.hotbarSlot(var0, var0x -> var0x.method_31574(Items.field_8301));
+         int var2 = BotBody.hotbarSlot(clientPlayerEntity, itemStack -> itemStack.isOf(Items.END_CRYSTAL));
          if (var2 < 0) {
-            var2 = BotBody.hotbarSlot(var0, MeleeAttacks::isMeleeWeapon);
+            var2 = BotBody.hotbarSlot(clientPlayerEntity, MeleeAttacks::isMeleeWeapon);
          }
 
          if (var2 >= 0) {
-            var0.method_31548().method_61496(var2);
+            clientPlayerEntity.getInventory().setSelectedSlot(var2);
          }
       }
    }
 
    private boolean hands() {
       CombatMacroLock.take(this);
-      return !MeleeAttacks.actedThisTick((PlayerEntity)this.mc.field_1724);
+      return !MeleeAttacks.actedThisTick(this.mc.player);
    }
 
-   private void watch(ClientWorld var1, PlayerEntity var2, RivalBook.Rival var3) {
-      float var4 = CrystalDamage.health(var2);
+   private void watch(ClientWorld clientWorld, PlayerEntity playerEntity, RivalBook.Rival rival) {
+      float var4 = CrystalDamage.health(playerEntity);
       if (var4 < this.lastTheirHealth - 0.5F) {
          this.hurtAt = this.tick;
       }
 
-      if (var4 < this.lastTheirHealth - 0.5F || !Combo.inHole(var2)) {
+      if (var4 < this.lastTheirHealth - 0.5F || !Combo.inHole(playerEntity)) {
          this.progressAt = this.tick;
       }
 
       this.lastTheirHealth = var4;
       if (this.openerArm >= 0 && this.tick - this.openerAt >= 40) {
          float var5 = this.openerHealth - var4 + 10.0F * this.openerPops;
-         if (var3 != null) {
-            var3.opened(this.openerArm, this.openerReach, MathHelper.method_15363(var5 / 12.0F, 0.0F, 1.5F));
+         if (rival != null) {
+            rival.opened(this.openerArm, this.openerReach, MathHelper.clamp(var5 / 12.0F, 0.0F, 1.5F));
          }
 
          this.openerArm = -1;
       }
 
       if (this.launchedAt >= 0) {
-         this.launchPeak = Math.max(this.launchPeak, var2.method_23318() - this.launchY);
+         this.launchPeak = Math.max(this.launchPeak, playerEntity.getY() - this.launchY);
          if (this.tick - this.launchedAt >= 8) {
-            if (var3 != null) {
-               var3.launched(this.launchPeak >= 0.3);
+            if (rival != null) {
+               rival.launched(this.launchPeak >= 0.3);
             }
 
             this.launchedAt = -1;
          }
       }
 
-      if (this.theirPopAt >= 0 && var3 != null) {
-         if (var2.method_6079().method_31574(Items.field_8288)) {
-            var3.retotemed(this.tick - this.theirPopAt);
+      if (this.theirPopAt >= 0 && rival != null) {
+         if (playerEntity.getOffHandStack().isOf(Items.TOTEM_OF_UNDYING)) {
+            rival.retotemed(this.tick - this.theirPopAt);
             this.theirPopAt = -1;
          } else if (this.tick - this.theirPopAt > 100) {
-            var3.retotemed(100);
+            rival.retotemed(100);
             this.theirPopAt = -1;
          }
       } else if (this.theirPopAt >= 0 && this.tick - this.theirPopAt > 100) {
          this.theirPopAt = -1;
       }
 
-      if (Combo.inHole(var2)) {
+      if (Combo.inHole(playerEntity)) {
          if (this.holeSince < 0) {
             this.holeSince = this.tick;
          }
       } else if (this.holeSince >= 0) {
-         if (var3 != null) {
-            var3.leftHole(Math.min(600, this.tick - this.holeSince));
+         if (rival != null) {
+            rival.leftHole(Math.min(600, this.tick - this.holeSince));
          }
 
          this.holeSince = -1;
@@ -952,43 +952,46 @@ public final class CrystalBotModule extends ClientModule {
          this.lowSpell = true;
          this.pearledInSpell = false;
       } else if (this.lowSpell && var4 > 12.0F) {
-         if (var3 != null) {
-            var3.lowSpell(this.pearledInSpell);
+         if (rival != null) {
+            rival.lowSpell(this.pearledInSpell);
          }
 
          this.lowSpell = false;
       }
 
-      for (EnderPearlEntity var6 : var1.method_18467(EnderPearlEntity.class, var2.method_5829().method_1014(4.0))) {
-         if (var6.method_24921() == var2 && var6.field_6012 <= 2 && var6.method_5628() != this.followedPearl) {
+      for (EnderPearlEntity var6 : clientWorld.getNonSpectatingEntities(EnderPearlEntity.class, playerEntity.getBoundingBox().expand(4.0))) {
+         if (var6.getOwner() == playerEntity && var6.age <= 2 && var6.getId() != this.followedPearl) {
             if (this.lowSpell) {
                this.pearledInSpell = true;
             }
 
-            this.theirPearl = var6.method_5628();
+            this.theirPearl = var6.getId();
          }
       }
    }
 
-   private boolean getAway(ClientWorld var1, ClientPlayerEntity var2, PlayerEntity var3) {
-      if (var2.method_5739(var3) < 12.0 && this.pearlAway(var1, var2, var3)) {
+   private boolean getAway(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity) {
+      if (clientPlayerEntity.distanceTo(playerEntity) < 12.0 && this.pearlAway(clientWorld, clientPlayerEntity, playerEntity)) {
          return true;
-      } else if (var2.method_5739(var3) >= 16.0 && var2.method_6032() <= this.eatAt() + 4.0F && this.hands() && this.body.use(this.mc, var2, GAPPLE)) {
+      } else if (clientPlayerEntity.distanceTo(playerEntity) >= 16.0
+         && clientPlayerEntity.getHealth() <= this.eatAt() + 4.0F
+         && this.hands()
+         && this.body.use(this.mc, clientPlayerEntity, GAPPLE)) {
          this.eating = true;
          return true;
       } else {
-         this.body.flee(this.mc, var2, var3);
+         this.body.flee(this.mc, clientPlayerEntity, playerEntity);
          return true;
       }
    }
 
-   private boolean pearlAway(ClientWorld var1, ClientPlayerEntity var2, PlayerEntity var3) {
-      if (this.escape.get() && this.pearlReady(var2) && this.tick >= this.searchAfter) {
-         List var4 = enemies(var1, var2, 48.0);
-         Rotation var5 = PearlFlight.escape(var2, var4, 20.0);
+   private boolean pearlAway(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity) {
+      if (this.escape.get() && this.pearlReady(clientPlayerEntity) && this.tick >= this.searchAfter) {
+         List var4 = enemies(clientWorld, clientPlayerEntity, 48.0);
+         Rotation var5 = PearlFlight.escape(clientPlayerEntity, var4, 20.0);
          this.throwAway = 16.0;
          if (var5 == null) {
-            var5 = PearlFlight.escape(var2, var4, 12.0);
+            var5 = PearlFlight.escape(clientPlayerEntity, var4, 12.0);
             this.throwAway = 12.0;
          }
 
@@ -997,29 +1000,32 @@ public final class CrystalBotModule extends ClientModule {
             return false;
          } else {
             this.startThrow(CrystalBotModule.Throw.ESCAPE, var5, null);
-            return this.keepThrowing(var2, var3);
+            return this.keepThrowing(clientPlayerEntity, playerEntity);
          }
       } else {
          return false;
       }
    }
 
-   private boolean pearlReady(ClientPlayerEntity var1) {
+   private boolean pearlReady(ClientPlayerEntity clientPlayerEntity) {
       return this.tick - this.pearlAt >= 30
-         && BotBody.hotbarSlot(var1, PEARL) >= 0
-         && !var1.method_7357().method_7904(new ItemStack(Items.field_8634))
-         && (var1.method_6032() + var1.method_6067() > 6.0F || var1.method_6079().method_31574(Items.field_8288));
+         && BotBody.hotbarSlot(clientPlayerEntity, PEARL) >= 0
+         && !clientPlayerEntity.getItemCooldownManager().isCoolingDown(new ItemStack(Items.ENDER_PEARL))
+         && (
+            clientPlayerEntity.getHealth() + clientPlayerEntity.getAbsorptionAmount() > 6.0F
+               || clientPlayerEntity.getOffHandStack().isOf(Items.TOTEM_OF_UNDYING)
+         );
    }
 
-   private void startThrow(CrystalBotModule.Throw var1, Rotation var2, Vec3d var3) {
-      this.throwing = var1;
-      this.throwLook = var2;
-      this.throwSpot = var3;
+   private void startThrow(CrystalBotModule.Throw throw_, Rotation rotation, Vec3d vec3d) {
+      this.throwing = throw_;
+      this.throwLook = rotation;
+      this.throwSpot = vec3d;
       this.throwUntil = this.tick + 14;
    }
 
-   private boolean keepThrowing(ClientPlayerEntity var1, PlayerEntity var2) {
-      if (this.tick > this.throwUntil || !this.pearlReady(var1)) {
+   private boolean keepThrowing(ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity) {
+      if (this.tick > this.throwUntil || !this.pearlReady(clientPlayerEntity)) {
          this.throwing = null;
          this.pearlAt = this.tick - 15;
          return false;
@@ -1027,30 +1033,30 @@ public final class CrystalBotModule extends ClientModule {
          return true;
       } else {
          Aim.turn(this.mc, this.throwLook.yaw(), this.throwLook.pitch(), 27.0F);
-         int var4 = BotBody.hotbarSlot(var1, PEARL);
-         if (var1.method_31548().method_67532() != var4) {
-            var1.method_31548().method_61496(var4);
+         int var4 = BotBody.hotbarSlot(clientPlayerEntity, PEARL);
+         if (clientPlayerEntity.getInventory().getSelectedSlot() != var4) {
+            clientPlayerEntity.getInventory().setSelectedSlot(var4);
             return true;
-         } else if (!ServerRotation.desynced() && !var1.method_6115() && MeleeAttacks.handsFree(this.mc, var1)) {
-            if (var1.method_24828() && !(var1.method_60478().method_37268() > 1.0E-4)) {
-               float var5 = var1.method_36454();
-               float var6 = var1.method_36455();
-               Rotation var7 = ServerRotation.commit(var1);
-               if (!(Math.abs(MathHelper.method_15393(var7.yaw() - var5)) > 0.01F) && !(Math.abs(var7.pitch() - var6) > 0.01F)) {
+         } else if (!ServerRotation.desynced() && !clientPlayerEntity.isUsingItem() && MeleeAttacks.handsFree(this.mc, clientPlayerEntity)) {
+            if (clientPlayerEntity.isOnGround() && !(clientPlayerEntity.getMovement().horizontalLengthSquared() > 1.0E-4)) {
+               float var5 = clientPlayerEntity.getYaw();
+               float var6 = clientPlayerEntity.getPitch();
+               Rotation var7 = ServerRotation.commit(clientPlayerEntity);
+               if (!(Math.abs(MathHelper.wrapDegrees(var7.yaw() - var5)) > 0.01F) && !(Math.abs(var7.pitch() - var6) > 0.01F)) {
                   boolean var3 = this.throwing == CrystalBotModule.Throw.ESCAPE
-                     ? PearlFlight.escapes(var1, var5, var6, enemies(this.mc.field_1687, var1, 48.0), this.throwAway)
-                     : PearlFlight.reaches(var1, var5, var6, this.throwSpot, 0.0, 3.0);
+                     ? PearlFlight.escapes(clientPlayerEntity, var5, var6, enemies(this.mc.world, clientPlayerEntity, 48.0), this.throwAway)
+                     : PearlFlight.reaches(clientPlayerEntity, var5, var6, this.throwSpot, 0.0, 3.0);
                   if (!var3) {
                      return true;
                   } else {
-                     if (this.mc.field_1761.method_2919(var1, Hand.field_5808).method_23665()) {
-                        var1.method_6104(Hand.field_5808);
+                     if (this.mc.interactionManager.interactItem(clientPlayerEntity, Hand.MAIN_HAND).isAccepted()) {
+                        clientPlayerEntity.swingHand(Hand.MAIN_HAND);
                         MeleeAttacks.claimTick(this.mc);
                         this.pearlAt = this.tick;
                         if (this.throwing == CrystalBotModule.Throw.ESCAPE) {
                            ModuleChat.send(this, ModuleChat.body().warn("Pearled away").text("."));
                         } else {
-                           ModuleChat.send(this, ModuleChat.body().text("Pearled after ").name(var2.method_5477().getString()).text("."));
+                           ModuleChat.send(this, ModuleChat.body().text("Pearled after ").name(playerEntity.getName().getString()).text("."));
                         }
                      }
 
@@ -1069,16 +1075,16 @@ public final class CrystalBotModule extends ClientModule {
       }
    }
 
-   private boolean chasePearl(ClientWorld var1, ClientPlayerEntity var2, PlayerEntity var3, RivalBook.Rival var4) {
-      if ((this.stance == CrystalBotModule.Stance.PRESS || this.stance == CrystalBotModule.Stance.HOLD) && this.pearlReady(var2)) {
-         float var5 = var2.method_6032() + var2.method_6067();
+   private boolean chasePearl(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity, RivalBook.Rival rival) {
+      if ((this.stance == CrystalBotModule.Stance.PRESS || this.stance == CrystalBotModule.Stance.HOLD) && this.pearlReady(clientPlayerEntity)) {
+         float var5 = clientPlayerEntity.getHealth() + clientPlayerEntity.getAbsorptionAmount();
          if (var5 < 6.0F) {
             return false;
          } else {
-            int var6 = count(var2, PEARL);
+            int var6 = count(clientPlayerEntity, PEARL);
             boolean var7 = this.theirPearl >= 0;
-            boolean var8 = totems(var2) == 0 && var2.method_6032() <= 12.0F
-               || !var7 && var4 != null && var4.pearlsWhenLow() && CrystalDamage.health(var3) <= 8.0F;
+            boolean var8 = totems(clientPlayerEntity) == 0 && clientPlayerEntity.getHealth() <= 12.0F
+               || !var7 && rival != null && rival.pearlsWhenLow() && CrystalDamage.health(playerEntity) <= 8.0F;
             if (var6 <= (var8 ? 1 : 0)) {
                return false;
             } else {
@@ -1086,48 +1092,48 @@ public final class CrystalBotModule extends ClientModule {
                if (var7) {
                   this.followedPearl = this.theirPearl;
                   this.theirPearl = -1;
-                  Entity var12 = var1.method_8469(this.followedPearl);
+                  Entity var12 = clientWorld.getEntityById(this.followedPearl);
                   EnderPearlEntity var10;
                   PearlFlight.Landing var11;
                   if (var12 instanceof EnderPearlEntity
-                     && (var11 = PearlFlight.fly(var1, var10 = (EnderPearlEntity)var12, var10.method_73189(), var10.method_18798())) != null
-                     && var11.at().method_1022(var2.method_73189()) > 8.0) {
+                     && (var11 = PearlFlight.fly(clientWorld, var10 = (EnderPearlEntity)var12, var10.getEntityPos(), var10.getVelocity())) != null
+                     && var11.at().distanceTo(clientPlayerEntity.getEntityPos()) > 8.0) {
                      var9 = var11.at();
                   }
                }
 
-               double var22 = var2.method_5739(var3);
+               double var22 = clientPlayerEntity.distanceTo(playerEntity);
                if (var9 == null && var22 <= this.range.get() + 8.0) {
-                  Vec3d var14 = var3.method_73189().method_1020(var2.method_73189()).method_18805(1.0, 0.0, 1.0).method_1029();
-                  Vec3d var15 = var3.method_73189().method_1023(var3.field_6014, var3.field_6036, var3.field_5969);
-                  boolean var16 = var22 >= 12.0 && var15.field_1352 * var14.field_1352 + var15.field_1350 * var14.field_1350 > 0.12;
-                  BlockPos var17 = var3.method_24515().method_10074();
-                  boolean var18 = !var1.method_8320(var17).method_26220(var1, var17).method_1110();
-                  boolean var19 = var22 >= 3.0 && var3.method_23318() - var2.method_23318() >= 3.0 && var18;
-                  boolean var20 = var22 >= 4.0 && var2.method_23318() - var3.method_23318() >= 4.0 && var18;
+                  Vec3d var14 = playerEntity.getEntityPos().subtract(clientPlayerEntity.getEntityPos()).multiply(1.0, 0.0, 1.0).normalize();
+                  Vec3d var15 = playerEntity.getEntityPos().subtract(playerEntity.lastX, playerEntity.lastY, playerEntity.lastZ);
+                  boolean var16 = var22 >= 12.0 && var15.x * var14.x + var15.z * var14.z > 0.12;
+                  BlockPos var17 = playerEntity.getBlockPos().down();
+                  boolean var18 = !clientWorld.getBlockState(var17).getCollisionShape(clientWorld, var17).isEmpty();
+                  boolean var19 = var22 >= 3.0 && playerEntity.getY() - clientPlayerEntity.getY() >= 3.0 && var18;
+                  boolean var20 = var22 >= 4.0 && clientPlayerEntity.getY() - playerEntity.getY() >= 4.0 && var18;
                   boolean var13 = var22 > 6.0 && this.tick - this.closerAt > 60;
                   if (var16 || var19 || var20 || var13) {
-                     var9 = var3.method_73189().method_1019(var15.method_18805(1.0, 0.0, 1.0).method_1021(PearlFlight.flightTicks(var22)));
+                     var9 = playerEntity.getEntityPos().add(var15.multiply(1.0, 0.0, 1.0).multiply(PearlFlight.flightTicks(var22)));
                   }
 
                   AirTrack.Landing var23;
                   if (var9 == null
-                     && !var3.method_24828()
+                     && !playerEntity.isOnGround()
                      && var22 >= 6.0
                      && (var23 = this.air.landing(this.tick)) != null
-                     && var3.method_23318() - var23.at().field_1351 >= 3.0) {
+                     && playerEntity.getY() - var23.at().y >= 3.0) {
                      var9 = var23.at();
                   }
                }
 
                if (var9 != null && this.tick >= this.searchAfter) {
-                  Rotation var24 = PearlFlight.toward(var2, var9, 0.8, 3.0);
+                  Rotation var24 = PearlFlight.toward(clientPlayerEntity, var9, 0.8, 3.0);
                   if (var24 == null) {
                      this.searchAfter = this.tick + 10;
                      return false;
                   } else {
                      this.startThrow(CrystalBotModule.Throw.CHASE, var24, var9);
-                     return this.keepThrowing(var2, var3);
+                     return this.keepThrowing(clientPlayerEntity, playerEntity);
                   }
                } else {
                   return false;
@@ -1139,16 +1145,16 @@ public final class CrystalBotModule extends ClientModule {
       }
    }
 
-   private boolean getDown(ClientWorld var1, ClientPlayerEntity var2, PlayerEntity var3) {
-      double var5 = var2.method_23318() - var3.method_23318();
-      double var7 = Math.hypot(var3.method_23317() - var2.method_23317(), var3.method_23321() - var2.method_23321());
-      if (!(var5 < 3.0) && !(var7 > 8.0) && this.stance != CrystalBotModule.Stance.RUN && !this.critical(var2)) {
+   private boolean getDown(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity) {
+      double var5 = clientPlayerEntity.getY() - playerEntity.getY();
+      double var7 = Math.hypot(playerEntity.getX() - clientPlayerEntity.getX(), playerEntity.getZ() - clientPlayerEntity.getZ());
+      if (!(var5 < 3.0) && !(var7 > 8.0) && this.stance != CrystalBotModule.Stance.RUN && !this.critical(clientPlayerEntity)) {
          if (this.belowSince < 0) {
             this.belowSince = this.tick;
          }
 
-         if (this.tick - this.belowSince >= 20 && var2.method_24828() && var3.method_24828()) {
-            if (this.digAnchor != null && !var1.method_8320(this.digAnchor).method_27852(Blocks.field_23152)) {
+         if (this.tick - this.belowSince >= 20 && clientPlayerEntity.isOnGround() && playerEntity.isOnGround()) {
+            if (this.digAnchor != null && !clientWorld.getBlockState(this.digAnchor).isOf(Blocks.RESPAWN_ANCHOR)) {
                if (this.digPlaced) {
                   this.digBlasts++;
                   this.digWalkUntil = this.tick + 40;
@@ -1157,18 +1163,18 @@ public final class CrystalBotModule extends ClientModule {
                this.digAnchor = null;
             }
 
-            if (this.tick >= this.digWalkUntil && !openDrop(var1, var2, var3)) {
+            if (this.tick >= this.digWalkUntil && !openDrop(clientWorld, clientPlayerEntity, playerEntity)) {
                boolean var4 = var5 <= 6.0
                   && this.digBlasts < 2
                   && this.tick >= this.digAfter
                   && this.anchors.get()
-                  && var1.method_27983() != World.field_25180
-                  && BotBody.hotbarSlot(var2, ANCHOR) >= 0
-                  && BotBody.hotbarSlot(var2, GLOWSTONE) >= 0;
-               return var4 && this.blastDown(var1, var2, var3) ? true : this.pearlDown(var2, var3);
+                  && clientWorld.getRegistryKey() != World.NETHER
+                  && BotBody.hotbarSlot(clientPlayerEntity, ANCHOR) >= 0
+                  && BotBody.hotbarSlot(clientPlayerEntity, GLOWSTONE) >= 0;
+               return var4 && this.blastDown(clientWorld, clientPlayerEntity, playerEntity) ? true : this.pearlDown(clientPlayerEntity, playerEntity);
             } else {
-               this.body.face(this.mc, var2, var3, 1.0F);
-               this.body.dropToward(this.mc, var2, var3.method_73189());
+               this.body.face(this.mc, clientPlayerEntity, playerEntity, 1.0F);
+               this.body.dropToward(this.mc, clientPlayerEntity, playerEntity.getEntityPos());
                return true;
             }
          } else {
@@ -1180,9 +1186,9 @@ public final class CrystalBotModule extends ClientModule {
       }
    }
 
-   private boolean blastDown(ClientWorld var1, ClientPlayerEntity var2, PlayerEntity var3) {
+   private boolean blastDown(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity) {
       if (this.digAnchor == null) {
-         this.digAnchor = digCell(var1, var2, var3);
+         this.digAnchor = digCell(clientWorld, clientPlayerEntity, playerEntity);
          if (this.digAnchor == null) {
             this.digAfter = this.tick + 100;
             return false;
@@ -1192,7 +1198,7 @@ public final class CrystalBotModule extends ClientModule {
          this.digGuards = 0;
          this.digUntil = this.tick + 80;
          if (!this.digAnnounced) {
-            ModuleChat.send(this, ModuleChat.body().text("Blasting down to ").name(var3.method_5477().getString()).text("."));
+            ModuleChat.send(this, ModuleChat.body().text("Blasting down to ").name(playerEntity.getName().getString()).text("."));
          }
 
          this.digAnnounced = true;
@@ -1203,42 +1209,47 @@ public final class CrystalBotModule extends ClientModule {
          this.digAnchor = null;
          return false;
       } else {
-         this.body.face(this.mc, var2, var3, 1.0F);
-         BlockState var5 = var1.method_8320(this.digAnchor);
-         if (!var5.method_27852(Blocks.field_23152)) {
-            AnchorGuard.Spot var10 = var5.method_45474() ? AnchorGuard.supportFor(var1, var2, var2.method_33571(), this.digAnchor) : null;
+         this.body.face(this.mc, clientPlayerEntity, playerEntity, 1.0F);
+         BlockState var5 = clientWorld.getBlockState(this.digAnchor);
+         if (!var5.isOf(Blocks.RESPAWN_ANCHOR)) {
+            AnchorGuard.Spot var10 = var5.isReplaceable()
+               ? AnchorGuard.supportFor(clientWorld, clientPlayerEntity, clientPlayerEntity.getEyePos(), this.digAnchor)
+               : null;
             if (var10 == null) {
                this.digAnchor = null;
                this.digAfter = this.tick + 100;
                return false;
             } else {
-               if (this.placeAt(var1, var2, var10, BotBody.hotbarSlot(var2, ANCHOR)) == 1) {
+               if (this.placeAt(clientWorld, clientPlayerEntity, var10, BotBody.hotbarSlot(clientPlayerEntity, ANCHOR)) == 1) {
                   this.digPlaced = true;
                }
 
                return true;
             }
-         } else if ((Integer)var5.method_11654(RespawnAnchorBlock.field_23153) <= 0) {
-            return this.clickDigAnchor(var1, var2, BotBody.hotbarSlot(var2, GLOWSTONE));
+         } else if (var5.get(RespawnAnchorBlock.CHARGES) <= 0) {
+            return this.clickDigAnchor(clientWorld, clientPlayerEntity, BotBody.hotbarSlot(clientPlayerEntity, GLOWSTONE));
          } else {
-            Vec3d var6 = AnchorGuard.anchorAim(var1, var2, this.digAnchor);
+            Vec3d var6 = AnchorGuard.anchorAim(clientWorld, clientPlayerEntity, this.digAnchor);
             if (var6 == null) {
                this.digAnchor = null;
                return false;
             } else {
-               int var7 = guardBlockSlot(var2);
+               int var7 = guardBlockSlot(clientPlayerEntity);
                AnchorGuard.Spot var4;
-               if (this.digGuards < 2 && var7 >= 0 && (var4 = AnchorGuard.find(var1, var2, this.digAnchor, var6)) != null && !var4.standing()) {
-                  if (this.placeAt(var1, var2, var4, var7) == 1) {
+               if (this.digGuards < 2
+                  && var7 >= 0
+                  && (var4 = AnchorGuard.find(clientWorld, clientPlayerEntity, this.digAnchor, var6)) != null
+                  && !var4.standing()) {
+                  if (this.placeAt(clientWorld, clientPlayerEntity, var4, var7) == 1) {
                      this.digGuards++;
                   }
 
                   return true;
                } else {
-                  float var8 = CrystalDamage.estimate(Vec3d.method_24953((Vec3i)this.digAnchor), var2, 5.0F, this.digAnchor);
-                  int var9 = AnchorGuard.detonatorRoute(var2.method_31548(), var2.method_6047());
-                  if (!(var8 > Math.min(this.selfCapNow, 10.0F)) && !CrystalDamage.endangers(var2, var8) && var9 != -1) {
-                     return this.clickDigAnchor(var1, var2, var9 == -2 ? var2.method_31548().method_67532() : var9);
+                  float var8 = CrystalDamage.estimate(Vec3d.ofCenter(this.digAnchor), clientPlayerEntity, 5.0F, this.digAnchor);
+                  int var9 = AnchorGuard.detonatorRoute(clientPlayerEntity.getInventory(), clientPlayerEntity.getMainHandStack());
+                  if (!(var8 > Math.min(this.selfCapNow, 10.0F)) && !CrystalDamage.endangers(clientPlayerEntity, var8) && var9 != -1) {
+                     return this.clickDigAnchor(clientWorld, clientPlayerEntity, var9 == -2 ? clientPlayerEntity.getInventory().getSelectedSlot() : var9);
                   } else {
                      this.digBlasts = 2;
                      this.digAnchor = null;
@@ -1250,36 +1261,36 @@ public final class CrystalBotModule extends ClientModule {
       }
    }
 
-   private static BlockPos digCell(ClientWorld var0, ClientPlayerEntity var1, PlayerEntity var2) {
-      Vec3d var3 = var1.method_33571();
-      double var4 = var1.method_55754() - 0.5;
-      BlockPos var6 = var1.method_24515();
+   private static BlockPos digCell(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity) {
+      Vec3d var3 = clientPlayerEntity.getEyePos();
+      double var4 = clientPlayerEntity.getBlockInteractionRange() - 0.5;
+      BlockPos var6 = clientPlayerEntity.getBlockPos();
       ArrayList var7 = new ArrayList();
 
-      for (BlockPos var9 : BlockPos.method_10097(var6.method_10069(-4, -2, -4), var6.method_10069(4, 0, 4))) {
-         if (!(var3.method_1022(Vec3d.method_24953(var9)) > var4)) {
-            BlockPos var11 = var9.method_10074();
+      for (BlockPos var9 : BlockPos.iterate(var6.add(-4, -2, -4), var6.add(4, 0, 4))) {
+         if (!(var3.distanceTo(Vec3d.ofCenter(var9)) > var4)) {
+            BlockPos var11 = var9.down();
             Box var10;
-            if (var0.method_8320(var9).method_45474()
-               && var0.method_8316(var9).method_15769()
-               && var0.method_8320(var11).method_26206(var0, var11, Direction.field_11036)
-               && !(var10 = new Box(var9)).method_994(var1.method_5829())
-               && !var10.method_994(var2.method_5829())) {
-               var7.add(var9.method_10062());
+            if (clientWorld.getBlockState(var9).isReplaceable()
+               && clientWorld.getFluidState(var9).isEmpty()
+               && clientWorld.getBlockState(var11).isSideSolidFullSquare(clientWorld, var11, Direction.UP)
+               && !(var10 = new Box(var9)).intersects(clientPlayerEntity.getBoundingBox())
+               && !var10.intersects(playerEntity.getBoundingBox())) {
+               var7.add(var9.toImmutable());
             }
          }
       }
 
-      var7.sort(Comparator.comparingDouble(var1x -> Vec3d.method_24953(var1x).method_1025(var2.method_73189())));
+      var7.sort(Comparator.comparingDouble(blockPos -> Vec3d.ofCenter(blockPos).squaredDistanceTo(playerEntity.getEntityPos())));
       BlockPos var12 = null;
 
       for (BlockPos var14 : var7.subList(0, Math.min(var7.size(), 8))) {
-         if (AnchorGuard.supportFor(var0, var1, var3, var14) != null) {
+         if (AnchorGuard.supportFor(clientWorld, clientPlayerEntity, var3, var14) != null) {
             if (var12 == null) {
                var12 = var14;
             }
 
-            if (AnchorGuard.find(var0, var1, var14, TargetingUtils.closestPoint(var3, new Box(var14).method_1011(0.1))) != null) {
+            if (AnchorGuard.find(clientWorld, clientPlayerEntity, var14, TargetingUtils.closestPoint(var3, new Box(var14).contract(0.1))) != null) {
                return var14;
             }
          }
@@ -1288,23 +1299,23 @@ public final class CrystalBotModule extends ClientModule {
       return var12;
    }
 
-   private static boolean openDrop(ClientWorld var0, ClientPlayerEntity var1, PlayerEntity var2) {
-      Vec3d var3 = var2.method_73189().method_1020(var1.method_73189()).method_18805(1.0, 0.0, 1.0);
-      if (var3.method_1027() < 0.25) {
+   private static boolean openDrop(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity) {
+      Vec3d var3 = playerEntity.getEntityPos().subtract(clientPlayerEntity.getEntityPos()).multiply(1.0, 0.0, 1.0);
+      if (var3.lengthSquared() < 0.25) {
          return false;
       } else {
-         Vec3d var4 = var1.method_73189().method_1019(var3.method_1029().method_1021(0.8));
-         BlockPos var5 = BlockPos.method_49637(var4.field_1352, var1.method_23318() + 0.1, var4.field_1350);
-         int var6 = MathHelper.method_15357(var2.method_23318() + 0.01);
+         Vec3d var4 = clientPlayerEntity.getEntityPos().add(var3.normalize().multiply(0.8));
+         BlockPos var5 = BlockPos.ofFloored(var4.x, clientPlayerEntity.getY() + 0.1, var4.z);
+         int var6 = MathHelper.floor(playerEntity.getY() + 0.01);
 
-         for (BlockPos var7 = var5; var7.method_10264() >= var6 - 1; var7 = var7.method_10074()) {
-            BlockState var8 = var0.method_8320(var7);
-            if (var8.method_27852(Blocks.field_10164) || var8.method_26164(BlockTags.field_21952)) {
+         for (BlockPos var7 = var5; var7.getY() >= var6 - 1; var7 = var7.down()) {
+            BlockState var8 = clientWorld.getBlockState(var7);
+            if (var8.isOf(Blocks.LAVA) || var8.isIn(BlockTags.FIRE)) {
                return false;
             }
 
-            if (!var8.method_26220(var0, var7).method_1110()) {
-               return var7.method_10264() < var1.method_23318() - 1.5 && var7.method_10264() <= var6 + 1;
+            if (!var8.getCollisionShape(clientWorld, var7).isEmpty()) {
+               return var7.getY() < clientPlayerEntity.getY() - 1.5 && var7.getY() <= var6 + 1;
             }
          }
 
@@ -1312,29 +1323,29 @@ public final class CrystalBotModule extends ClientModule {
       }
    }
 
-   private boolean clickDigAnchor(ClientWorld var1, ClientPlayerEntity var2, int var3) {
-      if (var3 < 0) {
+   private boolean clickDigAnchor(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, int i) {
+      if (i < 0) {
          this.digAnchor = null;
          return false;
       } else if (!this.hands()) {
          return true;
       } else {
-         BlockHitResult var4 = AnchorGuard.anchorHit(var1, var2, this.digAnchor);
+         BlockHitResult var4 = AnchorGuard.anchorHit(clientWorld, clientPlayerEntity, this.digAnchor);
          if (var4 == null) {
-            Vec3d var5 = AnchorGuard.anchorAim(var1, var2, this.digAnchor);
+            Vec3d var5 = AnchorGuard.anchorAim(clientWorld, clientPlayerEntity, this.digAnchor);
             if (var5 == null) {
                this.digAnchor = null;
                return false;
             } else {
-               ServerRotation.request(RotationUtils.fromTo(var2.method_33571(), var5), 6.0F);
+               ServerRotation.request(RotationUtils.fromTo(clientPlayerEntity.getEyePos(), var5), 6.0F);
                return true;
             }
-         } else if (var2.method_31548().method_67532() != var3) {
-            var2.method_31548().method_61496(var3);
+         } else if (clientPlayerEntity.getInventory().getSelectedSlot() != i) {
+            clientPlayerEntity.getInventory().setSelectedSlot(i);
             return true;
          } else {
-            if (MeleeAttacks.handsFree(this.mc, var2)) {
-               AnchorGuard.click(this.mc, var2, var4);
+            if (MeleeAttacks.handsFree(this.mc, clientPlayerEntity)) {
+               AnchorGuard.click(this.mc, clientPlayerEntity, var4);
             }
 
             return true;
@@ -1342,33 +1353,33 @@ public final class CrystalBotModule extends ClientModule {
       }
    }
 
-   private boolean pearlDown(ClientPlayerEntity var1, PlayerEntity var2) {
-      if (this.chase.get() && this.pearlReady(var1) && this.tick >= this.searchAfter) {
-         Vec3d var3 = var2.method_73189();
-         Rotation var4 = PearlFlight.toward(var1, var3, 0.8, 3.0);
+   private boolean pearlDown(ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity) {
+      if (this.chase.get() && this.pearlReady(clientPlayerEntity) && this.tick >= this.searchAfter) {
+         Vec3d var3 = playerEntity.getEntityPos();
+         Rotation var4 = PearlFlight.toward(clientPlayerEntity, var3, 0.8, 3.0);
          if (var4 == null) {
             this.searchAfter = this.tick + 10;
             return false;
          } else {
             this.startThrow(CrystalBotModule.Throw.CHASE, var4, var3);
-            return this.keepThrowing(var1, var2);
+            return this.keepThrowing(clientPlayerEntity, playerEntity);
          }
       } else {
          return false;
       }
    }
 
-   private static int feetY(ClientPlayerEntity var0) {
-      return MathHelper.method_15357(var0.method_23318() + 0.01);
+   private static int feetY(ClientPlayerEntity clientPlayerEntity) {
+      return MathHelper.floor(clientPlayerEntity.getY() + 0.01);
    }
 
-   private boolean wantsLower(ClientPlayerEntity var1, PlayerEntity var2, double var3) {
+   private boolean wantsLower(ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity, double d) {
       return this.stance != CrystalBotModule.Stance.RUN
-         && var1.method_24828()
-         && var2.method_24828()
-         && !Combo.inHole(var2)
-         && var3 <= 5.5
-         && feetY(var1) == MathHelper.method_15357(var2.method_23318() + 0.01)
+         && clientPlayerEntity.isOnGround()
+         && playerEntity.isOnGround()
+         && !Combo.inHole(playerEntity)
+         && d <= 5.5
+         && feetY(clientPlayerEntity) == MathHelper.floor(playerEntity.getY() + 0.01)
          && !this.justLaunched();
    }
 
@@ -1376,18 +1387,22 @@ public final class CrystalBotModule extends ClientModule {
       return this.launching || this.launchedAt >= 0 || this.tick <= this.followUntil + 20;
    }
 
-   private boolean stayLow(ClientWorld var1, ClientPlayerEntity var2, PlayerEntity var3, double var4) {
-      if (this.stance != CrystalBotModule.Stance.RUN && var2.method_24828() && var3.method_24828() && !Combo.inHole(var3) && !(var4 > 5.5)) {
-         if (feetY(var2) < MathHelper.method_15357(var3.method_23318() + 0.01)) {
+   private boolean stayLow(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity, double d) {
+      if (this.stance != CrystalBotModule.Stance.RUN
+         && clientPlayerEntity.isOnGround()
+         && playerEntity.isOnGround()
+         && !Combo.inHole(playerEntity)
+         && !(d > 5.5)) {
+         if (feetY(clientPlayerEntity) < MathHelper.floor(playerEntity.getY() + 0.01)) {
             return true;
-         } else if (!this.wantsLower(var2, var3, var4)) {
+         } else if (!this.wantsLower(clientPlayerEntity, playerEntity, d)) {
             return false;
          } else {
-            BlockPos var6 = lowerStep(var1, var2, var3, feetY(var2) - 1);
+            BlockPos var6 = lowerStep(clientWorld, clientPlayerEntity, playerEntity, feetY(clientPlayerEntity) - 1);
             if (var6 == null) {
                return false;
             } else {
-               this.body.toward(this.mc, var2, Vec3d.method_24955(var6));
+               this.body.toward(this.mc, clientPlayerEntity, Vec3d.ofBottomCenter(var6));
                return true;
             }
          }
@@ -1396,22 +1411,22 @@ public final class CrystalBotModule extends ClientModule {
       }
    }
 
-   private boolean digDown(ClientWorld var1, ClientPlayerEntity var2, PlayerEntity var3, double var4) {
-      if (this.wantsLower(var2, var3, var4) && this.tick >= this.stepDigAfter) {
-         if (lowerStep(var1, var2, var3, feetY(var2) - 1) != null) {
+   private boolean digDown(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity, double d) {
+      if (this.wantsLower(clientPlayerEntity, playerEntity, d) && this.tick >= this.stepDigAfter) {
+         if (lowerStep(clientWorld, clientPlayerEntity, playerEntity, feetY(clientPlayerEntity) - 1) != null) {
             return false;
          } else {
-            BlockPos var7 = var2.method_24515().method_10074();
-            BlockState var8 = var1.method_8320(var7);
-            if (BotBody.hotbarSlot(var2, OBSIDIAN) < 0 && !Crystals.isBase(var8)) {
+            BlockPos var7 = clientPlayerEntity.getBlockPos().down();
+            BlockState var8 = clientWorld.getBlockState(var7);
+            if (BotBody.hotbarSlot(clientPlayerEntity, OBSIDIAN) < 0 && !Crystals.isBase(var8)) {
                return false;
             } else {
-               BlockPos var9 = var7.method_10074();
-               boolean var6 = !var8.method_31709()
-                  && digTicks(var1, var2, var7) <= 50
-                  && !var1.method_8320(var9).method_26220(var1, var9).method_1110()
-                  && !nearLava(var1, var7);
-               if (var6 && this.mine(var1, var2, var7)) {
+               BlockPos var9 = var7.down();
+               boolean var6 = !var8.hasBlockEntity()
+                  && digTicks(clientWorld, clientPlayerEntity, var7) <= 50
+                  && !clientWorld.getBlockState(var9).getCollisionShape(clientWorld, var9).isEmpty()
+                  && !nearLava(clientWorld, var7);
+               if (var6 && this.mine(clientWorld, clientPlayerEntity, var7)) {
                   return true;
                } else {
                   this.stepDigAfter = this.tick + 100;
@@ -1424,45 +1439,45 @@ public final class CrystalBotModule extends ClientModule {
       }
    }
 
-   private boolean digBase(ClientWorld var1, ClientPlayerEntity var2, PlayerEntity var3, double var4) {
-      int var6 = MathHelper.method_15357(var3.method_23318() + 0.01);
+   private boolean digBase(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity, double d) {
+      int var6 = MathHelper.floor(playerEntity.getY() + 0.01);
       if (this.stance != CrystalBotModule.Stance.RUN
-         && var2.method_24828()
-         && var3.method_24828()
-         && !Combo.inHole(var3)
-         && !(var4 > 5.5)
-         && feetY(var2) == var6 - 1
+         && clientPlayerEntity.isOnGround()
+         && playerEntity.isOnGround()
+         && !Combo.inHole(playerEntity)
+         && !(d > 5.5)
+         && feetY(clientPlayerEntity) == var6 - 1
          && this.tick >= this.baseDigAfter
-         && BotBody.hotbarSlot(var2, OBSIDIAN) >= 0
+         && BotBody.hotbarSlot(clientPlayerEntity, OBSIDIAN) >= 0
          && !this.justLaunched()) {
-         Vec3d var7 = var2.method_33571();
-         BlockPos var8 = var3.method_24515();
+         Vec3d var7 = clientPlayerEntity.getEyePos();
+         BlockPos var8 = playerEntity.getBlockPos();
          BlockPos var9 = null;
          double var10 = 1.7976931348623157E308;
 
-         for (BlockPos var13 : BlockPos.method_10097(var8.method_10069(-2, -1, -2), var8.method_10069(2, -1, 2))) {
-            BlockState var17 = var1.method_8320(var13);
-            if (Crystals.isBase(var17) && Crystals.canHost(var1, var13, null)) {
+         for (BlockPos var13 : BlockPos.iterate(var8.add(-2, -1, -2), var8.add(2, -1, 2))) {
+            BlockState var17 = clientWorld.getBlockState(var13);
+            if (Crystals.isBase(var17) && Crystals.canHost(clientWorld, var13, null)) {
                return false;
             }
 
             Vec3d var14;
             double var15;
-            if ((var13.method_10263() != var8.method_10263() || var13.method_10260() != var8.method_10260())
-               && Math.max(Math.abs(var13.method_10263() - var2.method_31477()), Math.abs(var13.method_10260() - var2.method_31479())) >= 2
-               && !var17.method_45474()
-               && !var17.method_31709()
-               && var1.method_22347(var13.method_10084())
-               && !((var15 = (var14 = Vec3d.method_24953(var13).method_1031(0.0, 0.5, 0.0)).method_1022(var3.method_73189())) > 2.5)
-               && !(var7.method_1022(var14) > var2.method_55754() - 0.5)
-               && digTicks(var1, var2, var13) <= 25
+            if ((var13.getX() != var8.getX() || var13.getZ() != var8.getZ())
+               && Math.max(Math.abs(var13.getX() - clientPlayerEntity.getBlockX()), Math.abs(var13.getZ() - clientPlayerEntity.getBlockZ())) >= 2
+               && !var17.isReplaceable()
+               && !var17.hasBlockEntity()
+               && clientWorld.isAir(var13.up())
+               && !((var15 = (var14 = Vec3d.ofCenter(var13).add(0.0, 0.5, 0.0)).distanceTo(playerEntity.getEntityPos())) > 2.5)
+               && !(var7.distanceTo(var14) > clientPlayerEntity.getBlockInteractionRange() - 0.5)
+               && digTicks(clientWorld, clientPlayerEntity, var13) <= 25
                && !(var15 >= var10)) {
-               var9 = var13.method_10062();
+               var9 = var13.toImmutable();
                var10 = var15;
             }
          }
 
-         if (var9 != null && this.mine(var1, var2, var9)) {
+         if (var9 != null && this.mine(clientWorld, clientPlayerEntity, var9)) {
             return true;
          } else {
             this.baseDigAfter = this.tick + 100;
@@ -1473,19 +1488,22 @@ public final class CrystalBotModule extends ClientModule {
       }
    }
 
-   private static BlockPos lowerStep(ClientWorld var0, ClientPlayerEntity var1, PlayerEntity var2, int var3) {
-      BlockPos var4 = var1.method_24515();
+   private static BlockPos lowerStep(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity, int i) {
+      BlockPos var4 = clientPlayerEntity.getBlockPos();
       BlockPos var5 = null;
       double var6 = 1.7976931348623157E308;
 
-      for (BlockPos var9 : BlockPos.method_10097(var4.method_10069(-2, -1, -2), var4.method_10069(2, -1, 2))) {
-         BlockPos var12 = StandPicker.standable(var0, var9);
-         if (var12 != null && var12.method_10264() == var3 && var12.equals(var9)) {
-            Vec3d var13 = Vec3d.method_24955(var12);
-            double var14 = Math.hypot(var13.field_1352 - var2.method_23317(), var13.field_1350 - var2.method_23321());
+      for (BlockPos var9 : BlockPos.iterate(var4.add(-2, -1, -2), var4.add(2, -1, 2))) {
+         BlockPos var12 = StandPicker.standable(clientWorld, var9);
+         if (var12 != null && var12.getY() == i && var12.equals(var9)) {
+            Vec3d var13 = Vec3d.ofBottomCenter(var12);
+            double var14 = Math.hypot(var13.x - playerEntity.getX(), var13.z - playerEntity.getZ());
             double var10;
-            if (!(var14 < 2.4) && !(var14 > 4.5) && walkable(var0, var1.method_73189(), var13) && (var10 = var12.method_10262(var4)) < var6) {
-               var5 = var12.method_10062();
+            if (!(var14 < 2.4)
+               && !(var14 > 4.5)
+               && walkable(clientWorld, clientPlayerEntity.getEntityPos(), var13)
+               && (var10 = var12.getSquaredDistance(var4)) < var6) {
+               var5 = var12.toImmutable();
                var6 = var10;
             }
          }
@@ -1494,38 +1512,38 @@ public final class CrystalBotModule extends ClientModule {
       return var5;
    }
 
-   private static int digTicks(ClientWorld var0, ClientPlayerEntity var1, BlockPos var2) {
-      BlockState var5 = var0.method_8320(var2);
-      float var6 = var5.method_26214(var0, var2);
+   private static int digTicks(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, BlockPos blockPos) {
+      BlockState var5 = clientWorld.getBlockState(blockPos);
+      float var6 = var5.getHardness(clientWorld, blockPos);
       if (var6 < 0.0F) {
          return 2147483647;
       } else if (var6 == 0.0F) {
          return 1;
       } else {
-         int var7 = toolSlot(var1.method_31548(), var5);
-         ItemStack var8 = var7 < 0 ? ItemStack.field_8037 : var1.method_31548().method_5438(var7);
-         float var9 = var8.method_7924(var5);
+         int var7 = toolSlot(clientPlayerEntity.getInventory(), var5);
+         ItemStack var8 = var7 < 0 ? ItemStack.EMPTY : clientPlayerEntity.getInventory().getStack(var7);
+         float var9 = var8.getMiningSpeedMultiplier(var5);
          int var4;
          if (var9 > 1.0F
             && (
-                  var4 = var1.method_56673()
-                     .method_30530(RegistryKeys.field_41265)
-                     .method_46746(Enchantments.field_9131)
-                     .map(var1x -> EnchantmentHelper.method_8225(var1x, var8))
+                  var4 = clientPlayerEntity.getRegistryManager()
+                     .getOrThrow(RegistryKeys.ENCHANTMENT)
+                     .getOptional(Enchantments.EFFICIENCY)
+                     .map(reference -> EnchantmentHelper.getLevel(reference, var8))
                      .orElse(0)
                )
                > 0) {
             var9 += var4 * var4 + 1;
          }
 
-         boolean var10 = var8.method_7951(var5) || !var5.method_29291();
-         return MathHelper.method_15386(var6 * (var10 ? 30.0F : 100.0F) / var9);
+         boolean var10 = var8.isSuitableFor(var5) || !var5.isToolRequired();
+         return MathHelper.ceil(var6 * (var10 ? 30.0F : 100.0F) / var9);
       }
    }
 
-   private static boolean nearLava(ClientWorld var0, BlockPos var1) {
+   private static boolean nearLava(ClientWorld clientWorld, BlockPos blockPos) {
       for (Direction var5 : Direction.values()) {
-         if (var0.method_8316(var1.method_10093(var5)).method_15767(FluidTags.field_15518)) {
+         if (clientWorld.getFluidState(blockPos.offset(var5)).isIn(FluidTags.LAVA)) {
             return true;
          }
       }
@@ -1545,24 +1563,24 @@ public final class CrystalBotModule extends ClientModule {
       this.belowSince = -1;
    }
 
-   private boolean startLaunch(ClientPlayerEntity var1, PlayerEntity var2, RivalBook.Rival var3) {
-      if (var1.field_6012 - this.diggingAt <= 1) {
+   private boolean startLaunch(ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity, RivalBook.Rival rival) {
+      if (clientPlayerEntity.age - this.diggingAt <= 1) {
          return false;
       } else if (this.tick >= this.nextLaunch
          && !this.pause.slowServer()
          && (this.stance == CrystalBotModule.Stance.PRESS || this.stance == CrystalBotModule.Stance.HOLD)
-         && (var3 == null || !var3.shrugsOffLaunches())) {
-         if (var2.method_24828() && !Combo.inHole(var2) && (!var2.method_6039() || axeInHotbar(var1))) {
-            if (!this.mc.field_1687.method_18467(EndCrystalEntity.class, var2.method_5829().method_1014(3.0)).isEmpty()) {
+         && (rival == null || !rival.shrugsOffLaunches())) {
+         if (playerEntity.isOnGround() && !Combo.inHole(playerEntity) && (!playerEntity.isBlocking() || axeInHotbar(clientPlayerEntity))) {
+            if (!this.mc.world.getNonSpectatingEntities(EndCrystalEntity.class, playerEntity.getBoundingBox().expand(3.0)).isEmpty()) {
                return false;
             } else {
-               double var5 = reach(var1, var2);
-               if (weaponSlot(var1, var2.method_6039()) >= 0 && !(var5 > 3.9)) {
-                  boolean var4 = MeleeAttacks.isMeleeWeapon(var1.method_6047()) && MeleeAttacks.charge(var1) >= 0.5F;
+               double var5 = reach(clientPlayerEntity, playerEntity);
+               if (weaponSlot(clientPlayerEntity, playerEntity.isBlocking()) >= 0 && !(var5 > 3.9)) {
+                  boolean var4 = MeleeAttacks.isMeleeWeapon(clientPlayerEntity.getMainHandStack()) && MeleeAttacks.charge(clientPlayerEntity) >= 0.5F;
                   if (!var4) {
-                     int var8 = var3 != null ? var3.opener(var5) : (this.tick - this.hurtAt >= 20 ? 0 : 1);
+                     int var8 = rival != null ? rival.opener(var5) : (this.tick - this.hurtAt >= 20 ? 0 : 1);
                      if (this.openerArm < 0) {
-                        this.judgeOpener(var8, var5, var2);
+                        this.judgeOpener(var8, var5, playerEntity);
                      }
 
                      if (var8 == 1) {
@@ -1573,7 +1591,7 @@ public final class CrystalBotModule extends ClientModule {
 
                   this.launching = true;
                   this.launchUntil = this.tick + 16;
-                  return this.launch(var1, var2);
+                  return this.launch(clientPlayerEntity, playerEntity);
                } else {
                   return false;
                }
@@ -1586,56 +1604,56 @@ public final class CrystalBotModule extends ClientModule {
       }
    }
 
-   private void judgeOpener(int var1, double var2, PlayerEntity var4) {
-      this.openerArm = var1;
-      this.openerReach = var2;
+   private void judgeOpener(int i, double d, PlayerEntity playerEntity) {
+      this.openerArm = i;
+      this.openerReach = d;
       this.openerAt = this.tick;
-      this.openerHealth = CrystalDamage.health(var4);
+      this.openerHealth = CrystalDamage.health(playerEntity);
       this.openerPops = 0;
    }
 
-   private boolean followUp(ClientWorld var1, ClientPlayerEntity var2, PlayerEntity var3) {
+   private boolean followUp(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity) {
       AirTrack.Landing var5 = this.air.landing(this.tick);
-      Vec3d var4 = var5 != null ? var5.at() : var3.method_73189();
-      if (this.anchorUnder(var1, var2, var3, var4)) {
+      Vec3d var4 = var5 != null ? var5.at() : playerEntity.getEntityPos();
+      if (this.anchorUnder(clientWorld, clientPlayerEntity, playerEntity, var4)) {
          return true;
       } else {
-         int var7 = BotBody.hotbarSlot(var2, OBSIDIAN);
+         int var7 = BotBody.hotbarSlot(clientPlayerEntity, OBSIDIAN);
          if (var7 < 0) {
             this.followLaid = true;
             return false;
          } else {
-            BlockPos var8 = BlockPos.method_49637(var4.field_1352, var4.field_1351 + 0.2, var4.field_1350);
-            CrystalDamage.Victim var9 = new CrystalDamage.Victim(var3, var4.method_1020(var3.method_73189()));
-            CrystalDamage.Victim var10 = new CrystalDamage.Victim(var2, Vec3d.field_1353);
-            Vec3d var11 = var2.method_33571();
+            BlockPos var8 = BlockPos.ofFloored(var4.x, var4.y + 0.2, var4.z);
+            CrystalDamage.Victim var9 = new CrystalDamage.Victim(playerEntity, var4.subtract(playerEntity.getEntityPos()));
+            CrystalDamage.Victim var10 = new CrystalDamage.Victim(clientPlayerEntity, Vec3d.ZERO);
+            Vec3d var11 = clientPlayerEntity.getEyePos();
             AnchorGuard.Spot var12 = null;
             float var13 = 4.0F;
 
-            for (BlockPos var15 : BlockPos.method_10097(var8.method_10069(-1, -1, -1), var8.method_10069(1, 0, 1))) {
-               if (var15.method_10263() != var8.method_10263() || var15.method_10260() != var8.method_10260()) {
-                  BlockState var18 = var1.method_8320(var15);
+            for (BlockPos var15 : BlockPos.iterate(var8.add(-1, -1, -1), var8.add(1, 0, 1))) {
+               if (var15.getX() != var8.getX() || var15.getZ() != var8.getZ()) {
+                  BlockState var18 = clientWorld.getBlockState(var15);
                   Vec3d var19 = Crystals.explosionAt(var15);
-                  if (Crystals.isBase(var18) && Crystals.canHost(var1, var15, null)) {
+                  if (Crystals.isBase(var18) && Crystals.canHost(clientWorld, var15, null)) {
                      if (var9.damage(var19, false) >= var13) {
                         this.followLaid = true;
                         return false;
                      }
                   } else {
                      BlockPos var17;
-                     if (var18.method_45474()
-                        && var1.method_22347(var15.method_10084())
-                        && var1.method_22347(var15.method_10086(2))
-                        && var1.method_8320(var17 = var15.method_10074()).method_26206(var1, var17, Direction.field_11036)
-                        && var1.method_8628(Blocks.field_10540.method_9564(), var15, ShapeContext.method_16194())
-                        && !(var11.method_1022(Vec3d.method_24953(var15)) > var2.method_55754())) {
+                     if (var18.isReplaceable()
+                        && clientWorld.isAir(var15.up())
+                        && clientWorld.isAir(var15.up(2))
+                        && clientWorld.getBlockState(var17 = var15.down()).isSideSolidFullSquare(clientWorld, var17, Direction.UP)
+                        && clientWorld.canPlace(Blocks.OBSIDIAN.getDefaultState(), var15, ShapeContext.absent())
+                        && !(var11.distanceTo(Vec3d.ofCenter(var15)) > clientPlayerEntity.getBlockInteractionRange())) {
                         float var20 = var9.damage(var19, true);
                         float var21 = var10.damage(var19, true);
                         AnchorGuard.Spot var16;
                         if (!(var20 <= var13)
                            && !(var21 > this.selfCapNow)
-                           && !CrystalDamage.endangers(var2, var21)
-                           && (var16 = AnchorGuard.supportFor(var1, var2, var11, var15.method_10062())) != null) {
+                           && !CrystalDamage.endangers(clientPlayerEntity, var21)
+                           && (var16 = AnchorGuard.supportFor(clientWorld, clientPlayerEntity, var11, var15.toImmutable())) != null) {
                            var12 = var16;
                            var13 = var20;
                         }
@@ -1644,15 +1662,15 @@ public final class CrystalBotModule extends ClientModule {
                }
             }
 
-            this.body.face(this.mc, var2, var3, 1.0F);
+            this.body.face(this.mc, clientPlayerEntity, playerEntity, 1.0F);
             if (var12 == null) {
-               if (var11.method_1022(var4) > 3.5) {
-                  this.body.drive(this.mc, var2, 1, 0.0, true, false);
+               if (var11.distanceTo(var4) > 3.5) {
+                  this.body.drive(this.mc, clientPlayerEntity, 1, 0.0, true, false);
                }
 
                return true;
             } else {
-               if (this.placeAt(var1, var2, var12, var7) == 1) {
+               if (this.placeAt(clientWorld, clientPlayerEntity, var12, var7) == 1) {
                   this.followLaid = true;
                }
 
@@ -1662,29 +1680,29 @@ public final class CrystalBotModule extends ClientModule {
       }
    }
 
-   private boolean anchorUnder(ClientWorld var1, ClientPlayerEntity var2, PlayerEntity var3, Vec3d var4) {
-      if (this.anchors.get() && var1.method_27983() != World.field_25180 && !var3.method_24828()) {
-         int var5 = BotBody.hotbarSlot(var2, var0 -> var0.method_31574(Items.field_23141));
-         if (var5 >= 0 && BotBody.hotbarSlot(var2, var0 -> var0.method_31574(Items.field_8801)) >= 0) {
-            BlockPos var6 = BlockPos.method_49637(var4.field_1352, var4.field_1351 + 0.2, var4.field_1350);
-            BlockPos var7 = var6.method_10074();
-            if (var1.method_8320(var6).method_45474() && var1.method_8320(var7).method_26206(var1, var7, Direction.field_11036)) {
-               if (!var3.method_5829().method_994(new Box(var6)) && !var2.method_5829().method_994(new Box(var6))) {
-                  Vec3d var8 = var2.method_33571();
-                  if (var8.method_1022(Vec3d.method_24953(var6)) > var2.method_55754()) {
+   private boolean anchorUnder(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity, Vec3d vec3d) {
+      if (this.anchors.get() && clientWorld.getRegistryKey() != World.NETHER && !playerEntity.isOnGround()) {
+         int var5 = BotBody.hotbarSlot(clientPlayerEntity, itemStack -> itemStack.isOf(Items.RESPAWN_ANCHOR));
+         if (var5 >= 0 && BotBody.hotbarSlot(clientPlayerEntity, itemStack -> itemStack.isOf(Items.GLOWSTONE)) >= 0) {
+            BlockPos var6 = BlockPos.ofFloored(vec3d.x, vec3d.y + 0.2, vec3d.z);
+            BlockPos var7 = var6.down();
+            if (clientWorld.getBlockState(var6).isReplaceable() && clientWorld.getBlockState(var7).isSideSolidFullSquare(clientWorld, var7, Direction.UP)) {
+               if (!playerEntity.getBoundingBox().intersects(new Box(var6)) && !clientPlayerEntity.getBoundingBox().intersects(new Box(var6))) {
+                  Vec3d var8 = clientPlayerEntity.getEyePos();
+                  if (var8.distanceTo(Vec3d.ofCenter(var6)) > clientPlayerEntity.getBlockInteractionRange()) {
                      return false;
                   } else {
-                     Vec3d var9 = Vec3d.method_24953(var6);
-                     float var10 = CrystalDamage.estimate(var9, var2, 5.0F, var6);
-                     Vec3d var11 = new Vec3d(var4.field_1352, var6.method_10264() + 1.0, var4.field_1350);
-                     float var12 = new CrystalDamage.Victim(var3, var11.method_1020(var3.method_73189())).damage(var9, 5.0F, var6);
-                     if (!(var12 < 6.0F) && !(var10 > Math.min(this.selfCapNow, 11.0F)) && !CrystalDamage.endangers(var2, var10)) {
-                        AnchorGuard.Spot var13 = AnchorGuard.supportFor(var1, var2, var8, var6);
+                     Vec3d var9 = Vec3d.ofCenter(var6);
+                     float var10 = CrystalDamage.estimate(var9, clientPlayerEntity, 5.0F, var6);
+                     Vec3d var11 = new Vec3d(vec3d.x, var6.getY() + 1.0, vec3d.z);
+                     float var12 = new CrystalDamage.Victim(playerEntity, var11.subtract(playerEntity.getEntityPos())).damage(var9, 5.0F, var6);
+                     if (!(var12 < 6.0F) && !(var10 > Math.min(this.selfCapNow, 11.0F)) && !CrystalDamage.endangers(clientPlayerEntity, var10)) {
+                        AnchorGuard.Spot var13 = AnchorGuard.supportFor(clientWorld, clientPlayerEntity, var8, var6);
                         if (var13 == null) {
                            return false;
                         } else {
-                           this.body.face(this.mc, var2, var3, 1.0F);
-                           if (this.placeAt(var1, var2, var13, var5) == 1) {
+                           this.body.face(this.mc, clientPlayerEntity, playerEntity, 1.0F);
+                           if (this.placeAt(clientWorld, clientPlayerEntity, var13, var5) == 1) {
                               this.followLaid = true;
                            }
 
@@ -1708,65 +1726,66 @@ public final class CrystalBotModule extends ClientModule {
       }
    }
 
-   private boolean launch(ClientPlayerEntity var1, PlayerEntity var2) {
+   private boolean launch(ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity) {
       if (this.tick > this.launchUntil
          || this.stance == CrystalBotModule.Stance.RUN
          || this.stance == CrystalBotModule.Stance.GUARD
-         || reach(var1, var2) > 4.1
-         || Combo.inHole(var2)) {
+         || reach(clientPlayerEntity, playerEntity) > 4.1
+         || Combo.inHole(playerEntity)) {
          this.launching = false;
          this.nextLaunch = this.tick + 40;
          return false;
       } else if (!this.hands()) {
          return true;
       } else {
-         int var3 = weaponSlot(var1, var2.method_6039());
+         int var3 = weaponSlot(clientPlayerEntity, playerEntity.isBlocking());
          if (var3 < 0) {
             this.launching = false;
             return false;
          } else {
-            if (var1.method_31548().method_67532() != var3) {
-               var1.method_31548().method_61496(var3);
+            if (clientPlayerEntity.getInventory().getSelectedSlot() != var3) {
+               clientPlayerEntity.getInventory().setSelectedSlot(var3);
             }
 
-            this.body.face(this.mc, var1, var2, 1.0F);
-            float var4 = MeleeAttacks.charge(var1);
-            double var5 = reach(var1, var2);
+            this.body.face(this.mc, clientPlayerEntity, playerEntity, 1.0F);
+            float var4 = MeleeAttacks.charge(clientPlayerEntity);
+            double var5 = reach(clientPlayerEntity, playerEntity);
             Rotation var7 = ServerRotation.sent();
-            boolean var8 = var1.method_5624();
-            if (var4 >= 0.95F && var5 <= 2.95 && this.strike(var1, var2)) {
+            boolean var8 = clientPlayerEntity.isSprinting();
+            if (var4 >= 0.95F && var5 <= 2.95 && this.strike(clientPlayerEntity, playerEntity)) {
                this.launching = false;
                this.nextLaunch = this.tick + 80;
                this.launchedAt = this.tick;
-               this.launchY = var2.method_23318();
+               this.launchY = playerEntity.getY();
                this.launchPeak = 0.0;
                this.followLaid = false;
                this.followUntil = this.tick + 12;
-               this.air.kicked(var1, var2, var7 != null ? var7.yaw() : var1.method_36454(), var8, this.tick);
-               this.body.drive(this.mc, var1, 0, 1.0, false, false);
+               this.air.kicked(clientPlayerEntity, playerEntity, var7 != null ? var7.yaw() : clientPlayerEntity.getYaw(), var8, this.tick);
+               this.body.drive(this.mc, clientPlayerEntity, 0, 1.0, false, false);
                return true;
             } else {
-               this.body.drive(this.mc, var1, var5 > 2.9 ? 1 : 0, 0.0, var4 >= 0.85F, false);
+               this.body.drive(this.mc, clientPlayerEntity, var5 > 2.9 ? 1 : 0, 0.0, var4 >= 0.85F, false);
                return true;
             }
          }
       }
    }
 
-   private boolean strike(ClientPlayerEntity var1, PlayerEntity var2) {
-      if (!this.pause.slowServer() && !MeleeAttacks.actedThisTick(var1) && this.mc.field_1771 <= 0 && MeleeAttacks.isMeleeWeapon(var1.method_6047())) {
+   private boolean strike(ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity) {
+      if (!this.pause.slowServer()
+         && !MeleeAttacks.actedThisTick(clientPlayerEntity)
+         && this.mc.attackCooldown <= 0
+         && MeleeAttacks.isMeleeWeapon(clientPlayerEntity.getMainHandStack())) {
          Rotation var4 = ServerRotation.sent();
          if (var4 == null) {
             return false;
          } else {
-            Vec3d var5 = var1.method_33571();
-            double var6 = Math.min(2.95, var1.method_55755());
-            Box var8 = var2.method_5829();
-            Vec3d var3 = var8.method_1006(var5)
-               ? var5
-               : (Vec3d)var8.method_992(var5, var5.method_1019(Vec3d.method_1030(var4.pitch(), var4.yaw()).method_1021(var6))).orElse(null);
-            if (var3 != null && MeleeAttacks.lineIsClear(var1, var5, var3)) {
-               if (!MeleeAttacks.attack(this.mc, new EntityHitResult(var2, var3))) {
+            Vec3d var5 = clientPlayerEntity.getEyePos();
+            double var6 = Math.min(2.95, clientPlayerEntity.getEntityInteractionRange());
+            Box var8 = playerEntity.getBoundingBox();
+            Vec3d var3 = var8.contains(var5) ? var5 : var8.raycast(var5, var5.add(Vec3d.fromPolar(var4.pitch(), var4.yaw()).multiply(var6))).orElse(null);
+            if (var3 != null && MeleeAttacks.lineIsClear(clientPlayerEntity, var5, var3)) {
+               if (!MeleeAttacks.attack(this.mc, new EntityHitResult(playerEntity, var3))) {
                   return false;
                } else {
                   MeleeAttacks.claimTick(this.mc);
@@ -1781,23 +1800,23 @@ public final class CrystalBotModule extends ClientModule {
       }
    }
 
-   private static double reach(ClientPlayerEntity var0, PlayerEntity var1) {
-      Vec3d var2 = var0.method_33571();
-      return var2.method_1022(TargetingUtils.closestPoint(var2, var1.method_5829()));
+   private static double reach(ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity) {
+      Vec3d var2 = clientPlayerEntity.getEyePos();
+      return var2.distanceTo(TargetingUtils.closestPoint(var2, playerEntity.getBoundingBox()));
    }
 
-   private static boolean axeInHotbar(ClientPlayerEntity var0) {
-      return BotBody.hotbarSlot(var0, var0x -> var0x.method_31573(ItemTags.field_42612)) >= 0;
+   private static boolean axeInHotbar(ClientPlayerEntity clientPlayerEntity) {
+      return BotBody.hotbarSlot(clientPlayerEntity, itemStack -> itemStack.isIn(ItemTags.AXES)) >= 0;
    }
 
-   private static int weaponSlot(ClientPlayerEntity var0, boolean var1) {
-      PlayerInventory var2 = var0.method_31548();
+   private static int weaponSlot(ClientPlayerEntity clientPlayerEntity, boolean bl) {
+      PlayerInventory var2 = clientPlayerEntity.getInventory();
       int var3 = -1;
       double var4 = 0.0;
 
       for (int var6 = 0; var6 < 9; var6++) {
-         ItemStack var7 = var2.method_5438(var6);
-         if (MeleeAttacks.isMeleeWeapon(var7) && !var7.method_31574(Items.field_49814) && (!var1 || var7.method_31573(ItemTags.field_42612))) {
+         ItemStack var7 = var2.getStack(var6);
+         if (MeleeAttacks.isMeleeWeapon(var7) && !var7.isOf(Items.MACE) && (!bl || var7.isIn(ItemTags.AXES))) {
             double var8 = MeleeAttacks.attackDamage(var7);
             if (var3 < 0 || var8 > var4) {
                var3 = var6;
@@ -1809,7 +1828,7 @@ public final class CrystalBotModule extends ClientModule {
       return var3;
    }
 
-   private boolean breakHole(ClientWorld var1, ClientPlayerEntity var2, PlayerEntity var3, RivalBook.Rival var4) {
+   private boolean breakHole(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity, RivalBook.Rival rival) {
       AutoCityModule var7 = ModuleRegistry.get(AutoCityModule.class);
       if (var7 == null) {
          return false;
@@ -1818,7 +1837,7 @@ public final class CrystalBotModule extends ClientModule {
             return false;
          } else {
             CombatMacroLock.release(this);
-            this.body.face(this.mc, var2, var3, 1.0F);
+            this.body.face(this.mc, clientPlayerEntity, playerEntity, 1.0F);
             return true;
          }
       } else {
@@ -1826,27 +1845,27 @@ public final class CrystalBotModule extends ClientModule {
             this.cityStarted = false;
             this.breachAfter = this.tick + 100;
             this.progressAt = this.tick;
-            if (Combo.inHole(var3)) {
+            if (Combo.inHole(playerEntity)) {
                this.cityFails++;
             }
          }
 
          if (this.stance != CrystalBotModule.Stance.RUN
             && this.tick >= this.breachAfter
-            && Combo.inHole(var3)
-            && !(var2.method_6032() + var2.method_6067() < 8.0F)) {
-            int var6 = var4 != null && var4.campsInHoles() ? 15 : 40;
+            && Combo.inHole(playerEntity)
+            && !(clientPlayerEntity.getHealth() + clientPlayerEntity.getAbsorptionAmount() < 8.0F)) {
+            int var6 = rival != null && rival.campsInHoles() ? 15 : 40;
             if (this.tick - this.progressAt < var6) {
                return false;
             } else {
-               boolean var5 = BotBody.hotbarSlot(var2, var0 -> var0.method_31573(ItemTags.field_42614)) >= 0;
-               if (this.cityFails >= 2 && var5 && this.roofOff(var1, var2, var3)) {
+               boolean var5 = BotBody.hotbarSlot(clientPlayerEntity, itemStack -> itemStack.isIn(ItemTags.PICKAXES)) >= 0;
+               if (this.cityFails >= 2 && var5 && this.roofOff(clientWorld, clientPlayerEntity, playerEntity)) {
                   return true;
                } else if (this.cityFails >= 2 || !var5) {
-                  return this.camp(var1, var2, var3);
-               } else if (var2.method_5739(var3) > 3.6) {
-                  this.body.face(this.mc, var2, var3, 1.0F);
-                  this.body.keepDistance(this.mc, var2, var3, 1.6, 2.6, 3.4, false);
+                  return this.camp(clientWorld, clientPlayerEntity, playerEntity);
+               } else if (clientPlayerEntity.distanceTo(playerEntity) > 3.6) {
+                  this.body.face(this.mc, clientPlayerEntity, playerEntity, 1.0F);
+                  this.body.keepDistance(this.mc, clientPlayerEntity, playerEntity, 1.6, 2.6, 3.4, false);
                   return true;
                } else {
                   var7.setEnabled(true);
@@ -1854,7 +1873,7 @@ public final class CrystalBotModule extends ClientModule {
                      return false;
                   } else {
                      this.cityStarted = true;
-                     ModuleChat.send(this, ModuleChat.body().text("Breaking ").name(var3.method_5477().getString()).text("'s hole open."));
+                     ModuleChat.send(this, ModuleChat.body().text("Breaking ").name(playerEntity.getName().getString()).text("'s hole open."));
                      return true;
                   }
                }
@@ -1865,25 +1884,25 @@ public final class CrystalBotModule extends ClientModule {
       }
    }
 
-   private boolean roofOff(ClientWorld var1, ClientPlayerEntity var2, PlayerEntity var3) {
+   private boolean roofOff(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity) {
       if (this.anchors.get()
-         && var1.method_27983() != World.field_25180
-         && BotBody.hotbarSlot(var2, var0 -> var0.method_31574(Items.field_23141)) >= 0
-         && BotBody.hotbarSlot(var2, var0 -> var0.method_31574(Items.field_8801)) >= 0) {
-         BlockPos var4 = var3.method_24515().method_10086(2);
-         BlockState var5 = var1.method_8320(var4);
-         if (var5.method_45474() || var5.method_26214(var1, var4) < 0.0F) {
+         && clientWorld.getRegistryKey() != World.NETHER
+         && BotBody.hotbarSlot(clientPlayerEntity, itemStack -> itemStack.isOf(Items.RESPAWN_ANCHOR)) >= 0
+         && BotBody.hotbarSlot(clientPlayerEntity, itemStack -> itemStack.isOf(Items.GLOWSTONE)) >= 0) {
+         BlockPos var4 = playerEntity.getBlockPos().up(2);
+         BlockState var5 = clientWorld.getBlockState(var4);
+         if (var5.isReplaceable() || var5.getHardness(clientWorld, var4) < 0.0F) {
             return false;
-         } else if (this.mine(var1, var2, var4)) {
-            this.body.face(this.mc, var2, var3, 1.0F);
+         } else if (this.mine(clientWorld, clientPlayerEntity, var4)) {
+            this.body.face(this.mc, clientPlayerEntity, playerEntity, 1.0F);
             return true;
          } else {
-            BlockPos var6 = roofView(var1, var2, var4);
+            BlockPos var6 = roofView(clientWorld, clientPlayerEntity, var4);
             if (var6 == null) {
                return false;
             } else {
-               this.body.face(this.mc, var2, var3, 1.0F);
-               this.body.toward(this.mc, var2, Vec3d.method_24955(var6));
+               this.body.face(this.mc, clientPlayerEntity, playerEntity, 1.0F);
+               this.body.toward(this.mc, clientPlayerEntity, Vec3d.ofBottomCenter(var6));
                return true;
             }
          }
@@ -1892,48 +1911,48 @@ public final class CrystalBotModule extends ClientModule {
       }
    }
 
-   private static boolean walkable(ClientWorld var0, Vec3d var1, Vec3d var2) {
-      Vec3d var3 = var2.method_1020(var1);
-      int var4 = Math.max(1, (int)Math.ceil(var3.method_37267() / 0.5));
-      int var5 = MathHelper.method_15357(var1.field_1351 + 0.01);
+   private static boolean walkable(ClientWorld clientWorld, Vec3d vec3d, Vec3d vec3d2) {
+      Vec3d var3 = vec3d2.subtract(vec3d);
+      int var4 = Math.max(1, (int)Math.ceil(var3.horizontalLength() / 0.5));
+      int var5 = MathHelper.floor(vec3d.y + 0.01);
 
       for (int var6 = 1; var6 <= var4; var6++) {
-         Vec3d var7 = var1.method_1019(var3.method_1021((double)var6 / var4));
-         BlockPos var8 = StandPicker.standable(var0, BlockPos.method_49637(var7.field_1352, var5, var7.field_1350));
-         if (var8 == null || Math.abs(var8.method_10264() - var5) > 1) {
+         Vec3d var7 = vec3d.add(var3.multiply((double)var6 / var4));
+         BlockPos var8 = StandPicker.standable(clientWorld, BlockPos.ofFloored(var7.x, var5, var7.z));
+         if (var8 == null || Math.abs(var8.getY() - var5) > 1) {
             return false;
          }
 
-         var5 = var8.method_10264();
+         var5 = var8.getY();
       }
 
       return true;
    }
 
-   private static BlockPos roofView(ClientWorld var0, ClientPlayerEntity var1, BlockPos var2) {
-      BlockPos var3 = var1.method_24515();
+   private static BlockPos roofView(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, BlockPos blockPos) {
+      BlockPos var3 = clientPlayerEntity.getBlockPos();
       BlockPos var4 = null;
       double var5 = 1.7976931348623157E308;
-      double var7 = var1.method_55754() - 0.2;
+      double var7 = clientPlayerEntity.getBlockInteractionRange() - 0.2;
 
-      for (BlockPos var10 : BlockPos.method_10097(var3.method_10069(-4, -1, -4), var3.method_10069(4, 1, 4))) {
-         BlockPos var11 = StandPicker.standable(var0, var10);
-         if (var11 != null && var11.equals(var10) && walkable(var0, var1.method_73189(), Vec3d.method_24955(var11))) {
-            Vec3d var12 = Vec3d.method_24955(var11).method_1031(0.0, var1.method_5751(), 0.0);
-            double var13 = var11.method_10262(var3);
+      for (BlockPos var10 : BlockPos.iterate(var3.add(-4, -1, -4), var3.add(4, 1, 4))) {
+         BlockPos var11 = StandPicker.standable(clientWorld, var10);
+         if (var11 != null && var11.equals(var10) && walkable(clientWorld, clientPlayerEntity.getEntityPos(), Vec3d.ofBottomCenter(var11))) {
+            Vec3d var12 = Vec3d.ofBottomCenter(var11).add(0.0, clientPlayerEntity.getStandingEyeHeight(), 0.0);
+            double var13 = var11.getSquaredDistance(var3);
             if (!(var13 >= var5)) {
                for (Direction var18 : Direction.values()) {
-                  Vec3d var20 = Vec3d.method_24953(var2).method_43206(var18, 0.5);
+                  Vec3d var20 = Vec3d.ofCenter(blockPos).offset(var18, 0.5);
                   BlockHitResult var19;
-                  if (!(var12.method_1022(var20) > var7)
-                     && (var19 = var0.method_17742(
-                              new RaycastContext(var12, var20.method_43206(var18, -0.05), ShapeType.field_17559, FluidHandling.field_1348, var1)
+                  if (!(var12.distanceTo(var20) > var7)
+                     && (var19 = clientWorld.raycast(
+                              new RaycastContext(var12, var20.offset(var18, -0.05), ShapeType.OUTLINE, FluidHandling.NONE, clientPlayerEntity)
                            ))
-                           .method_17783()
-                        == Type.field_1332
-                     && var19.method_17777().equals(var2)
-                     && var19.method_17780() == var18) {
-                     var4 = var11.method_10062();
+                           .getType()
+                        == Type.BLOCK
+                     && var19.getBlockPos().equals(blockPos)
+                     && var19.getSide() == var18) {
+                     var4 = var11.toImmutable();
                      var5 = var13;
                      break;
                   }
@@ -1945,37 +1964,37 @@ public final class CrystalBotModule extends ClientModule {
       return var4;
    }
 
-   private boolean mine(ClientWorld var1, ClientPlayerEntity var2, BlockPos var3) {
-      BlockState var5 = var1.method_8320(var3);
-      int var6 = toolSlot(var2.method_31548(), var5);
+   private boolean mine(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, BlockPos blockPos) {
+      BlockState var5 = clientWorld.getBlockState(blockPos);
+      int var6 = toolSlot(clientPlayerEntity.getInventory(), var5);
       if (var6 < 0) {
          return false;
       } else {
-         BlockHitResult var7 = visibleFace(var1, var2, var3);
+         BlockHitResult var7 = visibleFace(clientWorld, clientPlayerEntity, blockPos);
          if (var7 == null) {
             return false;
          } else if (!this.hands()) {
             return true;
          } else {
             Rotation var8 = ServerRotation.sent();
-            BlockHitResult var4 = var8 == null ? null : AnchorGuard.trace(var1, var2, var8);
-            if (var4 == null || !var4.method_17777().equals(var3)) {
-               ServerRotation.request(RotationUtils.fromTo(var2.method_33571(), var7.method_17784()), 6.0F);
+            BlockHitResult var4 = var8 == null ? null : AnchorGuard.trace(clientWorld, clientPlayerEntity, var8);
+            if (var4 == null || !var4.getBlockPos().equals(blockPos)) {
+               ServerRotation.request(RotationUtils.fromTo(clientPlayerEntity.getEyePos(), var7.getPos()), 6.0F);
                return true;
-            } else if (var2.method_31548().method_67532() != var6) {
-               var2.method_31548().method_61496(var6);
+            } else if (clientPlayerEntity.getInventory().getSelectedSlot() != var6) {
+               clientPlayerEntity.getInventory().setSelectedSlot(var6);
                return true;
             } else {
                ServerRotation.request(var8);
-               if (MeleeAttacks.actedThisTick(var2)) {
+               if (MeleeAttacks.actedThisTick(clientPlayerEntity)) {
                   return true;
                } else {
-                  if (this.mc.field_1761.method_2902(var3, var4.method_17780())) {
-                     var2.method_6104(Hand.field_5808);
+                  if (this.mc.interactionManager.updateBlockBreakingProgress(blockPos, var4.getSide())) {
+                     clientPlayerEntity.swingHand(Hand.MAIN_HAND);
                   }
 
-                  MeleeAttacks.noteAction(var2);
-                  this.diggingAt = var2.field_6012;
+                  MeleeAttacks.noteAction(clientPlayerEntity);
+                  this.diggingAt = clientPlayerEntity.age;
                   return true;
                }
             }
@@ -1985,39 +2004,39 @@ public final class CrystalBotModule extends ClientModule {
 
    public static boolean digging() {
       CrystalBotModule var0 = ModuleRegistry.get(CrystalBotModule.class);
-      ClientPlayerEntity var1 = MinecraftClient.method_1551().field_1724;
-      return var0 != null && var0.isEnabled() && var1 != null && var1.field_6012 - var0.diggingAt <= 1;
+      ClientPlayerEntity var1 = MinecraftClient.getInstance().player;
+      return var0 != null && var0.isEnabled() && var1 != null && var1.age - var0.diggingAt <= 1;
    }
 
-   private static int toolSlot(PlayerInventory var0, BlockState var1) {
+   private static int toolSlot(PlayerInventory playerInventory, BlockState blockState) {
       int var2 = -1;
       float var3 = 0.0F;
 
       for (int var4 = 0; var4 < 9; var4++) {
-         ItemStack var6 = var0.method_5438(var4);
-         boolean var5 = var6.method_7951(var1) || !var1.method_29291();
-         if (var5 && !(var6.method_7924(var1) <= var3)) {
+         ItemStack var6 = playerInventory.getStack(var4);
+         boolean var5 = var6.isSuitableFor(blockState) || !blockState.isToolRequired();
+         if (var5 && !(var6.getMiningSpeedMultiplier(blockState) <= var3)) {
             var2 = var4;
-            var3 = var6.method_7924(var1);
+            var3 = var6.getMiningSpeedMultiplier(blockState);
          }
       }
 
       return var2;
    }
 
-   private static BlockHitResult visibleFace(ClientWorld var0, ClientPlayerEntity var1, BlockPos var2) {
-      Vec3d var3 = var1.method_33571();
+   private static BlockHitResult visibleFace(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, BlockPos blockPos) {
+      Vec3d var3 = clientPlayerEntity.getEyePos();
       BlockHitResult var4 = null;
-      double var5 = var1.method_55754() * var1.method_55754();
+      double var5 = clientPlayerEntity.getBlockInteractionRange() * clientPlayerEntity.getBlockInteractionRange();
 
       for (Direction var10 : Direction.values()) {
-         Vec3d var12 = Vec3d.method_24953(var2).method_43206(var10, 0.5);
-         double var13 = var3.method_1025(var12);
+         Vec3d var12 = Vec3d.ofCenter(blockPos).offset(var10, 0.5);
+         double var13 = var3.squaredDistanceTo(var12);
          BlockHitResult var11;
          if (!(var13 > var5)
-            && (var11 = AnchorGuard.trace(var0, var1, RotationUtils.fromTo(var3, var12.method_43206(var10, -0.05)))) != null
-            && var11.method_17777().equals(var2)
-            && var11.method_17780() == var10) {
+            && (var11 = AnchorGuard.trace(clientWorld, clientPlayerEntity, RotationUtils.fromTo(var3, var12.offset(var10, -0.05)))) != null
+            && var11.getBlockPos().equals(blockPos)
+            && var11.getSide() == var10) {
             var4 = var11;
             var5 = var13;
          }
@@ -2026,27 +2045,27 @@ public final class CrystalBotModule extends ClientModule {
       return var4;
    }
 
-   private boolean camp(ClientWorld var1, ClientPlayerEntity var2, PlayerEntity var3) {
-      BlockPos var4 = var3.method_24515();
-      if (var1.method_18467(EndCrystalEntity.class, new Box(var4).method_1009(3.0, 1.0, 3.0)).size() >= 2) {
+   private boolean camp(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity) {
+      BlockPos var4 = playerEntity.getBlockPos();
+      if (clientWorld.getNonSpectatingEntities(EndCrystalEntity.class, new Box(var4).expand(3.0, 1.0, 3.0)).size() >= 2) {
          return false;
       } else {
-         Vec3d var5 = var2.method_33571();
+         Vec3d var5 = clientPlayerEntity.getEyePos();
          BlockPos var6 = null;
          float var7 = this.selfCapNow - 2.0F;
-         double var8 = var2.method_55755() - 0.1;
+         double var8 = clientPlayerEntity.getEntityInteractionRange() - 0.1;
 
-         for (BlockPos var11 : BlockPos.method_10097(var4.method_10069(-2, 0, -2), var4.method_10069(2, 0, 2))) {
+         for (BlockPos var11 : BlockPos.iterate(var4.add(-2, 0, -2), var4.add(2, 0, 2))) {
             float var12;
             BlockPos var13;
-            if (Math.max(Math.abs(var11.method_10263() - var4.method_10263()), Math.abs(var11.method_10260() - var4.method_10260())) == 2
-               && (var13 = var11.method_10074().method_10062()).method_10264() >= feetY(var2)
-               && Crystals.isBase(var1.method_8320(var13))
-               && Crystals.canHost(var1, var13, null)
-               && !(var5.method_1025(TargetingUtils.closestPoint(var5, Crystals.boxOn(var13))) > var8 * var8)
-               && !((var12 = CrystalDamage.estimate(Crystals.explosionAt(var13), var2)) > var7)
-               && !CrystalDamage.endangers(var2, var12)
-               && topAim(var1, var2, var13) != null) {
+            if (Math.max(Math.abs(var11.getX() - var4.getX()), Math.abs(var11.getZ() - var4.getZ())) == 2
+               && (var13 = var11.down().toImmutable()).getY() >= feetY(clientPlayerEntity)
+               && Crystals.isBase(clientWorld.getBlockState(var13))
+               && Crystals.canHost(clientWorld, var13, null)
+               && !(var5.squaredDistanceTo(TargetingUtils.closestPoint(var5, Crystals.boxOn(var13))) > var8 * var8)
+               && !((var12 = CrystalDamage.estimate(Crystals.explosionAt(var13), clientPlayerEntity)) > var7)
+               && !CrystalDamage.endangers(clientPlayerEntity, var12)
+               && topAim(clientWorld, clientPlayerEntity, var13) != null) {
                var6 = var13;
                var7 = var12;
             }
@@ -2055,23 +2074,23 @@ public final class CrystalBotModule extends ClientModule {
          if (var6 == null) {
             return false;
          } else {
-            this.body.face(this.mc, var2, var3, 1.0F);
-            this.placeCrystal(var1, var2, var6);
+            this.body.face(this.mc, clientPlayerEntity, playerEntity, 1.0F);
+            this.placeCrystal(clientWorld, clientPlayerEntity, var6);
             return true;
          }
       }
    }
 
-   private static Vec3d topAim(ClientWorld var0, ClientPlayerEntity var1, BlockPos var2) {
-      Vec3d var4 = var1.method_33571();
+   private static Vec3d topAim(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, BlockPos blockPos) {
+      Vec3d var4 = clientPlayerEntity.getEyePos();
 
       for (double[] var8 : new double[][]{{0.5, 0.5}, {0.2, 0.2}, {0.8, 0.2}, {0.2, 0.8}, {0.8, 0.8}}) {
-         Vec3d var10 = new Vec3d(var2.method_10263() + var8[0], var2.method_10264() + 1.0, var2.method_10260() + var8[1]);
+         Vec3d var10 = new Vec3d(blockPos.getX() + var8[0], blockPos.getY() + 1.0, blockPos.getZ() + var8[1]);
          BlockHitResult var9;
-         if (!(var4.method_1022(var10) > var1.method_55754() - 0.1)
-            && (var9 = AnchorGuard.trace(var0, var1, RotationUtils.fromTo(var4, var10))) != null
-            && var9.method_17777().equals(var2)
-            && var9.method_17780() == Direction.field_11036) {
+         if (!(var4.distanceTo(var10) > clientPlayerEntity.getBlockInteractionRange() - 0.1)
+            && (var9 = AnchorGuard.trace(clientWorld, clientPlayerEntity, RotationUtils.fromTo(var4, var10))) != null
+            && var9.getBlockPos().equals(blockPos)
+            && var9.getSide() == Direction.UP) {
             return var10;
          }
       }
@@ -2079,21 +2098,21 @@ public final class CrystalBotModule extends ClientModule {
       return null;
    }
 
-   private void placeCrystal(ClientWorld var1, ClientPlayerEntity var2, BlockPos var3) {
-      int var5 = BotBody.hotbarSlot(var2, var0 -> var0.method_31574(Items.field_8301));
+   private void placeCrystal(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, BlockPos blockPos) {
+      int var5 = BotBody.hotbarSlot(clientPlayerEntity, itemStack -> itemStack.isOf(Items.END_CRYSTAL));
       if (var5 >= 0 && this.hands()) {
          Rotation var6 = ServerRotation.sent();
-         BlockHitResult var4 = var6 == null ? null : AnchorGuard.trace(var1, var2, var6);
-         if (var4 == null || !var4.method_17777().equals(var3) || var4.method_17780() != Direction.field_11036) {
-            Vec3d var8 = topAim(var1, var2, var3);
+         BlockHitResult var4 = var6 == null ? null : AnchorGuard.trace(clientWorld, clientPlayerEntity, var6);
+         if (var4 == null || !var4.getBlockPos().equals(blockPos) || var4.getSide() != Direction.UP) {
+            Vec3d var8 = topAim(clientWorld, clientPlayerEntity, blockPos);
             if (var8 != null) {
-               ServerRotation.request(RotationUtils.fromTo(var2.method_33571(), var8), 6.0F);
+               ServerRotation.request(RotationUtils.fromTo(clientPlayerEntity.getEyePos(), var8), 6.0F);
             }
-         } else if (var2.method_31548().method_67532() != var5) {
-            var2.method_31548().method_61496(var5);
-         } else if (MeleeAttacks.handsFree(this.mc, var2)) {
-            if (Crystals.rightClick(this.mc, var2, var4)) {
-               Crystals.notePlace(var2, var3);
+         } else if (clientPlayerEntity.getInventory().getSelectedSlot() != var5) {
+            clientPlayerEntity.getInventory().setSelectedSlot(var5);
+         } else if (MeleeAttacks.handsFree(this.mc, clientPlayerEntity)) {
+            if (Crystals.rightClick(this.mc, clientPlayerEntity, var4)) {
+               Crystals.notePlace(clientPlayerEntity, blockPos);
                MeleeAttacks.claimTick(this.mc);
             }
 
@@ -2102,26 +2121,26 @@ public final class CrystalBotModule extends ClientModule {
       }
    }
 
-   private boolean closeSpot(ClientWorld var1, ClientPlayerEntity var2, PlayerEntity var3) {
-      int var4 = guardBlockSlot(var2);
+   private boolean closeSpot(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity) {
+      int var4 = guardBlockSlot(clientPlayerEntity);
       if (var4 < 0) {
          return false;
       } else {
          if (this.blocking == null && this.tick >= this.spotScanAt) {
             this.spotScanAt = this.tick + 5;
-            this.blocking = dangerSpot(var1, var2, var3);
+            this.blocking = dangerSpot(clientWorld, clientPlayerEntity, playerEntity);
          }
 
          if (this.blocking == null) {
             return false;
-         } else if (var1.method_8320(this.blocking).method_45474()
-            && var1.method_8628(Blocks.field_10540.method_9564(), this.blocking, ShapeContext.method_16194())) {
-            AnchorGuard.Spot var5 = AnchorGuard.supportFor(var1, var2, var2.method_33571(), this.blocking);
+         } else if (clientWorld.getBlockState(this.blocking).isReplaceable()
+            && clientWorld.canPlace(Blocks.OBSIDIAN.getDefaultState(), this.blocking, ShapeContext.absent())) {
+            AnchorGuard.Spot var5 = AnchorGuard.supportFor(clientWorld, clientPlayerEntity, clientPlayerEntity.getEyePos(), this.blocking);
             if (var5 == null) {
                this.blocking = null;
                return false;
             } else {
-               if (this.placeAt(var1, var2, var5, var4) == 1) {
+               if (this.placeAt(clientWorld, clientPlayerEntity, var5, var4) == 1) {
                   this.blocking = null;
                }
 
@@ -2134,26 +2153,26 @@ public final class CrystalBotModule extends ClientModule {
       }
    }
 
-   private static BlockPos dangerSpot(ClientWorld var0, ClientPlayerEntity var1, PlayerEntity var2) {
-      BlockPos var3 = var1.method_24515();
-      Vec3d var4 = var2.method_33571();
-      double var5 = Math.max(4.6, var1.method_55754() + 0.1);
+   private static BlockPos dangerSpot(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity) {
+      BlockPos var3 = clientPlayerEntity.getBlockPos();
+      Vec3d var4 = playerEntity.getEyePos();
+      double var5 = Math.max(4.6, clientPlayerEntity.getBlockInteractionRange() + 0.1);
       BlockPos var7 = null;
       float var8 = 0.0F;
       float var9 = 0.0F;
 
-      for (BlockPos var11 : BlockPos.method_10097(var3.method_10069(-4, -2, -4), var3.method_10069(4, 1, 4))) {
+      for (BlockPos var11 : BlockPos.iterate(var3.add(-4, -2, -4), var3.add(4, 1, 4))) {
          Vec3d var12;
          float var13;
-         if (Crystals.isBase(var0.method_8320(var11))
-            && Crystals.canHost(var0, var11, null)
-            && !(var4.method_1022(new Vec3d(var11.method_10263() + 0.5, var11.method_10264() + 1.0, var11.method_10260() + 0.5)) > var5)
-            && !((var13 = CrystalDamage.estimate(var12 = Crystals.explosionAt(var11), var1)) <= var9)
-            && !(CrystalDamage.estimate(var12, var2) >= var13 + 2.0F)) {
+         if (Crystals.isBase(clientWorld.getBlockState(var11))
+            && Crystals.canHost(clientWorld, var11, null)
+            && !(var4.distanceTo(new Vec3d(var11.getX() + 0.5, var11.getY() + 1.0, var11.getZ() + 0.5)) > var5)
+            && !((var13 = CrystalDamage.estimate(var12 = Crystals.explosionAt(var11), clientPlayerEntity)) <= var9)
+            && !(CrystalDamage.estimate(var12, playerEntity) >= var13 + 2.0F)) {
             if (var13 > var8) {
                var9 = var8;
                var8 = var13;
-               var7 = var11.method_10084().method_10062();
+               var7 = var11.up().toImmutable();
             } else {
                var9 = var13;
             }
@@ -2163,75 +2182,76 @@ public final class CrystalBotModule extends ClientModule {
       return var8 >= 8.0F && var9 <= var8 / 2.0F ? var7 : null;
    }
 
-   private int placeAt(ClientWorld var1, ClientPlayerEntity var2, AnchorGuard.Spot var3, int var4) {
+   private int placeAt(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, AnchorGuard.Spot spot, int i) {
       if (!this.hands()) {
          return 0;
       } else {
          Rotation var6 = ServerRotation.sent();
-         BlockHitResult var5 = var6 == null ? null : AnchorGuard.hitAlong(var1, var2, var6, var3);
+         BlockHitResult var5 = var6 == null ? null : AnchorGuard.hitAlong(clientWorld, clientPlayerEntity, var6, spot);
          if (var5 == null) {
-            ServerRotation.request(RotationUtils.fromTo(var2.method_33571(), var3.aim()), 6.0F);
+            ServerRotation.request(RotationUtils.fromTo(clientPlayerEntity.getEyePos(), spot.aim()), 6.0F);
             return 0;
-         } else if (var2.method_31548().method_67532() != var4) {
-            var2.method_31548().method_61496(var4);
+         } else if (clientPlayerEntity.getInventory().getSelectedSlot() != i) {
+            clientPlayerEntity.getInventory().setSelectedSlot(i);
             return 0;
-         } else if (!MeleeAttacks.handsFree(this.mc, var2)) {
+         } else if (!MeleeAttacks.handsFree(this.mc, clientPlayerEntity)) {
             return 0;
          } else {
-            AnchorGuard.click(this.mc, var2, var5);
+            AnchorGuard.click(this.mc, clientPlayerEntity, var5);
             ServerRotation.request(var6);
             return 1;
          }
       }
    }
 
-   private boolean defuse(ClientWorld var1, ClientPlayerEntity var2) {
-      if (this.tick - this.defuseAt >= 10 && var1.method_27983() != World.field_25180) {
-         BlockPos var3 = var2.method_24515();
+   private boolean defuse(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity) {
+      if (this.tick - this.defuseAt >= 10 && clientWorld.getRegistryKey() != World.NETHER) {
+         BlockPos var3 = clientPlayerEntity.getBlockPos();
 
-         for (BlockPos var5 : BlockPos.method_10097(var3.method_10069(-5, -2, -5), var3.method_10069(5, 3, 5))) {
-            BlockState var8 = var1.method_8320(var5);
+         for (BlockPos var5 : BlockPos.iterate(var3.add(-5, -2, -5), var3.add(5, 3, 5))) {
+            BlockState var8 = clientWorld.getBlockState(var5);
             BlockPos var6;
             Vec3d var7;
-            if (var8.method_27852(Blocks.field_23152)
-               && (Integer)var8.method_11654(RespawnAnchorBlock.field_23153) > 0
-               && var2.method_56093(var5, -0.1)
+            if (var8.isOf(Blocks.RESPAWN_ANCHOR)
+               && var8.get(RespawnAnchorBlock.CHARGES) > 0
+               && clientPlayerEntity.canInteractWithBlockAt(var5, -0.1)
                && !var5.equals(this.digAnchor)
                && !(
-                  CrystalDamage.estimate(var7 = Vec3d.method_24953(var6 = var5.method_10062()), var2, 5.0F, var6) > Math.max(1.0F, 0.15F * var2.method_6032())
+                  CrystalDamage.estimate(var7 = Vec3d.ofCenter(var6 = var5.toImmutable()), clientPlayerEntity, 5.0F, var6)
+                     > Math.max(1.0F, 0.15F * clientPlayerEntity.getHealth())
                )) {
                boolean var9 = false;
 
-               for (PlayerEntity var11 : enemies(var1, var2, 16.0)) {
-                  var9 |= var11.method_33571().method_1022(var7) <= 5.5;
+               for (PlayerEntity var11 : enemies(clientWorld, clientPlayerEntity, 16.0)) {
+                  var9 |= var11.getEyePos().distanceTo(var7) <= 5.5;
                }
 
                if (var9) {
-                  PlayerInventory var14 = var2.method_31548();
-                  int var15 = AnchorGuard.detonatorRoute(var14, var2.method_6047());
+                  PlayerInventory var14 = clientPlayerEntity.getInventory();
+                  int var15 = AnchorGuard.detonatorRoute(var14, clientPlayerEntity.getMainHandStack());
                   if (var15 == -1 || !this.hands()) {
                      return false;
                   }
 
-                  BlockHitResult var12 = AnchorGuard.anchorHit(var1, var2, var6);
+                  BlockHitResult var12 = AnchorGuard.anchorHit(clientWorld, clientPlayerEntity, var6);
                   if (var12 != null) {
                      if (var15 != -2) {
-                        var14.method_61496(var15);
+                        var14.setSelectedSlot(var15);
                         return true;
                      }
 
-                     if (!MeleeAttacks.handsFree(this.mc, var2)) {
+                     if (!MeleeAttacks.handsFree(this.mc, clientPlayerEntity)) {
                         return true;
                      }
 
-                     AnchorGuard.click(this.mc, var2, var12);
+                     AnchorGuard.click(this.mc, clientPlayerEntity, var12);
                      this.defuseAt = this.tick;
                      return true;
                   }
 
-                  Vec3d var13 = AnchorGuard.anchorAim(var1, var2, var6);
+                  Vec3d var13 = AnchorGuard.anchorAim(clientWorld, clientPlayerEntity, var6);
                   if (var13 != null) {
-                     ServerRotation.request(RotationUtils.fromTo(var2.method_33571(), var13), 6.0F);
+                     ServerRotation.request(RotationUtils.fromTo(clientPlayerEntity.getEyePos(), var13), 6.0F);
                      return true;
                   }
                }
@@ -2244,62 +2264,63 @@ public final class CrystalBotModule extends ClientModule {
       }
    }
 
-   private boolean guard(ClientWorld var1, ClientPlayerEntity var2, PlayerEntity var3) {
-      float var4 = var2.method_6032() + var2.method_6067();
+   private boolean guard(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity) {
+      float var4 = clientPlayerEntity.getHealth() + clientPlayerEntity.getAbsorptionAmount();
       BlockPos var5 = null;
       float var6 = 0.0F;
-      BlockPos var7 = var2.method_24515();
+      BlockPos var7 = clientPlayerEntity.getBlockPos();
 
-      for (BlockPos var9 : BlockPos.method_10097(var7.method_10069(-5, -2, -5), var7.method_10069(5, 3, 5))) {
+      for (BlockPos var9 : BlockPos.iterate(var7.add(-5, -2, -5), var7.add(5, 3, 5))) {
          Vec3d var10;
          float var11;
-         if (var1.method_8320(var9).method_27852(Blocks.field_23152)
+         if (clientWorld.getBlockState(var9).isOf(Blocks.RESPAWN_ANCHOR)
             && !var9.equals(this.digAnchor)
             && (
-               !((var11 = CrystalDamage.estimate(var10 = Vec3d.method_24953(var9), var2, 5.0F, var9.method_10062())) < Math.max(4.0F, var4 * 0.3F))
+               !((var11 = CrystalDamage.estimate(var10 = Vec3d.ofCenter(var9), clientPlayerEntity, 5.0F, var9.toImmutable())) < Math.max(4.0F, var4 * 0.3F))
                   || !(var11 < var4 - 1.0F)
             )
-            && !(var3.method_33571().method_1022(var10) > 5.5)
+            && !(playerEntity.getEyePos().distanceTo(var10) > 5.5)
             && !(var11 <= var6)) {
             var6 = var11;
-            var5 = var9.method_10062();
+            var5 = var9.toImmutable();
          }
       }
 
       if (var5 == null) {
          return false;
       } else {
-         AnchorGuard.Spot var12 = AnchorGuard.find(var1, var2, var5, var2.method_33571());
+         AnchorGuard.Spot var12 = AnchorGuard.find(clientWorld, clientPlayerEntity, var5, clientPlayerEntity.getEyePos());
          if (var12 != null && var12.standing()) {
             return false;
          } else {
-            int var13 = guardBlockSlot(var2);
+            int var13 = guardBlockSlot(clientPlayerEntity);
             if (var12 != null && var13 >= 0 && this.tick - this.shieldAt >= 20) {
-               this.body.face(this.mc, var2, var3, 1.0F);
-               if (this.placeAt(var1, var2, var12, var13) == 1) {
+               this.body.face(this.mc, clientPlayerEntity, playerEntity, 1.0F);
+               if (this.placeAt(clientWorld, clientPlayerEntity, var12, var13) == 1) {
                   this.shieldAt = this.tick;
                }
 
                return true;
             } else {
-               this.body.face(this.mc, var2, var3, 1.0F);
-               this.body.away(this.mc, var2, Vec3d.method_24953(var5));
+               this.body.face(this.mc, clientPlayerEntity, playerEntity, 1.0F);
+               this.body.away(this.mc, clientPlayerEntity, Vec3d.ofCenter(var5));
                return true;
             }
          }
       }
    }
 
-   private static int guardBlockSlot(ClientPlayerEntity var0) {
-      int var1 = BotBody.hotbarSlot(var0, OBSIDIAN);
-      return var1 >= 0 ? var1 : BotBody.hotbarSlot(var0, AnchorGuard::isGuardBlock);
+   private static int guardBlockSlot(ClientPlayerEntity clientPlayerEntity) {
+      int var1 = BotBody.hotbarSlot(clientPlayerEntity, OBSIDIAN);
+      return var1 >= 0 ? var1 : BotBody.hotbarSlot(clientPlayerEntity, AnchorGuard::isGuardBlock);
    }
 
-   private boolean cover(ClientWorld var1, ClientPlayerEntity var2, PlayerEntity var3, double var4) {
-      boolean var7 = this.boxingAt != null && this.boxingAt.equals(var2.method_24515()) && this.tick < this.boxingUntil;
-      boolean var6 = var2.method_6032() + var2.method_6067() <= this.retreatAt() + 4.0F || this.stance == CrystalBotModule.Stance.GUARD;
-      if (this.surround.get() && !var7 && var6 && var2.method_24828()) {
-         this.boxingAt = var2.method_24515();
+   private boolean cover(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, PlayerEntity playerEntity, double d) {
+      boolean var7 = this.boxingAt != null && this.boxingAt.equals(clientPlayerEntity.getBlockPos()) && this.tick < this.boxingUntil;
+      boolean var6 = clientPlayerEntity.getHealth() + clientPlayerEntity.getAbsorptionAmount() <= this.retreatAt() + 4.0F
+         || this.stance == CrystalBotModule.Stance.GUARD;
+      if (this.surround.get() && !var7 && var6 && clientPlayerEntity.isOnGround()) {
+         this.boxingAt = clientPlayerEntity.getBlockPos();
          this.boxingUntil = this.tick + 60;
          var7 = true;
       }
@@ -2308,34 +2329,34 @@ public final class CrystalBotModule extends ClientModule {
          this.boxingAt = null;
       }
 
-      return this.surround.get() && var7 && var2.method_24828() && this.boxIn(var1, var2);
+      return this.surround.get() && var7 && clientPlayerEntity.isOnGround() && this.boxIn(clientWorld, clientPlayerEntity);
    }
 
-   private boolean boxIn(ClientWorld var1, ClientPlayerEntity var2) {
-      List var3 = openAroundFeet(var1, var2);
-      if (!var3.isEmpty() && BotBody.hotbarSlot(var2, OBSIDIAN) >= 0) {
+   private boolean boxIn(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity) {
+      List var3 = openAroundFeet(clientWorld, clientPlayerEntity);
+      if (!var3.isEmpty() && BotBody.hotbarSlot(clientPlayerEntity, OBSIDIAN) >= 0) {
          if (!this.hands()) {
             return true;
          } else {
             for (BlockPos var5 : var3) {
-               BlockHitResult var6 = AutoTrapModule.support(var1, var2, var5);
+               BlockHitResult var6 = AutoTrapModule.support(clientWorld, clientPlayerEntity, var5);
                if (var6 != null && (!var5.equals(this.boxSkipped) || this.tick >= this.boxSkippedUntil)) {
-                  BlockHitResult var7 = AutoTrapModule.seenByServer(var1, var2, var6);
+                  BlockHitResult var7 = AutoTrapModule.seenByServer(clientWorld, clientPlayerEntity, var6);
                   if (var7 != null) {
-                     int var8 = BotBody.hotbarSlot(var2, OBSIDIAN);
-                     if (var2.method_31548().method_67532() != var8) {
-                        var2.method_31548().method_61496(var8);
+                     int var8 = BotBody.hotbarSlot(clientPlayerEntity, OBSIDIAN);
+                     if (clientPlayerEntity.getInventory().getSelectedSlot() != var8) {
+                        clientPlayerEntity.getInventory().setSelectedSlot(var8);
                         return true;
                      }
 
-                     if (!MeleeAttacks.handsFree(this.mc, var2)) {
+                     if (!MeleeAttacks.handsFree(this.mc, clientPlayerEntity)) {
                         return true;
                      }
 
-                     ActionResult var9 = this.mc.field_1761.method_2896(var2, Hand.field_5808, var7);
-                     if (var9.method_23665()) {
-                        var2.method_6104(Hand.field_5808);
-                        MeleeAttacks.noteAction(var2);
+                     ActionResult var9 = this.mc.interactionManager.interactBlock(clientPlayerEntity, Hand.MAIN_HAND, var7);
+                     if (var9.isAccepted()) {
+                        clientPlayerEntity.swingHand(Hand.MAIN_HAND);
+                        MeleeAttacks.noteAction(clientPlayerEntity);
                         ServerRotation.request(ServerRotation.sent());
                      }
 
@@ -2345,7 +2366,7 @@ public final class CrystalBotModule extends ClientModule {
                   this.boxAimTicks = var5.equals(this.boxAiming) ? this.boxAimTicks + 1 : 0;
                   this.boxAiming = var5;
                   if (this.boxAimTicks < 10) {
-                     ServerRotation.request(RotationUtils.fromTo(var2.method_33571(), var6.method_17784()), 6.0F);
+                     ServerRotation.request(RotationUtils.fromTo(clientPlayerEntity.getEyePos(), var6.getPos()), 6.0F);
                      return true;
                   }
 
@@ -2361,14 +2382,14 @@ public final class CrystalBotModule extends ClientModule {
       }
    }
 
-   private static List<BlockPos> openAroundFeet(ClientWorld var0, ClientPlayerEntity var1) {
+   private static List<BlockPos> openAroundFeet(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity) {
       ArrayList var2 = new ArrayList();
 
-      for (BlockPos var4 : ring(var1)) {
-         BlockState var5 = var0.method_8320(var4);
-         if (var5.method_45474()
-            && !(var4.method_46558().method_1022(var1.method_33571()) > var1.method_55754())
-            && var0.method_8628(Blocks.field_10540.method_9564(), var4, ShapeContext.method_16194())) {
+      for (BlockPos var4 : ring(clientPlayerEntity)) {
+         BlockState var5 = clientWorld.getBlockState(var4);
+         if (var5.isReplaceable()
+            && !(var4.toCenterPos().distanceTo(clientPlayerEntity.getEyePos()) > clientPlayerEntity.getBlockInteractionRange())
+            && clientWorld.canPlace(Blocks.OBSIDIAN.getDefaultState(), var4, ShapeContext.absent())) {
             var2.add(var4);
          }
       }
@@ -2376,9 +2397,9 @@ public final class CrystalBotModule extends ClientModule {
       return var2;
    }
 
-   private static boolean surrounded(ClientWorld var0, ClientPlayerEntity var1) {
-      for (BlockPos var3 : ring(var1)) {
-         if (var0.method_8320(var3).method_26220(var0, var3).method_1110()) {
+   private static boolean surrounded(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity) {
+      for (BlockPos var3 : ring(clientPlayerEntity)) {
+         if (clientWorld.getBlockState(var3).getCollisionShape(clientWorld, var3).isEmpty()) {
             return false;
          }
       }
@@ -2386,25 +2407,25 @@ public final class CrystalBotModule extends ClientModule {
       return true;
    }
 
-   private static Set<BlockPos> ring(ClientPlayerEntity var0) {
-      Box var1 = var0.method_5829();
-      int var2 = MathHelper.method_15357(var1.field_1322 + 0.01);
+   private static Set<BlockPos> ring(ClientPlayerEntity clientPlayerEntity) {
+      Box var1 = clientPlayerEntity.getBoundingBox();
+      int var2 = MathHelper.floor(var1.minY + 0.01);
       LinkedHashSet var3 = new LinkedHashSet();
 
-      for (int var4 = MathHelper.method_15357(var1.field_1323); var4 <= MathHelper.method_15357(var1.field_1320 - 1.0E-4); var4++) {
-         for (int var5 = MathHelper.method_15357(var1.field_1321); var5 <= MathHelper.method_15357(var1.field_1324 - 1.0E-4); var5++) {
-            var3.add(BlockPos.method_10064(var4, 0, var5));
+      for (int var4 = MathHelper.floor(var1.minX); var4 <= MathHelper.floor(var1.maxX - 1.0E-4); var4++) {
+         for (int var5 = MathHelper.floor(var1.minZ); var5 <= MathHelper.floor(var1.maxZ - 1.0E-4); var5++) {
+            var3.add(BlockPos.asLong(var4, 0, var5));
          }
       }
 
       LinkedHashSet var12 = new LinkedHashSet();
 
       for (long var6 : var3) {
-         BlockPos var8 = BlockPos.method_10092(var6).method_33096(var2);
+         BlockPos var8 = BlockPos.fromLong(var6).withY(var2);
 
-         for (Direction var10 : net.minecraft.util.math.Direction.Type.field_11062) {
-            BlockPos var11 = var8.method_10093(var10);
-            if (!var3.contains(BlockPos.method_10064(var11.method_10263(), 0, var11.method_10260()))) {
+         for (Direction var10 : net.minecraft.util.math.Direction.Type.HORIZONTAL) {
+            BlockPos var11 = var8.offset(var10);
+            if (!var3.contains(BlockPos.asLong(var11.getX(), 0, var11.getZ()))) {
                var12.add(var11);
             }
          }
@@ -2413,10 +2434,12 @@ public final class CrystalBotModule extends ClientModule {
       return var12;
    }
 
-   private static boolean armorLow(LivingEntity var0) {
-      for (EquipmentSlot var2 : EquipmentSlot.field_54086) {
+   private static boolean armorLow(LivingEntity livingEntity) {
+      for (EquipmentSlot var2 : EquipmentSlot.VALUES) {
          ItemStack var3;
-         if (var2.method_46643() && (var3 = var0.method_6118(var2)).method_7963() && var3.method_7936() - var3.method_7919() < var3.method_7936() * 0.3F) {
+         if (var2.isArmorSlot()
+            && (var3 = livingEntity.getEquippedStack(var2)).isDamageable()
+            && var3.getMaxDamage() - var3.getDamage() < var3.getMaxDamage() * 0.3F) {
             return true;
          }
       }
@@ -2424,32 +2447,32 @@ public final class CrystalBotModule extends ClientModule {
       return false;
    }
 
-   private boolean throwXp(ClientPlayerEntity var1) {
-      if (BotBody.hotbarSlot(var1, XP) < 0) {
+   private boolean throwXp(ClientPlayerEntity clientPlayerEntity) {
+      if (BotBody.hotbarSlot(clientPlayerEntity, XP) < 0) {
          return false;
       } else {
          this.mending = true;
-         Aim.turn(this.mc, var1.method_36454(), 86.0F, 22.0F);
-         if (var1.method_36455() > 70.0F) {
-            this.body.use(this.mc, var1, XP);
+         Aim.turn(this.mc, clientPlayerEntity.getYaw(), 86.0F, 22.0F);
+         if (clientPlayerEntity.getPitch() > 70.0F) {
+            this.body.use(this.mc, clientPlayerEntity, XP);
          }
 
          return true;
       }
    }
 
-   private boolean mendIdle(ClientPlayerEntity var1) {
-      if (this.mendArmor.get() && (armorLow(var1) || this.mending) && hasDamagedArmor(var1)) {
+   private boolean mendIdle(ClientPlayerEntity clientPlayerEntity) {
+      if (this.mendArmor.get() && (armorLow(clientPlayerEntity) || this.mending) && hasDamagedArmor(clientPlayerEntity)) {
          CombatMacroLock.take(this);
-         return this.throwXp(var1);
+         return this.throwXp(clientPlayerEntity);
       } else {
          return false;
       }
    }
 
-   private static boolean hasDamagedArmor(ClientPlayerEntity var0) {
-      for (EquipmentSlot var2 : EquipmentSlot.field_54086) {
-         if (var2.method_46643() && var0.method_6118(var2).method_7986()) {
+   private static boolean hasDamagedArmor(ClientPlayerEntity clientPlayerEntity) {
+      for (EquipmentSlot var2 : EquipmentSlot.VALUES) {
+         if (var2.isArmorSlot() && clientPlayerEntity.getEquippedStack(var2).isDamaged()) {
             return true;
          }
       }
@@ -2457,17 +2480,17 @@ public final class CrystalBotModule extends ClientModule {
       return false;
    }
 
-   private static int count(ClientPlayerEntity var0, Predicate<ItemStack> var1) {
+   private static int count(ClientPlayerEntity clientPlayerEntity, Predicate<ItemStack> predicate) {
       int var2 = 0;
-      PlayerInventory var3 = var0.method_31548();
+      PlayerInventory var3 = clientPlayerEntity.getInventory();
 
       for (int var4 = 0; var4 < 36; var4++) {
-         if (var1.test(var3.method_5438(var4))) {
-            var2 += var3.method_5438(var4).method_7947();
+         if (predicate.test(var3.getStack(var4))) {
+            var2 += var3.getStack(var4).getCount();
          }
       }
 
-      return var2 + (var1.test(var0.method_6079()) ? var0.method_6079().method_7947() : 0);
+      return var2 + (predicate.test(clientPlayerEntity.getOffHandStack()) ? clientPlayerEntity.getOffHandStack().getCount() : 0);
    }
 
    @Environment(EnvType.CLIENT)
@@ -2482,11 +2505,11 @@ public final class CrystalBotModule extends ClientModule {
       final float anchorMin;
       final double cover;
 
-      private Stance(float nullxx, float nullxxx, float nullxxxx, double nullxxxxx) {
-         this.minDamage = nullxx;
-         this.selfCap = nullxxx;
-         this.anchorMin = nullxxxx;
-         this.cover = nullxxxxx;
+      private Stance(float f, float g, float h, double d) {
+         this.minDamage = f;
+         this.selfCap = g;
+         this.anchorMin = h;
+         this.cover = d;
       }
    }
 

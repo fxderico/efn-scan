@@ -10,24 +10,24 @@ public final class TickWorkBudget {
    private long limit;
    private long used;
 
-   public TickWorkBudget(LongSupplier var1) {
-      this.clock = var1;
+   public TickWorkBudget(LongSupplier longSupplier) {
+      this.clock = longSupplier;
    }
 
-   public void reset(long var1) {
-      this.limit = Math.max(0L, var1);
+   public void reset(long l) {
+      this.limit = Math.max(0L, l);
       this.used = 0L;
    }
 
-   public long acquire(long var1) {
+   public long acquire(long l) {
       long var3 = this.clock.getAsLong();
       long var5 = Math.max(0L, this.limit - this.used);
-      long var7 = Math.min(Math.max(0L, var1), Math.min(var5, this.limit / 3L));
+      long var7 = Math.min(Math.max(0L, l), Math.min(var5, this.limit / 3L));
       return var3 + var7;
    }
 
-   public void record(long var1) {
-      this.used = this.used + Math.max(0L, this.clock.getAsLong() - var1);
+   public void record(long l) {
+      this.used = this.used + Math.max(0L, this.clock.getAsLong() - l);
    }
 
    public long usedNanos() {

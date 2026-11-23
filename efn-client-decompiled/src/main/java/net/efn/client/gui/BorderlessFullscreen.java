@@ -17,8 +17,8 @@ public final class BorderlessFullscreen {
    }
 
    public static void tick() {
-      Window var0 = MinecraftClient.method_1551().method_22683();
-      if (var0.method_4498()) {
+      Window var0 = MinecraftClient.getInstance().getWindow();
+      if (var0.isFullscreen()) {
          BorderlessFullscreen.Switchable var1 = (BorderlessFullscreen.Switchable)var0;
          if (wanted() != var1.efn$isBorderless()) {
             var1.efn$reapplyMode();

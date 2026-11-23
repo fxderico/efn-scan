@@ -20,11 +20,11 @@ public final class ServerAddresses {
    private ServerAddresses() {
    }
 
-   public static ServerAddresses.Address parse(String var0) {
-      if (var0 == null) {
+   public static ServerAddresses.Address parse(String string) {
+      if (string == null) {
          return null;
       } else {
-         String var1 = var0.trim();
+         String var1 = string.trim();
          if (!var1.isEmpty() && var1.length() <= 261) {
             try {
                HostAndPort var2 = HostAndPort.fromString(var1).withDefaultPort(25565);
@@ -51,11 +51,11 @@ public final class ServerAddresses {
       }
    }
 
-   public static int score(ServerAddresses.Address var0, ServerAddresses.Address var1) {
-      if (var0 != null && var1 != null && var0.port() == var1.port()) {
-         String var3 = var0.host();
+   public static int score(ServerAddresses.Address address, ServerAddresses.Address address2) {
+      if (address != null && address2 != null && address.port() == address2.port()) {
+         String var3 = address.host();
          String var2;
-         if (var3.equals(var2 = var1.host())) {
+         if (var3.equals(var2 = address2.host())) {
             return 3;
          } else if (!InetAddresses.isInetAddress(var3) && !InetAddresses.isInetAddress(var2)) {
             String var4 = site(var3);
@@ -72,18 +72,18 @@ public final class ServerAddresses {
       }
    }
 
-   private static String site(String var0) {
-      int var1 = var0.indexOf(46);
-      if (var1 > 0 && FRONT_DOORS.contains(var0.substring(0, var1))) {
-         String var2 = var0.substring(var1 + 1);
+   private static String site(String string) {
+      int var1 = string.indexOf(46);
+      if (var1 > 0 && FRONT_DOORS.contains(string.substring(0, var1))) {
+         String var2 = string.substring(var1 + 1);
 
          try {
-            return InternetDomainName.from(var2).isUnderPublicSuffix() ? var2 : var0;
+            return InternetDomainName.from(var2).isUnderPublicSuffix() ? var2 : string;
          } catch (IllegalArgumentException var4) {
-            return var2.indexOf(46) > 0 ? var2 : var0;
+            return var2.indexOf(46) > 0 ? var2 : string;
          }
       } else {
-         return var0;
+         return string;
       }
    }
 

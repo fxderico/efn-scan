@@ -16,24 +16,24 @@ public abstract class MixinCustomGlintTextureTransform {
    }
 
    @ModifyVariable(
-      method = {"method_76031"},
+      method = {"getGlintTransformation"},
       at = {@At("HEAD")},
       argsOnly = true
    )
-   private static float efn$glintPatternScale(float var0) {
+   private static float efn$glintPatternScale(float f) {
       CustomGlintModule var1 = CustomGlintModule.active;
-      return var1 == null ? var0 : var0 * var1.uvScaleMultiplier();
+      return var1 == null ? f : f * var1.uvScaleMultiplier();
    }
 
    @ModifyExpressionValue(
-      method = {"method_76031"},
+      method = {"getGlintTransformation"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_156;method_658()J"
+         target = "Lnet/minecraft/util/Util;getMeasuringTimeMs()J"
       )}
    )
-   private static long efn$glintClock(long var0) {
+   private static long efn$glintClock(long l) {
       CustomGlintModule var2 = CustomGlintModule.active;
-      return var2 == null ? var0 : var2.glintMillis(var0);
+      return var2 == null ? l : var2.glintMillis(l);
    }
 }

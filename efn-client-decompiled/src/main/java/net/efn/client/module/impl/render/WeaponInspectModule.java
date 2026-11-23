@@ -41,7 +41,7 @@ public final class WeaponInspectModule extends ClientModule {
    private static final String SWORDS = "Swords";
    private static final String WEAPONS = "Weapons";
    private static final String ANY_ITEM = "Any Item";
-   private static final Identifier KNIFE_TEXTURE = Identifier.method_60655("efn", "textures/misc/knife_base.png");
+   private static final Identifier KNIFE_TEXTURE = Identifier.of("efn", "textures/misc/knife_base.png");
    private static final float EASE_OUT_SECONDS = 0.15F;
    private static final int IDLE = 0;
    private static final int INSPECT = 1;
@@ -116,51 +116,57 @@ public final class WeaponInspectModule extends ClientModule {
       this.clearTrails();
    }
 
-   public static void handsBegin(MatrixStack var0) {
+   public static void handsBegin(MatrixStack matrixStack) {
       WeaponInspectModule var1 = active;
       if (var1 != null) {
-         var1.base.set(var0.method_23760().method_23761());
+         var1.base.set(matrixStack.peek().getPositionMatrix());
          var1.base.invert(var1.baseInverse);
-         var1.baseNormal.set(var0.method_23760().method_23762());
+         var1.baseNormal.set(matrixStack.peek().getNormalMatrix());
          var1.baseKnown = true;
       }
    }
 
    public static boolean renderItem(
-      MatrixStack var0, LivingEntity var1, ItemStack var2, ItemDisplayContext var3, OrderedRenderCommandQueue var4, int var5, boolean var6
+      MatrixStack matrixStack,
+      LivingEntity livingEntity,
+      ItemStack itemStack,
+      ItemDisplayContext itemDisplayContext,
+      OrderedRenderCommandQueue orderedRenderCommandQueue,
+      int i,
+      boolean bl
    ) {
       WeaponInspectModule var7 = active;
-      return var7 != null && var7.render(var0, var1, var2, var3, var4, var5, var6);
+      return var7 != null && var7.render(matrixStack, livingEntity, itemStack, itemDisplayContext, orderedRenderCommandQueue, i, bl);
    }
 
-   private void onKey(KeyInputEvent var1) {
-      if (var1.action != 0 && this.pressed(var1.key, var1.action == 2)) {
-         var1.setCancelled(true);
+   private void onKey(KeyInputEvent keyInputEvent) {
+      if (keyInputEvent.action != 0 && this.pressed(keyInputEvent.key, keyInputEvent.action == 2)) {
+         keyInputEvent.setCancelled(true);
       }
    }
 
-   private void onMouse(MouseInputEvent var1) {
-      if (var1.action == 1 && this.pressed(1000 + var1.button, false)) {
-         var1.setCancelled(true);
+   private void onMouse(MouseInputEvent mouseInputEvent) {
+      if (mouseInputEvent.action == 1 && this.pressed(1000 + mouseInputEvent.button, false)) {
+         mouseInputEvent.setCancelled(true);
       }
    }
 
-   private boolean pressed(int var1, boolean var2) {
+   private boolean pressed(int i, boolean bl) {
       int var3 = this.key.value();
-      if (ModuleKeybinds.isBindable(var3) && var1 == var3) {
-         MinecraftClient var4 = MinecraftClient.method_1551();
-         ClientPlayerEntity var5 = var4.field_1724;
-         if (var4.field_1755 != null || var5 == null || var5.method_7325()) {
+      if (ModuleKeybinds.isBindable(var3) && i == var3) {
+         MinecraftClient var4 = MinecraftClient.getInstance();
+         ClientPlayerEntity var5 = var4.player;
+         if (var4.currentScreen != null || var5 == null || var5.isSpectator()) {
             return false;
-         } else if (this.sneakSkips.get() && var5.method_5715()) {
+         } else if (this.sneakSkips.get() && var5.isSneaking()) {
             return false;
          } else {
-            ItemStack var6 = var5.method_6047();
+            ItemStack var6 = var5.getMainHandStack();
             if (!this.inspectable(var6)) {
                return false;
             } else {
-               if (!var2 && !var5.method_6115()) {
-                  this.start(1, var5.method_31548().method_67532(), var6);
+               if (!bl && !var5.isUsingItem()) {
+                  this.start(1, var5.getInventory().getSelectedSlot(), var6);
                }
 
                return true;
@@ -173,55 +179,47 @@ public final class WeaponInspectModule extends ClientModule {
 
    private boolean held() {
       int var1 = this.key.value();
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      if (ModuleKeybinds.isBindable(var1) && var2.field_1755 == null) {
-         return var1 >= 1000
-            ? GLFW.glfwGetMouseButton(var2.method_22683().method_4490(), var1 - 1000) == 1
-            : EfnKeyPolling.isKeyDown(var2.method_22683(), var1);
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      if (ModuleKeybinds.isBindable(var1) && var2.currentScreen == null) {
+         return var1 >= 1000 ? GLFW.glfwGetMouseButton(var2.getWindow().getHandle(), var1 - 1000) == 1 : EfnKeyPolling.isKeyDown(var2.getWindow(), var1);
       } else {
          return false;
       }
    }
 
-   private boolean inspectable(ItemStack var1) {
-      if (var1.method_7960()) {
+   private boolean inspectable(ItemStack itemStack) {
+      if (itemStack.isEmpty()) {
          return false;
       } else {
-         return !this.items.is("Any Item") && !isSword(var1)
+         return !this.items.is("Any Item") && !isSword(itemStack)
             ? this.items.is("Weapons")
-               && (
-                  var1.method_31573(ItemTags.field_42612)
-                     || var1.method_31573(ItemTags.field_63257)
-                     || var1.method_31574(Items.field_49814)
-                     || var1.method_31574(Items.field_8547)
-               )
+               && (itemStack.isIn(ItemTags.AXES) || itemStack.isIn(ItemTags.SPEARS) || itemStack.isOf(Items.MACE) || itemStack.isOf(Items.TRIDENT))
             : true;
       }
    }
 
-   private static boolean isSword(ItemStack var0) {
-      return !var0.method_7960()
-         && (var0.method_31573(ItemTags.field_42611) || Registries.field_41178.method_10221(var0.method_7909()).method_12832().endsWith("_sword"));
+   private static boolean isSword(ItemStack itemStack) {
+      return !itemStack.isEmpty() && (itemStack.isIn(ItemTags.SWORDS) || Registries.ITEM.getId(itemStack.getItem()).getPath().endsWith("_sword"));
    }
 
-   private static boolean handheld(ItemStack var0) {
-      return isSword(var0)
-         || var0.method_31573(ItemTags.field_42612)
-         || var0.method_31573(ItemTags.field_42614)
-         || var0.method_31573(ItemTags.field_42615)
-         || var0.method_31573(ItemTags.field_42613);
+   private static boolean handheld(ItemStack itemStack) {
+      return isSword(itemStack)
+         || itemStack.isIn(ItemTags.AXES)
+         || itemStack.isIn(ItemTags.PICKAXES)
+         || itemStack.isIn(ItemTags.SHOVELS)
+         || itemStack.isIn(ItemTags.HOES);
    }
 
-   private void start(int var1, int var2, ItemStack var3) {
-      KnifeSkin var4 = isSword(var3) ? KnifeSkin.of(this.skin.get()) : null;
-      this.clip = var1 == 2 ? var4.deploy : (var4 != null ? var4.inspect : InspectAnimation.clip(this.style.get()));
+   private void start(int i, int j, ItemStack itemStack) {
+      KnifeSkin var4 = isSword(itemStack) ? KnifeSkin.of(this.skin.get()) : null;
+      this.clip = i == 2 ? var4.deploy : (var4 != null ? var4.inspect : InspectAnimation.clip(this.style.get()));
       this.clipKnife = var4;
-      this.mode = var1;
+      this.mode = i;
       this.seconds = this.clip.seconds;
       this.easingOut = false;
       this.startedAt = System.nanoTime();
-      this.slot = var2;
-      this.item = var3.method_7909();
+      this.slot = j;
+      this.item = itemStack.getItem();
    }
 
    private void easeOut() {
@@ -231,26 +229,26 @@ public final class WeaponInspectModule extends ClientModule {
       this.easingOut = true;
    }
 
-   private void onTick(TickEvent var1) {
-      ClientPlayerEntity var2 = MinecraftClient.method_1551().field_1724;
+   private void onTick(TickEvent tickEvent) {
+      ClientPlayerEntity var2 = MinecraftClient.getInstance().player;
       if (var2 == null) {
          this.mode = 0;
          this.heldItem = null;
       } else {
-         ItemStack var3 = var2.method_6047();
-         int var4 = var2.method_31548().method_67532();
-         if (var4 != this.heldSlot || !var3.method_31574(this.heldItem)) {
+         ItemStack var3 = var2.getMainHandStack();
+         int var4 = var2.getInventory().getSelectedSlot();
+         if (var4 != this.heldSlot || !var3.isOf(this.heldItem)) {
             this.heldSlot = var4;
-            this.heldItem = var3.method_7909();
+            this.heldItem = var3.getItem();
             if (this.deploy.get() && isSword(var3) && KnifeSkin.of(this.skin.get()) != null) {
                this.start(2, var4, var3);
             } else if (this.mode != 0 && !this.easingOut) {
                this.easeOut();
             }
          } else if (this.mode != 0 && !this.easingOut) {
-            if (var2.field_6252) {
+            if (var2.handSwinging) {
                this.mode = 0;
-            } else if (var2.method_6115()) {
+            } else if (var2.isUsingItem()) {
                this.easeOut();
             } else if (this.loopedProgress(System.nanoTime()) >= 1.0F) {
                this.mode = 0;
@@ -259,12 +257,12 @@ public final class WeaponInspectModule extends ClientModule {
       }
    }
 
-   private float progress(long var1) {
-      return (float)(var1 - this.startedAt) / 1.0E9F / (this.seconds / this.speed.get());
+   private float progress(long l) {
+      return (float)(l - this.startedAt) / 1.0E9F / (this.seconds / this.speed.get());
    }
 
-   private float loopedProgress(long var1) {
-      float var3 = this.progress(var1);
+   private float loopedProgress(long l) {
+      float var3 = this.progress(l);
       if (this.mode == 1 && this.clip.loops() && !(var3 < this.clip.loopExit) && this.held()) {
          float var4 = this.seconds / this.speed.get();
          long var5 = (long)((this.clip.loopExit - this.clip.loopEnter) * var4 * 1.0E9F);
@@ -273,24 +271,24 @@ public final class WeaponInspectModule extends ClientModule {
          } else {
             long var7 = (long)((var3 - this.clip.loopExit) * var4 * 1.0E9F);
             this.startedAt += (var7 / var5 + 1L) * var5;
-            return this.progress(var1);
+            return this.progress(l);
          }
       } else {
          return var3;
       }
    }
 
-   private float animate(ItemStack var1, KnifeSkin var2, long var3) {
-      if (this.mode == 0 || !var1.method_31574(this.item)) {
+   private float animate(ItemStack itemStack, KnifeSkin knifeSkin, long l) {
+      if (this.mode == 0 || !itemStack.isOf(this.item)) {
          return 0.0F;
-      } else if (var2 != this.clipKnife) {
+      } else if (knifeSkin != this.clipKnife) {
          this.mode = 0;
          return 0.0F;
       } else {
          float var6 = 1.0F;
          float var5;
          if (this.easingOut) {
-            float var7 = (float)(var3 - this.easeStartedAt) / 1.0E9F / 0.15F;
+            float var7 = (float)(l - this.easeStartedAt) / 1.0E9F / 0.15F;
             if (var7 >= 1.0F) {
                this.mode = 0;
                return 0.0F;
@@ -299,7 +297,7 @@ public final class WeaponInspectModule extends ClientModule {
             var5 = this.easeFrom;
             var6 = 1.0F - var7 * var7 * (3.0F - 2.0F * var7);
          } else {
-            var5 = this.loopedProgress(var3);
+            var5 = this.loopedProgress(l);
             if (var5 >= 1.0F) {
                this.mode = 0;
                return 0.0F;
@@ -311,58 +309,77 @@ public final class WeaponInspectModule extends ClientModule {
       }
    }
 
-   private boolean render(MatrixStack var1, LivingEntity var2, ItemStack var3, ItemDisplayContext var4, OrderedRenderCommandQueue var5, int var6, boolean var7) {
-      int var9 = var4 == ItemDisplayContext.field_4321 ? -1 : 1;
-      boolean var10 = isSword(var3);
+   private boolean render(
+      MatrixStack matrixStack,
+      LivingEntity livingEntity,
+      ItemStack itemStack,
+      ItemDisplayContext itemDisplayContext,
+      OrderedRenderCommandQueue orderedRenderCommandQueue,
+      int i,
+      boolean bl
+   ) {
+      int var9 = itemDisplayContext == ItemDisplayContext.FIRST_PERSON_LEFT_HAND ? -1 : 1;
+      boolean var10 = isSword(itemStack);
       KnifeSkin var11 = var10 ? KnifeSkin.of(this.skin.get()) : null;
       long var12 = System.nanoTime();
-      float var14 = var7 ? this.animate(var3, var11, var12) : 0.0F;
+      float var14 = bl ? this.animate(itemStack, var11, var12) : 0.0F;
       float[] var15 = var14 > 0.0F ? this.state : REST;
-      boolean var8 = var7 && var10 && this.slashTrail.get() && this.baseKnown;
-      if (var7 && !var8) {
+      boolean var8 = bl && var10 && this.slashTrail.get() && this.baseKnown;
+      if (bl && !var8) {
          this.clearTrails();
       }
 
       if (var11 == null) {
          FirstPersonArm.Arm var21;
-         if ((this.showArm.get() && handheld(var3) || HandModelModule.covers(var3, var7)) && (var21 = FirstPersonArm.arm()) != null) {
-            FirstPersonArm.hold(var1, var21, var3, var4, var2, var5, var6, var15[0] * var14, var15[1] * var14, var15[2] * var14);
+         if ((this.showArm.get() && handheld(itemStack) || HandModelModule.covers(itemStack, bl)) && (var21 = FirstPersonArm.arm()) != null) {
+            FirstPersonArm.hold(
+               matrixStack,
+               var21,
+               itemStack,
+               itemDisplayContext,
+               livingEntity,
+               orderedRenderCommandQueue,
+               i,
+               var15[0] * var14,
+               var15[1] * var14,
+               var15[2] * var14
+            );
          }
 
          if (var14 > 0.0F) {
-            InspectAnimation.place(var1, var15, var14, var9, 0.07F, 0.2F, 0.07F);
+            InspectAnimation.place(matrixStack, var15, var14, var9, 0.07F, 0.2F, 0.07F);
          }
 
          if (var8) {
-            this.swordTrail(var1.method_23760().method_23761(), var9);
+            this.swordTrail(matrixStack.peek().getPositionMatrix(), var9);
             this.record(var12, 1);
-            this.submitGlow(var5, var12, KnifeMaterial.of(var3).glow, 0.0F, null);
+            this.submitGlow(orderedRenderCommandQueue, var12, KnifeMaterial.of(itemStack).glow, 0.0F, null);
          }
 
          return false;
       } else {
-         KnifeMaterial var17 = KnifeMaterial.of(var3);
-         FirstPersonArm.Arm var18 = !this.showArm.get() && !HandModelModule.wants(var7) ? null : FirstPersonArm.arm();
+         KnifeMaterial var17 = KnifeMaterial.of(itemStack);
+         FirstPersonArm.Arm var18 = !this.showArm.get() && !HandModelModule.wants(bl) ? null : FirstPersonArm.arm();
          boolean var19 = var18 != null && var18.slim();
-         var1.method_22903();
+         matrixStack.push();
          if (var9 < 0) {
-            var1.method_22905(-1.0F, 1.0F, 1.0F);
+            matrixStack.scale(-1.0F, 1.0F, 1.0F);
          }
 
          var11.draw(
-            var1,
+            matrixStack,
             var15,
             var14,
             var19,
             this.knifeSize.get(),
-            sink(var5, var6, var9, var18, var7 && offHandFree(), var17, var3.method_7958()),
+            sink(orderedRenderCommandQueue, i, var9, var18, bl && offHandFree(), var17, itemStack.hasGlint()),
             var8 ? this.trailSample : null
          );
-         var1.method_22909();
+         matrixStack.pop();
          if (var8) {
             this.record(var12, var11.streakCount());
             float var20 = this.sparkles.get() && var14 > 0.0F ? var11.sparkle(var15, var14) : 0.0F;
-            this.submitGlow(var5, var12, var17.glow, var20, var11);
+            this.submitGlow(orderedRenderCommandQueue, var12, var17.glow, var20, var11);
          }
 
          return true;
@@ -370,51 +387,49 @@ public final class WeaponInspectModule extends ClientModule {
    }
 
    private static KnifeSkin.Sink sink(
-      final OrderedRenderCommandQueue var0,
-      final int var1,
-      final int var2,
-      final FirstPersonArm.Arm var3,
-      final boolean var4,
-      final KnifeMaterial var5,
-      final boolean var6
+      OrderedRenderCommandQueue orderedRenderCommandQueue, int i, int j, FirstPersonArm.Arm arm, boolean bl, KnifeMaterial knifeMaterial, boolean bl2
    ) {
-      final RenderLayer var7 = RenderLayers.method_75994(KNIFE_TEXTURE);
-      final int[] var8 = var5.palette;
+      final RenderLayer var7 = RenderLayers.entityCutoutNoCull(KNIFE_TEXTURE);
+      final int[] var8 = knifeMaterial.palette;
       return new KnifeSkin.Sink() {
          @Override
-         public void part(MatrixStack var1x, KnifeMesh var2x, KnifeMesh.Shine var3x) {
-            var0.method_73483(var1x, var7, (var4xx, var5xx) -> var2x.emit(var4xx, var5xx, var8, var1, var3x));
-            if (var6) {
-               var0.method_73529(1)
-                  .method_73483(var1x, RenderLayers.method_75997(), (var3xxx, var4xx) -> var2x.emit(var3xxx, var4xx, var8, var1, KnifeMesh.Shine.NONE));
+         public void part(MatrixStack matrixStack, KnifeMesh knifeMesh, KnifeMesh.Shine shine) {
+            orderedRenderCommandQueue.submitCustom(matrixStack, var7, (entry, vertexConsumer) -> knifeMesh.emit(entry, vertexConsumer, var8, i, shine));
+            if (bl2) {
+               orderedRenderCommandQueue.getBatchingQueue(1)
+                  .submitCustom(
+                     matrixStack, RenderLayers.entityGlint(), (entry, vertexConsumer) -> knifeMesh.emit(entry, vertexConsumer, var8, i, KnifeMesh.Shine.NONE)
+                  );
             }
          }
 
          @Override
-         public void glow(MatrixStack var1x, KnifeMesh var2x, KnifeMesh.Shine var3x) {
-            var0.method_73529(1)
-               .method_73483(
-                  var1x, RenderLayers.method_76014(WeaponInspectModule.KNIFE_TEXTURE), (var3xxx, var4xx) -> var2x.emitGlow(var3xxx, var4xx, var5.glow, var3x)
+         public void glow(MatrixStack matrixStack, KnifeMesh knifeMesh, KnifeMesh.Shine shine) {
+            orderedRenderCommandQueue.getBatchingQueue(1)
+               .submitCustom(
+                  matrixStack,
+                  RenderLayers.eyes(WeaponInspectModule.KNIFE_TEXTURE),
+                  (entry, vertexConsumer) -> knifeMesh.emitGlow(entry, vertexConsumer, knifeMaterial.glow, shine)
                );
          }
 
          @Override
-         public void arm(MatrixStack var1x, boolean var2x) {
-            if (var3 != null && (!var2x || var4)) {
-               var3.draw(var1x, var2 < 0 != var2x, var0, var1);
+         public void arm(MatrixStack matrixStack, boolean bl) {
+            if (arm != null && (!bl || bl)) {
+               arm.draw(matrixStack, j < 0 != bl, orderedRenderCommandQueue, i);
             }
          }
       };
    }
 
    private static boolean offHandFree() {
-      ClientPlayerEntity var0 = MinecraftClient.method_1551().field_1724;
-      return var0 != null && var0.method_6079().method_7960();
+      ClientPlayerEntity var0 = MinecraftClient.getInstance().player;
+      return var0 != null && var0.getOffHandStack().isEmpty();
    }
 
-   private void swordTrail(Matrix4f var1, int var2) {
-      Matrix4f var3 = new Matrix4f(var1)
-         .translate(var2 * 1.13F / 16.0F, 0.2F, 0.070625F)
+   private void swordTrail(Matrix4f matrix4f, int i) {
+      Matrix4f var3 = new Matrix4f(matrix4f)
+         .translate(i * 1.13F / 16.0F, 0.2F, 0.070625F)
          .rotate(new Quaternionf().rotationXYZ(0.0F, -1.5707964F, 0.43633232F))
          .scale(0.68F)
          .translate(-0.5F, -0.5F, -0.5F);
@@ -428,11 +443,11 @@ public final class WeaponInspectModule extends ClientModule {
       this.trailSample[5] = var4.z;
    }
 
-   private void record(long var1, int var3) {
+   private void record(long l, int i) {
       Vector3f var4 = new Vector3f();
 
       for (int var5 = 0; var5 < this.trails.length; var5++) {
-         if (var5 >= var3) {
+         if (var5 >= i) {
             this.trails[var5].clear();
          } else {
             for (int var6 = var5 * 6; var6 < var5 * 6 + 6; var6 += 3) {
@@ -442,7 +457,7 @@ public final class WeaponInspectModule extends ClientModule {
                this.trailSample[var6 + 2] = var4.z;
             }
 
-            this.trails[var5].add(var1, this.trailSample, var5 * 6);
+            this.trails[var5].add(l, this.trailSample, var5 * 6);
          }
       }
    }
@@ -453,30 +468,30 @@ public final class WeaponInspectModule extends ClientModule {
       }
    }
 
-   private void submitGlow(OrderedRenderCommandQueue var1, long var2, int var4, float var5, KnifeSkin var6) {
+   private void submitGlow(OrderedRenderCommandQueue orderedRenderCommandQueue, long l, int i, float f, KnifeSkin knifeSkin) {
       long var7 = (long)(this.trailLength.get() * 1.0E9F);
-      int var9 = var6 != null ? var6.streakCount() : 1;
-      boolean var10 = var5 > 0.0F;
+      int var9 = knifeSkin != null ? knifeSkin.streakCount() : 1;
+      boolean var10 = f > 0.0F;
 
       for (int var11 = 0; var11 < var9 && !var10; var11++) {
-         var10 = !this.trails[var11].isEmpty(var2, var7);
+         var10 = !this.trails[var11].isEmpty(l, var7);
       }
 
       if (var10) {
          float var16 = this.trailSample[3];
          float var12 = this.trailSample[4];
          float var13 = this.trailSample[5];
-         float var14 = (float)(var2 % 6283185307L) / 1.0E9F * 1.5F;
+         float var14 = (float)(l % 6283185307L) / 1.0E9F * 1.5F;
          MatrixStack var15 = new MatrixStack();
-         var15.method_23760().method_23761().set(this.base);
-         var15.method_23760().method_23762().set(this.baseNormal);
-         var1.method_73529(1).method_73483(var15, RenderLayers.method_76014(KNIFE_TEXTURE), (var13x, var14x) -> {
+         var15.peek().getPositionMatrix().set(this.base);
+         var15.peek().getNormalMatrix().set(this.baseNormal);
+         orderedRenderCommandQueue.getBatchingQueue(1).submitCustom(var15, RenderLayers.eyes(KNIFE_TEXTURE), (entry, vertexConsumer) -> {
             for (int var15x = 0; var15x < var9; var15x++) {
-               this.trails[var15x].emit(var13x, var14x, var2, var7, var4, var6 != null ? var6.streakStrength(var15x) : 1.0F);
+               this.trails[var15x].emit(entry, vertexConsumer, l, var7, i, knifeSkin != null ? knifeSkin.streakStrength(var15x) : 1.0F);
             }
 
-            if (var5 > 0.0F) {
-               SlashTrail.sparkle(var13x, var14x, var16, var12, var13, 0.07F * var5, var14, var4, var5);
+            if (f > 0.0F) {
+               SlashTrail.sparkle(entry, vertexConsumer, var16, var12, var13, 0.07F * f, var14, i, f);
             }
          });
       }

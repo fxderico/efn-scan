@@ -30,8 +30,8 @@ public final class BundledDefaults {
    private BundledDefaults() {
    }
 
-   public static synchronized void adopt(List<ClientModule> var0) {
-      for (ClientModule var2 : var0) {
+   public static synchronized void adopt(List<ClientModule> list) {
+      for (ClientModule var2 : list) {
          JsonObject var3 = entry(var2);
          if (var3 != null && var2.inConfigs()) {
             try {
@@ -60,29 +60,29 @@ public final class BundledDefaults {
       }
    }
 
-   public static synchronized boolean enabledByDefault(ClientModule var0) {
-      JsonObject var2 = var0.inConfigs() ? entry(var0) : null;
+   public static synchronized boolean enabledByDefault(ClientModule clientModule) {
+      JsonObject var2 = clientModule.inConfigs() ? entry(clientModule) : null;
       JsonElement var1 = var2 == null ? null : var2.get("enabled");
       if (var1 != null && var1.isJsonPrimitive()) {
          try {
             return var1.getAsBoolean();
          } catch (RuntimeException var5) {
-            return var0.enabledByDefault();
+            return clientModule.enabledByDefault();
          }
       } else {
-         return var0.enabledByDefault();
+         return clientModule.enabledByDefault();
       }
    }
 
-   public static synchronized float[] panelSpot(String var0, float var1, float var2) {
+   public static synchronized float[] panelSpot(String string, float f, float g) {
       JsonObject var3 = clickGui();
       JsonObject var4 = object(var3, "panels");
       JsonElement var5 = var3.get("screen");
-      if (var4 != null && var5 != null && var5.isJsonArray() && var4.has(var0)) {
+      if (var4 != null && var5 != null && var5.isJsonArray() && var4.has(string)) {
          try {
             JsonArray var6 = var5.getAsJsonArray();
-            JsonArray var7 = var4.getAsJsonArray(var0);
-            return new float[]{var7.get(0).getAsFloat() * var1 / var6.get(0).getAsFloat(), var7.get(1).getAsFloat() * var2 / var6.get(1).getAsFloat()};
+            JsonArray var7 = var4.getAsJsonArray(string);
+            return new float[]{var7.get(0).getAsFloat() * f / var6.get(0).getAsFloat(), var7.get(1).getAsFloat() * g / var6.get(1).getAsFloat()};
          } catch (RuntimeException var8) {
             return null;
          }
@@ -131,9 +131,9 @@ public final class BundledDefaults {
       return var4;
    }
 
-   private static JsonObject entry(ClientModule var0) {
+   private static JsonObject entry(ClientModule clientModule) {
       JsonObject var1 = object(modules(), "modules");
-      return var1 == null ? null : object(var1, var0.id());
+      return var1 == null ? null : object(var1, clientModule.id());
    }
 
    private static JsonObject modules() {
@@ -152,15 +152,15 @@ public final class BundledDefaults {
       return clickGui;
    }
 
-   private static JsonObject object(JsonObject var0, String var1) {
-      JsonElement var2 = var0.get(var1);
+   private static JsonObject object(JsonObject jsonObject, String string) {
+      JsonElement var2 = jsonObject.get(string);
       return var2 != null && var2.isJsonObject() ? var2.getAsJsonObject() : null;
    }
 
-   private static JsonObject read(String var0) {
+   private static JsonObject read(String string) {
       try {
          JsonObject var11;
-         try (InputStream var1 = BundledDefaults.class.getResourceAsStream("/assets/efn/defaults/" + var0)) {
+         try (InputStream var1 = BundledDefaults.class.getResourceAsStream("/assets/efn/defaults/" + string)) {
             if (var1 == null) {
                return new JsonObject();
             }
@@ -175,7 +175,7 @@ public final class BundledDefaults {
 
          return var11;
       } catch (Exception var10) {
-         LOGGER.warn("[EFN] Failed to read bundled defaults {}", var0, var10);
+         LOGGER.warn("[EFN] Failed to read bundled defaults {}", string, var10);
          return new JsonObject();
       }
    }

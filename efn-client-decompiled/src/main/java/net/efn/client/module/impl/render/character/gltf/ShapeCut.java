@@ -19,9 +19,9 @@ final class ShapeCut {
    private final float[][][] intervals;
    private final int[][] labels;
 
-   private ShapeCut(PosedMesh var1) {
-      this.mesh = var1;
-      this.height = var1.bounds()[4];
+   private ShapeCut(PosedMesh posedMesh) {
+      this.mesh = posedMesh;
+      this.height = posedMesh.bounds()[4];
       this.step = this.height / 160.0F;
       this.gap = this.height * 0.004F;
       this.spans = new List[160];
@@ -34,8 +34,8 @@ final class ShapeCut {
       this.labels = new int[160][];
    }
 
-   static CharacterBake.Cut cut(PosedMesh var0) {
-      ShapeCut var1 = new ShapeCut(var0);
+   static CharacterBake.Cut cut(PosedMesh posedMesh) {
+      ShapeCut var1 = new ShapeCut(posedMesh);
       if (!(var1.height > 0.0F)) {
          return null;
       } else {
@@ -82,7 +82,7 @@ final class ShapeCut {
 
       for (int var25 = 0; var25 < 160; var25++) {
          List var26 = this.spans[var25];
-         var26.sort((var0, var1x) -> Float.compare(var0[0], var1x[0]));
+         var26.sort((fs, gs) -> Float.compare(fs[0], gs[0]));
          ArrayList var27 = new ArrayList();
 
          for (float[] var29 : var26) {
@@ -273,8 +273,8 @@ final class ShapeCut {
       return 0;
    }
 
-   private boolean splitAtCentre(int var1) {
-      float[][] var2 = this.intervals[var1];
+   private boolean splitAtCentre(int i) {
+      float[][] var2 = this.intervals[i];
       if (var2.length < 2) {
          return false;
       } else {
@@ -288,11 +288,11 @@ final class ShapeCut {
       }
    }
 
-   private int[] innerIntervals(int var1, boolean var2) {
-      float[][] var3 = this.intervals[var1];
+   private int[] innerIntervals(int i, boolean bl) {
+      float[][] var3 = this.intervals[i];
       if (var3.length == 0) {
          return new int[]{-1, -1};
-      } else if (var2) {
+      } else if (bl) {
          int var8 = -1;
          int var9 = -1;
 
@@ -321,23 +321,23 @@ final class ShapeCut {
       }
    }
 
-   private ShapeCut.Arm arm(int[] var1, int var2, int var3) {
+   private ShapeCut.Arm arm(int[] is, int i, int j) {
       float[] var5 = new float[160];
       Arrays.fill(var5, 0.0F / 0.0F);
 
       for (int var6 = 0; var6 < 160; var6++) {
-         int var7 = var1[var6 * 2 + var3];
+         int var7 = is[var6 * 2 + j];
          float[][] var8 = this.intervals[var6];
-         if (var7 == -2 && var8.length > 0 && (var3 == 0 ? var8[0][0] < 0.0F : var8[var8.length - 1][1] > 0.0F)) {
+         if (var7 == -2 && var8.length > 0 && (j == 0 ? var8[0][0] < 0.0F : var8[var8.length - 1][1] > 0.0F)) {
             var5[var6] = 0.0F;
          }
 
          if (var7 >= 0) {
-            if (var3 == 0 && var7 > 0) {
+            if (j == 0 && var7 > 0) {
                var5[var6] = (var8[var7 - 1][1] + var8[var7][0]) * 0.5F;
             }
 
-            if (var3 == 1 && var7 < var8.length - 1) {
+            if (j == 1 && var7 < var8.length - 1) {
                var5[var6] = (var8[var7][1] + var8[var7 + 1][0]) * 0.5F;
             }
          }
@@ -373,7 +373,7 @@ final class ShapeCut {
          var14 = var9;
       }
 
-      if (var13 >= 0 && !(var14 - var13 + 1 < 12.799999F) && var14 > var2) {
+      if (var13 >= 0 && !(var14 - var13 + 1 < 12.799999F) && var14 > i) {
          for (int var12 = var13 + 1; var12 < var14; var12++) {
             if (Float.isNaN(var5[var12])) {
                int var16 = var12 - 1;
@@ -383,7 +383,7 @@ final class ShapeCut {
                   var11++;
                }
 
-               var5[var12] = var3 == 0 ? Math.min(var5[var16], var5[var11]) : Math.max(var5[var16], var5[var11]);
+               var5[var12] = j == 0 ? Math.min(var5[var16], var5[var11]) : Math.max(var5[var16], var5[var11]);
             }
          }
 
@@ -393,12 +393,12 @@ final class ShapeCut {
       }
    }
 
-   private boolean attached(ShapeCut.Arm var1, int var2, int var3, int var4) {
-      float var5 = var1.edge[var3];
-      boolean var6 = var2 == 0;
+   private boolean attached(ShapeCut.Arm arm, int i, int j, int k) {
+      float var5 = arm.edge[j];
+      boolean var6 = i == 0;
 
       for (int var7 = 1; var7 <= 2; var7++) {
-         int var8 = var3 + var4 * var7;
+         int var8 = j + k * var7;
          if (var8 < 0 || var8 >= 160) {
             return false;
          }
@@ -413,10 +413,10 @@ final class ShapeCut {
       return false;
    }
 
-   private void lower(int[] var1, int var2, float[] var3, float[] var4) {
-      float var5 = var4[0] - var3[0];
-      float var6 = var4[1] - var3[1];
-      float var7 = var4[2] - var3[2];
+   private void lower(int[] is, int i, float[] fs, float[] gs) {
+      float var5 = gs[0] - fs[0];
+      float var6 = gs[1] - fs[1];
+      float var7 = gs[2] - fs[2];
       float var8 = (float)Math.sqrt(var5 * var5 + var6 * var6 + var7 * var7);
       if (!(var8 < 1.0E-4F)) {
          float var9 = (float)Math.acos(Math.max(-1.0F, Math.min(1.0F, -var6 / var8)));
@@ -436,44 +436,44 @@ final class ShapeCut {
             float var14 = (float)Math.cos(var13);
             float var15 = (float)Math.sin(var13);
 
-            for (int var16 = 0; var16 < var1.length; var16++) {
-               if (var1[var16] == var2) {
-                  rotate(this.mesh.pos, var16 * 3, var3, var10, var11, var14, var15);
+            for (int var16 = 0; var16 < is.length; var16++) {
+               if (is[var16] == i) {
+                  rotate(this.mesh.pos, var16 * 3, fs, var10, var11, var14, var15);
                   rotate(this.mesh.nrm, var16 * 3, null, var10, var11, var14, var15);
                }
             }
 
-            float[] var19 = (float[])var4.clone();
-            rotate(var19, 0, var3, var10, var11, var14, var15);
-            System.arraycopy(var19, 0, var4, 0, 3);
+            float[] var19 = (float[])gs.clone();
+            rotate(var19, 0, fs, var10, var11, var14, var15);
+            System.arraycopy(var19, 0, gs, 0, 3);
          }
       }
    }
 
-   private static void rotate(float[] var0, int var1, float[] var2, float var3, float var4, float var5, float var6) {
-      float var7 = var0[var1] - (var2 == null ? 0.0F : var2[0]);
-      float var8 = var0[var1 + 1] - (var2 == null ? 0.0F : var2[1]);
-      float var9 = var0[var1 + 2] - (var2 == null ? 0.0F : var2[2]);
-      float var10 = var3 * var7 + var4 * var9;
-      float var11 = -var4 * var8;
-      float var12 = var4 * var7 - var3 * var9;
-      float var13 = var3 * var8;
-      float var14 = var7 * var5 + var11 * var6 + var3 * var10 * (1.0F - var5);
-      float var15 = var8 * var5 + var12 * var6;
-      float var16 = var9 * var5 + var13 * var6 + var4 * var10 * (1.0F - var5);
-      var0[var1] = var14 + (var2 == null ? 0.0F : var2[0]);
-      var0[var1 + 1] = var15 + (var2 == null ? 0.0F : var2[1]);
-      var0[var1 + 2] = var16 + (var2 == null ? 0.0F : var2[2]);
+   private static void rotate(float[] fs, int i, float[] gs, float f, float g, float h, float j) {
+      float var7 = fs[i] - (gs == null ? 0.0F : gs[0]);
+      float var8 = fs[i + 1] - (gs == null ? 0.0F : gs[1]);
+      float var9 = fs[i + 2] - (gs == null ? 0.0F : gs[2]);
+      float var10 = f * var7 + g * var9;
+      float var11 = -g * var8;
+      float var12 = g * var7 - f * var9;
+      float var13 = f * var8;
+      float var14 = var7 * h + var11 * j + f * var10 * (1.0F - h);
+      float var15 = var8 * h + var12 * j;
+      float var16 = var9 * h + var13 * j + g * var10 * (1.0F - h);
+      fs[i] = var14 + (gs == null ? 0.0F : gs[0]);
+      fs[i + 1] = var15 + (gs == null ? 0.0F : gs[1]);
+      fs[i + 2] = var16 + (gs == null ? 0.0F : gs[2]);
    }
 
-   private int neck(int[] var1, int var2, int var3) {
+   private int neck(int[] is, int i, int j) {
       short var4 = 154;
-      int var5 = Math.max(var3, var2 + 1);
+      int var5 = Math.max(j, i + 1);
       int var6 = -1;
       float var7 = 3.4028235E38F;
 
       for (int var8 = var5; var8 < var4; var8++) {
-         float var9 = this.torsoWidth(var1, var8);
+         float var9 = this.torsoWidth(is, var8);
          if (var9 > 0.0F && var9 < var7) {
             var7 = var9;
             var6 = var8;
@@ -484,10 +484,10 @@ final class ShapeCut {
          return -1;
       } else {
          float var12 = 0.0F;
-         float var13 = this.torsoWidth(var1, var5);
+         float var13 = this.torsoWidth(is, var5);
 
          for (int var10 = var6 + 1; var10 < 160; var10++) {
-            var12 = Math.max(var12, this.torsoWidth(var1, var10));
+            var12 = Math.max(var12, this.torsoWidth(is, var10));
          }
 
          float var14 = (160 - var6) * this.step;
@@ -496,13 +496,13 @@ final class ShapeCut {
       }
    }
 
-   private float torsoWidth(int[] var1, int var2) {
-      int var3 = var1[var2 * 2];
-      return var3 < 0 ? 0.0F : this.intervals[var2][var3][1] - this.intervals[var2][var3][0];
+   private float torsoWidth(int[] is, int i) {
+      int var3 = is[i * 2];
+      return var3 < 0 ? 0.0F : this.intervals[i][var3][1] - this.intervals[i][var3][0];
    }
 
-   private int label(float var1, float var2) {
-      int var3 = Math.max(0, Math.min(159, (int)(var2 / this.step)));
+   private int label(float f, float g) {
+      int var3 = Math.max(0, Math.min(159, (int)(g / this.step)));
 
       for (int var4 = 0; var4 < 160; var4++) {
          for (int var8 : new int[]{var3 - var4, var3 + var4}) {
@@ -512,7 +512,7 @@ final class ShapeCut {
                float var11 = 3.4028235E38F;
 
                for (int var12 = 0; var12 < var9.length; var12++) {
-                  float var13 = var1 < var9[var12][0] ? var9[var12][0] - var1 : (var1 > var9[var12][1] ? var1 - var9[var12][1] : 0.0F);
+                  float var13 = f < var9[var12][0] ? var9[var12][0] - f : (f > var9[var12][1] ? f - var9[var12][1] : 0.0F);
                   if (var13 < var11) {
                      var11 = var13;
                      var10 = var12;
@@ -527,28 +527,28 @@ final class ShapeCut {
       return 1;
    }
 
-   private float share(int[] var1, int var2) {
+   private float share(int[] is, int i) {
       int var3 = 0;
 
-      for (int var7 : var1) {
-         if (var7 == var2) {
+      for (int var7 : is) {
+         if (var7 == i) {
             var3++;
          }
       }
 
-      return (float)var3 / Math.max(1, var1.length);
+      return (float)var3 / Math.max(1, is.length);
    }
 
-   private float[] mean(int[] var1, int var2, float var3, float var4) {
+   private float[] mean(int[] is, int i, float f, float g) {
       double var6 = 0.0;
       double var8 = 0.0;
       double var10 = 0.0;
       int var12 = 0;
 
       for (int var13 = 0; var13 < 2 && var12 == 0; var13++) {
-         for (int var14 = 0; var14 < var1.length; var14++) {
+         for (int var14 = 0; var14 < is.length; var14++) {
             float var15 = this.mesh.pos[var14 * 3 + 1];
-            if (var1[var14] == var2 && (var13 != 0 || !(var15 < var3) && !(var15 > var4))) {
+            if (is[var14] == i && (var13 != 0 || !(var15 < f) && !(var15 > g))) {
                var6 += this.mesh.pos[var14 * 3];
                var8 += var15;
                var10 += this.mesh.pos[var14 * 3 + 2];
@@ -569,20 +569,18 @@ final class ShapeCut {
       return var5;
    }
 
-   private float[] beyond(float[] var1, float[] var2, float var3) {
-      float var4 = (float)Math.sqrt(var2[0] * var2[0] + var2[1] * var2[1] + var2[2] * var2[2]);
+   private float[] beyond(float[] fs, float[] gs, float f) {
+      float var4 = (float)Math.sqrt(gs[0] * gs[0] + gs[1] * gs[1] + gs[2] * gs[2]);
       float[] var5 = new float[this.mesh.vertices];
       if (var4 < 1.0E-5F) {
          return var5;
       } else {
          for (int var6 = 0; var6 < var5.length; var6++) {
             float var7 = (
-                  (this.mesh.pos[var6 * 3] - var1[0]) * var2[0]
-                     + (this.mesh.pos[var6 * 3 + 1] - var1[1]) * var2[1]
-                     + (this.mesh.pos[var6 * 3 + 2] - var1[2]) * var2[2]
+                  (this.mesh.pos[var6 * 3] - fs[0]) * gs[0] + (this.mesh.pos[var6 * 3 + 1] - fs[1]) * gs[1] + (this.mesh.pos[var6 * 3 + 2] - fs[2]) * gs[2]
                )
                / var4;
-            float var8 = Math.max(0.0F, Math.min(1.0F, (var7 + var3) / (2.0F * var3)));
+            float var8 = Math.max(0.0F, Math.min(1.0F, (var7 + f) / (2.0F * f)));
             var5[var6] = var8 * var8 * (3.0F - 2.0F * var8);
          }
 
@@ -590,11 +588,11 @@ final class ShapeCut {
       }
    }
 
-   private float[] below(float var1, float var2) {
+   private float[] below(float f, float g) {
       float[] var3 = new float[this.mesh.vertices];
 
       for (int var4 = 0; var4 < var3.length; var4++) {
-         float var5 = Math.max(0.0F, Math.min(1.0F, (var1 + var2 - this.mesh.pos[var4 * 3 + 1]) / (2.0F * var2)));
+         float var5 = Math.max(0.0F, Math.min(1.0F, (f + g - this.mesh.pos[var4 * 3 + 1]) / (2.0F * g)));
          var3[var4] = var5 * var5 * (3.0F - 2.0F * var5);
       }
 

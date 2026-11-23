@@ -19,70 +19,73 @@ public final class LambdaListenerFactory {
    private LambdaListenerFactory() {
    }
 
-   public static <E extends Event> Listener<E> create(Object var0, Method var1) {
-      if (var0 == null) {
-         return createStatic(var1);
+   public static <E extends Event> Listener<E> create(Object object, Method method) {
+      if (object == null) {
+         return createStatic(method);
       } else {
          try {
-            return (Listener)createFactory(var1).invoke((Object)var0);
+            return (Listener)createFactory(method).invoke((Object)object);
          } catch (RuntimeException var3) {
             throw var3;
          } catch (Throwable var4) {
-            throw new RuntimeException("Unexpected error creating listener for method " + var1, var4);
+            throw new RuntimeException("Unexpected error creating listener for method " + method, var4);
          }
       }
    }
 
-   public static <E extends Event> Listener<E> createStatic(Method var0) {
-      validateMethod(var0);
+   public static <E extends Event> Listener<E> createStatic(Method method) {
+      validateMethod(method);
 
       try {
-         Lookup var1 = MethodHandles.privateLookupIn(var0.getDeclaringClass(), LOOKUP);
-         MethodHandle var2 = var1.unreflect(var0);
-         MethodType var3 = MethodType.methodType(void.class, var0.getParameterTypes()[0]);
+         Lookup var1 = MethodHandles.privateLookupIn(method.getDeclaringClass(), LOOKUP);
+         MethodHandle var2 = var1.unreflect(method);
+         MethodType var3 = MethodType.methodType(void.class, method.getParameterTypes()[0]);
          CallSite var4 = LambdaMetafactory.metafactory(var1, "invoke", MethodType.methodType(Listener.class), ERASED_INVOKE_TYPE, var2, var3);
          return (Listener)var4.getTarget().invoke();
       } catch (Throwable var5) {
-         throw wrap(var0, var5);
+         throw wrap(method, var5);
       }
    }
 
-   public static MethodHandle createFactory(Method var0) {
-      validateMethod(var0);
+   public static MethodHandle createFactory(Method method) {
+      validateMethod(method);
 
       try {
-         Lookup var1 = MethodHandles.privateLookupIn(var0.getDeclaringClass(), LOOKUP);
-         MethodHandle var2 = var1.unreflect(var0);
-         MethodType var3 = MethodType.methodType(void.class, var0.getParameterTypes()[0]);
-         MethodType var4 = MethodType.methodType(Listener.class, var0.getDeclaringClass());
+         Lookup var1 = MethodHandles.privateLookupIn(method.getDeclaringClass(), LOOKUP);
+         MethodHandle var2 = var1.unreflect(method);
+         MethodType var3 = MethodType.methodType(void.class, method.getParameterTypes()[0]);
+         MethodType var4 = MethodType.methodType(Listener.class, method.getDeclaringClass());
          CallSite var5 = LambdaMetafactory.metafactory(var1, "invoke", var4, ERASED_INVOKE_TYPE, var2, var3);
          return var5.getTarget();
       } catch (Throwable var6) {
-         throw wrap(var0, var6);
+         throw wrap(method, var6);
       }
    }
 
-   private static RuntimeException wrap(Method var0, Throwable var1) {
-      if (var1 instanceof LambdaConversionException) {
+   private static RuntimeException wrap(Method method, Throwable throwable) {
+      if (throwable instanceof LambdaConversionException) {
          return new RuntimeException(
-            "LambdaMetafactory failed for method " + var0 + ". Ensure the listener method is public and its parameter type is a concrete Event subclass.", var1
+            "LambdaMetafactory failed for method " + method + ". Ensure the listener method is public and its parameter type is a concrete Event subclass.",
+            throwable
          );
       } else {
-         return var1 instanceof IllegalAccessException
-            ? new RuntimeException("Cannot access method " + var0 + ". Listener methods must be public and their declaring class must be accessible.", var1)
-            : new RuntimeException("Unexpected error creating listener for method " + var0, var1);
+         return throwable instanceof IllegalAccessException
+            ? new RuntimeException(
+               "Cannot access method " + method + ". Listener methods must be public and their declaring class must be accessible.", throwable
+            )
+            : new RuntimeException("Unexpected error creating listener for method " + method, throwable);
       }
    }
 
-   private static void validateMethod(Method var0) {
-      if (var0.getReturnType() != void.class) {
-         throw new IllegalArgumentException("@EventListener method must return void: " + var0);
+   private static void validateMethod(Method method) {
+      if (method.getReturnType() != void.class) {
+         throw new IllegalArgumentException("@EventListener method must return void: " + method);
       } else {
-         Class[] var1 = var0.getParameterTypes();
+         Class[] var1 = method.getParameterTypes();
          if (var1.length != 1) {
-            throw new IllegalArgumentException("@EventListener method must have exactly one parameter: " + var0);
+            throw new IllegalArgumentException("@EventListener method must have exactly one parameter: " + method);
          } else if (!Event.class.isAssignableFrom(var1[0])) {
-            throw new IllegalArgumentException("@EventListener parameter must be a subclass of Event: " + var0);
+            throw new IllegalArgumentException("@EventListener parameter must be a subclass of Event: " + method);
          }
       }
    }

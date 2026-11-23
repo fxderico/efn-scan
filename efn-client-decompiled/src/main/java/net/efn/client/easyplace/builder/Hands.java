@@ -23,27 +23,28 @@ final class Hands {
    private Hands() {
    }
 
-   static boolean hold(MinecraftClient var0, ClientPlayerEntity var1, Predicate<ItemStack> var2) {
-      PlayerInventory var4 = var1.method_31548();
-      if (var2.test(var1.method_6047())) {
+   static boolean hold(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, Predicate<ItemStack> predicate) {
+      PlayerInventory var4 = clientPlayerEntity.getInventory();
+      if (predicate.test(clientPlayerEntity.getMainHandStack())) {
          return true;
       } else {
          for (int var3 = 0; var3 < 9; var3++) {
-            if (var2.test(var4.method_5438(var3))) {
-               var4.method_61496(var3);
+            if (predicate.test(var4.getStack(var3))) {
+               var4.setSelectedSlot(var3);
                return true;
             }
          }
 
-         if (var1.field_7512 == var1.field_7498 && var0.field_1761 != null) {
+         if (clientPlayerEntity.currentScreenHandler == clientPlayerEntity.playerScreenHandler && minecraftClient.interactionManager != null) {
             for (int var5 = 9; var5 < 36; var5++) {
-               if (var2.test(var4.method_5438(var5))) {
-                  if (!InventoryCalm.settle(var0, var1)) {
+               if (predicate.test(var4.getStack(var5))) {
+                  if (!InventoryCalm.settle(minecraftClient, clientPlayerEntity)) {
                      return false;
                   }
 
-                  var0.field_1761.method_2906(var1.field_7498.field_7763, var5, var4.method_67532(), SlotActionType.field_7791, var1);
-                  close(var0, var1);
+                  minecraftClient.interactionManager
+                     .clickSlot(clientPlayerEntity.playerScreenHandler.syncId, var5, var4.getSelectedSlot(), SlotActionType.SWAP, clientPlayerEntity);
+                  close(minecraftClient, clientPlayerEntity);
                   return false;
                }
             }
@@ -55,46 +56,50 @@ final class Hands {
       }
    }
 
-   static boolean has(ClientPlayerEntity var0, Predicate<ItemStack> var1) {
-      PlayerInventory var2 = var0.method_31548();
+   static boolean has(ClientPlayerEntity clientPlayerEntity, Predicate<ItemStack> predicate) {
+      PlayerInventory var2 = clientPlayerEntity.getInventory();
 
       for (int var3 = 0; var3 < 36; var3++) {
-         if (var1.test(var2.method_5438(var3))) {
+         if (predicate.test(var2.getStack(var3))) {
             return true;
          }
       }
 
-      return var1.test(var0.method_6079());
+      return predicate.test(clientPlayerEntity.getOffHandStack());
    }
 
-   static boolean toOffhand(MinecraftClient var0, ClientPlayerEntity var1, Predicate<ItemStack> var2) {
-      if (var1.field_7512 == var1.field_7498 && var0.field_1761 != null && var0.method_1562() != null && var1.field_7498.method_34255().method_7960()) {
-         PlayerInventory var4 = var1.method_31548();
-         if (var2.test(var1.method_6047())) {
+   static boolean toOffhand(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, Predicate<ItemStack> predicate) {
+      if (clientPlayerEntity.currentScreenHandler == clientPlayerEntity.playerScreenHandler
+         && minecraftClient.interactionManager != null
+         && minecraftClient.getNetworkHandler() != null
+         && clientPlayerEntity.playerScreenHandler.getCursorStack().isEmpty()) {
+         PlayerInventory var4 = clientPlayerEntity.getInventory();
+         if (predicate.test(clientPlayerEntity.getMainHandStack())) {
             long var5 = System.nanoTime();
             if (var5 - swapSentAt < 1000000000L) {
                return true;
             } else {
                swapSentAt = var5;
-               var0.method_1562().method_52787(new PlayerActionC2SPacket(Action.field_12969, BlockPos.field_10980, Direction.field_11033));
+               minecraftClient.getNetworkHandler().sendPacket(new PlayerActionC2SPacket(Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ORIGIN, Direction.DOWN));
                return true;
             }
          } else {
             for (int var3 = 0; var3 < 9; var3++) {
-               if (var2.test(var4.method_5438(var3))) {
-                  var4.method_61496(var3);
+               if (predicate.test(var4.getStack(var3))) {
+                  var4.setSelectedSlot(var3);
                   return true;
                }
             }
 
             for (int var7 = 9; var7 < 36; var7++) {
-               if (var2.test(var4.method_5438(var7))) {
-                  if (!InventoryCalm.settle(var0, var1)) {
+               if (predicate.test(var4.getStack(var7))) {
+                  if (!InventoryCalm.settle(minecraftClient, clientPlayerEntity)) {
                      return true;
                   }
 
-                  var0.field_1761.method_2906(var1.field_7498.field_7763, var7, 40, SlotActionType.field_7791, var1);
-                  close(var0, var1);
+                  minecraftClient.interactionManager
+                     .clickSlot(clientPlayerEntity.playerScreenHandler.syncId, var7, 40, SlotActionType.SWAP, clientPlayerEntity);
+                  close(minecraftClient, clientPlayerEntity);
                   return true;
                }
             }
@@ -106,9 +111,9 @@ final class Hands {
       }
    }
 
-   private static void close(MinecraftClient var0, ClientPlayerEntity var1) {
-      if (var0.field_1755 == null) {
-         var1.field_3944.method_52787(new CloseHandledScreenC2SPacket(var1.field_7498.field_7763));
+   private static void close(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      if (minecraftClient.currentScreen == null) {
+         clientPlayerEntity.networkHandler.sendPacket(new CloseHandledScreenC2SPacket(clientPlayerEntity.playerScreenHandler.syncId));
       }
    }
 }

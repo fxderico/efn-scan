@@ -87,7 +87,7 @@ public final class HudRenderer {
    private static final DateTimeFormatter CLOCK_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
    private static final String MINUS = "\u2212";
    private static final String INFINITY = "\u221e";
-   private static final String[] SECONDS = IntStream.range(0, 60).mapToObj(var0 -> String.format(":%02d", var0)).toArray(String[]::new);
+   private static final String[] SECONDS = IntStream.range(0, 60).mapToObj(i -> String.format(":%02d", i)).toArray(String[]::new);
    private final HudLayoutStore layout = HudLayoutStore.getInstance();
    private final ModuleListRows moduleRows = new ModuleListRows();
    private final TargetCard targetCard = new TargetCard();
@@ -336,23 +336,23 @@ public final class HudRenderer {
       return this.draggingId != null;
    }
 
-   void studioInput(float var1, float var2, boolean var3) {
+   void studioInput(float f, float g, boolean bl) {
       markStudioPreview();
-      if (!var3 || this.draggingId != null) {
-         this.updateEditorInput(var1, var2);
+      if (!bl || this.draggingId != null) {
+         this.updateEditorInput(f, g);
       }
    }
 
    public void render() {
-      MinecraftClient var6 = MinecraftClient.method_1551();
-      if (var6.field_1687 == null) {
+      MinecraftClient var6 = MinecraftClient.getInstance();
+      if (var6.world == null) {
          this.releaseSpotifyArt();
          this.resetCombatElements();
       } else {
-         boolean var7 = var6.field_1755 instanceof HudEditorScreen;
+         boolean var7 = var6.currentScreen instanceof HudEditorScreen;
          boolean var8 = studioPreview();
          boolean var5 = var7 || var8;
-         if (var6.field_1755 instanceof ImGuiScreen && !var8) {
+         if (var6.currentScreen instanceof ImGuiScreen && !var8) {
             if (this.draggingId != null || this.layoutDirty) {
                this.saveLayout();
             }
@@ -362,7 +362,7 @@ public final class HudRenderer {
             this.snapGuideY = null;
             this.hudVisibleLastFrame = false;
          } else {
-            boolean var10 = var6.field_1755 instanceof ChatScreen;
+            boolean var10 = var6.currentScreen instanceof ChatScreen;
             boolean var11 = var7 || var10;
             this.chatInput = var10;
             this.spotifyButtonsShown = this.spotifyButtonsDrawn;
@@ -429,7 +429,7 @@ public final class HudRenderer {
                this.layout.updateBounds(var32.id, var44, var44, var14, var15);
                HudRenderer.HotkeyPlan var45 = this.planHotkeys(var33, var5, var13);
                this.layout.updateBounds(var33.id, var45.width(), var45.height(), var14, var15);
-               boolean var46 = this.hudModule.isEnabled() && !var6.field_1690.field_1842;
+               boolean var46 = this.hudModule.isEnabled() && !var6.options.hudHidden;
                boolean var47 = var46 && var34.visible && this.hudModule.targetCard();
                boolean var48 = var46 && var35.visible && this.hudModule.armorStatus();
                boolean var49 = var46 && var36.visible && this.hudModule.itemCooldowns();
@@ -568,9 +568,9 @@ public final class HudRenderer {
       }
    }
 
-   private HudRenderer.DrawTransform transform(HudLayoutStore.HudElementState var1, boolean var2, boolean var3) {
-      HudRenderer.DrawTransform var4 = this.introTransform(var1, var2);
-      return var2 && !var3 ? new HudRenderer.DrawTransform(var4.xOffset(), var4.yOffset(), var4.alpha() * 0.35F) : var4;
+   private HudRenderer.DrawTransform transform(HudLayoutStore.HudElementState hudElementState, boolean bl, boolean bl2) {
+      HudRenderer.DrawTransform var4 = this.introTransform(hudElementState, bl);
+      return bl && !bl2 ? new HudRenderer.DrawTransform(var4.xOffset(), var4.yOffset(), var4.alpha() * 0.35F) : var4;
    }
 
    private void resetCombatElements() {
@@ -590,15 +590,15 @@ public final class HudRenderer {
       }
    }
 
-   private void drawOverlayOnly(float var1, float var2, boolean var3, boolean var4) {
-      if (var4) {
-         this.updateRegionMapBounds(var1, var2);
+   private void drawOverlayOnly(float f, float g, boolean bl, boolean bl2) {
+      if (bl2) {
+         this.updateRegionMapBounds(f, g);
       }
 
       ImGui.setNextWindowPos(0.0F, 0.0F, 1);
-      ImGui.setNextWindowSize(var1, var2);
+      ImGui.setNextWindowSize(f, g);
       int var5 = 205215;
-      if (!var3) {
+      if (!bl) {
          var5 |= 197120;
       }
 
@@ -608,8 +608,8 @@ public final class HudRenderer {
          ImGui.popStyleVar();
       } else {
          ImGui.popStyleVar();
-         if (var3) {
-            this.updateEditorInput(var1, var2);
+         if (bl) {
+            this.updateEditorInput(f, g);
          } else {
             if (this.draggingId != null || this.layoutDirty) {
                this.saveLayout();
@@ -619,8 +619,8 @@ public final class HudRenderer {
          }
 
          ImDrawList var6 = ImGui.getWindowDrawList();
-         drawHudOverlays(var6, var1, var2);
-         if (var4 && this.regionMapModule != null) {
+         drawHudOverlays(var6, f, g);
+         if (bl2 && this.regionMapModule != null) {
             RegionMapRenderer.render(var6, this.regionMapModule, this.layout.element("region_map"));
          }
 
@@ -632,21 +632,21 @@ public final class HudRenderer {
       return this.regionMapModule != null && this.regionMapModule.isEnabled();
    }
 
-   private void updateRegionMapBounds(float var1, float var2) {
+   private void updateRegionMapBounds(float f, float g) {
       if (this.regionMapModule != null) {
          HudLayoutStore.HudElementState var3 = this.layout.element("region_map");
          RegionMapRenderer.Size var4 = RegionMapRenderer.measureSize(this.regionMapModule, scaleOf(var3));
-         this.layout.updateBounds("region_map", var4.width(), var4.height(), var1, var2);
+         this.layout.updateBounds("region_map", var4.width(), var4.height(), f, g);
       }
    }
 
    public boolean hasWork() {
-      MinecraftClient var1 = MinecraftClient.method_1551();
-      if (var1.field_1687 == null) {
+      MinecraftClient var1 = MinecraftClient.getInstance();
+      if (var1.world == null) {
          this.resetCombatElements();
          return false;
       } else {
-         return var1.field_1755 instanceof HudEditorScreen
+         return var1.currentScreen instanceof HudEditorScreen
             || studioPreview()
             || this.hudModule != null && (this.hudModule.isEnabled() || this.hudVisibleLastFrame)
             || this.isRegionMapEnabled()
@@ -654,12 +654,12 @@ public final class HudRenderer {
       }
    }
 
-   private static boolean shouldRenderHudOverlays(MinecraftClient var0) {
-      return var0.field_1755 == null || var0.field_1755 instanceof ChatScreen;
+   private static boolean shouldRenderHudOverlays(MinecraftClient minecraftClient) {
+      return minecraftClient.currentScreen == null || minecraftClient.currentScreen instanceof ChatScreen;
    }
 
-   private static boolean gameHidesHud(MinecraftClient var0) {
-      return var0.field_1690.field_1842 || var0.field_61504.method_72776();
+   private static boolean gameHidesHud(MinecraftClient minecraftClient) {
+      return minecraftClient.options.hudHidden || minecraftClient.debugHudEntryList.isF3Enabled();
    }
 
    private static boolean computeHudOverlays() {
@@ -672,36 +672,36 @@ public final class HudRenderer {
       return false;
    }
 
-   private static void drawHudOverlays(ImDrawList var0, float var1, float var2) {
+   private static void drawHudOverlays(ImDrawList imDrawList, float f, float g) {
       for (HudOverlayProvider var4 : ModuleRegistry.instancesOf(HudOverlayProvider.class)) {
          if (var4.isHudOverlayEnabled()) {
-            var4.renderHudOverlay(var0, var1, var2);
+            var4.renderHudOverlay(imDrawList, f, g);
          }
       }
    }
 
-   private void updateIntro(boolean var1, float var2) {
+   private void updateIntro(boolean bl, float f) {
       float var3 = 0.56F;
-      if (var1) {
+      if (bl) {
          this.introTime = var3;
          this.hudVisibleLastFrame = true;
       } else if (!this.hudVisibleLastFrame) {
          this.introTime = 0.0F;
          this.hudVisibleLastFrame = true;
       } else {
-         this.introTime = Math.min(this.introTime + var2, var3);
+         this.introTime = Math.min(this.introTime + f, var3);
       }
    }
 
-   private HudRenderer.DrawTransform introTransform(HudLayoutStore.HudElementState var1, boolean var2) {
-      if (var2) {
+   private HudRenderer.DrawTransform introTransform(HudLayoutStore.HudElementState hudElementState, boolean bl) {
+      if (bl) {
          return HudRenderer.DrawTransform.identity();
       } else {
-         float var3 = clamp01((this.introTime - introDelay(var1.id)) / 0.36F);
+         float var3 = clamp01((this.introTime - introDelay(hudElementState.id)) / 0.36F);
          float var4 = easeOutCubic(var3);
-         float var5 = 6.0F * scaleOf(var1) * (1.0F - var4);
+         float var5 = 6.0F * scaleOf(hudElementState) * (1.0F - var4);
 
-         return switch (var1.anchorX) {
+         return switch (hudElementState.anchorX) {
             case 1 -> new HudRenderer.DrawTransform(0.0F, -var5, var4);
             case 2 -> new HudRenderer.DrawTransform(var5, 0.0F, var4);
             default -> new HudRenderer.DrawTransform(-var5, 0.0F, var4);
@@ -709,8 +709,8 @@ public final class HudRenderer {
       }
    }
 
-   private static float introDelay(String var0) {
-      return switch (var0) {
+   private static float introDelay(String string) {
+      return switch (string) {
          case "info_bar" -> 0.04F;
          case "coordinates" -> 0.08F;
          case "anti_vanish" -> 0.12F;
@@ -727,21 +727,21 @@ public final class HudRenderer {
       };
    }
 
-   private float slot(String var1, int var2, float var3, float var4) {
-      Int2ObjectOpenHashMap var5 = this.slots.computeIfAbsent(var1, var0 -> new Int2ObjectOpenHashMap());
-      StableWidth var6 = (StableWidth)var5.get(var2);
+   private float slot(String string, int i, float f, float g) {
+      Int2ObjectOpenHashMap var5 = this.slots.computeIfAbsent(string, stringx -> new Int2ObjectOpenHashMap<>());
+      StableWidth var6 = (StableWidth)var5.get(i);
       if (var6 == null) {
          var6 = new StableWidth();
-         var5.put(var2, var6);
+         var5.put(i, var6);
          this.slotCount++;
       }
 
-      return var6.update(var3, var4);
+      return var6.update(f, g);
    }
 
-   private void removeSlot(String var1, int var2) {
-      Int2ObjectOpenHashMap var3 = this.slots.get(var1);
-      if (var3 != null && var3.remove(var2) != null) {
+   private void removeSlot(String string, int i) {
+      Int2ObjectOpenHashMap var3 = this.slots.get(string);
+      if (var3 != null && var3.remove(i) != null) {
          this.slotCount--;
       }
    }
@@ -751,18 +751,18 @@ public final class HudRenderer {
       this.slotCount = 0;
    }
 
-   private static String number(long var0) {
-      return var0 < 0L ? "\u2212" + -var0 : Long.toString(var0);
+   private static String number(long l) {
+      return l < 0L ? "\u2212" + -l : Long.toString(l);
    }
 
-   private List<HudRenderer.InfoItem> buildInfoItems(boolean var1, boolean var2, boolean var3, MinecraftClient var4) {
-      long var5 = var2 ? System.currentTimeMillis() / 1000L : -1L;
-      int var7 = var1 ? Math.max(0, var4.method_47599()) : -1;
+   private List<HudRenderer.InfoItem> buildInfoItems(boolean bl, boolean bl2, boolean bl3, MinecraftClient minecraftClient) {
+      long var5 = bl2 ? System.currentTimeMillis() / 1000L : -1L;
+      int var7 = bl ? Math.max(0, minecraftClient.getCurrentFps()) : -1;
       int var8 = -1;
-      if (var3) {
-         ClientPlayNetworkHandler var9 = var4.method_1562();
+      if (bl3) {
+         ClientPlayNetworkHandler var9 = minecraftClient.getNetworkHandler();
          int var10 = 0;
-         if (var9 != null && var4.field_1724 != null && (var10 = readTabLatency(var4, var9)) <= 0) {
+         if (var9 != null && minecraftClient.player != null && (var10 = readTabLatency(minecraftClient, var9)) <= 0) {
             var10 = readServerPing(var9);
          }
 
@@ -776,16 +776,16 @@ public final class HudRenderer {
          this.infoFps = var7;
          this.infoPing = var8;
          ArrayList var11 = new ArrayList(3);
-         if (var2) {
+         if (bl2) {
             LocalTime var12 = LocalTime.now();
             var11.add(new HudRenderer.InfoItem("info.time", var12.format(CLOCK_FORMAT), SECONDS[var12.getSecond()], null));
          }
 
-         if (var1) {
+         if (bl) {
             var11.add(new HudRenderer.InfoItem("info.fps", String.valueOf(var7), null, "fps"));
          }
 
-         if (var3) {
+         if (bl3) {
             var11.add(new HudRenderer.InfoItem("info.ping", String.valueOf(var8), null, "ms"));
          }
 
@@ -794,14 +794,14 @@ public final class HudRenderer {
       }
    }
 
-   private HudRenderer.InfoPlan planInfoBar(HudLayoutStore.HudElementState var1, List<HudRenderer.InfoItem> var2, float var3) {
-      float var5 = scaleOf(var1);
+   private HudRenderer.InfoPlan planInfoBar(HudLayoutStore.HudElementState hudElementState, List<HudRenderer.InfoItem> list, float f) {
+      float var5 = scaleOf(hudElementState);
       HudRenderer.Type var6 = HudRenderer.Type.of(var5);
-      ArrayList var7 = new ArrayList(var2.size());
+      ArrayList var7 = new ArrayList(list.size());
       float var8 = 12.0F * var5 * 2.0F;
 
-      for (int var9 = 0; var9 < var2.size(); var9++) {
-         HudRenderer.InfoItem var10 = (HudRenderer.InfoItem)var2.get(var9);
+      for (int var9 = 0; var9 < list.size(); var9++) {
+         HudRenderer.InfoItem var10 = (HudRenderer.InfoItem)list.get(var9);
          float var11 = HudChrome.tabularWidth(var6.value(), var6.valuePx(), var10.value());
          float var12 = var10.dim() != null ? HudChrome.tabularWidth(var6.value(), var6.valuePx(), var10.dim()) : 0.0F;
          float var13 = var11 + var12;
@@ -809,7 +809,7 @@ public final class HudRenderer {
             var13 += 4.0F * var5 + HudChrome.width(var6.label(), var6.labelPx(), var10.unit());
          }
 
-         float var14 = this.slot(var10.slot(), var6.valuePx(), (float)Math.ceil(var13), var3);
+         float var14 = this.slot(var10.slot(), var6.valuePx(), (float)Math.ceil(var13), f);
          var7.add(new HudRenderer.Segment(var10, var11, var12, var13, var14));
          var8 += var14;
       }
@@ -828,189 +828,189 @@ public final class HudRenderer {
       return new HudRenderer.InfoPlan(var7, var6, (float)Math.round(var8), (float)Math.round(28.0F * var5), var15);
    }
 
-   private void drawInfoBar(ImDrawList var1, HudLayoutStore.HudElementState var2, HudRenderer.InfoPlan var3, boolean var4, HudRenderer.DrawTransform var5) {
-      float var7 = var5.alpha();
+   private void drawInfoBar(
+      ImDrawList imDrawList, HudLayoutStore.HudElementState hudElementState, HudRenderer.InfoPlan infoPlan, boolean bl, HudRenderer.DrawTransform drawTransform
+   ) {
+      float var7 = drawTransform.alpha();
       if (!(var7 <= 0.001F)) {
-         float var8 = scaleOf(var2);
-         float var9 = Math.round(var2.x + var5.xOffset());
-         float var10 = Math.round(var2.y + var5.yOffset());
-         float var11 = var2.width;
-         float var12 = var2.height;
-         Surface var13 = hudSurface(var2);
+         float var8 = scaleOf(hudElementState);
+         float var9 = Math.round(hudElementState.x + drawTransform.xOffset());
+         float var10 = Math.round(hudElementState.y + drawTransform.yOffset());
+         float var11 = hudElementState.width;
+         float var12 = hudElementState.height;
+         Surface var13 = hudSurface(hudElementState);
          boolean var14 = HudChrome.needsTextGuard(var13);
-         HudChrome.card(var1, var13, var9, var10, var11, var12, hudRounding() * var8, var7, var4, var8);
-         HudRenderer.Type var15 = var3.type();
+         HudChrome.card(imDrawList, var13, var9, var10, var11, var12, hudRounding() * var8, var7, bl, var8);
+         HudRenderer.Type var15 = infoPlan.type();
          float var16 = var10 + (float)Math.floor((var12 - var15.valuePx()) * 0.5F);
          float var17 = var16 + HudChrome.baselineOffset(var15.value(), var15.valuePx(), var15.label(), var15.labelPx());
          float var18 = var9 + 12.0F * var8;
-         ThemeImages.Texture var6 = var3.emblemW() > 0.0F ? HudEmblem.forHeight(Math.round(24.0F * var8)) : null;
+         ThemeImages.Texture var6 = infoPlan.emblemW() > 0.0F ? HudEmblem.forHeight(Math.round(24.0F * var8)) : null;
          if (var6 != null) {
             float var20 = Math.round(var18);
             float var21 = Math.round(var10 + (var12 - var6.height()) * 0.5F);
-            var1.addImage(
+            imDrawList.addImage(
                var6.id(), var20, var21, var20 + var6.width(), var21 + var6.height(), 0.0F, 0.0F, 1.0F, 1.0F, HudChrome.scaleAlpha(this.hudAccent(), var7)
             );
             float var25;
-            HudChrome.divider(var1, (var25 = var18 + var3.emblemW()) + 10.0F * var8, var10 + var12 * 0.5F, 12.0F * var8, var7);
+            HudChrome.divider(imDrawList, (var25 = var18 + infoPlan.emblemW()) + 10.0F * var8, var10 + var12 * 0.5F, 12.0F * var8, var7);
             var18 = var25 + (10.0F * var8 * 2.0F + 1.0F);
          }
 
-         List var26 = var3.segments();
+         List var26 = infoPlan.segments();
 
          for (int var27 = 0; var27 < var26.size(); var27++) {
             HudRenderer.Segment var22 = (HudRenderer.Segment)var26.get(var27);
             HudRenderer.InfoItem var23 = var22.item();
             float var24 = var23.unit() != null ? var18 + var22.slotW() - var22.contentW() : var18;
-            HudChrome.tabular(var1, var15.value(), var15.valuePx(), var24, var16, HudChrome.scaleAlpha(HudChrome.TEXT_VALUE, var7), var23.value(), var14);
+            HudChrome.tabular(imDrawList, var15.value(), var15.valuePx(), var24, var16, HudChrome.scaleAlpha(HudChrome.TEXT_VALUE, var7), var23.value(), var14);
             var24 += var22.valueW();
             if (var23.dim() != null) {
-               HudChrome.tabular(var1, var15.value(), var15.valuePx(), var24, var16, HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, var7), var23.dim(), var14);
+               HudChrome.tabular(imDrawList, var15.value(), var15.valuePx(), var24, var16, HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, var7), var23.dim(), var14);
                var24 += var22.dimW();
             }
 
             if (var23.unit() != null) {
                HudChrome.text(
-                  var1, var15.label(), var15.labelPx(), var24 + 4.0F * var8, var17, HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, var7), var23.unit(), var14
+                  imDrawList, var15.label(), var15.labelPx(), var24 + 4.0F * var8, var17, HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, var7), var23.unit(), var14
                );
             }
 
             var18 += var22.slotW();
             if (var27 < var26.size() - 1) {
-               HudChrome.divider(var1, var18 + 10.0F * var8, var10 + var12 * 0.5F, 12.0F * var8, var7);
+               HudChrome.divider(imDrawList, var18 + 10.0F * var8, var10 + var12 * 0.5F, 12.0F * var8, var7);
                var18 += 10.0F * var8 * 2.0F + 1.0F;
             }
          }
       }
    }
 
-   private static float rowsRadius(float var0) {
-      return Math.min(hudRounding(), 6.0F) * var0;
+   private static float rowsRadius(float f) {
+      return Math.min(hudRounding(), 6.0F) * f;
    }
 
-   private void drawRows(
-      ImDrawList var1, List<HudRenderer.Step> var2, Surface var3, float var4, float var5, float var6, float var7, float var8, float var9, boolean var10
-   ) {
-      if (var10) {
-         drawRowsShadow(var1, var2, var8, var9);
+   private void drawRows(ImDrawList imDrawList, List<HudRenderer.Step> list, Surface surface, float f, float g, float h, float i, float j, float k, boolean bl) {
+      if (bl) {
+         drawRowsShadow(imDrawList, list, j, k);
       }
 
-      int var11 = GuiPalette.fill(var3);
+      int var11 = GuiPalette.fill(surface);
 
-      for (int var12 = 0; var12 < var2.size(); var12++) {
-         HudRenderer.Step var13 = (HudRenderer.Step)var2.get(var12);
-         HudRenderer.Step var14 = var12 > 0 ? (HudRenderer.Step)var2.get(var12 - 1) : null;
-         HudRenderer.Step var15 = var12 < var2.size() - 1 ? (HudRenderer.Step)var2.get(var12 + 1) : null;
+      for (int var12 = 0; var12 < list.size(); var12++) {
+         HudRenderer.Step var13 = (HudRenderer.Step)list.get(var12);
+         HudRenderer.Step var14 = var12 > 0 ? (HudRenderer.Step)list.get(var12 - 1) : null;
+         HudRenderer.Step var15 = var12 < list.size() - 1 ? (HudRenderer.Step)list.get(var12 + 1) : null;
          int var16 = convexCorners(var13, var14, var15);
          int var17 = HudChrome.scaleAlpha(var11, var13.alpha());
          if (var16 == 256) {
-            var1.addRectFilled(var13.l(), var13.t(), var13.r(), var13.b(), var17);
+            imDrawList.addRectFilled(var13.l(), var13.t(), var13.r(), var13.b(), var17);
          } else {
-            var1.addRectFilled(var13.l(), var13.t(), var13.r(), var13.b(), var17, var8, var16);
+            imDrawList.addRectFilled(var13.l(), var13.t(), var13.r(), var13.b(), var17, j, var16);
          }
 
          SurfaceBackground.drawPart(
-            var1, var3, var4, var5, var6, var7, var13.l(), var13.t(), var13.r() - var13.l(), var13.b() - var13.t(), var13.alpha(), var8, var16
+            imDrawList, surface, f, g, h, i, var13.l(), var13.t(), var13.r() - var13.l(), var13.b() - var13.t(), var13.alpha(), j, var16
          );
          float var18 = var13.b() - var13.t();
          if (var14 != null && var14.l() < var13.l() - 0.5F) {
-            fillet(var1, var13.l(), var13.t(), -1, 1, Math.min(var8, Math.min(var13.l() - var14.l(), var18)), var17);
+            fillet(imDrawList, var13.l(), var13.t(), -1, 1, Math.min(j, Math.min(var13.l() - var14.l(), var18)), var17);
          }
 
          if (var14 != null && var14.r() > var13.r() + 0.5F) {
-            fillet(var1, var13.r(), var13.t(), 1, 1, Math.min(var8, Math.min(var14.r() - var13.r(), var18)), var17);
+            fillet(imDrawList, var13.r(), var13.t(), 1, 1, Math.min(j, Math.min(var14.r() - var13.r(), var18)), var17);
          }
 
          if (var15 != null && var15.l() < var13.l() - 0.5F) {
-            fillet(var1, var13.l(), var13.b(), -1, -1, Math.min(var8, Math.min(var13.l() - var15.l(), var18)), var17);
+            fillet(imDrawList, var13.l(), var13.b(), -1, -1, Math.min(j, Math.min(var13.l() - var15.l(), var18)), var17);
          }
 
          if (var15 != null && var15.r() > var13.r() + 0.5F) {
-            fillet(var1, var13.r(), var13.b(), 1, -1, Math.min(var8, Math.min(var15.r() - var13.r(), var18)), var17);
+            fillet(imDrawList, var13.r(), var13.b(), 1, -1, Math.min(j, Math.min(var15.r() - var13.r(), var18)), var17);
          }
       }
    }
 
-   private static int convexCorners(HudRenderer.Step var0, HudRenderer.Step var1, HudRenderer.Step var2) {
+   private static int convexCorners(HudRenderer.Step step, HudRenderer.Step step2, HudRenderer.Step step3) {
       short var3 = 0;
-      if (var1 == null || var1.l() > var0.l() + 0.5F) {
+      if (step2 == null || step2.l() > step.l() + 0.5F) {
          var3 |= 16;
       }
 
-      if (var1 == null || var1.r() < var0.r() - 0.5F) {
+      if (step2 == null || step2.r() < step.r() - 0.5F) {
          var3 |= 32;
       }
 
-      if (var2 == null || var2.l() > var0.l() + 0.5F) {
+      if (step3 == null || step3.l() > step.l() + 0.5F) {
          var3 |= 64;
       }
 
-      if (var2 == null || var2.r() < var0.r() - 0.5F) {
+      if (step3 == null || step3.r() < step.r() - 0.5F) {
          var3 |= 128;
       }
 
       return var3 == 0 ? 256 : var3;
    }
 
-   private static void fillet(ImDrawList var0, float var1, float var2, int var3, int var4, float var5, int var6) {
-      if (!(var5 < 1.0F)) {
-         float var8 = var1 + var3 * var5;
-         float var9 = var2 + var4 * var5;
-         float var7 = var3 < 0 ? 0.0F : 3.1415927F;
-         float var11 = var4 > 0 ? (var3 < 0 ? -1.5707964F : 4.712389F) : 1.5707964F;
-         var0.pathClear();
-         var0.pathLineTo(var1, var2);
-         var0.pathArcTo(var8, var9, var5, var7, var11, 8);
-         var0.pathFillConcave(var6);
+   private static void fillet(ImDrawList imDrawList, float f, float g, int i, int j, float h, int k) {
+      if (!(h < 1.0F)) {
+         float var8 = f + i * h;
+         float var9 = g + j * h;
+         float var7 = i < 0 ? 0.0F : 3.1415927F;
+         float var11 = j > 0 ? (i < 0 ? -1.5707964F : 4.712389F) : 1.5707964F;
+         imDrawList.pathClear();
+         imDrawList.pathLineTo(f, g);
+         imDrawList.pathArcTo(var8, var9, h, var7, var11, 8);
+         imDrawList.pathFillConcave(k);
       }
    }
 
-   private static void drawRowsShadow(ImDrawList var0, List<HudRenderer.Step> var1, float var2, float var3) {
+   private static void drawRowsShadow(ImDrawList imDrawList, List<HudRenderer.Step> list, float f, float g) {
       for (int var4 = 3; var4 >= 1; var4--) {
-         float var5 = var4 * Math.max(1.0F, var3);
+         float var5 = var4 * Math.max(1.0F, g);
 
-         for (int var6 = 0; var6 < var1.size(); var6++) {
-            HudRenderer.Step var7 = (HudRenderer.Step)var1.get(var6);
+         for (int var6 = 0; var6 < list.size(); var6++) {
+            HudRenderer.Step var7 = (HudRenderer.Step)list.get(var6);
             boolean var8 = var6 == 0;
-            boolean var9 = var6 == var1.size() - 1;
-            int var10 = convexCorners(var7, var8 ? null : (HudRenderer.Step)var1.get(var6 - 1), var9 ? null : (HudRenderer.Step)var1.get(var6 + 1));
+            boolean var9 = var6 == list.size() - 1;
+            int var10 = convexCorners(var7, var8 ? null : (HudRenderer.Step)list.get(var6 - 1), var9 ? null : (HudRenderer.Step)list.get(var6 + 1));
             float var11 = var7.t() - (var8 ? var5 : 0.0F);
-            float var12 = var7.b() + (var9 ? var5 + Math.max(1.0F, var3) : 0.0F);
+            float var12 = var7.b() + (var9 ? var5 + Math.max(1.0F, g) : 0.0F);
             int var13 = HudChrome.scaleAlpha(218103808, var7.alpha());
             if (var10 == 256) {
-               var0.addRectFilled(var7.l() - var5, var11, var7.r() + var5, var12, var13);
+               imDrawList.addRectFilled(var7.l() - var5, var11, var7.r() + var5, var12, var13);
             } else {
-               var0.addRectFilled(var7.l() - var5, var11, var7.r() + var5, var12, var13, var2 + var5, var10);
+               imDrawList.addRectFilled(var7.l() - var5, var11, var7.r() + var5, var12, var13, f + var5, var10);
             }
          }
       }
    }
 
-   private static boolean alignsRight(HudLayoutStore.HudElementState var0, float var1) {
-      return switch (var0.anchorX) {
+   private static boolean alignsRight(HudLayoutStore.HudElementState hudElementState, float f) {
+      return switch (hudElementState.anchorX) {
          case 0 -> false;
          case 2 -> true;
-         default -> var0.x + var0.width * 0.5F >= var1 * 0.5F;
+         default -> hudElementState.x + hudElementState.width * 0.5F >= f * 0.5F;
       };
    }
 
-   private List<HudRenderer.CoordRow> coordinateRows(MinecraftClient var1, boolean var2, float var3) {
+   private List<HudRenderer.CoordRow> coordinateRows(MinecraftClient minecraftClient, boolean bl, float f) {
       long var4 = 0L;
       long var6 = 0L;
       long var8 = 0L;
-      if (var1.field_1724 != null) {
-         var4 = (long)Math.floor(var1.field_1724.method_23317());
-         var6 = (long)Math.floor(var1.field_1724.method_23318());
-         var8 = (long)Math.floor(var1.field_1724.method_23321());
+      if (minecraftClient.player != null) {
+         var4 = (long)Math.floor(minecraftClient.player.getX());
+         var6 = (long)Math.floor(minecraftClient.player.getY());
+         var8 = (long)Math.floor(minecraftClient.player.getZ());
       }
 
-      boolean var10 = var1.field_1687 != null && var1.field_1687.method_27983() == World.field_25180;
-      boolean var11 = var1.field_1687 != null && var1.field_1687.method_27983() == World.field_25181;
+      boolean var10 = minecraftClient.world != null && minecraftClient.world.getRegistryKey() == World.NETHER;
+      boolean var11 = minecraftClient.world != null && minecraftClient.world.getRegistryKey() == World.END;
       boolean var12 = this.hudModule.coordinates();
       boolean var13 = this.hudModule.netherCoordinates();
-      float var14 = 1.0F - (float)Math.exp(-12.0F * var3);
+      float var14 = 1.0F - (float)Math.exp(-12.0F * f);
       ArrayList var15 = new ArrayList(2);
       if (var11) {
-         this.addCoordRow(var15, "end", "end_stone", true, var12 || var13, var2, new long[]{var4, var6, var8}, var14);
+         this.addCoordRow(var15, "end", "end_stone", true, var12 || var13, bl, new long[]{var4, var6, var8}, var14);
       } else {
          long[] var17;
          if (var10) {
@@ -1034,38 +1034,38 @@ public final class HudRenderer {
             var21[2] = Math.floorDiv(var8, 8);
          }
 
-         this.addCoordRow(var15, "overworld", "grass_block_side", !var10, var12, var2, var17, var14);
-         this.addCoordRow(var15, "nether", "netherrack", var10, var13, var2, var16, var14);
+         this.addCoordRow(var15, "overworld", "grass_block_side", !var10, var12, bl, var17, var14);
+         this.addCoordRow(var15, "nether", "netherrack", var10, var13, bl, var16, var14);
       }
 
       return var15;
    }
 
-   private void addCoordRow(List<HudRenderer.CoordRow> var1, String var2, String var3, boolean var4, boolean var5, boolean var6, long[] var7, float var8) {
-      float var9 = !var5 && !var6 ? 0.0F : 1.0F;
-      float var10 = this.coordAnim.getOrDefault(var2, var9);
-      if (Math.abs((var10 = var10 + (var9 - var10) * var8) - var9) < 0.005F) {
+   private void addCoordRow(List<HudRenderer.CoordRow> list, String string, String string2, boolean bl, boolean bl2, boolean bl3, long[] ls, float f) {
+      float var9 = !bl2 && !bl3 ? 0.0F : 1.0F;
+      float var10 = this.coordAnim.getOrDefault(string, var9);
+      if (Math.abs((var10 = var10 + (var9 - var10) * f) - var9) < 0.005F) {
          var10 = var9;
       }
 
-      this.coordAnim.put(var2, var10);
+      this.coordAnim.put(string, var10);
       if (!(var10 <= 0.005F)) {
-         var1.add(new HudRenderer.CoordRow(var3, var4, var5, new String[]{number(var7[0]), number(var7[1]), number(var7[2])}, var10));
+         list.add(new HudRenderer.CoordRow(string2, bl, bl2, new String[]{number(ls[0]), number(ls[1]), number(ls[2])}, var10));
       }
    }
 
-   private static float coordIconSize(float var0) {
-      return var0 >= 1.0F ? 16.0F * Math.max(1.0F, (float)Math.floor(var0 + 0.25F)) : Math.round(16.0F * var0);
+   private static float coordIconSize(float f) {
+      return f >= 1.0F ? 16.0F * Math.max(1.0F, (float)Math.floor(f + 0.25F)) : Math.round(16.0F * f);
    }
 
-   private HudRenderer.CoordPlan planCoordinates(HudLayoutStore.HudElementState var1, List<HudRenderer.CoordRow> var2, boolean var3, float var4) {
-      float var6 = scaleOf(var1);
+   private HudRenderer.CoordPlan planCoordinates(HudLayoutStore.HudElementState hudElementState, List<HudRenderer.CoordRow> list, boolean bl, float f) {
+      float var6 = scaleOf(hudElementState);
       HudRenderer.Type var7 = HudRenderer.Type.of(var6);
       float var8 = 20.0F * var6;
       float[] var9 = new float[3];
       float var10 = 0.0F;
 
-      for (HudRenderer.CoordRow var12 : var2) {
+      for (HudRenderer.CoordRow var12 : list) {
          for (int var5 = 0; var5 < 3; var5++) {
             var9[var5] = Math.max(var9[var5], HudChrome.tabularWidth(var7.text(), var7.textPx(), var12.values()[var5]));
          }
@@ -1077,35 +1077,40 @@ public final class HudRenderer {
       float var15 = 7.0F * var6 * 2.0F + Math.min(coordIconSize(var6), var8 - 2.0F) + 8.0F * var6 + 12.0F * var6 * 2.0F;
 
       for (int var13 = 0; var13 < 3; var13++) {
-         var14[var13] = this.slot(COORD_SLOTS[var13], var7.textPx(), (float)Math.ceil(var9[var13]), var4);
+         var14[var13] = this.slot(COORD_SLOTS[var13], var7.textPx(), (float)Math.ceil(var9[var13]), f);
          var15 += var14[var13];
       }
 
-      if (var3) {
+      if (bl) {
          var10 = Math.max(var10, var8);
       }
 
-      return new HudRenderer.CoordPlan(var2, var7, var14, (float)Math.round(var15), (float)Math.max(1, Math.round(var10)));
+      return new HudRenderer.CoordPlan(list, var7, var14, (float)Math.round(var15), (float)Math.max(1, Math.round(var10)));
    }
 
    private void drawCoordinates(
-      ImDrawList var1, HudLayoutStore.HudElementState var2, HudRenderer.CoordPlan var3, boolean var4, HudRenderer.DrawTransform var5, float var6
+      ImDrawList imDrawList,
+      HudLayoutStore.HudElementState hudElementState,
+      HudRenderer.CoordPlan coordPlan,
+      boolean bl,
+      HudRenderer.DrawTransform drawTransform,
+      float f
    ) {
-      float var7 = var5.alpha();
-      if (!(var7 <= 0.001F) && !var3.rows().isEmpty()) {
-         float var8 = scaleOf(var2);
-         float var9 = Math.round(var2.x + var5.xOffset());
-         float var10 = Math.round(var2.y + var5.yOffset());
-         float var11 = var2.width;
-         float var12 = var2.height;
-         HudRenderer.Type var13 = var3.type();
-         boolean var14 = alignsRight(var2, var6);
+      float var7 = drawTransform.alpha();
+      if (!(var7 <= 0.001F) && !coordPlan.rows().isEmpty()) {
+         float var8 = scaleOf(hudElementState);
+         float var9 = Math.round(hudElementState.x + drawTransform.xOffset());
+         float var10 = Math.round(hudElementState.y + drawTransform.yOffset());
+         float var11 = hudElementState.width;
+         float var12 = hudElementState.height;
+         HudRenderer.Type var13 = coordPlan.type();
+         boolean var14 = alignsRight(hudElementState, f);
          float var15 = 20.0F * var8;
-         ArrayList var16 = new ArrayList(var3.rows().size());
+         ArrayList var16 = new ArrayList(coordPlan.rows().size());
          float var17 = var10;
 
-         for (int var18 = 0; var18 < var3.rows().size(); var18++) {
-            HudRenderer.CoordRow var19 = var3.rows().get(var18);
+         for (int var18 = 0; var18 < coordPlan.rows().size(); var18++) {
+            HudRenderer.CoordRow var19 = coordPlan.rows().get(var18);
             float var20 = smooth(var19.anim());
             float var21 = var15 * var20;
             float var22 = Math.round(var17);
@@ -1119,26 +1124,28 @@ public final class HudRenderer {
             }
          }
 
-         this.drawRows(var1, var16, hudSurface(var2), var9, var10, var11, var12, rowsRadius(var8), var8, var4);
+         this.drawRows(imDrawList, var16, hudSurface(hudElementState), var9, var10, var11, var12, rowsRadius(var8), var8, bl);
          float var36 = Math.min(coordIconSize(var8), var15 - 2.0F);
          float var37 = 2.5F * var8;
          float var38 = (float)Math.floor((var15 - var13.textPx()) * 0.5F);
 
          for (HudRenderer.Step var40 : var16) {
-            HudRenderer.CoordRow var42 = var3.rows().get(var40.item());
+            HudRenderer.CoordRow var42 = coordPlan.rows().get(var40.item());
             float var43 = var40.b() - var40.t();
             float var44 = (var15 - var43) * 0.5F;
             float var27 = var40.alpha() * var42.anim();
             boolean var41 = var43 < var15 - 0.5F;
             if (var41) {
-               var1.pushClipRect(var40.l(), var40.t(), var40.r(), var40.b(), true);
+               imDrawList.pushClipRect(var40.l(), var40.t(), var40.r(), var40.b(), true);
             }
 
             float var29 = Math.round(var40.l() + 7.0F * var8);
             float var30 = Math.round(var40.t() + (var15 - var36) * 0.5F - var44);
             ThemeImages.Texture var31 = GameIcons.block(var42.block());
             if (var31 != null) {
-               var1.addImageRounded(var31.id(), var29, var30, var29 + var36, var30 + var36, 0.0F, 0.0F, 1.0F, 1.0F, HudChrome.scaleAlpha(-1, var27), var37, 240);
+               imDrawList.addImageRounded(
+                  var31.id(), var29, var30, var29 + var36, var30 + var36, 0.0F, 0.0F, 1.0F, 1.0F, HudChrome.scaleAlpha(-1, var27), var37, 240
+               );
             }
 
             float var32 = var29 + var36 + 8.0F * var8;
@@ -1146,26 +1153,26 @@ public final class HudRenderer {
             int var34 = HudChrome.scaleAlpha(-1, var27 * (var42.here() ? 1.0F : 0.62F));
 
             for (int var35 = 0; var35 < 3; var35++) {
-               HudChrome.tabular(var1, var13.text(), var13.textPx(), var32, var33, var34, var42.values()[var35], true);
-               var32 += var3.slotW()[var35] + 12.0F * var8;
+               HudChrome.tabular(imDrawList, var13.text(), var13.textPx(), var32, var33, var34, var42.values()[var35], true);
+               var32 += coordPlan.slotW()[var35] + 12.0F * var8;
             }
 
             if (var41) {
-               var1.popClipRect();
+               imDrawList.popClipRect();
             }
          }
       }
    }
 
-   private static float rowWidth(float var0, float var1) {
-      return Math.round(12.0F * var1 + var0);
+   private static float rowWidth(float f, float g) {
+      return Math.round(12.0F * g + f);
    }
 
-   private HudRenderer.ListPlan planModuleList(HudLayoutStore.HudElementState var1, boolean var2, float var3) {
-      float var5 = scaleOf(var1);
+   private HudRenderer.ListPlan planModuleList(HudLayoutStore.HudElementState hudElementState, boolean bl, float f) {
+      float var5 = scaleOf(hudElementState);
       HudRenderer.Type var6 = HudRenderer.Type.of(var5);
       float var7 = 18.0F * var5;
-      List var8 = this.moduleRows.ordered(var6.text(), var6.textPx(), HudChrome::width, var1.anchorBottom);
+      List var8 = this.moduleRows.ordered(var6.text(), var6.textPx(), HudChrome::width, hudElementState.anchorBottom);
       float var9 = 0.0F;
       float var10 = 0.0F;
 
@@ -1176,44 +1183,49 @@ public final class HudRenderer {
       }
 
       if (var8.isEmpty()) {
-         this.moduleListW = var2 ? rowWidth(HudChrome.width(var6.label(), var6.labelPx(), "No active modules"), var5) : 0.0F;
+         this.moduleListW = bl ? rowWidth(HudChrome.width(var6.label(), var6.labelPx(), "No active modules"), var5) : 0.0F;
          return new HudRenderer.ListPlan(var8, var6, (float)Math.max(1, Math.round(this.moduleListW)), (float)Math.round(var7));
       } else {
-         if (var2) {
+         if (bl) {
             var10 = Math.max(var10, var7);
          }
 
          float var4;
          this.moduleListW = !((var4 = rowWidth(var9, var5)) >= this.moduleListW) && !(Math.abs(var4 - this.moduleListW) < 0.5F)
-            ? (this.moduleListW = this.moduleListW + (var4 - this.moduleListW) * (1.0F - (float)Math.exp(-16.0F * var3)))
+            ? (this.moduleListW = this.moduleListW + (var4 - this.moduleListW) * (1.0F - (float)Math.exp(-16.0F * f)))
             : var4;
          return new HudRenderer.ListPlan(var8, var6, (float)Math.round(this.moduleListW), (float)Math.max(1, Math.round(var10)));
       }
    }
 
    private void drawModuleList(
-      ImDrawList var1, HudLayoutStore.HudElementState var2, HudRenderer.ListPlan var3, boolean var4, HudRenderer.DrawTransform var5, float var6
+      ImDrawList imDrawList,
+      HudLayoutStore.HudElementState hudElementState,
+      HudRenderer.ListPlan listPlan,
+      boolean bl,
+      HudRenderer.DrawTransform drawTransform,
+      float f
    ) {
-      float var7 = var5.alpha();
+      float var7 = drawTransform.alpha();
       if (!(var7 <= 0.001F)) {
-         float var8 = scaleOf(var2);
-         float var9 = Math.round(var2.x + var5.xOffset());
-         float var10 = Math.round(var2.y + var5.yOffset());
-         float var11 = var2.width;
-         float var12 = var2.height;
-         HudRenderer.Type var13 = var3.type();
-         boolean var14 = alignsRight(var2, var6);
+         float var8 = scaleOf(hudElementState);
+         float var9 = Math.round(hudElementState.x + drawTransform.xOffset());
+         float var10 = Math.round(hudElementState.y + drawTransform.yOffset());
+         float var11 = hudElementState.width;
+         float var12 = hudElementState.height;
+         HudRenderer.Type var13 = listPlan.type();
+         boolean var14 = alignsRight(hudElementState, f);
          float var15 = 18.0F * var8;
-         ArrayList var16 = new ArrayList(Math.max(1, var3.rows().size()));
-         if (var3.rows().isEmpty()) {
+         ArrayList var16 = new ArrayList(Math.max(1, listPlan.rows().size()));
+         if (listPlan.rows().isEmpty()) {
             float var17 = rowWidth(HudChrome.width(var13.label(), var13.labelPx(), "No active modules"), var8);
             float var18 = var14 ? var9 + var11 - var17 : var9;
             var16.add(new HudRenderer.Step(-1, var18, var10, var18 + var17, (float)Math.round(var10 + var15), var7));
          } else {
             float var31 = var10;
 
-            for (int var33 = 0; var33 < var3.rows().size(); var33++) {
-               ModuleListRows.Row var19 = var3.rows().get(var33);
+            for (int var33 = 0; var33 < listPlan.rows().size(); var33++) {
+               ModuleListRows.Row var19 = listPlan.rows().get(var33);
                float var20 = smooth(var19.anim());
                float var21 = var15 * var20;
                float var22 = Math.round(var31);
@@ -1228,7 +1240,7 @@ public final class HudRenderer {
             }
          }
 
-         this.drawRows(var1, var16, hudSurface(var2), var9, var10, var11, var12, rowsRadius(var8), var8, var4);
+         this.drawRows(imDrawList, var16, hudSurface(hudElementState), var9, var10, var11, var12, rowsRadius(var8), var8, bl);
          float var32 = (float)Math.floor((var15 - var13.textPx()) * 0.5F);
          float var34 = 6.0F * var8;
 
@@ -1237,7 +1249,7 @@ public final class HudRenderer {
                float var38 = HudChrome.width(var13.label(), var13.labelPx(), "No active modules");
                float var40 = var14 ? var36.r() - var34 - var38 : var36.l() + var34;
                HudChrome.text(
-                  var1,
+                  imDrawList,
                   var13.label(),
                   var13.labelPx(),
                   var40,
@@ -1247,20 +1259,20 @@ public final class HudRenderer {
                   true
                );
             } else {
-               ModuleListRows.Row var39 = var3.rows().get(var36.item());
+               ModuleListRows.Row var39 = listPlan.rows().get(var36.item());
                float var41 = var36.b() - var36.t();
                float var42 = var14 ? var36.r() - var34 - var39.nameW() : var36.l() + var34;
                float var43 = var36.t() + var32 - (var15 - var41) * 0.5F;
                boolean var37 = var41 < var15 - 0.5F;
                if (var37) {
-                  var1.pushClipRect(var36.l(), var36.t(), var36.r(), var36.b(), true);
+                  imDrawList.pushClipRect(var36.l(), var36.t(), var36.r(), var36.b(), true);
                }
 
-               int var27 = var3.rows().size();
+               int var27 = listPlan.rows().size();
                float var28 = 1.0F - 0.6F * (var27 <= 1 ? 0.0F : (float)var36.item() / (var27 - 1));
                float var29 = Math.max(1.0F, (float)Math.round(2.0F * var8));
                float var30 = var14 ? var36.r() - var29 : var36.l();
-               var1.addRectFilled(
+               imDrawList.addRectFilled(
                   var30,
                   var36.t() + 2.0F * var8,
                   var30 + var29,
@@ -1269,7 +1281,7 @@ public final class HudRenderer {
                   var29 * 0.5F
                );
                HudChrome.text(
-                  var1,
+                  imDrawList,
                   var13.text(),
                   var13.textPx(),
                   Math.round(var42),
@@ -1279,55 +1291,55 @@ public final class HudRenderer {
                   true
                );
                if (var37) {
-                  var1.popClipRect();
+                  imDrawList.popClipRect();
                }
             }
          }
       }
    }
 
-   private float updateToastShift(MinecraftClient var1, HudLayoutStore.HudElementState var2, boolean var3, float var4) {
-      float var5 = !var3 && this.draggingId == null ? toastClearance(var1, var2) : 0.0F;
-      this.toastShift = !var3 && !(Math.abs(var5 - this.toastShift) < 0.5F)
-         ? (this.toastShift = this.toastShift + (var5 - this.toastShift) * (1.0F - (float)Math.exp(-12.0F * var4)))
+   private float updateToastShift(MinecraftClient minecraftClient, HudLayoutStore.HudElementState hudElementState, boolean bl, float f) {
+      float var5 = !bl && this.draggingId == null ? toastClearance(minecraftClient, hudElementState) : 0.0F;
+      this.toastShift = !bl && !(Math.abs(var5 - this.toastShift) < 0.5F)
+         ? (this.toastShift = this.toastShift + (var5 - this.toastShift) * (1.0F - (float)Math.exp(-12.0F * f)))
          : var5;
       return this.toastShift;
    }
 
-   private static float toastClearance(MinecraftClient var0, HudLayoutStore.HudElementState var1) {
-      if (var1.anchorX == 2 && !var1.anchorBottom && !var0.field_1690.field_1842) {
-         Window var2 = var0.method_22683();
-         int var3 = var2.method_4495();
-         int var4 = var2.method_4486();
+   private static float toastClearance(MinecraftClient minecraftClient, HudLayoutStore.HudElementState hudElementState) {
+      if (hudElementState.anchorX == 2 && !hudElementState.anchorBottom && !minecraftClient.options.hudHidden) {
+         Window var2 = minecraftClient.getWindow();
+         int var3 = var2.getScaleFactor();
+         int var4 = var2.getScaledWidth();
          float var5 = 0.0F;
 
-         for (Object var7 : ((AccessorHudToastManager)var0.method_1566()).efn$hudVisibleToasts()) {
+         for (Object var7 : ((AccessorHudToastManager)minecraftClient.getToastManager()).efn$hudVisibleToasts()) {
             AccessorHudToastInstance var8 = (AccessorHudToastInstance)var7;
             Toast var9 = var8.efn$hudToast();
-            float var10 = var8.efn$hudVisibility() == Visibility.field_2209 ? var8.efn$hudVisiblePortion() : 1.0F;
-            float var11 = var9.method_71809(var4, var10) * var3;
-            if (!(var11 >= var1.x + var1.width) && !(var11 + var9.method_29049() * var3 <= var1.x)) {
-               var5 = Math.max(var5, (var9.method_71808(var8.efn$hudFirstSlot()) + var9.method_29050()) * var3);
+            float var10 = var8.efn$hudVisibility() == Visibility.HIDE ? var8.efn$hudVisiblePortion() : 1.0F;
+            float var11 = var9.getXPos(var4, var10) * var3;
+            if (!(var11 >= hudElementState.x + hudElementState.width) && !(var11 + var9.getWidth() * var3 <= hudElementState.x)) {
+               var5 = Math.max(var5, (var9.getYPos(var8.efn$hudFirstSlot()) + var9.getHeight()) * var3);
             }
          }
 
-         return var5 <= 0.0F ? 0.0F : MathHelper.method_15363(var5 + 10.0F * ImGuiManager.getInstance().uiScale() - var1.y, 0.0F, var5);
+         return var5 <= 0.0F ? 0.0F : MathHelper.clamp(var5 + 10.0F * ImGuiManager.getInstance().uiScale() - hudElementState.y, 0.0F, var5);
       } else {
          return 0.0F;
       }
    }
 
-   private static float iconSize(float var0) {
-      return var0 >= 1.0F ? 18.0F * Math.max(1.0F, (float)Math.floor(var0 + 0.25F)) : Math.round(18.0F * var0);
+   private static float iconSize(float f) {
+      return f >= 1.0F ? 18.0F * Math.max(1.0F, (float)Math.floor(f + 0.25F)) : Math.round(18.0F * f);
    }
 
-   private HudRenderer.PotionPlan planPotions(HudLayoutStore.HudElementState var1, List<HudRenderer.PotionRow> var2, boolean var3, float var4) {
-      float var5 = scaleOf(var1);
+   private HudRenderer.PotionPlan planPotions(HudLayoutStore.HudElementState hudElementState, List<HudRenderer.PotionRow> list, boolean bl, float f) {
+      float var5 = scaleOf(hudElementState);
       HudRenderer.Type var6 = HudRenderer.Type.of(var5);
       float var7 = 22.0F * var5;
-      ArrayList var8 = new ArrayList(var2);
+      ArrayList var8 = new ArrayList(list);
       var8.sort(Comparator.comparingInt(HudRenderer.PotionRow::ticks).thenComparing(HudRenderer.PotionRow::name));
-      if (var1.anchorBottom) {
+      if (hudElementState.anchorBottom) {
          Collections.reverse(var8);
       }
 
@@ -1347,32 +1359,38 @@ public final class HudRenderer {
 
       if (var9.isEmpty()) {
          this.removeSlot("potions", var6.textPx());
-         float var18 = var3 ? 6.0F * var5 * 2.0F + HudChrome.width(var6.label(), var6.labelPx(), "No active effects") : 1.0F;
+         float var18 = bl ? 6.0F * var5 * 2.0F + HudChrome.width(var6.label(), var6.labelPx(), "No active effects") : 1.0F;
          return new HudRenderer.PotionPlan(var9, var6, (float)Math.round(var18), (float)Math.round(var7));
       } else {
-         float var17 = this.slot("potions", var6.textPx(), (float)Math.ceil(var10), var4);
+         float var17 = this.slot("potions", var6.textPx(), (float)Math.ceil(var10), f);
          return new HudRenderer.PotionPlan(var9, var6, (float)Math.round(var17), (float)Math.round(var7 * var9.size()));
       }
    }
 
-   private void drawPotions(ImDrawList var1, HudLayoutStore.HudElementState var2, HudRenderer.PotionPlan var3, boolean var4, HudRenderer.DrawTransform var5) {
-      float var6 = var5.alpha();
+   private void drawPotions(
+      ImDrawList imDrawList,
+      HudLayoutStore.HudElementState hudElementState,
+      HudRenderer.PotionPlan potionPlan,
+      boolean bl,
+      HudRenderer.DrawTransform drawTransform
+   ) {
+      float var6 = drawTransform.alpha();
       if (!(var6 <= 0.001F)) {
-         float var7 = scaleOf(var2);
-         float var8 = Math.round(var2.x + var5.xOffset());
-         float var9 = Math.round(var2.y + var5.yOffset());
-         float var10 = var2.width;
-         float var11 = var2.height;
-         HudRenderer.Type var12 = var3.type();
+         float var7 = scaleOf(hudElementState);
+         float var8 = Math.round(hudElementState.x + drawTransform.xOffset());
+         float var9 = Math.round(hudElementState.y + drawTransform.yOffset());
+         float var10 = hudElementState.width;
+         float var11 = hudElementState.height;
+         HudRenderer.Type var12 = potionPlan.type();
          float var13 = 22.0F * var7;
          float var14 = 6.0F * var7;
-         int var15 = Math.max(1, var3.lines().size());
+         int var15 = Math.max(1, potionPlan.lines().size());
          ArrayList var16 = new ArrayList(var15);
 
          for (int var17 = 0; var17 < var15; var17++) {
             var16.add(
                new HudRenderer.Step(
-                  var3.lines().isEmpty() ? -1 : var17,
+                  potionPlan.lines().isEmpty() ? -1 : var17,
                   var8,
                   (float)Math.round(var9 + var13 * var17),
                   var8 + var10,
@@ -1382,10 +1400,10 @@ public final class HudRenderer {
             );
          }
 
-         this.drawRows(var1, var16, hudSurface(var2), var8, var9, var10, var11, rowsRadius(var7), var7, var4);
-         if (var3.lines().isEmpty()) {
+         this.drawRows(imDrawList, var16, hudSurface(hudElementState), var8, var9, var10, var11, rowsRadius(var7), var7, bl);
+         if (potionPlan.lines().isEmpty()) {
             HudChrome.text(
-               var1,
+               imDrawList,
                var12.label(),
                var12.labelPx(),
                var8 + var14,
@@ -1399,7 +1417,7 @@ public final class HudRenderer {
             float var18 = (float)Math.floor((var13 - var12.textPx()) * 0.5F);
 
             for (HudRenderer.Step var20 : var16) {
-               HudRenderer.PotionLine var22 = var3.lines().get(var20.item());
+               HudRenderer.PotionLine var22 = potionPlan.lines().get(var20.item());
                HudRenderer.PotionRow var23 = var22.row();
                float var24 = Math.round(var20.l() + var14);
                float var25 = Math.round(var20.t() + (var13 - var31) * 0.5F);
@@ -1410,18 +1428,18 @@ public final class HudRenderer {
 
                ThemeImages.Texture var21;
                if ((var21 = GameIcons.effect(var23.effect())) != null) {
-                  var1.addImage(var21.id(), var24, var25, var24 + var31, var25 + var31, 0.0F, 0.0F, 1.0F, 1.0F, HudChrome.scaleAlpha(-1, var26));
+                  imDrawList.addImage(var21.id(), var24, var25, var24 + var31, var25 + var31, 0.0F, 0.0F, 1.0F, 1.0F, HudChrome.scaleAlpha(-1, var26));
                } else {
-                  int var27 = GuiPalette.abgr(0xFF000000 | ((StatusEffect)var23.effect().comp_349()).method_5556());
-                  var1.addCircleFilled(var24 + var31 * 0.5F, var25 + var31 * 0.5F, var31 * 0.3F, HudChrome.scaleAlpha(var27, var26), 16);
+                  int var27 = GuiPalette.abgr(0xFF000000 | var23.effect().value().getColor());
+                  imDrawList.addCircleFilled(var24 + var31 * 0.5F, var25 + var31 * 0.5F, var31 * 0.3F, HudChrome.scaleAlpha(var27, var26), 16);
                }
 
                float var32 = var20.t() + var18;
                float var28 = var24 + var31 + 6.0F * var7;
-               HudChrome.text(var1, var12.text(), var12.textPx(), var28, var32, HudChrome.scaleAlpha(-1, var6), var23.name(), true);
+               HudChrome.text(imDrawList, var12.text(), var12.textPx(), var28, var32, HudChrome.scaleAlpha(-1, var6), var23.name(), true);
                if (var22.ampW() > 0.0F) {
                   HudChrome.text(
-                     var1,
+                     imDrawList,
                      var12.text(),
                      var12.textPx(),
                      var28 + var22.nameW() + 4.0F * var7,
@@ -1434,18 +1452,18 @@ public final class HudRenderer {
 
                float var29 = var20.r() - var14 - var22.durationW();
                if (var23.infinite()) {
-                  HudChrome.text(var1, var12.text(), var12.textPx(), var29, var32, HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, var6), "\u221e", true);
+                  HudChrome.text(imDrawList, var12.text(), var12.textPx(), var29, var32, HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, var6), "\u221e", true);
                } else {
                   int var30 = var23.expiringSoon() ? HudChrome.WARN : HudChrome.TEXT_LABEL;
-                  HudChrome.tabular(var1, var12.text(), var12.textPx(), var29, var32, HudChrome.scaleAlpha(var30, var6), var23.duration(), true);
+                  HudChrome.tabular(imDrawList, var12.text(), var12.textPx(), var29, var32, HudChrome.scaleAlpha(var30, var6), var23.duration(), true);
                }
             }
          }
       }
    }
 
-   private HudRenderer.VanishPlan planVanish(HudLayoutStore.HudElementState var1, boolean var2, float var3) {
-      float var4 = scaleOf(var1);
+   private HudRenderer.VanishPlan planVanish(HudLayoutStore.HudElementState hudElementState, boolean bl, float f) {
+      float var4 = scaleOf(hudElementState);
       HudRenderer.Type var5 = HudRenderer.Type.of(var4);
       float var6 = 22.0F * var4;
       ArrayList var7 = new ArrayList();
@@ -1461,13 +1479,13 @@ public final class HudRenderer {
          );
       }
 
-      if (var1.anchorBottom) {
+      if (hudElementState.anchorBottom) {
          Collections.reverse(var7);
       }
 
       if (var7.isEmpty()) {
          this.removeSlot("vanish", var5.textPx());
-         float var14 = var2 ? 8.0F * var4 * 2.0F + HudChrome.width(var5.label(), var5.labelPx(), "No vanish alerts") : 1.0F;
+         float var14 = bl ? 8.0F * var4 * 2.0F + HudChrome.width(var5.label(), var5.labelPx(), "No vanish alerts") : 1.0F;
          return new HudRenderer.VanishPlan(var7, var5, 0.0F, (float)Math.round(var14), (float)Math.round(var6));
       } else {
          float var13 = 0.0F;
@@ -1479,29 +1497,35 @@ public final class HudRenderer {
          }
 
          float var17 = 8.0F * var4 * 2.0F + var13 + 8.0F * var4 + var15;
-         float var19 = this.slot("vanish", var5.textPx(), (float)Math.ceil(var17), var3);
+         float var19 = this.slot("vanish", var5.textPx(), (float)Math.ceil(var17), f);
          return new HudRenderer.VanishPlan(var7, var5, var13, (float)Math.round(var19), (float)Math.round(var6 * var7.size()));
       }
    }
 
-   private void drawVanish(ImDrawList var1, HudLayoutStore.HudElementState var2, HudRenderer.VanishPlan var3, boolean var4, HudRenderer.DrawTransform var5) {
-      float var6 = var5.alpha();
+   private void drawVanish(
+      ImDrawList imDrawList,
+      HudLayoutStore.HudElementState hudElementState,
+      HudRenderer.VanishPlan vanishPlan,
+      boolean bl,
+      HudRenderer.DrawTransform drawTransform
+   ) {
+      float var6 = drawTransform.alpha();
       if (!(var6 <= 0.001F)) {
-         float var7 = scaleOf(var2);
-         float var8 = Math.round(var2.x + var5.xOffset());
-         float var9 = Math.round(var2.y + var5.yOffset());
-         float var10 = var2.width;
-         float var11 = var2.height;
-         HudRenderer.Type var12 = var3.type();
+         float var7 = scaleOf(hudElementState);
+         float var8 = Math.round(hudElementState.x + drawTransform.xOffset());
+         float var9 = Math.round(hudElementState.y + drawTransform.yOffset());
+         float var10 = hudElementState.width;
+         float var11 = hudElementState.height;
+         HudRenderer.Type var12 = vanishPlan.type();
          float var13 = 22.0F * var7;
          float var14 = 8.0F * var7;
-         int var15 = Math.max(1, var3.lines().size());
+         int var15 = Math.max(1, vanishPlan.lines().size());
          ArrayList var16 = new ArrayList(var15);
 
          for (int var17 = 0; var17 < var15; var17++) {
             var16.add(
                new HudRenderer.Step(
-                  var3.lines().isEmpty() ? -1 : var17,
+                  vanishPlan.lines().isEmpty() ? -1 : var17,
                   var8,
                   (float)Math.round(var9 + var13 * var17),
                   var8 + var10,
@@ -1511,10 +1535,10 @@ public final class HudRenderer {
             );
          }
 
-         this.drawRows(var1, var16, hudSurface(var2), var8, var9, var10, var11, rowsRadius(var7), var7, var4);
-         if (var3.lines().isEmpty()) {
+         this.drawRows(imDrawList, var16, hudSurface(hudElementState), var8, var9, var10, var11, rowsRadius(var7), var7, bl);
+         if (vanishPlan.lines().isEmpty()) {
             HudChrome.text(
-               var1,
+               imDrawList,
                var12.label(),
                var12.labelPx(),
                var8 + var14,
@@ -1527,12 +1551,12 @@ public final class HudRenderer {
             float var24 = (float)Math.floor((var13 - var12.textPx()) * 0.5F);
 
             for (HudRenderer.Step var19 : var16) {
-               HudRenderer.VanishLine var20 = var3.lines().get(var19.item());
+               HudRenderer.VanishLine var20 = vanishPlan.lines().get(var19.item());
                float var21 = var19.t() + var24;
                float var22 = var21 + HudChrome.baselineOffset(var12.text(), var12.textPx(), var12.label(), var12.labelPx());
                float var23 = var19.l() + var14;
                HudChrome.text(
-                  var1,
+                  imDrawList,
                   var12.label(),
                   var12.labelPx(),
                   var23,
@@ -1542,15 +1566,22 @@ public final class HudRenderer {
                   true
                );
                HudChrome.text(
-                  var1, var12.text(), var12.textPx(), var23 + var3.tagColumn() + 8.0F * var7, var21, HudChrome.scaleAlpha(-1, var6), var20.value(), true
+                  imDrawList,
+                  var12.text(),
+                  var12.textPx(),
+                  var23 + vanishPlan.tagColumn() + 8.0F * var7,
+                  var21,
+                  HudChrome.scaleAlpha(-1, var6),
+                  var20.value(),
+                  true
                );
             }
          }
       }
    }
 
-   private HudRenderer.StaffPlan planStaff(HudLayoutStore.HudElementState var1, boolean var2, float var3) {
-      float var4 = scaleOf(var1);
+   private HudRenderer.StaffPlan planStaff(HudLayoutStore.HudElementState hudElementState, boolean bl, float f) {
+      float var4 = scaleOf(hudElementState);
       HudRenderer.Type var5 = HudRenderer.Type.of(var4);
       float var6 = 22.0F * var4;
       StaffListModule.HudList var7 = StaffListModule.hudRows();
@@ -1595,13 +1626,13 @@ public final class HudRenderer {
          var8.add(HudRenderer.StaffLine.plain(var19, 0, "", true, HudChrome.width(var5.label(), var5.labelPx(), var19), 0.0F));
       }
 
-      if (var1.anchorBottom) {
+      if (hudElementState.anchorBottom) {
          Collections.reverse(var8);
       }
 
       if (var8.isEmpty()) {
          this.removeSlot("staff", var5.textPx());
-         boolean var21 = var2 || StaffListModule.shouldShowHud();
+         boolean var21 = bl || StaffListModule.shouldShowHud();
          float var23 = var21 ? 8.0F * var4 * 2.0F + HudChrome.width(var5.label(), var5.labelPx(), "No staff online") : 1.0F;
          return new HudRenderer.StaffPlan(var8, var5, "", (float)Math.round(var23), (float)Math.round(var6));
       } else {
@@ -1617,35 +1648,48 @@ public final class HudRenderer {
 
          float var27 = faceSize(var4) + 6.0F * var4 + var24 + (var25 > 0.0F ? 14.0F * var4 + var25 : 0.0F);
          float var28 = 8.0F * var4 * 2.0F + Math.max(var22, var27);
-         float var29 = this.slot("staff", var5.textPx(), (float)Math.ceil(var28), var3);
+         float var29 = this.slot("staff", var5.textPx(), (float)Math.ceil(var28), f);
          return new HudRenderer.StaffPlan(var8, var5, var20, (float)Math.round(var29), (float)Math.round(20.0F * var4 + var6 * var8.size()));
       }
    }
 
-   private void drawStaff(ImDrawList var1, HudLayoutStore.HudElementState var2, HudRenderer.StaffPlan var3, boolean var4, HudRenderer.DrawTransform var5) {
-      float var7 = var5.alpha();
+   private void drawStaff(
+      ImDrawList imDrawList,
+      HudLayoutStore.HudElementState hudElementState,
+      HudRenderer.StaffPlan staffPlan,
+      boolean bl,
+      HudRenderer.DrawTransform drawTransform
+   ) {
+      float var7 = drawTransform.alpha();
       if (!(var7 <= 0.001F)) {
-         float var8 = scaleOf(var2);
-         float var9 = Math.round(var2.x + var5.xOffset());
-         float var10 = Math.round(var2.y + var5.yOffset());
-         float var11 = var2.width;
-         float var12 = var2.height;
-         HudRenderer.Type var13 = var3.type();
+         float var8 = scaleOf(hudElementState);
+         float var9 = Math.round(hudElementState.x + drawTransform.xOffset());
+         float var10 = Math.round(hudElementState.y + drawTransform.yOffset());
+         float var11 = hudElementState.width;
+         float var12 = hudElementState.height;
+         HudRenderer.Type var13 = staffPlan.type();
          float var14 = 22.0F * var8;
          float var15 = 8.0F * var8;
          float var16 = (float)Math.floor((var14 - var13.labelPx()) * 0.5F);
-         if (var3.lines().isEmpty()) {
+         if (staffPlan.lines().isEmpty()) {
             List var31 = List.of(new HudRenderer.Step(-1, var9, var10, var9 + var11, (float)Math.round(var10 + var14), var7));
-            this.drawRows(var1, var31, hudSurface(var2), var9, var10, var11, var12, rowsRadius(var8), var8, var4);
+            this.drawRows(imDrawList, var31, hudSurface(hudElementState), var9, var10, var11, var12, rowsRadius(var8), var8, bl);
             HudChrome.text(
-               var1, var13.label(), var13.labelPx(), var9 + var15, var10 + var16, HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, var7), "No staff online", true
+               imDrawList,
+               var13.label(),
+               var13.labelPx(),
+               var9 + var15,
+               var10 + var16,
+               HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, var7),
+               "No staff online",
+               true
             );
          } else {
             float var17 = 20.0F * var8;
-            ArrayList var18 = new ArrayList(var3.lines().size() + 1);
+            ArrayList var18 = new ArrayList(staffPlan.lines().size() + 1);
             var18.add(new HudRenderer.Step(-1, var9, var10, var9 + var11, (float)Math.round(var10 + var17), var7));
 
-            for (int var6 = 0; var6 < var3.lines().size(); var6++) {
+            for (int var6 = 0; var6 < staffPlan.lines().size(); var6++) {
                var18.add(
                   new HudRenderer.Step(
                      var6, var9, (float)Math.round(var10 + var17 + var14 * var6), var9 + var11, (float)Math.round(var10 + var17 + var14 * (var6 + 1)), var7
@@ -1653,11 +1697,11 @@ public final class HudRenderer {
                );
             }
 
-            this.drawRows(var1, var18, hudSurface(var2), var9, var10, var11, var12, rowsRadius(var8), var8, var4);
+            this.drawRows(imDrawList, var18, hudSurface(hudElementState), var9, var10, var11, var12, rowsRadius(var8), var8, bl);
 
             for (int var30 = 1; var30 < var18.size(); var30++) {
                HudRenderer.Step var19 = (HudRenderer.Step)var18.get(var30);
-               HudRenderer.StaffLine var20 = var3.lines().get(var19.item());
+               HudRenderer.StaffLine var20 = staffPlan.lines().get(var19.item());
                if (var20.server()) {
                   int var21 = convexCorners(
                      var19, (HudRenderer.Step)var18.get(var30 - 1), var30 < var18.size() - 1 ? (HudRenderer.Step)var18.get(var30 + 1) : null
@@ -1671,12 +1715,12 @@ public final class HudRenderer {
 
                   int var36 = HudChrome.scaleAlpha(HudChrome.WARN, var7 * var22);
                   if (var21 == 256) {
-                     var1.addRectFilled(var19.l(), var19.t(), var19.r(), var19.b(), var36);
+                     imDrawList.addRectFilled(var19.l(), var19.t(), var19.r(), var19.b(), var36);
                   } else {
-                     var1.addRectFilled(var19.l(), var19.t(), var19.r(), var19.b(), var36, rowsRadius(var8), var21);
+                     imDrawList.addRectFilled(var19.l(), var19.t(), var19.r(), var19.b(), var36, rowsRadius(var8), var21);
                   }
 
-                  var1.addRectFilled(
+                  imDrawList.addRectFilled(
                      var19.l() + 3.0F * var8,
                      var19.t() + 4.0F * var8,
                      var19.l() + 5.0F * var8,
@@ -1690,7 +1734,7 @@ public final class HudRenderer {
             HudRenderer.Step var32 = (HudRenderer.Step)var18.get(0);
             float var33 = var32.t() + (float)Math.floor((var32.b() - var32.t() - var13.textPx()) * 0.5F);
             HudChrome.text(
-               var1,
+               imDrawList,
                var13.label(),
                var13.labelPx(),
                var9 + var15,
@@ -1700,13 +1744,13 @@ public final class HudRenderer {
                true
             );
             HudChrome.tabular(
-               var1,
+               imDrawList,
                var13.text(),
                var13.textPx(),
                var9 + var15 + HudChrome.width(var13.label(), var13.labelPx(), "STAFF") + 5.0F * var8,
                var33,
                HudChrome.scaleAlpha(-1, var7),
-               var3.count(),
+               staffPlan.count(),
                true
             );
             float var34 = faceSize(var8);
@@ -1715,10 +1759,10 @@ public final class HudRenderer {
 
             for (int var38 = 1; var38 < var18.size(); var38++) {
                HudRenderer.Step var25 = (HudRenderer.Step)var18.get(var38);
-               HudRenderer.StaffLine var26 = var3.lines().get(var25.item());
+               HudRenderer.StaffLine var26 = staffPlan.lines().get(var25.item());
                if (var26.more()) {
                   HudChrome.text(
-                     var1,
+                     imDrawList,
                      var13.label(),
                      var13.labelPx(),
                      var25.l() + var37,
@@ -1730,17 +1774,23 @@ public final class HudRenderer {
                } else {
                   if (var26.face() != 0) {
                      drawFace(
-                        var1, var26.face(), Math.round(var25.l() + var15), Math.round(var25.t() + (var25.b() - var25.t() - var34) * 0.5F), var34, var8, var7
+                        imDrawList,
+                        var26.face(),
+                        Math.round(var25.l() + var15),
+                        Math.round(var25.t() + (var25.b() - var25.t() - var34) * 0.5F),
+                        var34,
+                        var8,
+                        var7
                      );
                   }
 
                   float var27 = var25.t() + var35;
                   float var28 = var27 + HudChrome.baselineOffset(var13.text(), var13.textPx(), var13.label(), var13.labelPx());
-                  HudChrome.text(var1, var13.text(), var13.textPx(), var25.l() + var37, var27, HudChrome.scaleAlpha(-1, var7), var26.name(), true);
+                  HudChrome.text(imDrawList, var13.text(), var13.textPx(), var25.l() + var37, var27, HudChrome.scaleAlpha(-1, var7), var26.name(), true);
                   if (var26.server()) {
                      if (!var26.note().isEmpty()) {
                         HudChrome.text(
-                           var1,
+                           imDrawList,
                            var13.label(),
                            var13.labelPx(),
                            var25.l() + var37 + var26.nameW() - var26.noteW(),
@@ -1752,9 +1802,9 @@ public final class HudRenderer {
                      }
 
                      float var29 = var25.r() - var15 - var26.stateW();
-                     HudChrome.text(var1, var13.label(), var13.labelPx(), var29, var28, HudChrome.scaleAlpha(HudChrome.WARN, var7), var26.state(), true);
+                     HudChrome.text(imDrawList, var13.label(), var13.labelPx(), var29, var28, HudChrome.scaleAlpha(HudChrome.WARN, var7), var26.state(), true);
                      HudChrome.tabular(
-                        var1,
+                        imDrawList,
                         var13.text(),
                         var13.textPx(),
                         var29 + var26.serverTagW() + 4.0F * var8,
@@ -1765,7 +1815,7 @@ public final class HudRenderer {
                      );
                   } else if (!var26.state().isEmpty()) {
                      HudChrome.text(
-                        var1,
+                        imDrawList,
                         var13.label(),
                         var13.labelPx(),
                         var25.r() - var15 - var26.stateW(),
@@ -1781,46 +1831,46 @@ public final class HudRenderer {
       }
    }
 
-   private static float faceSize(float var0) {
-      int var1 = Math.round(Math.round(16.0F * var0) / 8.0F) * 8;
-      if (var1 > 22.0F * var0 - 4.0F * var0) {
+   private static float faceSize(float f) {
+      int var1 = Math.round(Math.round(16.0F * f) / 8.0F) * 8;
+      if (var1 > 22.0F * f - 4.0F * f) {
          var1 -= 8;
       }
 
       return Math.max(8, var1);
    }
 
-   private static void drawFace(ImDrawList var0, int var1, float var2, float var3, float var4, float var5, float var6) {
-      float var7 = Math.max(1.0F, (float)Math.round(2.0F * var5));
-      int var8 = HudChrome.scaleAlpha(-1, var6);
-      var0.addImageRounded(var1, var2, var3, var2 + var4, var3 + var4, 0.125F, 0.125F, 0.25F, 0.25F, var8, var7, 240);
-      var0.addImageRounded(var1, var2, var3, var2 + var4, var3 + var4, 0.625F, 0.125F, 0.75F, 0.25F, var8, var7, 240);
-      var0.addRect(var2, var3, var2 + var4, var3 + var4, HudChrome.scaleAlpha(402653183, var6), var7, 0, 1.0F);
+   private static void drawFace(ImDrawList imDrawList, int i, float f, float g, float h, float j, float k) {
+      float var7 = Math.max(1.0F, (float)Math.round(2.0F * j));
+      int var8 = HudChrome.scaleAlpha(-1, k);
+      imDrawList.addImageRounded(i, f, g, f + h, g + h, 0.125F, 0.125F, 0.25F, 0.25F, var8, var7, 240);
+      imDrawList.addImageRounded(i, f, g, f + h, g + h, 0.625F, 0.125F, 0.75F, 0.25F, var8, var7, 240);
+      imDrawList.addRect(f, g, f + h, g + h, HudChrome.scaleAlpha(402653183, k), var7, 0, 1.0F);
    }
 
-   int staffFace(UUID var1, boolean var2) {
-      MinecraftClient var7 = MinecraftClient.method_1551();
-      ClientPlayNetworkHandler var8 = var7.method_1562();
-      PlayerListEntry var6 = var8 == null ? null : var8.method_2871(var1);
+   int staffFace(UUID uUID, boolean bl) {
+      MinecraftClient var7 = MinecraftClient.getInstance();
+      ClientPlayNetworkHandler var8 = var7.getNetworkHandler();
+      PlayerListEntry var6 = var8 == null ? null : var8.getPlayerListEntry(uUID);
       Identifier var5;
       if (var6 != null) {
-         var5 = var6.method_52810().comp_1626().comp_3627();
-         this.staffSkins.put(var1, var5);
-         if (var2) {
-            var5 = NameProtectModule.hiddenHead(var1, var6.method_52810()).comp_1626().comp_3627();
+         var5 = var6.getSkinTextures().body().texturePath();
+         this.staffSkins.put(uUID, var5);
+         if (bl) {
+            var5 = NameProtectModule.hiddenHead(uUID, var6.getSkinTextures()).body().texturePath();
          }
-      } else if (var2) {
-         var5 = NameProtectModule.hiddenHead(var1, DefaultSkinHelper.method_4648(var1)).comp_1626().comp_3627();
+      } else if (bl) {
+         var5 = NameProtectModule.hiddenHead(uUID, DefaultSkinHelper.getSkinTextures(uUID)).body().texturePath();
       } else {
-         var5 = this.staffSkins.get(var1);
+         var5 = this.staffSkins.get(uUID);
          if (var5 == null) {
-            var5 = DefaultSkinHelper.method_4648(var1).comp_1626().comp_3627();
+            var5 = DefaultSkinHelper.getSkinTextures(uUID).body().texturePath();
          }
       }
 
       GpuTexture var4;
       try {
-         var4 = var7.method_1531().method_4619(var5).method_68004();
+         var4 = var7.getTextureManager().getTexture(var5).getGlTexture();
       } catch (IllegalStateException var11) {
          return 0;
       }
@@ -1829,46 +1879,53 @@ public final class HudRenderer {
       if (var4 instanceof GlTexture && !(var3 = (GlTexture)var4).isClosed()) {
          if (this.nearestSkins.add(var4)) {
             int var10 = GL11.glGetInteger(32873);
-            GL11.glBindTexture(3553, var3.method_68427());
+            GL11.glBindTexture(3553, var3.getGlId());
             GL11.glTexParameteri(3553, 10241, 9728);
             GL11.glTexParameteri(3553, 10240, 9728);
             GL11.glBindTexture(3553, var10);
          }
 
-         return var3.method_68427();
+         return var3.getGlId();
       } else {
          return 0;
       }
    }
 
-   private float planRadar(HudLayoutStore.HudElementState var1, boolean var2) {
-      if (!var2 && !RadarModule.shouldShowHud()) {
+   private float planRadar(HudLayoutStore.HudElementState hudElementState, boolean bl) {
+      if (!bl && !RadarModule.shouldShowHud()) {
          return 1.0F;
       } else {
          float var3 = this.radarModule != null ? this.radarModule.size() : 150.0F;
-         return Math.max(2.0F, (float)Math.round(var3 * scaleOf(var1)));
+         return Math.max(2.0F, (float)Math.round(var3 * scaleOf(hudElementState)));
       }
    }
 
-   private void drawRadar(ImDrawList var1, HudLayoutStore.HudElementState var2, float var3, MinecraftClient var4, boolean var5, HudRenderer.DrawTransform var6) {
-      float var7 = var6.alpha();
-      if (!(var7 <= 0.001F) && !(var3 <= 1.0F)) {
-         float var8 = scaleOf(var2);
+   private void drawRadar(
+      ImDrawList imDrawList,
+      HudLayoutStore.HudElementState hudElementState,
+      float f,
+      MinecraftClient minecraftClient,
+      boolean bl,
+      HudRenderer.DrawTransform drawTransform
+   ) {
+      float var7 = drawTransform.alpha();
+      if (!(var7 <= 0.001F) && !(f <= 1.0F)) {
+         float var8 = scaleOf(hudElementState);
          HudRenderer.Type var9 = HudRenderer.Type.of(var8);
-         float var10 = Math.round(var2.x + var6.xOffset());
-         float var11 = Math.round(var2.y + var6.yOffset());
-         float var12 = var3 * 0.5F;
+         float var10 = Math.round(hudElementState.x + drawTransform.xOffset());
+         float var11 = Math.round(hudElementState.y + drawTransform.yOffset());
+         float var12 = f * 0.5F;
          float var13 = var10 + var12;
          float var14 = var11 + var12;
          int var15 = this.hudAccent();
-         Surface var16 = hudSurface(var2);
-         if (var5) {
-            drawDiscShadow(var1, var13, var14, var12, var8, var7);
+         Surface var16 = hudSurface(hudElementState);
+         if (bl) {
+            drawDiscShadow(imDrawList, var13, var14, var12, var8, var7);
          }
 
-         var1.addCircleFilled(var13, var14, var12, HudChrome.scaleAlpha(GuiPalette.fill(var16), var7), 0);
-         SurfaceBackground.drawDisc(var1, var16, var13, var14, var12, var7);
-         var1.addCircle(var13, var14, var12 - 0.5F, HudChrome.scaleAlpha(402653183, var7), 0, 1.0F);
+         imDrawList.addCircleFilled(var13, var14, var12, HudChrome.scaleAlpha(GuiPalette.fill(var16), var7), 0);
+         SurfaceBackground.drawDisc(imDrawList, var16, var13, var14, var12, var7);
+         imDrawList.addCircle(var13, var14, var12 - 0.5F, HudChrome.scaleAlpha(402653183, var7), 0, 1.0F);
          this.measureRadarLetters(var9.label(), var9.labelPx());
          float var17 = var12 - 10.0F * var8 - this.radarLetterHalf;
          float var18 = var17 - this.radarLetterHalf - 4.0F * var8;
@@ -1877,18 +1934,18 @@ public final class HudRenderer {
 
          for (float var24 : RADAR_RINGS) {
             if (var19 * var24 < var18) {
-               var1.addCircle(var13, var14, var19 * var24, var20, 0, 1.0F);
+               imDrawList.addCircle(var13, var14, var19 * var24, var20, 0, 1.0F);
             }
          }
 
          float var52 = (float)Math.floor(var13) + 0.5F;
          float var53 = (float)Math.floor(var14) + 0.5F;
-         var1.addLine(var52, var14 - var18, var52, var14 + var18, var20, 1.0F);
-         var1.addLine(var13 - var18, var53, var13 + var18, var53, var20, 1.0F);
-         ClientPlayerEntity var54 = var4.field_1724;
+         imDrawList.addLine(var52, var14 - var18, var52, var14 + var18, var20, 1.0F);
+         imDrawList.addLine(var13 - var18, var53, var13 + var18, var53, var20, 1.0F);
+         ClientPlayerEntity var54 = minecraftClient.player;
          boolean var55 = this.radarModule == null || this.radarModule.rotate();
-         float var25 = var4.method_61966().method_60637(false);
-         double var26 = var54 != null ? Math.toRadians(var54.method_5705(var25)) : 0.0;
+         float var25 = minecraftClient.getRenderTickCounter().getTickProgress(false);
+         double var26 = var54 != null ? Math.toRadians(var54.getYaw(var25)) : 0.0;
          float var28 = (float)Math.sin(var26);
          float var29 = (float)Math.cos(var26);
 
@@ -1899,7 +1956,7 @@ public final class HudRenderer {
             float var34 = var55 ? var31 * var28 - var32 * var29 : var32;
             int var35 = var30 == 0 ? var15 : HudChrome.TEXT_LABEL;
             HudChrome.text(
-               var1,
+               imDrawList,
                var9.label(),
                var9.labelPx(),
                Math.round(var13 + var33 * var17 - this.radarLetterW[var30] * 0.5F),
@@ -1910,45 +1967,45 @@ public final class HudRenderer {
             );
          }
 
-         if (this.radarModule != null && var54 != null && var4.field_1687 != null) {
+         if (this.radarModule != null && var54 != null && minecraftClient.world != null) {
             float var56 = Math.max(1.0F, this.radarModule.range());
             double var58 = (double)var56 * var56;
             float var61 = var19 / var56;
-            double var63 = MathHelper.method_16436(var25, var54.field_6014, var54.method_23317());
-            double var36 = MathHelper.method_16436(var25, var54.field_5969, var54.method_23321());
+            double var63 = MathHelper.lerp((double)var25, var54.lastX, var54.getX());
+            double var36 = MathHelper.lerp((double)var25, var54.lastZ, var54.getZ());
             float var38 = 3.2F * var8;
             float var39 = Math.max(1.0F, 0.75F * var8);
             int var40 = HudChrome.scaleAlpha(-1946157056, var7);
             int var41 = HudChrome.scaleAlpha(GuiPalette.abgr(this.radarModule.dotColor()), var7);
 
-            for (AbstractClientPlayerEntity var43 : var4.field_1687.method_18456()) {
+            for (AbstractClientPlayerEntity var43 : minecraftClient.world.getPlayers()) {
                double var44;
                double var46;
                if (var43 != var54
                   && this.radarModule.shows(var43)
                   && !(
-                     (var46 = MathHelper.method_16436(var25, var43.field_6014, var43.method_23317()) - var63) * var46
-                           + (var44 = MathHelper.method_16436(var25, var43.field_5969, var43.method_23321()) - var36) * var44
+                     (var46 = MathHelper.lerp((double)var25, var43.lastX, var43.getX()) - var63) * var46
+                           + (var44 = MathHelper.lerp((double)var25, var43.lastZ, var43.getZ()) - var36) * var44
                         > var58
                   )) {
                   float var48 = var55 ? (float)(-var46 * var29 - var44 * var28) : (float)var46;
                   float var49 = var55 ? (float)(var46 * var28 - var44 * var29) : (float)var44;
                   float var50 = var13 + var48 * var61;
                   float var51 = var14 + var49 * var61;
-                  var1.addCircleFilled(var50, var51, var38 + var39, var40, 12);
-                  var1.addCircleFilled(var50, var51, var38, var41, 12);
+                  imDrawList.addCircleFilled(var50, var51, var38 + var39, var40, 12);
+                  imDrawList.addCircleFilled(var50, var51, var38, var41, 12);
                }
             }
          }
 
-         var1.addCircleFilled(var13, var14, 6.0F * var8, HudChrome.scaleAlpha(var15, var7 * 0.25F), 0);
-         var1.addCircleFilled(var13, var14, 3.0F * var8, HudChrome.scaleAlpha(var15, var7), 0);
+         imDrawList.addCircleFilled(var13, var14, 6.0F * var8, HudChrome.scaleAlpha(var15, var7 * 0.25F), 0);
+         imDrawList.addCircleFilled(var13, var14, 3.0F * var8, HudChrome.scaleAlpha(var15, var7), 0);
          float var57 = var55 ? 0.0F : -var28;
          float var59 = var55 ? -1.0F : var29;
          float var60 = var12 - 1.0F - 1.5F * var8;
          float var62 = var60 - 5.0F * var8;
          float var64 = 3.5F * var8;
-         var1.addTriangleFilled(
+         imDrawList.addTriangleFilled(
             var13 + var57 * var60,
             var14 + var59 * var60,
             var13 + var57 * var62 - var59 * var64,
@@ -1960,57 +2017,57 @@ public final class HudRenderer {
       }
    }
 
-   private static void drawDiscShadow(ImDrawList var0, float var1, float var2, float var3, float var4, float var5) {
-      float var6 = Math.max(1.0F, var4);
-      int var7 = HudChrome.scaleAlpha(218103808, var5);
+   private static void drawDiscShadow(ImDrawList imDrawList, float f, float g, float h, float i, float j) {
+      float var6 = Math.max(1.0F, i);
+      int var7 = HudChrome.scaleAlpha(218103808, j);
 
       for (int var8 = 3; var8 >= 1; var8--) {
-         var0.addCircleFilled(var1, var2 + var6 * 0.5F, var3 + (var8 + 0.5F) * var6, var7, 0);
+         imDrawList.addCircleFilled(f, g + var6 * 0.5F, h + (var8 + 0.5F) * var6, var7, 0);
       }
    }
 
-   private void measureRadarLetters(ImFont var1, int var2) {
-      if (var1 != this.radarLetterFont || var2 != this.radarLetterPx) {
-         this.radarLetterFont = var1;
-         this.radarLetterPx = var2;
+   private void measureRadarLetters(ImFont imFont, int i) {
+      if (imFont != this.radarLetterFont || i != this.radarLetterPx) {
+         this.radarLetterFont = imFont;
+         this.radarLetterPx = i;
 
          for (int var3 = 0; var3 < RADAR_LETTERS.length; var3++) {
-            this.radarLetterW[var3] = HudChrome.width(var1, var2, RADAR_LETTERS[var3]);
+            this.radarLetterW[var3] = HudChrome.width(imFont, i, RADAR_LETTERS[var3]);
          }
 
-         float var5 = this.capTop(var1, var2);
-         float var4 = HudChrome.ascent(var1, var2);
+         float var5 = this.capTop(imFont, i);
+         float var4 = HudChrome.ascent(imFont, i);
          this.radarLetterMid = (var5 + var4) * 0.5F;
          this.radarLetterHalf = (var4 - var5) * 0.5F;
       }
    }
 
-   private HudRenderer.HotkeyPlan planHotkeys(HudLayoutStore.HudElementState var1, boolean var2, float var3) {
-      float var5 = scaleOf(var1);
+   private HudRenderer.HotkeyPlan planHotkeys(HudLayoutStore.HudElementState hudElementState, boolean bl, float f) {
+      float var5 = scaleOf(hudElementState);
       HudRenderer.Type var6 = HudRenderer.Type.of(var5);
       float var7 = 22.0F * var5;
-      List var4 = !var2 && !HotkeysModule.shouldShowHud() ? List.of() : this.hotkeyLinesFor(var6);
+      List var4 = !bl && !HotkeysModule.shouldShowHud() ? List.of() : this.hotkeyLinesFor(var6);
       if (var4.isEmpty()) {
          this.removeSlot("hotkeys", var6.textPx());
-         float var11 = var2 ? 8.0F * var5 * 2.0F + HudChrome.width(var6.label(), var6.labelPx(), "No keys bound") : 1.0F;
+         float var11 = bl ? 8.0F * var5 * 2.0F + HudChrome.width(var6.label(), var6.labelPx(), "No keys bound") : 1.0F;
          return new HudRenderer.HotkeyPlan(var4, var6, (float)Math.round(var11), (float)Math.round(var7));
       } else {
          float var8 = this.hotkeyNameColumn + 16.0F * var5 + keycapWidth(this.hotkeyKeyColumn, var5);
          float var9 = 8.0F * var5 * 2.0F + Math.max(this.hotkeyHeaderW, var8);
-         float var10 = this.slot("hotkeys", var6.textPx(), (float)Math.ceil(var9), var3);
+         float var10 = this.slot("hotkeys", var6.textPx(), (float)Math.ceil(var9), f);
          return new HudRenderer.HotkeyPlan(var4, var6, (float)Math.round(var10), (float)Math.round(20.0F * var5 + var7 * var4.size()));
       }
    }
 
-   private List<HudRenderer.HotkeyLine> hotkeyLinesFor(HudRenderer.Type var1) {
+   private List<HudRenderer.HotkeyLine> hotkeyLinesFor(HudRenderer.Type type) {
       long var2 = ModuleRevision.current();
-      if (var2 == this.hotkeyRevision && var1.text() == this.hotkeyFont && var1.textPx() == this.hotkeyTextPx && var1.labelPx() == this.hotkeyKeyPx) {
+      if (var2 == this.hotkeyRevision && type.text() == this.hotkeyFont && type.textPx() == this.hotkeyTextPx && type.labelPx() == this.hotkeyKeyPx) {
          return this.hotkeyLines;
       } else {
          this.hotkeyRevision = var2;
-         this.hotkeyFont = var1.text();
-         this.hotkeyTextPx = var1.textPx();
-         this.hotkeyKeyPx = var1.labelPx();
+         this.hotkeyFont = type.text();
+         this.hotkeyTextPx = type.textPx();
+         this.hotkeyKeyPx = type.labelPx();
          ArrayList var4 = new ArrayList();
          float var5 = 0.0F;
          float var6 = 0.0F;
@@ -2019,8 +2076,8 @@ public final class HudRenderer {
             int var9 = var8.keybind();
             if (var9 != -1) {
                String var10 = ClickGuiRenderer.keyName(var9).toUpperCase(Locale.ROOT);
-               float var11 = HudChrome.width(var1.text(), var1.textPx(), var8.name());
-               float var12 = HudChrome.width(var1.text(), var1.labelPx(), var10);
+               float var11 = HudChrome.width(type.text(), type.textPx(), var8.name());
+               float var12 = HudChrome.width(type.text(), type.labelPx(), var10);
                var4.add(new HudRenderer.HotkeyLine(var8.name(), var10, var8.isEnabled(), var11, var12));
                var5 = Math.max(var5, var11);
                var6 = Math.max(var6, var12);
@@ -2029,29 +2086,35 @@ public final class HudRenderer {
 
          this.hotkeyNameColumn = var5;
          this.hotkeyKeyColumn = var6;
-         this.hotkeyHeaderW = HudChrome.width(var1.label(), var1.labelPx(), "HOTKEYS");
-         this.hotkeyCapMid = (this.capTop(var1.text(), var1.labelPx()) + HudChrome.ascent(var1.text(), var1.labelPx())) * 0.5F;
+         this.hotkeyHeaderW = HudChrome.width(type.label(), type.labelPx(), "HOTKEYS");
+         this.hotkeyCapMid = (this.capTop(type.text(), type.labelPx()) + HudChrome.ascent(type.text(), type.labelPx())) * 0.5F;
          this.hotkeyLines = List.copyOf(var4);
          return this.hotkeyLines;
       }
    }
 
-   private void drawHotkeys(ImDrawList var1, HudLayoutStore.HudElementState var2, HudRenderer.HotkeyPlan var3, boolean var4, HudRenderer.DrawTransform var5) {
-      float var6 = var5.alpha();
+   private void drawHotkeys(
+      ImDrawList imDrawList,
+      HudLayoutStore.HudElementState hudElementState,
+      HudRenderer.HotkeyPlan hotkeyPlan,
+      boolean bl,
+      HudRenderer.DrawTransform drawTransform
+   ) {
+      float var6 = drawTransform.alpha();
       if (!(var6 <= 0.001F)) {
-         float var7 = scaleOf(var2);
-         float var8 = Math.round(var2.x + var5.xOffset());
-         float var9 = Math.round(var2.y + var5.yOffset());
-         float var10 = var2.width;
-         float var11 = var2.height;
-         HudRenderer.Type var12 = var3.type();
+         float var7 = scaleOf(hudElementState);
+         float var8 = Math.round(hudElementState.x + drawTransform.xOffset());
+         float var9 = Math.round(hudElementState.y + drawTransform.yOffset());
+         float var10 = hudElementState.width;
+         float var11 = hudElementState.height;
+         HudRenderer.Type var12 = hotkeyPlan.type();
          float var13 = 22.0F * var7;
          float var14 = 8.0F * var7;
-         if (var3.lines().isEmpty()) {
+         if (hotkeyPlan.lines().isEmpty()) {
             List var25 = List.of(new HudRenderer.Step(-1, var8, var9, var8 + var10, (float)Math.round(var9 + var13), var6));
-            this.drawRows(var1, var25, hudSurface(var2), var8, var9, var10, var11, rowsRadius(var7), var7, var4);
+            this.drawRows(imDrawList, var25, hudSurface(hudElementState), var8, var9, var10, var11, rowsRadius(var7), var7, bl);
             HudChrome.text(
-               var1,
+               imDrawList,
                var12.label(),
                var12.labelPx(),
                var8 + var14,
@@ -2062,10 +2125,10 @@ public final class HudRenderer {
             );
          } else {
             float var15 = 20.0F * var7;
-            ArrayList var16 = new ArrayList(var3.lines().size() + 1);
+            ArrayList var16 = new ArrayList(hotkeyPlan.lines().size() + 1);
             var16.add(new HudRenderer.Step(-1, var8, var9, var8 + var10, (float)Math.round(var9 + var15), var6));
 
-            for (int var17 = 0; var17 < var3.lines().size(); var17++) {
+            for (int var17 = 0; var17 < hotkeyPlan.lines().size(); var17++) {
                var16.add(
                   new HudRenderer.Step(
                      var17, var8, (float)Math.round(var9 + var15 + var13 * var17), var8 + var10, (float)Math.round(var9 + var15 + var13 * (var17 + 1)), var6
@@ -2073,19 +2136,19 @@ public final class HudRenderer {
                );
             }
 
-            this.drawRows(var1, var16, hudSurface(var2), var8, var9, var10, var11, rowsRadius(var7), var7, var4);
+            this.drawRows(imDrawList, var16, hudSurface(hudElementState), var8, var9, var10, var11, rowsRadius(var7), var7, bl);
             HudRenderer.Step var26 = (HudRenderer.Step)var16.get(0);
             float var18 = var26.t() + (float)Math.floor((var26.b() - var26.t() - var12.textPx()) * 0.5F);
             float var19 = var18 + HudChrome.baselineOffset(var12.text(), var12.textPx(), var12.label(), var12.labelPx());
-            HudChrome.text(var1, var12.label(), var12.labelPx(), var8 + var14, var19, HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, var6), "HOTKEYS", true);
+            HudChrome.text(imDrawList, var12.label(), var12.labelPx(), var8 + var14, var19, HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, var6), "HOTKEYS", true);
             float var20 = keycapWidth(this.hotkeyKeyColumn, var7);
             float var21 = (float)Math.floor((var13 - var12.textPx()) * 0.5F);
 
             for (int var22 = 1; var22 < var16.size(); var22++) {
                HudRenderer.Step var23 = (HudRenderer.Step)var16.get(var22);
-               HudRenderer.HotkeyLine var24 = var3.lines().get(var23.item());
+               HudRenderer.HotkeyLine var24 = hotkeyPlan.lines().get(var23.item());
                HudChrome.text(
-                  var1,
+                  imDrawList,
                   var12.text(),
                   var12.textPx(),
                   var23.l() + var14,
@@ -2094,43 +2157,43 @@ public final class HudRenderer {
                   var24.name(),
                   true
                );
-               this.drawKeycap(var1, var12, var24, var23.r() - var14, (var23.t() + var23.b()) * 0.5F, var20, var7, var6);
+               this.drawKeycap(imDrawList, var12, var24, var23.r() - var14, (var23.t() + var23.b()) * 0.5F, var20, var7, var6);
             }
          }
       }
    }
 
-   private void drawKeycap(ImDrawList var1, HudRenderer.Type var2, HudRenderer.HotkeyLine var3, float var4, float var5, float var6, float var7, float var8) {
-      float var9 = keycapHeight(var7);
-      float var10 = Math.round(var4 - var6);
-      float var11 = Math.round(var5 - var9 * 0.5F);
-      float var12 = Math.min(hudRounding(), 4.0F) * var7;
-      var1.addRectFilled(var10, var11, var10 + var6, var11 + var9, HudChrome.scaleAlpha(452984831, var8), var12);
-      var1.addRect(var10, var11, var10 + var6, var11 + var9, HudChrome.scaleAlpha(402653183, var8), var12, 0, 1.0F);
+   private void drawKeycap(ImDrawList imDrawList, HudRenderer.Type type, HudRenderer.HotkeyLine hotkeyLine, float f, float g, float h, float i, float j) {
+      float var9 = keycapHeight(i);
+      float var10 = Math.round(f - h);
+      float var11 = Math.round(g - var9 * 0.5F);
+      float var12 = Math.min(hudRounding(), 4.0F) * i;
+      imDrawList.addRectFilled(var10, var11, var10 + h, var11 + var9, HudChrome.scaleAlpha(452984831, j), var12);
+      imDrawList.addRect(var10, var11, var10 + h, var11 + var9, HudChrome.scaleAlpha(402653183, j), var12, 0, 1.0F);
       HudChrome.text(
-         var1,
-         var2.text(),
-         var2.labelPx(),
-         Math.round(var10 + (var6 - var3.keyW()) * 0.5F),
+         imDrawList,
+         type.text(),
+         type.labelPx(),
+         Math.round(var10 + (h - hotkeyLine.keyW()) * 0.5F),
          Math.round(var11 + var9 * 0.5F - this.hotkeyCapMid),
-         HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, var8),
-         var3.key(),
+         HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, j),
+         hotkeyLine.key(),
          true
       );
    }
 
-   private static float keycapHeight(float var0) {
-      return Math.round(16.0F * var0);
+   private static float keycapHeight(float f) {
+      return Math.round(16.0F * f);
    }
 
-   private static float keycapWidth(float var0, float var1) {
-      return Math.max(keycapHeight(var1), (float)Math.ceil(var0 + 5.0F * var1 * 2.0F));
+   private static float keycapWidth(float f, float g) {
+      return Math.max(keycapHeight(g), (float)Math.ceil(f + 5.0F * g * 2.0F));
    }
 
-   private HudRenderer.SpotifyPlan planSpotify(HudLayoutStore.HudElementState var1, boolean var2, float var3) {
-      float var5 = scaleOf(var1);
+   private HudRenderer.SpotifyPlan planSpotify(HudLayoutStore.HudElementState hudElementState, boolean bl, float f) {
+      float var5 = scaleOf(hudElementState);
       HudRenderer.Type var6 = HudRenderer.Type.of(var5);
-      if (!var2 && !SpotifyHudModule.shouldShowHud()) {
+      if (!bl && !SpotifyHudModule.shouldShowHud()) {
          this.removeSlot("spotify", var6.textPx());
          this.releaseSpotifyArt();
          this.lyricBlockH = 0.0F;
@@ -2156,31 +2219,33 @@ public final class HudRenderer {
          SpotifyHudModule var8 = SpotifyHudModule.active();
          NowPlaying var9 = var8 != null ? var8.nowPlaying() : NowPlaying.WAITING;
          boolean var10 = var9.active() && var9.hasTrack();
-         boolean var4 = var2 || var1.visible;
+         boolean var4 = bl || hudElementState.visible;
          if (var10 && var9.source() == NowPlaying.Source.SESSION) {
-            return this.planSpotifyCard(var7, var9, false, var4, var6, var5, var2, var3);
-         } else if (var2 && !var10) {
-            return this.planSpotifyCard(var7, SAMPLE_TRACK, true, true, var6, var5, true, var3);
+            return this.planSpotifyCard(var7, var9, false, var4, var6, var5, bl, f);
+         } else if (bl && !var10) {
+            return this.planSpotifyCard(var7, SAMPLE_TRACK, true, true, var6, var5, true, f);
          } else {
             this.releaseSpotifyArt();
             this.lyricBlockH = 0.0F;
-            return this.planSpotifyCompact(var7, var9, var6, var5, var2, var3);
+            return this.planSpotifyCompact(var7, var9, var6, var5, bl, f);
          }
       }
    }
 
-   private HudRenderer.SpotifyPlan planSpotifyCompact(SpotifyHudModule var1, NowPlaying var2, HudRenderer.Type var3, float var4, boolean var5, float var6) {
-      boolean var8 = var1 == null || var1.showArtist();
+   private HudRenderer.SpotifyPlan planSpotifyCompact(
+      SpotifyHudModule spotifyHudModule, NowPlaying nowPlaying, HudRenderer.Type type, float f, boolean bl, float g
+   ) {
+      boolean var8 = spotifyHudModule == null || spotifyHudModule.showArtist();
       String var9 = "";
       HudRenderer.SpotifyGlyph var10 = HudRenderer.SpotifyGlyph.NONE;
       boolean var11 = false;
       String var7;
-      switch (var2.status()) {
+      switch (nowPlaying.status()) {
          case PLAYING:
          case PAUSED:
-            var10 = var2.playing() ? HudRenderer.SpotifyGlyph.PLAYING : HudRenderer.SpotifyGlyph.PAUSED;
-            this.foldTrack(var2, var3.text());
-            var7 = var2.hasTrack() ? this.spotifyTitle : "Not playing";
+            var10 = nowPlaying.playing() ? HudRenderer.SpotifyGlyph.PLAYING : HudRenderer.SpotifyGlyph.PAUSED;
+            this.foldTrack(nowPlaying, type.text());
+            var7 = nowPlaying.hasTrack() ? this.spotifyTitle : "Not playing";
             if (var8) {
                var9 = this.spotifyArtist;
             }
@@ -2198,22 +2263,22 @@ public final class HudRenderer {
             var11 = true;
       }
 
-      ImFont var12 = var11 ? var3.label() : var3.text();
-      int var13 = var11 ? var3.labelPx() : var3.textPx();
+      ImFont var12 = var11 ? type.label() : type.text();
+      int var13 = var11 ? type.labelPx() : type.textPx();
       float var14 = HudChrome.width(var12, var13, var7);
-      float var15 = var9.isEmpty() ? 0.0F : HudChrome.width(var3.label(), var3.labelPx(), var9);
-      float var16 = var10 == HudRenderer.SpotifyGlyph.NONE ? 0.0F : 20.0F * var4;
-      float var17 = 12.0F * var4 * 2.0F + var16;
-      float var18 = Math.max(40.0F * var4, (var1 != null ? var1.cardWidth() : 320.0F) * var4 - var17);
+      float var15 = var9.isEmpty() ? 0.0F : HudChrome.width(type.label(), type.labelPx(), var9);
+      float var16 = var10 == HudRenderer.SpotifyGlyph.NONE ? 0.0F : 20.0F * f;
+      float var17 = 12.0F * f * 2.0F + var16;
+      float var18 = Math.max(40.0F * f, (spotifyHudModule != null ? spotifyHudModule.cardWidth() : 320.0F) * f - var17);
       float var19 = Math.min(Math.max(var14, var15), var18);
-      float var20 = this.slot("spotify", var3.textPx(), (float)Math.ceil(var17 + var19), var6);
-      float var21 = var9.isEmpty() ? 28.0F * var4 : 8.0F * var4 * 2.0F + var3.textPx() + 2.0F * var4 + var3.labelPx();
+      float var20 = this.slot("spotify", type.textPx(), (float)Math.ceil(var17 + var19), g);
+      float var21 = var9.isEmpty() ? 28.0F * f : 8.0F * f * 2.0F + type.textPx() + 2.0F * f + type.labelPx();
       float var22 = Math.max(1.0F, var20 - var17);
-      boolean var23 = var1 == null || var1.scrollTitles();
-      float var24 = 40.0F * var4;
-      float[] var25 = this.marquee(var7, var9, var14, var15, var22, var23, var2.playing() || var5, var24, var4, var6);
+      boolean var23 = spotifyHudModule == null || spotifyHudModule.scrollTitles();
+      float var24 = 40.0F * f;
+      float[] var25 = this.marquee(var7, var9, var14, var15, var22, var23, nowPlaying.playing() || bl, var24, f, g);
       return new HudRenderer.SpotifyPlan(
-         var3,
+         type,
          var11 ? HudRenderer.SpotifyLook.IDLE : HudRenderer.SpotifyLook.COMPACT,
          var10,
          var7,
@@ -2225,174 +2290,178 @@ public final class HudRenderer {
          var24,
          var23,
          null,
-         HudRenderer.SpotifyColors.of(var1),
+         HudRenderer.SpotifyColors.of(spotifyHudModule),
          (float)Math.round(var20),
          (float)Math.round(var21)
       );
    }
 
-   private void drawSpotify(ImDrawList var1, HudLayoutStore.HudElementState var2, HudRenderer.SpotifyPlan var3, boolean var4, HudRenderer.DrawTransform var5) {
-      float var6 = var5.alpha();
-      if (!(var6 <= 0.001F) && var3.look() != HudRenderer.SpotifyLook.HIDDEN) {
-         float var7 = scaleOf(var2);
-         float var8 = Math.round(var2.x + var5.xOffset());
-         float var9 = Math.round(var2.y + var5.yOffset());
-         float var10 = var2.width;
-         float var11 = var2.height;
-         Surface var12 = hudSurface(var2);
+   private void drawSpotify(
+      ImDrawList imDrawList,
+      HudLayoutStore.HudElementState hudElementState,
+      HudRenderer.SpotifyPlan spotifyPlan,
+      boolean bl,
+      HudRenderer.DrawTransform drawTransform
+   ) {
+      float var6 = drawTransform.alpha();
+      if (!(var6 <= 0.001F) && spotifyPlan.look() != HudRenderer.SpotifyLook.HIDDEN) {
+         float var7 = scaleOf(hudElementState);
+         float var8 = Math.round(hudElementState.x + drawTransform.xOffset());
+         float var9 = Math.round(hudElementState.y + drawTransform.yOffset());
+         float var10 = hudElementState.width;
+         float var11 = hudElementState.height;
+         Surface var12 = hudSurface(hudElementState);
          boolean var13 = HudChrome.needsTextGuard(var12);
-         HudChrome.card(var1, var12, var8, var9, var10, var11, hudRounding() * var7, var6, var4, var7);
-         if (var3.look() == HudRenderer.SpotifyLook.CARD) {
-            this.drawSpotifyCard(var1, var3, var8, var9, var10, var11, var7, var6, var13);
+         HudChrome.card(imDrawList, var12, var8, var9, var10, var11, hudRounding() * var7, var6, bl, var7);
+         if (spotifyPlan.look() == HudRenderer.SpotifyLook.CARD) {
+            this.drawSpotifyCard(imDrawList, spotifyPlan, var8, var9, var10, var11, var7, var6, var13);
          } else {
-            this.drawSpotifyCompact(var1, var3, var8, var9, var10, var11, var7, var6, var13);
+            this.drawSpotifyCompact(imDrawList, spotifyPlan, var8, var9, var10, var11, var7, var6, var13);
          }
       }
    }
 
-   private void drawSpotifyCompact(
-      ImDrawList var1, HudRenderer.SpotifyPlan var2, float var3, float var4, float var5, float var6, float var7, float var8, boolean var9
-   ) {
-      HudRenderer.Type var10 = var2.type();
-      float var11 = var3 + 12.0F * var7;
-      if (var2.glyph() != HudRenderer.SpotifyGlyph.NONE) {
-         this.drawPlayState(var1, var11, var4 + var6 * 0.5F, 10.0F * var7, var2.glyph() == HudRenderer.SpotifyGlyph.PLAYING, var8);
-         var11 += 20.0F * var7;
+   private void drawSpotifyCompact(ImDrawList imDrawList, HudRenderer.SpotifyPlan spotifyPlan, float f, float g, float h, float i, float j, float k, boolean bl) {
+      HudRenderer.Type var10 = spotifyPlan.type();
+      float var11 = f + 12.0F * j;
+      if (spotifyPlan.glyph() != HudRenderer.SpotifyGlyph.NONE) {
+         this.drawPlayState(imDrawList, var11, g + i * 0.5F, 10.0F * j, spotifyPlan.glyph() == HudRenderer.SpotifyGlyph.PLAYING, k);
+         var11 += 20.0F * j;
       }
 
-      float var12 = Math.max(1.0F, var3 + var5 - 12.0F * var7 - var11);
-      if (var2.look() == HudRenderer.SpotifyLook.IDLE) {
-         float var18 = var4 + (float)Math.floor((var6 - var10.labelPx()) * 0.5F);
+      float var12 = Math.max(1.0F, f + h - 12.0F * j - var11);
+      if (spotifyPlan.look() == HudRenderer.SpotifyLook.IDLE) {
+         float var18 = g + (float)Math.floor((i - var10.labelPx()) * 0.5F);
          marqueeLine(
-            var1,
+            imDrawList,
             var10.label(),
             var10.labelPx(),
             var11,
             var18,
             var12,
-            var2.titleW(),
+            spotifyPlan.titleW(),
             0.0F,
-            var2.loopGap(),
+            spotifyPlan.loopGap(),
             false,
-            var2.title(),
-            HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, var8),
-            var9
+            spotifyPlan.title(),
+            HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, k),
+            bl
          );
       } else {
-         float var13 = var2.glyph() == HudRenderer.SpotifyGlyph.PAUSED ? 0.62F : 1.0F;
-         boolean var14 = !var2.artist().isEmpty();
-         float var15 = var14 ? var10.textPx() + 2.0F * var7 + var10.labelPx() : var10.textPx();
-         float var16 = var4 + (float)Math.floor((var6 - var15) * 0.5F);
+         float var13 = spotifyPlan.glyph() == HudRenderer.SpotifyGlyph.PAUSED ? 0.62F : 1.0F;
+         boolean var14 = !spotifyPlan.artist().isEmpty();
+         float var15 = var14 ? var10.textPx() + 2.0F * j + var10.labelPx() : var10.textPx();
+         float var16 = g + (float)Math.floor((i - var15) * 0.5F);
          marqueeLine(
-            var1,
+            imDrawList,
             var10.text(),
             var10.textPx(),
             var11,
             var16,
             var12,
-            var2.titleW(),
-            var2.titleOffset(),
-            var2.loopGap(),
-            var2.scroll(),
-            var2.title(),
-            HudChrome.scaleAlpha(var2.colors().title(), var8 * var13),
-            var9
+            spotifyPlan.titleW(),
+            spotifyPlan.titleOffset(),
+            spotifyPlan.loopGap(),
+            spotifyPlan.scroll(),
+            spotifyPlan.title(),
+            HudChrome.scaleAlpha(spotifyPlan.colors().title(), k * var13),
+            bl
          );
          if (var14) {
-            float var17 = var16 + var10.textPx() + 2.0F * var7;
+            float var17 = var16 + var10.textPx() + 2.0F * j;
             marqueeLine(
-               var1,
+               imDrawList,
                var10.label(),
                var10.labelPx(),
                var11,
                var17,
                var12,
-               var2.artistW(),
-               var2.artistOffset(),
-               var2.loopGap(),
-               var2.scroll(),
-               var2.artist(),
-               HudChrome.scaleAlpha(var2.colors().artist(), var8),
-               var9
+               spotifyPlan.artistW(),
+               spotifyPlan.artistOffset(),
+               spotifyPlan.loopGap(),
+               spotifyPlan.scroll(),
+               spotifyPlan.artist(),
+               HudChrome.scaleAlpha(spotifyPlan.colors().artist(), k),
+               bl
             );
          }
       }
    }
 
-   private void drawPlayState(ImDrawList var1, float var2, float var3, float var4, boolean var5, float var6) {
-      float var7 = Math.round(var3 - var4 * 0.5F);
-      float var8 = var7 + Math.round(var4);
-      if (var5) {
-         var1.addTriangleFilled(var2, var7, var2 + var4 * 0.9F, (var7 + var8) * 0.5F, var2, var8, HudChrome.scaleAlpha(this.hudAccent(), var6));
+   private void drawPlayState(ImDrawList imDrawList, float f, float g, float h, boolean bl, float i) {
+      float var7 = Math.round(g - h * 0.5F);
+      float var8 = var7 + Math.round(h);
+      if (bl) {
+         imDrawList.addTriangleFilled(f, var7, f + h * 0.9F, (var7 + var8) * 0.5F, f, var8, HudChrome.scaleAlpha(this.hudAccent(), i));
       } else {
-         float var9 = Math.max(2.0F, (float)Math.round(var4 * 0.3F));
-         float var10 = Math.max(2.0F, (float)Math.round(var4 * 0.25F));
-         int var11 = HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, var6);
-         float var12 = Math.round(var2 + (var4 - var9 * 2.0F - var10) * 0.5F);
-         var1.addRectFilled(var12, var7, var12 + var9, var8, var11, 1.0F);
-         var1.addRectFilled(var12 + var9 + var10, var7, var12 + var9 * 2.0F + var10, var8, var11, 1.0F);
+         float var9 = Math.max(2.0F, (float)Math.round(h * 0.3F));
+         float var10 = Math.max(2.0F, (float)Math.round(h * 0.25F));
+         int var11 = HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, i);
+         float var12 = Math.round(f + (h - var9 * 2.0F - var10) * 0.5F);
+         imDrawList.addRectFilled(var12, var7, var12 + var9, var8, var11, 1.0F);
+         imDrawList.addRectFilled(var12 + var9 + var10, var7, var12 + var9 * 2.0F + var10, var8, var11, 1.0F);
       }
    }
 
    private HudRenderer.SpotifyPlan planSpotifyCard(
-      SpotifyHudModule var1, NowPlaying var2, boolean var3, boolean var4, HudRenderer.Type var5, float var6, boolean var7, float var8
+      SpotifyHudModule spotifyHudModule, NowPlaying nowPlaying, boolean bl, boolean bl2, HudRenderer.Type type, float f, boolean bl3, float g
    ) {
-      boolean var9 = var1 == null || var1.showArtist();
-      boolean var10 = var1 == null || var1.showAlbumArt();
-      boolean var11 = var1 == null || var1.showProgress();
-      boolean var12 = var1 == null || var1.showLyrics();
-      boolean var13 = var1 == null || var1.scrollTitles();
+      boolean var9 = spotifyHudModule == null || spotifyHudModule.showArtist();
+      boolean var10 = spotifyHudModule == null || spotifyHudModule.showAlbumArt();
+      boolean var11 = spotifyHudModule == null || spotifyHudModule.showProgress();
+      boolean var12 = spotifyHudModule == null || spotifyHudModule.showLyrics();
+      boolean var13 = spotifyHudModule == null || spotifyHudModule.scrollTitles();
       long var14 = System.currentTimeMillis();
-      this.foldTrack(var2, var5.text());
+      this.foldTrack(nowPlaying, type.text());
       String var16 = this.spotifyTitle;
       String var17 = var9 ? this.spotifyArtist : "";
-      boolean var18 = var2.hasTimeline();
-      long var19 = var2.positionMs();
-      if (!var3) {
-         this.spotifyClock.update(var2, var14);
+      boolean var18 = nowPlaying.hasTimeline();
+      long var19 = nowPlaying.positionMs();
+      if (!bl) {
+         this.spotifyClock.update(nowPlaying, var14);
          var19 = this.spotifyClock.positionAt(var14);
       }
 
-      float var21 = this.capTop(var5.label(), var5.labelPx());
-      float var22 = var5.labelPx() + 3.0F * var6 + var5.textPx() + (var17.isEmpty() ? 0.0F : 1.0F * var6 + var5.labelPx()) + 7.0F * var6;
+      float var21 = this.capTop(type.label(), type.labelPx());
+      float var22 = type.labelPx() + 3.0F * f + type.textPx() + (var17.isEmpty() ? 0.0F : 1.0F * f + type.labelPx()) + 7.0F * f;
       boolean var23 = var11 && var18;
-      float var24 = var23 ? var22 + var5.labelPx() + 6.0F * var6 + progressHeight(var6) : var22 + HudChrome.ascent(var5.label(), var5.labelPx());
+      float var24 = var23 ? var22 + type.labelPx() + 6.0F * f + progressHeight(f) : var22 + HudChrome.ascent(type.label(), type.labelPx());
       float var25 = Math.round(var24 - var21);
-      float var26 = 10.0F * var6;
-      float var27 = Math.round(Math.max(200.0F, var1 != null ? var1.cardWidth() : 320.0F) * var6);
-      boolean var28 = var10 && var27 - var26 * 2.0F - var25 - 10.0F * var6 >= 128.0F * var6;
-      float var29 = var27 - var26 * 2.0F - (var28 ? var25 + 10.0F * var6 : 0.0F);
+      float var26 = 10.0F * f;
+      float var27 = Math.round(Math.max(200.0F, spotifyHudModule != null ? spotifyHudModule.cardWidth() : 320.0F) * f);
+      boolean var28 = var10 && var27 - var26 * 2.0F - var25 - 10.0F * f >= 128.0F * f;
+      float var29 = var27 - var26 * 2.0F - (var28 ? var25 + 10.0F * f : 0.0F);
       String var30 = "";
       String var31 = "";
       float var32 = 0.0F;
       if (var18) {
          long var33 = var19 / 1000L;
-         long var35 = (var2.durationMs() + 500L) / 1000L;
+         long var35 = (nowPlaying.durationMs() + 500L) / 1000L;
          var30 = formatSeconds(var33);
          var31 = "\u2212" + formatSeconds(Math.max(0L, var35 - var33));
-         var32 = clamp01((float)var19 / (float)var2.durationMs());
+         var32 = clamp01((float)var19 / (float)nowPlaying.durationMs());
       }
 
-      float var48 = HudChrome.width(var5.text(), var5.textPx(), var16);
-      float var34 = var17.isEmpty() ? 0.0F : HudChrome.width(var5.label(), var5.labelPx(), var17);
-      float var49 = 40.0F * var6;
-      float[] var36 = this.marquee(var16, var17, var48, var34, var29, var13, var2.playing() || var7, var49, var6, var8);
-      boolean var37 = var3 ? var12 && var18 : var4 && var1 != null && var1.wantsLyrics(var2);
-      Lyrics var38 = !var37 ? null : (var3 ? SAMPLE_LYRICS : var1.lyricsFor(var2));
-      boolean var39 = var1 == null || var1.lyricsOnline();
-      int var40 = var1 == null ? 2 : var1.lyricLines();
-      SpotifyHudModule.LyricMotion var41 = var1 == null ? SpotifyHudModule.LyricMotion.WAVE : var1.lyricMotion();
-      SpotifyHudModule.LyricHighlight var42 = var1 == null ? SpotifyHudModule.LyricHighlight.OFF : var1.lyricHighlight();
-      HudRenderer.LyricView var43 = this.planLyrics(var38, var37, var39, var19, var40, var41, var42, var5, var27 - var26 * 2.0F, var6, var8, var14);
-      float var44 = var2.playing() ? 1.0F : 0.0F;
-      this.lyricPlaying = this.lyricPlaying + (var44 - this.lyricPlaying) * (1.0F - (float)Math.exp(-8.0F * var8));
+      float var48 = HudChrome.width(type.text(), type.textPx(), var16);
+      float var34 = var17.isEmpty() ? 0.0F : HudChrome.width(type.label(), type.labelPx(), var17);
+      float var49 = 40.0F * f;
+      float[] var36 = this.marquee(var16, var17, var48, var34, var29, var13, nowPlaying.playing() || bl3, var49, f, g);
+      boolean var37 = bl ? var12 && var18 : bl2 && spotifyHudModule != null && spotifyHudModule.wantsLyrics(nowPlaying);
+      Lyrics var38 = !var37 ? null : (bl ? SAMPLE_LYRICS : spotifyHudModule.lyricsFor(nowPlaying));
+      boolean var39 = spotifyHudModule == null || spotifyHudModule.lyricsOnline();
+      int var40 = spotifyHudModule == null ? 2 : spotifyHudModule.lyricLines();
+      SpotifyHudModule.LyricMotion var41 = spotifyHudModule == null ? SpotifyHudModule.LyricMotion.WAVE : spotifyHudModule.lyricMotion();
+      SpotifyHudModule.LyricHighlight var42 = spotifyHudModule == null ? SpotifyHudModule.LyricHighlight.OFF : spotifyHudModule.lyricHighlight();
+      HudRenderer.LyricView var43 = this.planLyrics(var38, var37, var39, var19, var40, var41, var42, type, var27 - var26 * 2.0F, f, g, var14);
+      float var44 = nowPlaying.playing() ? 1.0F : 0.0F;
+      this.lyricPlaying = this.lyricPlaying + (var44 - this.lyricPlaying) * (1.0F - (float)Math.exp(-8.0F * g));
       float var45 = 0.7F + 0.3F * this.lyricPlaying;
       HudRenderer.SpotifyCard var46 = new HudRenderer.SpotifyCard(
-         var2, var3, var28, var25, var26 - var21, var29, var18, var30, var31, var32, var23, var43, var45
+         nowPlaying, bl, var28, var25, var26 - var21, var29, var18, var30, var31, var32, var23, var43, var45
       );
       float var47 = var26 * 2.0F + var25 + var43.height();
       return new HudRenderer.SpotifyPlan(
-         var5,
+         type,
          HudRenderer.SpotifyLook.CARD,
          HudRenderer.SpotifyGlyph.NONE,
          var16,
@@ -2404,140 +2473,128 @@ public final class HudRenderer {
          var49,
          var13,
          var46,
-         HudRenderer.SpotifyColors.of(var1),
+         HudRenderer.SpotifyColors.of(spotifyHudModule),
          var27,
          (float)Math.round(var47)
       );
    }
 
-   private void drawSpotifyCard(
-      ImDrawList var1, HudRenderer.SpotifyPlan var2, float var3, float var4, float var5, float var6, float var7, float var8, boolean var9
-   ) {
-      HudRenderer.SpotifyCard var11 = var2.card();
-      HudRenderer.Type var12 = var2.type();
-      float var13 = 10.0F * var7;
+   private void drawSpotifyCard(ImDrawList imDrawList, HudRenderer.SpotifyPlan spotifyPlan, float f, float g, float h, float i, float j, float k, boolean bl) {
+      HudRenderer.SpotifyCard var11 = spotifyPlan.card();
+      HudRenderer.Type var12 = spotifyPlan.type();
+      float var13 = 10.0F * j;
       boolean var14 = var11.track().playing();
-      float var15 = var3 + var13;
+      float var15 = f + var13;
       if (var11.art()) {
-         this.drawAlbumArt(var1, var11, var15, var4 + var13, var11.header(), var7, var8);
-         var15 += var11.header() + 10.0F * var7;
+         this.drawAlbumArt(imDrawList, var11, var15, g + var13, var11.header(), j, k);
+         var15 += var11.header() + 10.0F * j;
       } else {
          this.releaseSpotifyArt();
       }
 
       float var16 = var11.column();
-      float var17 = var4 + var11.textTop();
+      float var17 = g + var11.textTop();
       HudChrome.text(
-         var1,
+         imDrawList,
          var12.label(),
          var12.labelPx(),
          var15,
          Math.round(var17),
-         HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, var8),
+         HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, k),
          var14 ? "NOW PLAYING" : "PAUSED",
-         var9
+         bl
       );
       float var19;
       marqueeLine(
-         var1,
+         imDrawList,
          var12.text(),
          var12.textPx(),
          var15,
-         Math.round(var19 = var17 + (var12.labelPx() + 3.0F * var7)),
+         Math.round(var19 = var17 + (var12.labelPx() + 3.0F * j)),
          var16,
-         var2.titleW(),
-         var2.titleOffset(),
-         var2.loopGap(),
-         var2.scroll(),
-         var2.title(),
-         HudChrome.scaleAlpha(var2.colors().title(), var8),
-         var9
+         spotifyPlan.titleW(),
+         spotifyPlan.titleOffset(),
+         spotifyPlan.loopGap(),
+         spotifyPlan.scroll(),
+         spotifyPlan.title(),
+         HudChrome.scaleAlpha(spotifyPlan.colors().title(), k),
+         bl
       );
       var17 = var19 + var12.textPx();
-      if (!var2.artist().isEmpty()) {
+      if (!spotifyPlan.artist().isEmpty()) {
          float var21;
          marqueeLine(
-            var1,
+            imDrawList,
             var12.label(),
             var12.labelPx(),
             var15,
-            Math.round(var21 = var17 + 1.0F * var7),
+            Math.round(var21 = var17 + 1.0F * j),
             var16,
-            var2.artistW(),
-            var2.artistOffset(),
-            var2.loopGap(),
-            var2.scroll(),
-            var2.artist(),
-            HudChrome.scaleAlpha(var2.colors().artist(), var8),
-            var9
+            spotifyPlan.artistW(),
+            spotifyPlan.artistOffset(),
+            spotifyPlan.loopGap(),
+            spotifyPlan.scroll(),
+            spotifyPlan.artist(),
+            HudChrome.scaleAlpha(spotifyPlan.colors().artist(), k),
+            bl
          );
          var17 = var21 + var12.labelPx();
       }
 
-      var17 = Math.round(var17 + 7.0F * var7);
-      this.drawTransport(var1, var12, var11, var15, var17, var16, var7, var8, var9);
+      var17 = Math.round(var17 + 7.0F * j);
+      this.drawTransport(imDrawList, var12, var11, var15, var17, var16, j, k, bl);
       if (var11.progressBar()) {
-         float var18 = Math.round(var17 + var12.labelPx() + 6.0F * var7);
-         this.drawProgress(var1, var15, var18, var16, progressHeight(var7), var11.progress(), var14, var8);
+         float var18 = Math.round(var17 + var12.labelPx() + 6.0F * j);
+         this.drawProgress(imDrawList, var15, var18, var16, progressHeight(j), var11.progress(), var14, k);
       }
 
       HudRenderer.LyricView var10;
       if ((var10 = var11.lyrics()).height() > 0.5F) {
-         float var23 = Math.round(var4 + var13 + var11.header() + 12.0F * var7);
+         float var23 = Math.round(g + var13 + var11.header() + 12.0F * j);
          this.drawLyrics(
-            var1,
-            var12,
-            var10,
-            var2.colors(),
-            var3 + var13,
-            var23,
-            var5 - var13 * 2.0F,
-            var4 + var6 - Math.max(1.0F, var7),
-            var7,
-            var8 * var11.lyricAlpha(),
-            var9
+            imDrawList, var12, var10, spotifyPlan.colors(), f + var13, var23, h - var13 * 2.0F, g + i - Math.max(1.0F, j), j, k * var11.lyricAlpha(), bl
          );
       }
    }
 
-   private void drawAlbumArt(ImDrawList var1, HudRenderer.SpotifyCard var2, float var3, float var4, float var5, float var6, float var7) {
-      float var9 = Math.min(hudRounding() * 0.5F, 4.0F) * var6;
-      if (var2.sample()) {
+   private void drawAlbumArt(ImDrawList imDrawList, HudRenderer.SpotifyCard spotifyCard, float f, float g, float h, float i, float j) {
+      float var9 = Math.min(hudRounding() * 0.5F, 4.0F) * i;
+      if (spotifyCard.sample()) {
          this.releaseSpotifyArt();
       }
 
-      ThemeImages.Texture var8 = var2.sample() ? null : this.spotifyArtTexture(var2.track().art());
+      ThemeImages.Texture var8 = spotifyCard.sample() ? null : this.spotifyArtTexture(spotifyCard.track().art());
       if (var8 != null) {
-         var1.addImageRounded(var8.id(), var3, var4, var3 + var5, var4 + var5, 0.0F, 0.0F, 1.0F, 1.0F, HudChrome.scaleAlpha(-1, var7), var9, 240);
+         imDrawList.addImageRounded(var8.id(), f, g, f + h, g + h, 0.0F, 0.0F, 1.0F, 1.0F, HudChrome.scaleAlpha(-1, j), var9, 240);
       } else {
-         var1.addRectFilled(var3, var4, var3 + var5, var4 + var5, HudChrome.scaleAlpha(318767103, var7), var9);
-         float var11 = Math.max(2.0F, (float)Math.round(var5 * 0.07F));
+         imDrawList.addRectFilled(f, g, f + h, g + h, HudChrome.scaleAlpha(318767103, j), var9);
+         float var11 = Math.max(2.0F, (float)Math.round(h * 0.07F));
          float var12 = Math.max(2.0F, (float)Math.round(var11 * 0.8F));
-         float var13 = Math.round(var4 + var5 * 0.62F);
-         float var14 = Math.round(var3 + (var5 - var11 * 3.0F - var12 * 2.0F) * 0.5F);
-         int var15 = HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, var7 * 0.45F);
+         float var13 = Math.round(g + h * 0.62F);
+         float var14 = Math.round(f + (h - var11 * 3.0F - var12 * 2.0F) * 0.5F);
+         int var15 = HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, j * 0.45F);
          float[] var16 = new float[]{0.2F, 0.34F, 0.26F};
 
          for (int var17 = 0; var17 < var16.length; var17++) {
             float var18 = var14 + var17 * (var11 + var12);
-            var1.addRectFilled(var18, var13 - Math.round(var5 * var16[var17]), var18 + var11, var13, var15, 1.0F);
+            imDrawList.addRectFilled(var18, var13 - Math.round(h * var16[var17]), var18 + var11, var13, var15, 1.0F);
          }
       }
 
-      var1.addRect(var3, var4, var3 + var5, var4 + var5, HudChrome.scaleAlpha(402653183, var7), var9, 0, 1.0F);
+      imDrawList.addRect(f, g, f + h, g + h, HudChrome.scaleAlpha(402653183, j), var9, 0, 1.0F);
    }
 
    private void drawTransport(
-      ImDrawList var1, HudRenderer.Type var2, HudRenderer.SpotifyCard var3, float var4, float var5, float var6, float var7, float var8, boolean var9
+      ImDrawList imDrawList, HudRenderer.Type type, HudRenderer.SpotifyCard spotifyCard, float f, float g, float h, float i, float j, boolean bl
    ) {
       float var16 = 0.0F;
       float var17 = 0.0F;
-      if (var3.timeline()) {
-         var16 = HudChrome.tabularWidth(var2.label(), var2.labelPx(), var3.elapsed());
-         var17 = HudChrome.tabularWidth(var2.label(), var2.labelPx(), var3.remaining());
-         int var18 = HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, var8);
-         HudChrome.tabular(var1, var2.label(), var2.labelPx(), var4, var5, var18, var3.elapsed(), var9);
-         HudChrome.tabular(var1, var2.label(), var2.labelPx(), Math.round(var4 + var6 - var17), var5, var18, var3.remaining(), var9);
+      if (spotifyCard.timeline()) {
+         var16 = HudChrome.tabularWidth(type.label(), type.labelPx(), spotifyCard.elapsed());
+         var17 = HudChrome.tabularWidth(type.label(), type.labelPx(), spotifyCard.remaining());
+         int var18 = HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, j);
+         HudChrome.tabular(imDrawList, type.label(), type.labelPx(), f, g, var18, spotifyCard.elapsed(), bl);
+         HudChrome.tabular(imDrawList, type.label(), type.labelPx(), Math.round(f + h - var17), g, var18, spotifyCard.remaining(), bl);
       }
 
       float var10;
@@ -2547,21 +2604,21 @@ public final class HudRenderer {
       float var14;
       float var15;
       if (!(
-            (var15 = var4 + var6 * 0.5F)
+            (var15 = f + h * 0.5F)
                   - (
-                        var14 = (var13 = Math.max(4.0F, (float)Math.round(8.0F * var7))) * 2.0F
-                           + (var12 = Math.max(5.0F, (float)Math.round(10.0F * var7)))
-                           + (var11 = Math.round(14.0F * var7)) * 2.0F
+                        var14 = (var13 = Math.max(4.0F, (float)Math.round(8.0F * i))) * 2.0F
+                           + (var12 = Math.max(5.0F, (float)Math.round(10.0F * i)))
+                           + (var11 = Math.round(14.0F * i)) * 2.0F
                      )
                      * 0.5F
-               < var4 + var16 + (var10 = 8.0F * var7)
+               < f + var16 + (var10 = 8.0F * i)
          )
-         && !(var15 + var14 * 0.5F > var4 + var6 - var17 - var10)) {
-         float var33 = var5 + (this.capTop(var2.label(), var2.labelPx()) + HudChrome.ascent(var2.label(), var2.labelPx())) * 0.5F;
+         && !(var15 + var14 * 0.5F > f + h - var17 - var10)) {
+         float var33 = g + (this.capTop(type.label(), type.labelPx()) + HudChrome.ascent(type.label(), type.labelPx())) * 0.5F;
          float var19 = Math.round(var15 - var12 * 0.5F);
          float[] var20 = new float[]{var19 - var11 - var13, var19, var19 + var12 + var11};
          float[] var21 = new float[]{var13, var12, var13};
-         float var22 = Math.round(3.0F * var7);
+         float var22 = Math.round(3.0F * i);
          float var23 = ImGui.getMousePosX();
          float var24 = ImGui.getMousePosY();
 
@@ -2576,14 +2633,14 @@ public final class HudRenderer {
             this.spotifyButtons[var25 * 4 + 3] = var30;
             boolean var26 = this.chatInput && var23 >= var27 && var23 <= var28 && var24 >= var29 && var24 <= var30;
             if (var26) {
-               var1.addRectFilled(var27, var29, var28, var30, HudChrome.scaleAlpha(654311423, var8), (var28 - var27) * 0.5F);
+               imDrawList.addRectFilled(var27, var29, var28, var30, HudChrome.scaleAlpha(654311423, j), (var28 - var27) * 0.5F);
             }
 
-            int var32 = HudChrome.scaleAlpha(!var26 && var25 != 1 ? HudChrome.TEXT_LABEL : HudChrome.TEXT_NAME, var8);
+            int var32 = HudChrome.scaleAlpha(!var26 && var25 != 1 ? HudChrome.TEXT_LABEL : HudChrome.TEXT_NAME, j);
             if (var25 == 1) {
-               drawPlayPauseGlyph(var1, var20[var25], var33, var12, var3.track().playing(), var32);
+               drawPlayPauseGlyph(imDrawList, var20[var25], var33, var12, spotifyCard.track().playing(), var32);
             } else {
-               drawSkipGlyph(var1, var20[var25], var33, var13, var25 == 2, var32);
+               drawSkipGlyph(imDrawList, var20[var25], var33, var13, var25 == 2, var32);
             }
          }
 
@@ -2591,12 +2648,12 @@ public final class HudRenderer {
       }
    }
 
-   private int spotifyButtonAt(float var1, float var2) {
+   private int spotifyButtonAt(float f, float g) {
       for (int var3 = 0; var3 < SPOTIFY_BUTTONS.length; var3++) {
-         if (var1 >= this.spotifyButtons[var3 * 4]
-            && var1 <= this.spotifyButtons[var3 * 4 + 2]
-            && var2 >= this.spotifyButtons[var3 * 4 + 1]
-            && var2 <= this.spotifyButtons[var3 * 4 + 3]) {
+         if (f >= this.spotifyButtons[var3 * 4]
+            && f <= this.spotifyButtons[var3 * 4 + 2]
+            && g >= this.spotifyButtons[var3 * 4 + 1]
+            && g <= this.spotifyButtons[var3 * 4 + 3]) {
             return var3;
          }
       }
@@ -2604,88 +2661,88 @@ public final class HudRenderer {
       return -1;
    }
 
-   private static void drawSkipGlyph(ImDrawList var0, float var1, float var2, float var3, boolean var4, int var5) {
-      float var6 = Math.round(var2 - var3 * 0.5F);
-      float var7 = var6 + var3;
+   private static void drawSkipGlyph(ImDrawList imDrawList, float f, float g, float h, boolean bl, int i) {
+      float var6 = Math.round(g - h * 0.5F);
+      float var7 = var6 + h;
       float var8 = (var6 + var7) * 0.5F;
-      float var9 = Math.max(1.0F, (float)Math.round(var3 * 0.2F));
-      if (var4) {
-         var0.addTriangleFilled(var1, var6, var1 + var3 - var9, var8, var1, var7, var5);
-         var0.addRectFilled(var1 + var3 - var9, var6, var1 + var3, var7, var5);
+      float var9 = Math.max(1.0F, (float)Math.round(h * 0.2F));
+      if (bl) {
+         imDrawList.addTriangleFilled(f, var6, f + h - var9, var8, f, var7, i);
+         imDrawList.addRectFilled(f + h - var9, var6, f + h, var7, i);
       } else {
-         var0.addRectFilled(var1, var6, var1 + var9, var7, var5);
-         var0.addTriangleFilled(var1 + var3, var6, var1 + var3, var7, var1 + var9, var8, var5);
+         imDrawList.addRectFilled(f, var6, f + var9, var7, i);
+         imDrawList.addTriangleFilled(f + h, var6, f + h, var7, f + var9, var8, i);
       }
    }
 
-   private static void drawPlayPauseGlyph(ImDrawList var0, float var1, float var2, float var3, boolean var4, int var5) {
-      float var6 = Math.round(var2 - var3 * 0.5F);
-      float var7 = var6 + var3;
-      if (var4) {
-         float var11 = Math.max(2.0F, (float)Math.round(var3 * 0.3F));
-         float var9 = Math.max(2.0F, (float)Math.round(var3 * 0.24F));
-         float var10 = Math.round(var1 + (var3 - var11 * 2.0F - var9) * 0.5F);
-         var0.addRectFilled(var10, var6, var10 + var11, var7, var5, 1.0F);
-         var0.addRectFilled(var10 + var11 + var9, var6, var10 + var11 * 2.0F + var9, var7, var5, 1.0F);
+   private static void drawPlayPauseGlyph(ImDrawList imDrawList, float f, float g, float h, boolean bl, int i) {
+      float var6 = Math.round(g - h * 0.5F);
+      float var7 = var6 + h;
+      if (bl) {
+         float var11 = Math.max(2.0F, (float)Math.round(h * 0.3F));
+         float var9 = Math.max(2.0F, (float)Math.round(h * 0.24F));
+         float var10 = Math.round(f + (h - var11 * 2.0F - var9) * 0.5F);
+         imDrawList.addRectFilled(var10, var6, var10 + var11, var7, i, 1.0F);
+         imDrawList.addRectFilled(var10 + var11 + var9, var6, var10 + var11 * 2.0F + var9, var7, i, 1.0F);
       } else {
-         float var8 = Math.round(var3 * 0.08F);
-         var0.addTriangleFilled(var1 + var8, var6, var1 + var8 + var3 * 0.86F, (var6 + var7) * 0.5F, var1 + var8, var7, var5);
+         float var8 = Math.round(h * 0.08F);
+         imDrawList.addTriangleFilled(f + var8, var6, f + var8 + h * 0.86F, (var6 + var7) * 0.5F, f + var8, var7, i);
       }
    }
 
-   private void drawProgress(ImDrawList var1, float var2, float var3, float var4, float var5, float var6, boolean var7, float var8) {
-      float var9 = var5 * 0.5F;
-      var1.addRectFilled(var2, var3, var2 + var4, var3 + var5, HudChrome.scaleAlpha(452984831, var8), var9);
-      float var10 = Math.round(var4 * clamp01(var6));
+   private void drawProgress(ImDrawList imDrawList, float f, float g, float h, float i, float j, boolean bl, float k) {
+      float var9 = i * 0.5F;
+      imDrawList.addRectFilled(f, g, f + h, g + i, HudChrome.scaleAlpha(452984831, k), var9);
+      float var10 = Math.round(h * clamp01(j));
       if (!(var10 < 1.0F)) {
-         var1.addRectFilled(var2, var3, var2 + var10, var3 + var5, HudChrome.scaleAlpha(var7 ? this.hudAccent() : HudChrome.TEXT_LABEL, var8), var9);
+         imDrawList.addRectFilled(f, g, f + var10, g + i, HudChrome.scaleAlpha(bl ? this.hudAccent() : HudChrome.TEXT_LABEL, k), var9);
       }
    }
 
-   private static float progressHeight(float var0) {
-      return Math.max(1.0F, (float)Math.round(2.0F * var0));
+   private static float progressHeight(float f) {
+      return Math.max(1.0F, (float)Math.round(2.0F * f));
    }
 
    private HudRenderer.LyricView planLyrics(
-      Lyrics var1,
-      boolean var2,
-      boolean var3,
-      long var4,
-      int var6,
-      SpotifyHudModule.LyricMotion var7,
-      SpotifyHudModule.LyricHighlight var8,
-      HudRenderer.Type var9,
-      float var10,
-      float var11,
-      float var12,
-      long var13
+      Lyrics lyrics,
+      boolean bl,
+      boolean bl2,
+      long l,
+      int i,
+      SpotifyHudModule.LyricMotion lyricMotion,
+      SpotifyHudModule.LyricHighlight lyricHighlight,
+      HudRenderer.Type type,
+      float f,
+      float g,
+      float h,
+      long m
    ) {
       Object var15 = List.of();
       String var16 = null;
       float var17 = -1.0F;
       boolean var18 = false;
-      if (!var2) {
+      if (!bl) {
          this.lyricLoadingSince = 0L;
          var17 = 0.0F;
       } else {
-         if (var1 == null || var1.status() != Lyrics.Status.LOADING) {
+         if (lyrics == null || lyrics.status() != Lyrics.Status.LOADING) {
             this.lyricLoadingSince = 0L;
          } else if (this.lyricLoadingSince == 0L) {
-            this.lyricLoadingSince = var13;
+            this.lyricLoadingSince = m;
          }
 
-         if (var1 != null) {
-            switch (var1.status()) {
+         if (lyrics != null) {
+            switch (lyrics.status()) {
                case LOADING:
-                  var16 = var13 - this.lyricLoadingSince < 700L ? null : "Loading lyrics";
+                  var16 = m - this.lyricLoadingSince < 700L ? null : "Loading lyrics";
                   break;
                case SYNCED:
-                  this.prepareLyrics(var1, var9.text());
+                  this.prepareLyrics(lyrics, type.text());
                   if (this.lyricReadable) {
                      var15 = new ArrayList(16);
-                     float var19 = this.lyricViewHeight(var1.synced(), var6, var9, var10, var11);
-                     this.syncedItems((List<HudRenderer.LyricItem>)var15, var1.synced(), var4, var19, var7, var8, var9, var10, var11, var12);
-                     var17 = var19 - (var9.textPx() - HudChrome.ascent(var9.text(), var9.textPx()));
+                     float var19 = this.lyricViewHeight(lyrics.synced(), i, type, f, g);
+                     this.syncedItems((List<HudRenderer.LyricItem>)var15, lyrics.synced(), l, var19, lyricMotion, lyricHighlight, type, f, g, h);
+                     var17 = var19 - (type.textPx() - HudChrome.ascent(type.text(), type.textPx()));
                      var18 = true;
                   } else {
                      var16 = "Lyrics in a script the HUD font lacks";
@@ -2698,7 +2755,7 @@ public final class HudRenderer {
                   var16 = "Instrumental";
                   break;
                case NOT_FOUND:
-                  var16 = var3 ? "No lyrics found" : "No saved lyrics";
+                  var16 = bl2 ? "No lyrics found" : "No saved lyrics";
                   break;
                case UNAVAILABLE:
                   var16 = "Lyrics unavailable";
@@ -2707,21 +2764,21 @@ public final class HudRenderer {
       }
 
       if (var16 != null) {
-         var17 = Math.round((var9.textPx() - var9.labelPx()) * 0.5F) + HudChrome.ascent(var9.label(), var9.labelPx());
+         var17 = Math.round((type.textPx() - type.labelPx()) * 0.5F) + HudChrome.ascent(type.label(), type.labelPx());
       }
 
       if (var18) {
          this.lyricLastItems = (List<HudRenderer.LyricItem>)var15;
          this.lyricLeaveItems = null;
       } else {
-         var15 = this.leavingItems(var16 == null, var9, var11, var12);
+         var15 = this.leavingItems(var16 == null, type, g, h);
       }
 
-      float var20 = var17 < 0.0F ? this.lyricBlockH : (var17 > 0.0F ? 12.0F * var11 + Math.round(var17) : 0.0F);
-      return new HudRenderer.LyricView((List<HudRenderer.LyricItem>)var15, var16, this.easeLyricBlock(var20, var12));
+      float var20 = var17 < 0.0F ? this.lyricBlockH : (var17 > 0.0F ? 12.0F * g + Math.round(var17) : 0.0F);
+      return new HudRenderer.LyricView((List<HudRenderer.LyricItem>)var15, var16, this.easeLyricBlock(var20, h));
    }
 
-   private List<HudRenderer.LyricItem> leavingItems(boolean var1, HudRenderer.Type var2, float var3, float var4) {
+   private List<HudRenderer.LyricItem> leavingItems(boolean bl, HudRenderer.Type type, float f, float g) {
       this.lyricSource = null;
       if (!this.lyricLastItems.isEmpty()) {
          this.lyricLeaveItems = this.lyricLastItems;
@@ -2732,10 +2789,10 @@ public final class HudRenderer {
       if (this.lyricLeaveItems == null) {
          return List.of();
       } else {
-         this.lyricLeave = Math.min(1.0F, this.lyricLeave + var4 / 0.32F);
-         if (var1 && !(this.lyricLeave >= 1.0F)) {
+         this.lyricLeave = Math.min(1.0F, this.lyricLeave + g / 0.32F);
+         if (bl && !(this.lyricLeave >= 1.0F)) {
             ArrayList var5 = new ArrayList(this.lyricLeaveItems.size());
-            addFaded(var5, this.lyricLeaveItems, smooth(this.lyricLeave), 8.0F * var3);
+            addFaded(var5, this.lyricLeaveItems, smooth(this.lyricLeave), 8.0F * f);
             return var5;
          } else {
             this.lyricLeaveItems = null;
@@ -2744,40 +2801,40 @@ public final class HudRenderer {
       }
    }
 
-   private static void addFaded(List<HudRenderer.LyricItem> var0, List<HudRenderer.LyricItem> var1, float var2, float var3) {
-      for (HudRenderer.LyricItem var5 : var1) {
-         float var6 = var5.alpha() * (1.0F - var2);
+   private static void addFaded(List<HudRenderer.LyricItem> list, List<HudRenderer.LyricItem> list2, float f, float g) {
+      for (HudRenderer.LyricItem var5 : list2) {
+         float var6 = var5.alpha() * (1.0F - f);
          if (!(var6 <= 0.004F)) {
-            var0.add(new HudRenderer.LyricItem(var5.text(), var5.top() - var3 * var2, var5.highlight(), var6, var5.progress(), var5.fill()));
+            list.add(new HudRenderer.LyricItem(var5.text(), var5.top() - g * f, var5.highlight(), var6, var5.progress(), var5.fill()));
          }
       }
    }
 
    private void syncedItems(
-      List<HudRenderer.LyricItem> var1,
-      SyncedLyrics var2,
-      long var3,
-      float var5,
-      SpotifyHudModule.LyricMotion var6,
-      SpotifyHudModule.LyricHighlight var7,
-      HudRenderer.Type var8,
-      float var9,
-      float var10,
-      float var11
+      List<HudRenderer.LyricItem> list,
+      SyncedLyrics syncedLyrics,
+      long l,
+      float f,
+      SpotifyHudModule.LyricMotion lyricMotion,
+      SpotifyHudModule.LyricHighlight lyricHighlight,
+      HudRenderer.Type type,
+      float g,
+      float h,
+      float i
    ) {
-      float var13 = 6.0F * var10;
-      int var14 = var2.indexAt(var3 + 200L);
-      int var15 = var2.firstWithTimeOf(var14);
+      float var13 = 6.0F * h;
+      int var14 = syncedLyrics.indexAt(l + 200L);
+      int var15 = syncedLyrics.firstWithTimeOf(var14);
       int var16 = Math.max(0, var15);
-      if (var2 != this.lyricSource) {
-         this.lyricSource = var2;
+      if (syncedLyrics != this.lyricSource) {
+         this.lyricSource = syncedLyrics;
          this.lyricStart = var16;
          this.lyricShifts.clear();
          this.lyricClock = 0.0F;
          this.lyricFadeItems = null;
          this.lyricFade = 1.0F;
-         this.lyricShown = new float[var2.size() * 2];
-         this.lyricBright = new float[var2.size()];
+         this.lyricShown = new float[syncedLyrics.size() * 2];
+         this.lyricBright = new float[syncedLyrics.size()];
          this.lyricBrightLo = 0;
          this.lyricBrightHi = -1;
 
@@ -2791,14 +2848,14 @@ public final class HudRenderer {
          }
       }
 
-      this.lyricClock += var11;
-      this.lyricBreath = (this.lyricBreath + var11) % 1.6F;
+      this.lyricClock += i;
+      this.lyricBreath = (this.lyricBreath + i) % 1.6F;
       this.lyricCurrentFirst = var15;
       this.lyricCurrentLast = var14;
-      float var12 = var6 == SpotifyHudModule.LyricMotion.WAVE ? 0.045F : 0.0F;
+      float var12 = lyricMotion == SpotifyHudModule.LyricMotion.WAVE ? 0.045F : 0.0F;
       if (var16 != this.lyricStart) {
-         float var18 = var16 > this.lyricStart ? this.restDistance(this.lyricStart, var16, var8, var9, var10) : -1.0F;
-         if (var6 != SpotifyHudModule.LyricMotion.FADE && var18 > 0.0F && var18 <= var5 + var13 + 0.5F) {
+         float var18 = var16 > this.lyricStart ? this.restDistance(this.lyricStart, var16, type, g, h) : -1.0F;
+         if (lyricMotion != SpotifyHudModule.LyricMotion.FADE && var18 > 0.0F && var18 <= f + var13 + 0.5F) {
             if (this.lyricShifts.size() == 8) {
                this.lyricShifts.remove(0);
             }
@@ -2808,72 +2865,72 @@ public final class HudRenderer {
             this.lyricFadeItems = this.lyricLastItems;
             this.lyricFade = 0.0F;
             this.lyricShifts.clear();
-            this.showView(var2, var16, var5, var8, var9, var10);
+            this.showView(syncedLyrics, var16, f, type, g, h);
          }
 
          this.lyricStart = var16;
       }
 
-      this.updateBrightness(var15, var14, var11);
-      this.lyricFade = Math.min(1.0F, this.lyricFade + var11 / 0.32F);
+      this.updateBrightness(var15, var14, i);
+      this.lyricFade = Math.min(1.0F, this.lyricFade + i / 0.32F);
       if (this.lyricFade >= 1.0F) {
          this.lyricFadeItems = null;
       }
 
       float var21 = 1.37F;
-      this.lyricShifts.removeIf(var2x -> this.lyricClock - var2x.at() > var21);
+      this.lyricShifts.removeIf(lyricShift -> this.lyricClock - lyricShift.at() > var21);
       if (this.lyricShifts.isEmpty()) {
          this.lyricClock = 0.0F;
       }
 
-      float var19 = 8.0F * var10;
+      float var19 = 8.0F * h;
       if (this.lyricFadeItems != null) {
          float var20 = smooth(this.lyricFade);
-         addFaded(var1, this.lyricFadeItems, var20, var19);
-         this.addLyricView(var1, var2, this.lyricStart, var20, var19 * (1.0F - var20), var5, var3, var7, var8, var9, var10, var11);
+         addFaded(list, this.lyricFadeItems, var20, var19);
+         this.addLyricView(list, syncedLyrics, this.lyricStart, var20, var19 * (1.0F - var20), f, l, lyricHighlight, type, g, h, i);
       } else {
-         this.addLyricView(var1, var2, this.lyricStart, 1.0F, 0.0F, var5, var3, var7, var8, var9, var10, var11);
+         this.addLyricView(list, syncedLyrics, this.lyricStart, 1.0F, 0.0F, f, l, lyricHighlight, type, g, h, i);
       }
    }
 
    private void addLyricView(
-      List<HudRenderer.LyricItem> var1,
-      SyncedLyrics var2,
-      int var3,
-      float var4,
-      float var5,
-      float var6,
-      long var7,
-      SpotifyHudModule.LyricHighlight var9,
-      HudRenderer.Type var10,
-      float var11,
-      float var12,
-      float var13
+      List<HudRenderer.LyricItem> list,
+      SyncedLyrics syncedLyrics,
+      int i,
+      float f,
+      float g,
+      float h,
+      long l,
+      SpotifyHudModule.LyricHighlight lyricHighlight,
+      HudRenderer.Type type,
+      float j,
+      float k,
+      float m
    ) {
-      ImFont var18 = var10.text();
-      int var19 = var10.textPx();
-      float var20 = 6.0F * var12;
-      float var21 = 6.0F * var12;
+      ImFont var18 = type.text();
+      int var19 = type.textPx();
+      float var20 = 6.0F * k;
+      float var21 = 6.0F * k;
       float var22 = var19 + var21;
-      boolean var23 = var9 == SpotifyHudModule.LyricHighlight.KARAOKE;
+      boolean var23 = lyricHighlight == SpotifyHudModule.LyricHighlight.KARAOKE;
       float var24 = 0.0F;
 
-      for (int var25 = var3; var25 < var2.size() && var24 <= var6 + var22 * 2.0F; var25++) {
-         String[] var17 = this.rowsFor(var25, var18, var19, var11);
+      for (int var25 = i; var25 < syncedLyrics.size() && var24 <= h + var22 * 2.0F; var25++) {
+         String[] var17 = this.rowsFor(var25, var18, var19, j);
          int var26 = Math.max(1, var17.length);
-         float var27 = var24 + this.lyricOffset(var25) + var5;
+         float var27 = var24 + this.lyricOffset(var25) + g;
          float var28 = 1.0F - 0.39999998F * clamp01(var27 / var22 - 1.0F);
-         float var16 = this.lyricGlow(var25, var9);
-         float var15 = var17.length == 0 ? this.breakProgress(var2, var25, var7) : 1.0F;
+         float var16 = this.lyricGlow(var25, lyricHighlight);
+         float var15 = var17.length == 0 ? this.breakProgress(syncedLyrics, var25, l) : 1.0F;
 
          for (int var14 = 0; var14 < var26; var14++) {
             float var29 = var24 + var14 * (var19 + var20);
-            float var30 = this.updateShown(var25, var14, var29 + var19 <= var6 + 0.5F, var13);
+            float var30 = this.updateShown(var25, var14, var29 + var19 <= h + 0.5F, m);
             float var31 = var27 + var14 * (var19 + var20);
-            float var32 = var4 * var28 * smooth(var30) * topFade(var31, var12) * bottomFade(var31 + var19 - var6, var19);
+            float var32 = f * var28 * smooth(var30) * topFade(var31, k) * bottomFade(var31 + var19 - h, var19);
             if (!(var32 <= 0.004F)) {
-               float var33 = var23 && var17.length > 0 ? this.rowFill(var2, var25, var17, var14, var18, var19, var7) : 0.0F;
-               var1.add(new HudRenderer.LyricItem(var17.length == 0 ? null : var17[var14], var31, var16, var32, var15, var33));
+               float var33 = var23 && var17.length > 0 ? this.rowFill(syncedLyrics, var25, var17, var14, var18, var19, l) : 0.0F;
+               list.add(new HudRenderer.LyricItem(var17.length == 0 ? null : var17[var14], var31, var16, var32, var15, var33));
             }
          }
 
@@ -2882,34 +2939,34 @@ public final class HudRenderer {
 
       float var37 = 0.0F;
 
-      for (int var38 = var3 - 1; var38 >= 0; var38--) {
-         String[] var39 = this.rowsFor(var38, var18, var19, var11);
+      for (int var38 = i - 1; var38 >= 0; var38--) {
+         String[] var39 = this.rowsFor(var38, var18, var19, j);
          int var40 = Math.max(1, var39.length);
-         float var41 = (var37 -= lineHeight(var39, var19, var20) + var21) + this.lyricOffset(var38) + var5;
-         if (topFade(var41 + (var40 - 1) * (var19 + var20), var12) <= 0.0F) {
+         float var41 = (var37 -= lineHeight(var39, var19, var20) + var21) + this.lyricOffset(var38) + g;
+         if (topFade(var41 + (var40 - 1) * (var19 + var20), k) <= 0.0F) {
             break;
          }
 
-         float var36 = this.lyricGlow(var38, var9);
-         float var35 = var39.length == 0 ? this.breakProgress(var2, var38, var7) : 1.0F;
+         float var36 = this.lyricGlow(var38, lyricHighlight);
+         float var35 = var39.length == 0 ? this.breakProgress(syncedLyrics, var38, l) : 1.0F;
 
          for (int var34 = 0; var34 < var40; var34++) {
             float var42 = var41 + var34 * (var19 + var20);
-            float var43 = var4 * smooth(this.lyricShown[var38 * 2 + var34]) * topFade(var42, var12);
+            float var43 = f * smooth(this.lyricShown[var38 * 2 + var34]) * topFade(var42, k);
             if (!(var43 <= 0.004F)) {
-               float var44 = var23 && var39.length > 0 ? this.rowFill(var2, var38, var39, var34, var18, var19, var7) : 0.0F;
-               var1.add(new HudRenderer.LyricItem(var39.length == 0 ? null : var39[var34], var42, var36, var43, var35, var44));
+               float var44 = var23 && var39.length > 0 ? this.rowFill(syncedLyrics, var38, var39, var34, var18, var19, l) : 0.0F;
+               list.add(new HudRenderer.LyricItem(var39.length == 0 ? null : var39[var34], var42, var36, var43, var35, var44));
             }
          }
       }
    }
 
-   private float lyricOffset(int var1) {
+   private float lyricOffset(int i) {
       float var2 = 0.0F;
 
       for (int var3 = 0; var3 < this.lyricShifts.size(); var3++) {
          HudRenderer.LyricShift var4 = this.lyricShifts.get(var3);
-         float var5 = Math.max(0, Math.min(6, var1 - var4.start())) * var4.stagger();
+         float var5 = Math.max(0, Math.min(6, i - var4.start())) * var4.stagger();
          float var6 = this.lyricClock - var4.at() - var5;
          var2 += var6 <= 0.0F ? var4.distance() : var4.distance() * springLeft(var6);
       }
@@ -2917,72 +2974,72 @@ public final class HudRenderer {
       return var2;
    }
 
-   private static float springLeft(float var0) {
-      float var1 = 13.0F * var0;
+   private static float springLeft(float f) {
+      float var1 = 13.0F * f;
       return (1.0F + var1) * (float)Math.exp(-var1);
    }
 
-   private static float topFade(float var0, float var1) {
-      return var0 >= 0.0F ? 1.0F : smooth(1.0F + var0 / (12.0F * var1 * 0.75F));
+   private static float topFade(float f, float g) {
+      return f >= 0.0F ? 1.0F : smooth(1.0F + f / (12.0F * g * 0.75F));
    }
 
-   private static float bottomFade(float var0, int var1) {
-      return var0 <= 0.5F ? 1.0F : smooth(1.0F - var0 / (var1 * 0.6F));
+   private static float bottomFade(float f, int i) {
+      return f <= 0.5F ? 1.0F : smooth(1.0F - f / (i * 0.6F));
    }
 
-   private float updateShown(int var1, int var2, boolean var3, float var4) {
-      int var6 = var1 * 2 + var2;
-      float var7 = var4 / 0.3F;
+   private float updateShown(int i, int j, boolean bl, float f) {
+      int var6 = i * 2 + j;
+      float var7 = f / 0.3F;
       float var5;
-      this.lyricShown[var6] = var5 = var3 ? Math.min(1.0F, this.lyricShown[var6] + var7) : Math.max(0.0F, this.lyricShown[var6] - var7);
+      this.lyricShown[var6] = var5 = bl ? Math.min(1.0F, this.lyricShown[var6] + var7) : Math.max(0.0F, this.lyricShown[var6] - var7);
       return var5;
    }
 
-   private void showView(SyncedLyrics var1, int var2, float var3, HudRenderer.Type var4, float var5, float var6) {
+   private void showView(SyncedLyrics syncedLyrics, int i, float f, HudRenderer.Type type, float g, float h) {
       Arrays.fill(this.lyricShown, 0.0F);
-      int var8 = var4.textPx();
-      float var9 = 6.0F * var6;
+      int var8 = type.textPx();
+      float var9 = 6.0F * h;
       float var10 = 0.0F;
 
-      for (int var11 = var2; var11 < var1.size() && var10 < var3; var11++) {
-         String[] var7 = this.rowsFor(var11, var4.text(), var8, var5);
+      for (int var11 = i; var11 < syncedLyrics.size() && var10 < f; var11++) {
+         String[] var7 = this.rowsFor(var11, type.text(), var8, g);
          int var12 = Math.max(1, var7.length);
 
          for (int var13 = 0; var13 < var12; var13++) {
-            if (var10 + var13 * (var8 + var9) + var8 <= var3 + 0.5F) {
+            if (var10 + var13 * (var8 + var9) + var8 <= f + 0.5F) {
                this.lyricShown[var11 * 2 + var13] = 1.0F;
             }
          }
 
-         var10 += lineHeight(var7, var8, var9) + 6.0F * var6;
+         var10 += lineHeight(var7, var8, var9) + 6.0F * h;
       }
    }
 
-   private float restDistance(int var1, int var2, HudRenderer.Type var3, float var4, float var5) {
-      float var6 = 6.0F * var5;
+   private float restDistance(int i, int j, HudRenderer.Type type, float f, float g) {
+      float var6 = 6.0F * g;
       float var7 = 0.0F;
 
-      for (int var8 = var1; var8 < var2; var8++) {
-         var7 += lineHeight(this.rowsFor(var8, var3.text(), var3.textPx(), var4), var3.textPx(), var6) + 6.0F * var5;
+      for (int var8 = i; var8 < j; var8++) {
+         var7 += lineHeight(this.rowsFor(var8, type.text(), type.textPx(), f), type.textPx(), var6) + 6.0F * g;
       }
 
       return var7;
    }
 
-   private void updateBrightness(int var1, int var2, float var3) {
+   private void updateBrightness(int i, int j, float f) {
       int var4 = this.lyricBrightHi >= 0 ? this.lyricBrightLo : 2147483647;
       int var5 = this.lyricBrightHi;
-      if (var2 >= 0) {
-         var4 = Math.min(var4, Math.max(0, var1));
-         var5 = Math.max(var5, var2);
+      if (j >= 0) {
+         var4 = Math.min(var4, Math.max(0, i));
+         var5 = Math.max(var5, j);
       }
 
-      float var6 = var3 / 0.35F;
+      float var6 = f / 0.35F;
       int var7 = 2147483647;
       int var8 = -1;
 
       for (int var9 = Math.max(0, var4); var9 <= var5 && var9 < this.lyricBright.length; var9++) {
-         boolean var11 = var9 >= var1 && var9 <= var2;
+         boolean var11 = var9 >= i && var9 <= j;
          float var10;
          this.lyricBright[var9] = var10 = var11 ? Math.min(1.0F, this.lyricBright[var9] + var6) : Math.max(0.0F, this.lyricBright[var9] - var6);
          if (var10 > 0.0F) {
@@ -2995,40 +3052,40 @@ public final class HudRenderer {
       this.lyricBrightHi = var8;
    }
 
-   private float lyricGlow(int var1, SpotifyHudModule.LyricHighlight var2) {
-      if (var2 != SpotifyHudModule.LyricHighlight.OFF && var1 >= 0 && var1 < this.lyricCurrentFirst) {
+   private float lyricGlow(int i, SpotifyHudModule.LyricHighlight lyricHighlight) {
+      if (lyricHighlight != SpotifyHudModule.LyricHighlight.OFF && i >= 0 && i < this.lyricCurrentFirst) {
          return 1.0F;
       } else {
-         return var1 >= 0 && var1 < this.lyricBright.length ? smooth(this.lyricBright[var1]) : 0.0F;
+         return i >= 0 && i < this.lyricBright.length ? smooth(this.lyricBright[i]) : 0.0F;
       }
    }
 
-   private float breakProgress(SyncedLyrics var1, int var2, long var3) {
-      if (var2 >= this.lyricCurrentFirst && var2 <= this.lyricCurrentLast) {
-         int var5 = var1.lastWithTimeOf(var2) + 1;
-         if (var5 >= var1.size()) {
+   private float breakProgress(SyncedLyrics syncedLyrics, int i, long l) {
+      if (i >= this.lyricCurrentFirst && i <= this.lyricCurrentLast) {
+         int var5 = syncedLyrics.lastWithTimeOf(i) + 1;
+         if (var5 >= syncedLyrics.size()) {
             return 1.0F;
          } else {
-            long var6 = var1.line(var2).timeMs();
-            long var8 = var1.line(var5).timeMs() - 200L;
-            return var8 <= var6 ? 1.0F : clamp01((float)(var3 - var6) / (float)(var8 - var6));
+            long var6 = syncedLyrics.line(i).timeMs();
+            long var8 = syncedLyrics.line(var5).timeMs() - 200L;
+            return var8 <= var6 ? 1.0F : clamp01((float)(l - var6) / (float)(var8 - var6));
          }
       } else {
          return 1.0F;
       }
    }
 
-   private float rowFill(SyncedLyrics var1, int var2, String[] var3, int var4, ImFont var5, int var6, long var7) {
-      if (var2 < this.lyricCurrentFirst) {
+   private float rowFill(SyncedLyrics syncedLyrics, int i, String[] strings, int j, ImFont imFont, int k, long l) {
+      if (i < this.lyricCurrentFirst) {
          return 1.0F / 0.0F;
-      } else if (var2 > this.lyricCurrentLast) {
+      } else if (i > this.lyricCurrentLast) {
          return 0.0F;
       } else {
-         String var10 = var3[var4];
+         String var10 = strings[j];
          int var11 = 0;
-         if (var4 > 0) {
-            String var12 = this.lyricTexts[var2];
-            var11 = var3[0].length();
+         if (j > 0) {
+            String var12 = this.lyricTexts[i];
+            var11 = strings[0].length();
 
             while (var11 < var12.length() && var12.charAt(var11) == ' ') {
                var11++;
@@ -3036,7 +3093,7 @@ public final class HudRenderer {
          }
 
          float var9;
-         if ((var9 = this.litChars(var1, var2, var7) - var11) <= 0.0F) {
+         if ((var9 = this.litChars(syncedLyrics, i, l) - var11) <= 0.0F) {
             return 0.0F;
          } else if (var9 >= var10.length()) {
             return 1.0F / 0.0F;
@@ -3047,54 +3104,54 @@ public final class HudRenderer {
             }
 
             int var13 = var16 + Character.charCount(var10.codePointAt(var16));
-            float var14 = HudChrome.width(var5, var6, var10.substring(0, var16));
-            float var15 = HudChrome.width(var5, var6, var10.substring(0, var13));
+            float var14 = HudChrome.width(imFont, k, var10.substring(0, var16));
+            float var15 = HudChrome.width(imFont, k, var10.substring(0, var13));
             return var14 + (var15 - var14) * clamp01((var9 - var16) / (var13 - var16));
          }
       }
    }
 
-   private float litChars(SyncedLyrics var1, int var2, long var3) {
-      HudRenderer.LyricWords var5 = this.lyricWords[var2];
+   private float litChars(SyncedLyrics syncedLyrics, int i, long l) {
+      HudRenderer.LyricWords var5 = this.lyricWords[i];
       if (var5 == null) {
-         this.timeWords(var1, var1.firstWithTimeOf(var2));
-         var5 = this.lyricWords[var2];
+         this.timeWords(syncedLyrics, syncedLyrics.firstWithTimeOf(i));
+         var5 = this.lyricWords[i];
       }
 
       float var6 = 0.0F;
       long[] var7 = var5.start();
 
-      for (int var8 = 0; var8 < var7.length && var3 >= var7[var8]; var8++) {
-         float var9 = smooth((float)(var3 - var7[var8]) / (float)var5.sweep()[var8]);
+      for (int var8 = 0; var8 < var7.length && l >= var7[var8]; var8++) {
+         float var9 = smooth((float)(l - var7[var8]) / (float)var5.sweep()[var8]);
          var6 = var5.from()[var8] + (var5.to()[var8] - var5.from()[var8]) * var9;
       }
 
       return var6;
    }
 
-   private void timeWords(SyncedLyrics var1, int var2) {
-      int var3 = var1.lastWithTimeOf(var2);
+   private void timeWords(SyncedLyrics syncedLyrics, int i) {
+      int var3 = syncedLyrics.lastWithTimeOf(i);
       int var4 = var3 + 1;
-      long var5 = var1.line(var2).timeMs();
-      long var7 = var4 < var1.size() ? var1.line(var4).timeMs() - 200L : 9223372036854775807L;
+      long var5 = syncedLyrics.line(i).timeMs();
+      long var7 = var4 < syncedLyrics.size() ? syncedLyrics.line(var4).timeMs() - 200L : 9223372036854775807L;
       int var9 = 0;
 
-      for (int var10 = var2; var10 <= var3; var10++) {
+      for (int var10 = i; var10 <= var3; var10++) {
          var9 += letterCount(this.lyricTexts[var10]);
       }
 
-      long var28 = var4 < var1.size() ? Math.min(var7 - var5, (long)Math.round(var9 * this.lyricCharMs * 2.0F)) : Math.round(var9 * this.lyricCharMs);
+      long var28 = var4 < syncedLyrics.size() ? Math.min(var7 - var5, (long)Math.round(var9 * this.lyricCharMs * 2.0F)) : Math.round(var9 * this.lyricCharMs);
       var28 = Math.max(0L, var28);
       int var12 = 0;
 
-      for (int var13 = var2; var13 <= var3; var13++) {
+      for (int var13 = i; var13 <= var3; var13++) {
          String var14 = this.lyricTexts[var13];
          int var15 = var14.isEmpty() ? 0 : var14.length() - letterCount(var14) + 1;
          int[] var16 = new int[var15];
          int[] var17 = new int[var15];
          long[] var18 = new long[var15];
          long[] var19 = new long[var15];
-         List var20 = var1.line(var13).wordTimes();
+         List var20 = syncedLyrics.line(var13).wordTimes();
          boolean var21 = var20.size() == var15;
          int var30 = 0;
 
@@ -3117,21 +3174,21 @@ public final class HudRenderer {
       }
    }
 
-   private float lyricPace(SyncedLyrics var1) {
-      float[] var2 = new float[var1.size()];
+   private float lyricPace(SyncedLyrics syncedLyrics) {
+      float[] var2 = new float[syncedLyrics.size()];
       int var3 = 0;
       int var4 = 0;
 
-      while (var4 < var1.size()) {
-         int var5 = var1.lastWithTimeOf(var4);
+      while (var4 < syncedLyrics.size()) {
+         int var5 = syncedLyrics.lastWithTimeOf(var4);
          int var6 = 0;
 
          for (int var7 = var4; var7 <= var5; var7++) {
             var6 += letterCount(this.lyricTexts[var7]);
          }
 
-         if (var6 > 0 && var5 + 1 < var1.size()) {
-            var2[var3++] = (float)(var1.line(var5 + 1).timeMs() - var1.line(var4).timeMs()) / var6;
+         if (var6 > 0 && var5 + 1 < syncedLyrics.size()) {
+            var2[var3++] = (float)(syncedLyrics.line(var5 + 1).timeMs() - syncedLyrics.line(var4).timeMs()) / var6;
          }
 
          var4 = var5 + 1;
@@ -3145,11 +3202,11 @@ public final class HudRenderer {
       }
    }
 
-   private static int letterCount(String var0) {
-      int var1 = var0.length();
+   private static int letterCount(String string) {
+      int var1 = string.length();
 
-      for (int var2 = 0; var2 < var0.length(); var2++) {
-         if (var0.charAt(var2) == ' ') {
+      for (int var2 = 0; var2 < string.length(); var2++) {
+         if (string.charAt(var2) == ' ') {
             var1--;
          }
       }
@@ -3157,61 +3214,61 @@ public final class HudRenderer {
       return var1;
    }
 
-   private float lyricViewHeight(SyncedLyrics var1, int var2, HudRenderer.Type var3, float var4, float var5) {
-      int var6 = var3.textPx();
-      this.prepareRows(var6, var4);
-      if (this.lyricViewH >= 0.0F && this.lyricViewLines == var2 && this.lyricViewScale == var5) {
+   private float lyricViewHeight(SyncedLyrics syncedLyrics, int i, HudRenderer.Type type, float f, float g) {
+      int var6 = type.textPx();
+      this.prepareRows(var6, f);
+      if (this.lyricViewH >= 0.0F && this.lyricViewLines == i && this.lyricViewScale == g) {
          return this.lyricViewH;
       } else {
-         int var7 = var2;
+         int var7 = i;
          int var8 = 0;
 
-         while (var8 < var1.size()) {
+         while (var8 < syncedLyrics.size()) {
             int var9 = 0;
-            int var10 = var1.lastWithTimeOf(var8);
+            int var10 = syncedLyrics.lastWithTimeOf(var8);
 
             for (int var11 = var8; var11 <= var10; var11++) {
-               var9 += Math.max(1, this.rowsFor(var11, var3.text(), var6, var4).length);
+               var9 += Math.max(1, this.rowsFor(var11, type.text(), var6, f).length);
             }
 
             var7 = Math.max(var7, Math.min(4, var9));
-            var8 = var1.lastWithTimeOf(var8) + 1;
+            var8 = syncedLyrics.lastWithTimeOf(var8) + 1;
          }
 
-         this.lyricViewH = var7 * var6 + (var7 - 1) * 6.0F * var5;
-         this.lyricViewLines = var2;
-         this.lyricViewScale = var5;
+         this.lyricViewH = var7 * var6 + (var7 - 1) * 6.0F * g;
+         this.lyricViewLines = i;
+         this.lyricViewScale = g;
          return this.lyricViewH;
       }
    }
 
-   private static float lineHeight(String[] var0, int var1, float var2) {
-      return var0.length <= 1 ? var1 : var0.length * var1 + (var0.length - 1) * var2;
+   private static float lineHeight(String[] strings, int i, float f) {
+      return strings.length <= 1 ? i : strings.length * i + (strings.length - 1) * f;
    }
 
-   private float easeLyricBlock(float var1, float var2) {
-      float var3 = var1 - this.lyricBlockH;
+   private float easeLyricBlock(float f, float g) {
+      float var3 = f - this.lyricBlockH;
       if (Math.abs(var3) < 0.5F) {
-         this.lyricBlockH = var1;
+         this.lyricBlockH = f;
       } else {
          float var4 = var3 > 0.0F ? 14.0F : 9.0F;
-         this.lyricBlockH = this.lyricBlockH + var3 * (1.0F - (float)Math.exp(-var4 * var2));
+         this.lyricBlockH = this.lyricBlockH + var3 * (1.0F - (float)Math.exp(-var4 * g));
       }
 
       return this.lyricBlockH;
    }
 
-   private void prepareLyrics(Lyrics var1, ImFont var2) {
-      if (var1 != this.lyricPrepared) {
-         this.lyricPrepared = var1;
+   private void prepareLyrics(Lyrics lyrics, ImFont imFont) {
+      if (lyrics != this.lyricPrepared) {
+         this.lyricPrepared = lyrics;
          this.lyricViewH = -1.0F;
-         SyncedLyrics var3 = var1.synced();
+         SyncedLyrics var3 = lyrics.synced();
          this.lyricTexts = new String[var3.size()];
          this.lyricRows = new String[var3.size()][];
          this.lyricWords = new HudRenderer.LyricWords[var3.size()];
          int var4 = 0;
          int var5 = 0;
-         IntPredicate var6 = var2x -> this.hudHasGlyph(var2, var2x);
+         IntPredicate var6 = i -> this.hudHasGlyph(imFont, i);
 
          for (int var7 = 0; var7 < var3.size(); var7++) {
             String var8;
@@ -3223,7 +3280,7 @@ public final class HudRenderer {
                var9 += Character.charCount(var10);
                if (Character.isLetter(var10)) {
                   var4++;
-                  if (var10 >= 128 && !this.hudHasGlyph(var2, var10)) {
+                  if (var10 >= 128 && !this.hudHasGlyph(imFont, var10)) {
                      var5++;
                   }
                }
@@ -3235,90 +3292,88 @@ public final class HudRenderer {
       }
    }
 
-   private boolean hudHasGlyph(ImFont var1, int var2) {
-      if (var2 < 128 || var1 == null) {
+   private boolean hudHasGlyph(ImFont imFont, int i) {
+      if (i < 128 || imFont == null) {
          return true;
-      } else if (var2 > 65535) {
+      } else if (i > 65535) {
          return false;
       } else {
-         if (var1 != this.glyphFont) {
-            this.glyphFont = var1;
+         if (imFont != this.glyphFont) {
+            this.glyphFont = imFont;
             this.glyphs.clear();
          }
 
          Boolean var3;
-         if ((var3 = this.glyphs.get(var2)) == null) {
+         if ((var3 = this.glyphs.get(i)) == null) {
             if (this.glyphs.size() > 1024) {
                this.glyphs.clear();
             }
 
-            var3 = var1.findGlyphNoFallback(var2).isValidPtr();
-            this.glyphs.put(var2, var3);
+            var3 = imFont.findGlyphNoFallback(i).isValidPtr();
+            this.glyphs.put(i, var3);
          }
 
          return var3;
       }
    }
 
-   private void prepareRows(int var1, float var2) {
-      int var3 = (int)var2;
-      if (var1 != this.lyricRowsPx || var3 != this.lyricRowsWidth) {
+   private void prepareRows(int i, float f) {
+      int var3 = (int)f;
+      if (i != this.lyricRowsPx || var3 != this.lyricRowsWidth) {
          Arrays.fill((Object[])this.lyricRows, null);
-         this.lyricRowsPx = var1;
+         this.lyricRowsPx = i;
          this.lyricRowsWidth = var3;
          this.lyricViewH = -1.0F;
       }
    }
 
-   private String[] rowsFor(int var1, ImFont var2, int var3, float var4) {
-      this.prepareRows(var3, var4);
-      String[] var5 = this.lyricRows[var1];
+   private String[] rowsFor(int i, ImFont imFont, int j, float f) {
+      this.prepareRows(j, f);
+      String[] var5 = this.lyricRows[i];
       if (var5 == null) {
-         var5 = wrapLyric(var2, var3, this.lyricTexts[var1], this.lyricRowsWidth);
-         this.lyricRows[var1] = var5;
+         var5 = wrapLyric(imFont, j, this.lyricTexts[i], this.lyricRowsWidth);
+         this.lyricRows[i] = var5;
       }
 
       return var5;
    }
 
-   private static String[] wrapLyric(ImFont var0, int var1, String var2, float var3) {
-      if (var2.isEmpty()) {
+   private static String[] wrapLyric(ImFont imFont, int i, String string, float f) {
+      if (string.isEmpty()) {
          return NO_ROWS;
-      } else if (HudChrome.width(var0, var1, var2) <= var3) {
-         return new String[]{var2};
+      } else if (HudChrome.width(imFont, i, string) <= f) {
+         return new String[]{string};
       } else {
          int var5 = -1;
          float var6 = 3.4028235E38F;
 
          float var4;
-         for (int var7 = var2.indexOf(32);
-            var7 > 0 && !((var4 = HudChrome.width(var0, var1, var2.substring(0, var7).stripTrailing())) > var3);
-            var7 = var2.indexOf(32, var7 + 1)
+         for (int var7 = string.indexOf(32);
+            var7 > 0 && !((var4 = HudChrome.width(imFont, i, string.substring(0, var7).stripTrailing())) > f);
+            var7 = string.indexOf(32, var7 + 1)
          ) {
-            float var8 = HudChrome.width(var0, var1, var2.substring(var7 + 1).stripLeading());
-            if (var8 <= var3 && Math.max(var4, var8) < var6) {
+            float var8 = HudChrome.width(imFont, i, string.substring(var7 + 1).stripLeading());
+            if (var8 <= f && Math.max(var4, var8) < var6) {
                var6 = Math.max(var4, var8);
                var5 = var7;
             }
          }
 
          if (var5 > 0) {
-            return new String[]{var2.substring(0, var5).stripTrailing(), var2.substring(var5 + 1).stripLeading()};
+            return new String[]{string.substring(0, var5).stripTrailing(), string.substring(var5 + 1).stripLeading()};
          } else {
-            int var11 = fitPrefix(var0, var1, var2, var3);
-            String var9 = var2.substring(0, var11).stripTrailing();
-            String var10 = var2.substring(var11).stripLeading();
-            return var10.isEmpty()
-               ? new String[]{var9}
-               : new String[]{var9, HudChrome.width(var0, var1, var10) <= var3 ? var10 : ellipsize(var0, var1, var10, var3)};
+            int var11 = fitPrefix(imFont, i, string, f);
+            String var9 = string.substring(0, var11).stripTrailing();
+            String var10 = string.substring(var11).stripLeading();
+            return var10.isEmpty() ? new String[]{var9} : new String[]{var9, HudChrome.width(imFont, i, var10) <= f ? var10 : ellipsize(imFont, i, var10, f)};
          }
       }
    }
 
-   private static int fitPrefix(ImFont var0, int var1, String var2, float var3) {
+   private static int fitPrefix(ImFont imFont, int i, String string, float f) {
       int var4 = -1;
 
-      for (int var5 = var2.indexOf(32); var5 > 0 && !(HudChrome.width(var0, var1, var2.substring(0, var5)) > var3); var5 = var2.indexOf(32, var5 + 1)) {
+      for (int var5 = string.indexOf(32); var5 > 0 && !(HudChrome.width(imFont, i, string.substring(0, var5)) > f); var5 = string.indexOf(32, var5 + 1)) {
          var4 = var5;
       }
 
@@ -3326,18 +3381,18 @@ public final class HudRenderer {
          return var4 + 1;
       } else {
          int var6 = 1;
-         int var7 = var2.length();
+         int var7 = string.length();
 
          while (var6 < var7) {
             int var8 = var6 + var7 + 1 >>> 1;
-            if (HudChrome.width(var0, var1, var2.substring(0, var8)) <= var3) {
+            if (HudChrome.width(imFont, i, string.substring(0, var8)) <= f) {
                var6 = var8;
             } else {
                var7 = var8 - 1;
             }
          }
 
-         if (var6 > 1 && var6 < var2.length() && Character.isHighSurrogate(var2.charAt(var6 - 1))) {
+         if (var6 > 1 && var6 < string.length() && Character.isHighSurrogate(string.charAt(var6 - 1))) {
             var6--;
          }
 
@@ -3346,107 +3401,107 @@ public final class HudRenderer {
    }
 
    private void drawLyrics(
-      ImDrawList var1,
-      HudRenderer.Type var2,
-      HudRenderer.LyricView var3,
-      HudRenderer.SpotifyColors var4,
-      float var5,
-      float var6,
-      float var7,
-      float var8,
-      float var9,
-      float var10,
-      boolean var11
+      ImDrawList imDrawList,
+      HudRenderer.Type type,
+      HudRenderer.LyricView lyricView,
+      HudRenderer.SpotifyColors spotifyColors,
+      float f,
+      float g,
+      float h,
+      float i,
+      float j,
+      float k,
+      boolean bl
    ) {
-      float var12 = var6 - 12.0F * var9 + Math.max(1.0F, 2.0F * var9);
-      if (!(var8 <= var12) && !(var10 <= 0.001F)) {
-         float var13 = (float)Math.floor(var5 - 2.0F);
-         float var14 = (float)Math.ceil(var5 + var7 + 2.0F);
-         var1.pushClipRect(var13, var12, var14, var8, true);
-         if (var3.status() != null) {
-            float var15 = Math.round(var6 + (var2.textPx() - var2.labelPx()) * 0.5F);
-            HudChrome.text(var1, var2.label(), var2.labelPx(), var5, var15, HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, var10 * 0.85F), var3.status(), var11);
+      float var12 = g - 12.0F * j + Math.max(1.0F, 2.0F * j);
+      if (!(i <= var12) && !(k <= 0.001F)) {
+         float var13 = (float)Math.floor(f - 2.0F);
+         float var14 = (float)Math.ceil(f + h + 2.0F);
+         imDrawList.pushClipRect(var13, var12, var14, i, true);
+         if (lyricView.status() != null) {
+            float var15 = Math.round(g + (type.textPx() - type.labelPx()) * 0.5F);
+            HudChrome.text(imDrawList, type.label(), type.labelPx(), f, var15, HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, k * 0.85F), lyricView.status(), bl);
          }
 
-         for (HudRenderer.LyricItem var16 : var3.items()) {
-            float var17 = var10 * var16.alpha();
+         for (HudRenderer.LyricItem var16 : lyricView.items()) {
+            float var17 = k * var16.alpha();
             if (!(var17 <= 0.004F)) {
-               float var18 = var6 + var16.top();
+               float var18 = g + var16.top();
                if (var16.text() == null) {
-                  float var19 = var18 + (this.capTop(var2.text(), var2.textPx()) + HudChrome.ascent(var2.text(), var2.textPx())) * 0.5F;
-                  this.drawLyricBreak(var1, var4, var5, var19, var9, var16.highlight(), var16.progress(), var17);
+                  float var19 = var18 + (this.capTop(type.text(), type.textPx()) + HudChrome.ascent(type.text(), type.textPx())) * 0.5F;
+                  this.drawLyricBreak(imDrawList, spotifyColors, f, var19, j, var16.highlight(), var16.progress(), var17);
                } else {
-                  int var23 = HudChrome.scaleAlpha(EfnTheme.lerpColor(var4.upcoming(), var4.lyric(), var16.highlight()), var17);
-                  int var20 = HudChrome.scaleAlpha(var4.lit(), var17);
-                  float var21 = Math.min(var14, (float)Math.floor(var5) + Math.round(var16.fill()));
+                  int var23 = HudChrome.scaleAlpha(EfnTheme.lerpColor(spotifyColors.upcoming(), spotifyColors.lyric(), var16.highlight()), var17);
+                  int var20 = HudChrome.scaleAlpha(spotifyColors.lit(), var17);
+                  float var21 = Math.min(var14, (float)Math.floor(f) + Math.round(var16.fill()));
                   if (var16.fill() <= 0.0F) {
-                     HudChrome.text(var1, var2.text(), var2.textPx(), var5, Math.round(var18), var23, var16.text(), var11);
+                     HudChrome.text(imDrawList, type.text(), type.textPx(), f, Math.round(var18), var23, var16.text(), bl);
                   } else if (var21 >= var14) {
-                     HudChrome.text(var1, var2.text(), var2.textPx(), var5, Math.round(var18), var20, var16.text(), var11);
+                     HudChrome.text(imDrawList, type.text(), type.textPx(), f, Math.round(var18), var20, var16.text(), bl);
                   } else {
-                     var1.pushClipRect(var13, var12, var21, var8, true);
-                     HudChrome.text(var1, var2.text(), var2.textPx(), var5, Math.round(var18), var20, var16.text(), var11);
-                     var1.popClipRect();
-                     var1.pushClipRect(var21, var12, var14, var8, true);
-                     HudChrome.text(var1, var2.text(), var2.textPx(), var5, Math.round(var18), var23, var16.text(), var11);
-                     var1.popClipRect();
+                     imDrawList.pushClipRect(var13, var12, var21, i, true);
+                     HudChrome.text(imDrawList, type.text(), type.textPx(), f, Math.round(var18), var20, var16.text(), bl);
+                     imDrawList.popClipRect();
+                     imDrawList.pushClipRect(var21, var12, var14, i, true);
+                     HudChrome.text(imDrawList, type.text(), type.textPx(), f, Math.round(var18), var23, var16.text(), bl);
+                     imDrawList.popClipRect();
                   }
                }
             }
          }
 
-         var1.popClipRect();
+         imDrawList.popClipRect();
       }
    }
 
-   private void drawLyricBreak(ImDrawList var1, HudRenderer.SpotifyColors var2, float var3, float var4, float var5, float var6, float var7, float var8) {
-      float var9 = Math.max(1.0F, 1.6F * var5);
-      float var10 = Math.max(4.0F, (float)Math.round(6.0F * var5));
+   private void drawLyricBreak(ImDrawList imDrawList, HudRenderer.SpotifyColors spotifyColors, float f, float g, float h, float i, float j, float k) {
+      float var9 = Math.max(1.0F, 1.6F * h);
+      float var10 = Math.max(4.0F, (float)Math.round(6.0F * h));
       float var11 = 0.5F - 0.5F * (float)Math.cos(this.lyricBreath / 1.6F * 2.0 * 3.141592653589793);
 
       for (int var12 = 0; var12 < 3; var12++) {
-         float var13 = smooth(var7 * 3.0F - var12) * var6;
-         int var14 = HudChrome.scaleAlpha(EfnTheme.lerpColor(var2.upcoming(), var2.lit(), var13), var8);
-         float var15 = var9 * (1.0F + 0.3F * var13 + 0.12F * var11 * var6);
-         var1.addCircleFilled(var3 + var9 + var12 * var10, var4, var15, var14, 12);
+         float var13 = smooth(j * 3.0F - var12) * i;
+         int var14 = HudChrome.scaleAlpha(EfnTheme.lerpColor(spotifyColors.upcoming(), spotifyColors.lit(), var13), k);
+         float var15 = var9 * (1.0F + 0.3F * var13 + 0.12F * var11 * i);
+         imDrawList.addCircleFilled(f + var9 + var12 * var10, g, var15, var14, 12);
       }
    }
 
-   private void foldTrack(NowPlaying var1, ImFont var2) {
-      if (var1 != this.spotifyFolded) {
-         this.spotifyFolded = var1;
-         IntPredicate var3 = var2x -> this.hudHasGlyph(var2, var2x);
-         String var4 = DisplayText.fold(var1.title(), var3);
-         this.spotifyTitle = var4.isEmpty() ? var1.title() : var4;
-         this.spotifyArtist = DisplayText.fold(var1.artist(), var3);
+   private void foldTrack(NowPlaying nowPlaying, ImFont imFont) {
+      if (nowPlaying != this.spotifyFolded) {
+         this.spotifyFolded = nowPlaying;
+         IntPredicate var3 = i -> this.hudHasGlyph(imFont, i);
+         String var4 = DisplayText.fold(nowPlaying.title(), var3);
+         this.spotifyTitle = var4.isEmpty() ? nowPlaying.title() : var4;
+         this.spotifyArtist = DisplayText.fold(nowPlaying.artist(), var3);
       }
    }
 
-   private float[] marquee(String var1, String var2, float var3, float var4, float var5, boolean var6, boolean var7, float var8, float var9, float var10) {
-      if (!var1.equals(this.marqueeTitle) || !var2.equals(this.marqueeArtist)) {
-         this.marqueeTitle = var1;
-         this.marqueeArtist = var2;
+   private float[] marquee(String string, String string2, float f, float g, float h, boolean bl, boolean bl2, float i, float j, float k) {
+      if (!string.equals(this.marqueeTitle) || !string2.equals(this.marqueeArtist)) {
+         this.marqueeTitle = string;
+         this.marqueeArtist = string2;
          this.marqueeTime = 0.0F;
       }
 
       float var11 = 0.0F;
       float var12 = 0.0F;
-      float var13 = Math.max(var3 > var5 ? var3 : 0.0F, var4 > var5 ? var4 : 0.0F);
-      if (var6 && var13 > 0.0F) {
-         float var14 = 30.0F * var9;
-         float var15 = 2.4F + (var13 + var8) / var14;
+      float var13 = Math.max(f > h ? f : 0.0F, g > h ? g : 0.0F);
+      if (bl && var13 > 0.0F) {
+         float var14 = 30.0F * j;
+         float var15 = 2.4F + (var13 + i) / var14;
          this.marqueeTime %= var15;
-         if (var7 || this.marqueeTime > 2.4F) {
-            this.marqueeTime = (this.marqueeTime + var10) % var15;
+         if (bl2 || this.marqueeTime > 2.4F) {
+            this.marqueeTime = (this.marqueeTime + k) % var15;
          }
 
          float var16 = Math.max(0.0F, this.marqueeTime - 2.4F) * var14;
-         if (var3 > var5) {
-            var11 = Math.min(var16, var3 + var8);
+         if (f > h) {
+            var11 = Math.min(var16, f + i);
          }
 
-         if (var4 > var5) {
-            var12 = Math.min(var16, var4 + var8);
+         if (g > h) {
+            var12 = Math.min(var16, g + i);
          }
       } else {
          this.marqueeTime = 0.0F;
@@ -3456,54 +3511,42 @@ public final class HudRenderer {
    }
 
    private static void marqueeLine(
-      ImDrawList var0,
-      ImFont var1,
-      int var2,
-      float var3,
-      float var4,
-      float var5,
-      float var6,
-      float var7,
-      float var8,
-      boolean var9,
-      String var10,
-      int var11,
-      boolean var12
+      ImDrawList imDrawList, ImFont imFont, int i, float f, float g, float h, float j, float k, float l, boolean bl, String string, int m, boolean bl2
    ) {
-      if (var6 <= var5 + 0.5F) {
-         HudChrome.text(var0, var1, var2, var3, var4, var11, var10, var12);
-      } else if (!var9) {
-         HudChrome.text(var0, var1, var2, var3, var4, var11, ellipsize(var1, var2, var10, var5), var12);
+      if (j <= h + 0.5F) {
+         HudChrome.text(imDrawList, imFont, i, f, g, m, string, bl2);
+      } else if (!bl) {
+         HudChrome.text(imDrawList, imFont, i, f, g, m, ellipsize(imFont, i, string, h), bl2);
       } else {
-         var0.pushClipRect(var3, var4 - 2.0F, var3 + var5, var4 + var2 + 3.0F, true);
-         HudChrome.text(var0, var1, var2, var3 - var7, var4, var11, var10, var12);
-         if (var7 > 0.0F) {
-            HudChrome.text(var0, var1, var2, var3 - var7 + var6 + var8, var4, var11, var10, var12);
+         imDrawList.pushClipRect(f, g - 2.0F, f + h, g + i + 3.0F, true);
+         HudChrome.text(imDrawList, imFont, i, f - k, g, m, string, bl2);
+         if (k > 0.0F) {
+            HudChrome.text(imDrawList, imFont, i, f - k + j + l, g, m, string, bl2);
          }
 
-         var0.popClipRect();
+         imDrawList.popClipRect();
       }
    }
 
-   private static String ellipsize(ImFont var0, int var1, String var2, float var3) {
-      float var4 = var3 - HudChrome.width(var0, var1, "...");
+   private static String ellipsize(ImFont imFont, int i, String string, float f) {
+      float var4 = f - HudChrome.width(imFont, i, "...");
       int var5 = 0;
-      int var6 = var2.length();
+      int var6 = string.length();
 
       while (var5 < var6) {
          int var7 = var5 + var6 + 1 >>> 1;
-         if (HudChrome.width(var0, var1, var2.substring(0, var7)) <= var4) {
+         if (HudChrome.width(imFont, i, string.substring(0, var7)) <= var4) {
             var5 = var7;
          } else {
             var6 = var7 - 1;
          }
       }
 
-      return var2.substring(0, var5).stripTrailing() + "...";
+      return string.substring(0, var5).stripTrailing() + "...";
    }
 
-   private static String formatSeconds(long var0) {
-      long var2 = Math.max(0L, var0);
+   private static String formatSeconds(long l) {
+      long var2 = Math.max(0L, l);
       long var4 = var2 / 3600L;
       long var6 = var2 / 60L % 60L;
       StringBuilder var8 = new StringBuilder(8);
@@ -3519,15 +3562,15 @@ public final class HudRenderer {
       return var8.append(var2 % 60L).toString();
    }
 
-   private float capTop(ImFont var1, int var2) {
-      if (var1 != null && !(var1.getFontSize() <= 0.0F)) {
-         long var3 = (long)System.identityHashCode(var1) << 16 ^ var2;
+   private float capTop(ImFont imFont, int i) {
+      if (imFont != null && !(imFont.getFontSize() <= 0.0F)) {
+         long var3 = (long)System.identityHashCode(imFont) << 16 ^ i;
          Float var5 = this.capTops.get(var3);
          if (var5 != null) {
             return var5;
          } else {
-            ImFontGlyph var6 = var1.findGlyphNoFallback(72);
-            float var7 = var6.isValidPtr() ? var6.getY0() * var2 / var1.getFontSize() : var2 * 0.2F;
+            ImFontGlyph var6 = imFont.findGlyphNoFallback(72);
+            float var7 = var6.isValidPtr() ? var6.getY0() * i / imFont.getFontSize() : i * 0.2F;
             float var8 = Math.max(0.0F, (float)Math.round(var7));
             if (this.capTops.size() > 64) {
                this.capTops.clear();
@@ -3537,25 +3580,25 @@ public final class HudRenderer {
             return var8;
          }
       } else {
-         return Math.round(var2 * 0.2F);
+         return Math.round(i * 0.2F);
       }
    }
 
-   private ThemeImages.Texture spotifyArtTexture(AlbumArt var1) {
-      if (var1 == this.spotifyArt) {
+   private ThemeImages.Texture spotifyArtTexture(AlbumArt albumArt) {
+      if (albumArt == this.spotifyArt) {
          return this.spotifyArtTexture;
       } else {
          this.releaseSpotifyArt();
-         if (var1 == null) {
+         if (albumArt == null) {
             return null;
          } else {
-            this.spotifyArt = var1;
-            ByteBuffer var2 = MemoryUtil.memAlloc(var1.byteSize());
+            this.spotifyArt = albumArt;
+            ByteBuffer var2 = MemoryUtil.memAlloc(albumArt.byteSize());
 
             try {
-               var1.copyTo(var2);
+               albumArt.copyTo(var2);
                var2.flip();
-               this.spotifyArtTexture = ThemeImages.fromPixels(var2, var1.size(), var1.size(), false);
+               this.spotifyArtTexture = ThemeImages.fromPixels(var2, albumArt.size(), albumArt.size(), false);
             } catch (RuntimeException var7) {
                this.spotifyArtTexture = null;
             } finally {
@@ -3576,19 +3619,19 @@ public final class HudRenderer {
       this.spotifyArt = null;
    }
 
-   private List<HudRenderer.PotionRow> buildPotionRows(MinecraftClient var1) {
-      if (var1.field_1724 == null) {
+   private List<HudRenderer.PotionRow> buildPotionRows(MinecraftClient minecraftClient) {
+      if (minecraftClient.player == null) {
          return List.of();
       } else {
          ArrayList var2 = new ArrayList();
 
-         for (StatusEffectInstance var4 : var1.field_1724.method_6026()) {
-            RegistryEntry var5 = var4.method_5579();
-            String var6 = I18n.method_4662(((StatusEffect)var5.comp_349()).method_5567(), new Object[0]);
-            int var7 = var4.method_5578();
+         for (StatusEffectInstance var4 : minecraftClient.player.getStatusEffects()) {
+            RegistryEntry var5 = var4.getEffectType();
+            String var6 = I18n.translate(((StatusEffect)var5.value()).getTranslationKey());
+            int var7 = var4.getAmplifier();
             String var8 = var7 > 0 ? toRomanNumeral(var7 + 1) : "";
-            int var9 = var4.method_5584();
-            if (var9 >= 0 && var9 != 2147483647 && !var4.method_48559()) {
+            int var9 = var4.getDuration();
+            if (var9 >= 0 && var9 != 2147483647 && !var4.isInfinite()) {
                int var10 = Math.max(0, var9 / 20);
                String var11 = var10 / 60 + ":" + String.format("%02d", var10 % 60);
                var2.add(new HudRenderer.PotionRow(var5, var6, var8, var11, false, var10 < 30, var9));
@@ -3601,8 +3644,8 @@ public final class HudRenderer {
       }
    }
 
-   private static String toRomanNumeral(int var0) {
-      return switch (var0) {
+   private static String toRomanNumeral(int i) {
+      return switch (i) {
          case 1 -> "I";
          case 2 -> "II";
          case 3 -> "III";
@@ -3613,7 +3656,7 @@ public final class HudRenderer {
          case 8 -> "VIII";
          case 9 -> "IX";
          case 10 -> "X";
-         default -> String.valueOf(var0);
+         default -> String.valueOf(i);
       };
    }
 
@@ -3621,15 +3664,15 @@ public final class HudRenderer {
       return this.hudModule != null && this.hudModule.customAccent() ? GuiPalette.abgr(this.hudModule.accentArgb()) : GuiPalette.accent();
    }
 
-   static Surface hudSurface(HudLayoutStore.HudElementState var0) {
-      return HudTheme.get().forElementId(var0.id);
+   static Surface hudSurface(HudLayoutStore.HudElementState hudElementState) {
+      return HudTheme.get().forElementId(hudElementState.id);
    }
 
    static float hudRounding() {
       return HudTheme.get().rounding.get();
    }
 
-   private void updateEditorInput(float var1, float var2) {
+   private void updateEditorInput(float f, float g) {
       float var7 = ImGui.getMousePosX();
       float var8 = ImGui.getMousePosY();
       if (this.draggingId != null) {
@@ -3637,11 +3680,11 @@ public final class HudRenderer {
             HudLayoutStore.HudElementState var17 = this.layout.element(this.draggingId);
             float var18 = var7 - this.dragOffsetX;
             float var11 = var8 - this.dragOffsetY;
-            HudRenderer.Snap var12 = bestSnap(var18, var17.width, this.snapAnchorsX(this.draggingId, var1));
-            HudRenderer.Snap var13 = bestSnap(var11, var17.height, this.snapAnchorsY(this.draggingId, var2));
+            HudRenderer.Snap var12 = bestSnap(var18, var17.width, this.snapAnchorsX(this.draggingId, f));
+            HudRenderer.Snap var13 = bestSnap(var11, var17.height, this.snapAnchorsY(this.draggingId, g));
             this.snapGuideX = var12 != null ? var12.guideAt() : null;
             this.snapGuideY = var13 != null ? var13.guideAt() : null;
-            this.layout.moveTo(this.draggingId, var12 != null ? var12.position() : var18, var13 != null ? var13.position() : var11, var1, var2);
+            this.layout.moveTo(this.draggingId, var12 != null ? var12.position() : var18, var13 != null ? var13.position() : var11, f, g);
          } else {
             this.draggingId = null;
             this.snapGuideX = null;
@@ -3688,11 +3731,11 @@ public final class HudRenderer {
       }
    }
 
-   private List<Float> snapAnchorsX(String var1, float var2) {
-      ArrayList var3 = new ArrayList<>(List.of(0.0F, var2, var2 * 0.5F));
+   private List<Float> snapAnchorsX(String string, float f) {
+      ArrayList var3 = new ArrayList<>(List.of(0.0F, f, f * 0.5F));
 
       for (HudLayoutStore.HudElementState var5 : this.layout.orderedElements()) {
-         if (!var5.id.equals(var1) && var5.positioned) {
+         if (!var5.id.equals(string) && var5.positioned) {
             var3.add(var5.x);
             var3.add(var5.x + var5.width);
             var3.add(var5.x + var5.width * 0.5F);
@@ -3702,11 +3745,11 @@ public final class HudRenderer {
       return var3;
    }
 
-   private List<Float> snapAnchorsY(String var1, float var2) {
-      ArrayList var3 = new ArrayList<>(List.of(0.0F, var2, var2 * 0.5F));
+   private List<Float> snapAnchorsY(String string, float f) {
+      ArrayList var3 = new ArrayList<>(List.of(0.0F, f, f * 0.5F));
 
       for (HudLayoutStore.HudElementState var5 : this.layout.orderedElements()) {
-         if (!var5.id.equals(var1) && var5.positioned) {
+         if (!var5.id.equals(string) && var5.positioned) {
             var3.add(var5.y);
             var3.add(var5.y + var5.height);
             var3.add(var5.y + var5.height * 0.5F);
@@ -3716,14 +3759,14 @@ public final class HudRenderer {
       return var3;
    }
 
-   private static HudRenderer.Snap bestSnap(float var0, float var1, List<Float> var2) {
-      float[] var3 = new float[]{0.0F, var1 * 0.5F, var1};
+   private static HudRenderer.Snap bestSnap(float f, float g, List<Float> list) {
+      float[] var3 = new float[]{0.0F, g * 0.5F, g};
       float var4 = 6.0F;
       HudRenderer.Snap var5 = null;
 
-      for (float var7 : var2) {
+      for (float var7 : list) {
          for (float var11 : var3) {
-            float var12 = Math.abs(var0 + var11 - var7);
+            float var12 = Math.abs(f + var11 - var7);
             if (var12 < var4) {
                var4 = var12;
                var5 = new HudRenderer.Snap(var7 - var11, var7);
@@ -3734,26 +3777,26 @@ public final class HudRenderer {
       return var5;
    }
 
-   private void drawSnapGuides(ImDrawList var1, float var2, float var3) {
+   private void drawSnapGuides(ImDrawList imDrawList, float f, float g) {
       if (this.draggingId != null) {
          int var4 = HudChrome.scaleAlpha(this.hudAccent(), 0.8F);
          if (this.snapGuideX != null) {
-            var1.addLine(this.snapGuideX, 0.0F, this.snapGuideX, var3, var4, 1.0F);
+            imDrawList.addLine(this.snapGuideX, 0.0F, this.snapGuideX, g, var4, 1.0F);
          }
 
          if (this.snapGuideY != null) {
-            var1.addLine(0.0F, this.snapGuideY, var2, this.snapGuideY, var4, 1.0F);
+            imDrawList.addLine(0.0F, this.snapGuideY, f, this.snapGuideY, var4, 1.0F);
          }
       }
    }
 
-   private void drawEditorChrome(ImDrawList var1, float var2, float var3) {
+   private void drawEditorChrome(ImDrawList imDrawList, float f, float g) {
       float var4 = ImGui.getMousePosX();
       float var5 = ImGui.getMousePosY();
       float var6 = ImGuiManager.getInstance().uiScale();
       ImFont var7 = ImGuiManager.getInstance().hudLabelFont();
       int var8 = HudChrome.px(14.0F, var6);
-      this.drawSnapGuides(var1, var2, var3);
+      this.drawSnapGuides(imDrawList, f, g);
       float var9 = Math.round(Math.max(2.0F, 3.0F * var6));
       List var10 = this.layout.orderedElements();
       ArrayList var11 = new ArrayList(var10.size());
@@ -3764,7 +3807,7 @@ public final class HudRenderer {
          float var16 = var14 ? 1.0F : (var15 ? 0.85F : 0.4F);
          float var17 = Math.round(var13.x);
          float var18 = Math.round(var13.y);
-         var1.addRect(
+         imDrawList.addRect(
             var17 - var9,
             var18 - var9,
             var17 + var13.width + var9,
@@ -3774,57 +3817,57 @@ public final class HudRenderer {
             0,
             var14 ? 1.5F : 1.0F
          );
-         this.drawEditorLabel(var1, var7, var8, var6, var13, var14 || var15, var10, var11, var2, var3);
+         this.drawEditorLabel(imDrawList, var7, var8, var6, var13, var14 || var15, var10, var11, f, g);
       }
 
-      drawEditorHint(var1, var7, var8, var6, var2, var3);
+      drawEditorHint(imDrawList, var7, var8, var6, f, g);
    }
 
-   private static void drawEditorHint(ImDrawList var0, ImFont var1, int var2, float var3, float var4, float var5) {
+   private static void drawEditorHint(ImDrawList imDrawList, ImFont imFont, int i, float f, float g, float h) {
       String var6 = "Drag to move  \u00b7  Scroll to resize  \u00b7  Click the eye to hide";
-      float var7 = Math.round(HudChrome.width(var1, var2, var6) + 12.0F * var3 * 2.0F);
-      float var8 = Math.round(28.0F * var3);
-      float var9 = Math.round((var4 - var7) * 0.5F);
-      float var10 = Math.round(var5 - var8 - 96.0F * var3);
-      float var11 = hudRounding() * var3;
-      var0.addRectFilled(var9, var10, var9 + var7, var10 + var8, HudChrome.CHIP_FILL, var11);
-      var0.addRect(var9, var10, var9 + var7, var10 + var8, 402653183, var11, 0, 1.0F);
-      HudChrome.text(var0, var1, var2, var9 + 12.0F * var3, var10 + (float)Math.floor((var8 - var2) * 0.5F), HudChrome.TEXT_LABEL, var6, false);
+      float var7 = Math.round(HudChrome.width(imFont, i, var6) + 12.0F * f * 2.0F);
+      float var8 = Math.round(28.0F * f);
+      float var9 = Math.round((g - var7) * 0.5F);
+      float var10 = Math.round(h - var8 - 96.0F * f);
+      float var11 = hudRounding() * f;
+      imDrawList.addRectFilled(var9, var10, var9 + var7, var10 + var8, HudChrome.CHIP_FILL, var11);
+      imDrawList.addRect(var9, var10, var9 + var7, var10 + var8, 402653183, var11, 0, 1.0F);
+      HudChrome.text(imDrawList, imFont, i, var9 + 12.0F * f, var10 + (float)Math.floor((var8 - i) * 0.5F), HudChrome.TEXT_LABEL, var6, false);
    }
 
    private void drawEditorLabel(
-      ImDrawList var1,
-      ImFont var2,
-      int var3,
-      float var4,
-      HudLayoutStore.HudElementState var5,
-      boolean var6,
-      List<HudLayoutStore.HudElementState> var7,
-      List<float[]> var8,
-      float var9,
-      float var10
+      ImDrawList imDrawList,
+      ImFont imFont,
+      int i,
+      float f,
+      HudLayoutStore.HudElementState hudElementState,
+      boolean bl,
+      List<HudLayoutStore.HudElementState> list,
+      List<float[]> list2,
+      float g,
+      float h
    ) {
-      String var11 = editorLabel(var5.id);
-      float var12 = var6 ? 1.0F : 0.6F;
-      float var13 = 8.0F * var4;
-      float var14 = 12.0F * var4;
-      float var15 = Math.round(20.0F * var4);
-      float var16 = HudChrome.width(var2, var3, var11);
-      float var17 = Math.round(var13 + var16 + 8.0F * var4 + var14 + var13);
-      float[] var18 = placeChip(var5, var17, var15, 7.0F * var4, var7, var8, var9, var10);
-      var8.add(var18);
+      String var11 = editorLabel(hudElementState.id);
+      float var12 = bl ? 1.0F : 0.6F;
+      float var13 = 8.0F * f;
+      float var14 = 12.0F * f;
+      float var15 = Math.round(20.0F * f);
+      float var16 = HudChrome.width(imFont, i, var11);
+      float var17 = Math.round(var13 + var16 + 8.0F * f + var14 + var13);
+      float[] var18 = placeChip(hudElementState, var17, var15, 7.0F * f, list, list2, g, h);
+      list2.add(var18);
       float var19 = var18[0];
       float var20 = var18[1];
-      float var21 = 6.0F * var4;
-      var1.addRectFilled(var19, var20, var19 + var17, var20 + var15, HudChrome.scaleAlpha(HudChrome.CHIP_FILL, var12), var21);
-      var1.addRect(var19, var20, var19 + var17, var20 + var15, HudChrome.scaleAlpha(402653183, var12), var21, 0, 1.0F);
+      float var21 = 6.0F * f;
+      imDrawList.addRectFilled(var19, var20, var19 + var17, var20 + var15, HudChrome.scaleAlpha(HudChrome.CHIP_FILL, var12), var21);
+      imDrawList.addRect(var19, var20, var19 + var17, var20 + var15, HudChrome.scaleAlpha(402653183, var12), var21, 0, 1.0F);
       int var22 = HudChrome.scaleAlpha(HudChrome.TEXT_VALUE, var12);
-      HudChrome.text(var1, var2, var3, var19 + var13, var20 + (float)Math.floor((var15 - var3) * 0.5F), var22, var11, false);
-      float var23 = var19 + var13 + var16 + 8.0F * var4;
+      HudChrome.text(imDrawList, imFont, i, var19 + var13, var20 + (float)Math.floor((var15 - i) * 0.5F), var22, var11, false);
+      float var23 = var19 + var13 + var16 + 8.0F * f;
       float var24 = var20 + (var15 - var14) * 0.5F;
       ImGui.setCursorPos(var23, var24);
-      if (ImGui.invisibleButton("##vis_" + var5.id, var14, var14)) {
-         var5.visible = !var5.visible;
+      if (ImGui.invisibleButton("##vis_" + hudElementState.id, var14, var14)) {
+         hudElementState.visible = !hudElementState.visible;
          this.saveLayout();
       }
 
@@ -3832,72 +3875,70 @@ public final class HudRenderer {
       float var26 = var23 + var14 * 0.5F;
       float var27 = var24 + var14 * 0.5F;
       float var28 = var14 * 0.34F;
-      int var29 = var25 ? HudChrome.TEXT_VALUE : HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, var5.visible ? var12 : var12 * 0.6F);
-      EfnWidgets.eye(var1, var26, var27, var28, var29);
-      if (!var5.visible) {
-         var1.addLine(var26 - var28, var27 - var28, var26 + var28, var27 + var28, var29, Math.max(1.0F, 1.4F * var4));
+      int var29 = var25 ? HudChrome.TEXT_VALUE : HudChrome.scaleAlpha(HudChrome.TEXT_LABEL, hudElementState.visible ? var12 : var12 * 0.6F);
+      EfnWidgets.eye(imDrawList, var26, var27, var28, var29);
+      if (!hudElementState.visible) {
+         imDrawList.addLine(var26 - var28, var27 - var28, var26 + var28, var27 + var28, var29, Math.max(1.0F, 1.4F * f));
       }
    }
 
    private static float[] placeChip(
-      HudLayoutStore.HudElementState var0,
-      float var1,
-      float var2,
-      float var3,
-      List<HudLayoutStore.HudElementState> var4,
-      List<float[]> var5,
-      float var6,
-      float var7
+      HudLayoutStore.HudElementState hudElementState,
+      float f,
+      float g,
+      float h,
+      List<HudLayoutStore.HudElementState> list,
+      List<float[]> list2,
+      float i,
+      float j
    ) {
       float var9 = 4.0F;
-      float var10 = var0.x;
-      float var11 = var0.x + var0.width - var1;
-      float var12 = alignsRight(var0, var6) ? var11 : var10;
-      float var13 = var0.y + (var0.height - var2) * 0.5F;
+      float var10 = hudElementState.x;
+      float var11 = hudElementState.x + hudElementState.width - f;
+      float var12 = alignsRight(hudElementState, i) ? var11 : var10;
+      float var13 = hudElementState.y + (hudElementState.height - g) * 0.5F;
 
       float[][] var8;
       for (float[] var17 : var8 = new float[][]{
-         {var12, var0.y - var3 - var2},
-         {var12, var0.y + var0.height + var3},
-         {var0.x + var0.width + var3, Math.min(var13, var0.y)},
-         {var0.x - var3 - var1, Math.min(var13, var0.y)}
+         {var12, hudElementState.y - h - g},
+         {var12, hudElementState.y + hudElementState.height + h},
+         {hudElementState.x + hudElementState.width + h, Math.min(var13, hudElementState.y)},
+         {hudElementState.x - h - f, Math.min(var13, hudElementState.y)}
       }) {
          float var18 = Math.round(var17[0]);
          float var19 = Math.round(var17[1]);
          if (!(var18 < var9)
             && !(var19 < var9)
-            && !(var18 + var1 > var6 - var9)
-            && !(var19 + var2 > var7 - var9)
-            && !overlapsAny(var18, var19, var1, var2, var0, var4, var5, var3)) {
-            return new float[]{var18, var19, var1, var2};
+            && !(var18 + f > i - var9)
+            && !(var19 + g > j - var9)
+            && !overlapsAny(var18, var19, f, g, hudElementState, list, list2, h)) {
+            return new float[]{var18, var19, f, g};
          }
       }
 
-      float var20 = Math.round(Math.max(var9, Math.min(var12, var6 - var9 - var1)));
+      float var20 = Math.round(Math.max(var9, Math.min(var12, i - var9 - f)));
       float var21 = var8[0][1] >= var9 ? var8[0][1] : var8[1][1];
-      return new float[]{var20, Math.round(Math.max(var9, Math.min(var21, var7 - var9 - var2))), var1, var2};
+      return new float[]{var20, Math.round(Math.max(var9, Math.min(var21, j - var9 - g))), f, g};
    }
 
    private static boolean overlapsAny(
-      float var0,
-      float var1,
-      float var2,
-      float var3,
-      HudLayoutStore.HudElementState var4,
-      List<HudLayoutStore.HudElementState> var5,
-      List<float[]> var6,
-      float var7
+      float f,
+      float g,
+      float h,
+      float i,
+      HudLayoutStore.HudElementState hudElementState,
+      List<HudLayoutStore.HudElementState> list,
+      List<float[]> list2,
+      float j
    ) {
-      for (HudLayoutStore.HudElementState var9 : var5) {
-         if (var9 != var4
-            && var9.positioned
-            && overlaps(var0, var1, var2, var3, var9.x - var7 * 0.5F, var9.y - var7 * 0.5F, var9.width + var7, var9.height + var7)) {
+      for (HudLayoutStore.HudElementState var9 : list) {
+         if (var9 != hudElementState && var9.positioned && overlaps(f, g, h, i, var9.x - j * 0.5F, var9.y - j * 0.5F, var9.width + j, var9.height + j)) {
             return true;
          }
       }
 
-      for (float[] var11 : var6) {
-         if (overlaps(var0, var1, var2, var3, var11[0], var11[1], var11[2], var11[3])) {
+      for (float[] var11 : list2) {
+         if (overlaps(f, g, h, i, var11[0], var11[1], var11[2], var11[3])) {
             return true;
          }
       }
@@ -3905,16 +3946,21 @@ public final class HudRenderer {
       return false;
    }
 
-   private static boolean overlaps(float var0, float var1, float var2, float var3, float var4, float var5, float var6, float var7) {
-      return var0 < var4 + var6 && var4 < var0 + var2 && var1 < var5 + var7 && var5 < var1 + var3;
+   private static boolean overlaps(float f, float g, float h, float i, float j, float k, float l, float m) {
+      return f < j + l && j < f + h && g < k + m && k < g + i;
    }
 
-   private static boolean contains(HudLayoutStore.HudElementState var0, float var1, float var2) {
-      return !var0.positioned ? false : var1 >= var0.x && var1 <= var0.x + var0.width && var2 >= var0.y && var2 <= var0.y + var0.height;
+   private static boolean contains(HudLayoutStore.HudElementState hudElementState, float f, float g) {
+      return !hudElementState.positioned
+         ? false
+         : f >= hudElementState.x
+            && f <= hudElementState.x + hudElementState.width
+            && g >= hudElementState.y
+            && g <= hudElementState.y + hudElementState.height;
    }
 
-   static String editorLabel(String var0) {
-      return switch (var0) {
+   static String editorLabel(String string) {
+      return switch (string) {
          case "info_bar" -> "Info Bar";
          case "coordinates" -> "Coordinates";
          case "module_list" -> "Module List";
@@ -3928,53 +3974,53 @@ public final class HudRenderer {
          case "target_card" -> "Target HUD";
          case "armor_status" -> "Armor HUD";
          case "item_cooldowns" -> "Cooldown";
-         default -> var0;
+         default -> string;
       };
    }
 
-   private static int readTabLatency(MinecraftClient var0, ClientPlayNetworkHandler var1) {
-      PlayerListEntry var2 = var1.method_2871(var1.method_2879().id());
+   private static int readTabLatency(MinecraftClient minecraftClient, ClientPlayNetworkHandler clientPlayNetworkHandler) {
+      PlayerListEntry var2 = clientPlayNetworkHandler.getPlayerListEntry(clientPlayNetworkHandler.getProfile().id());
       if (var2 == null) {
-         var2 = var1.method_2871(var0.field_1724.method_5667());
+         var2 = clientPlayNetworkHandler.getPlayerListEntry(minecraftClient.player.getUuid());
       }
 
       if (var2 == null) {
-         var2 = var1.method_73471(var1.method_2879().name());
+         var2 = clientPlayNetworkHandler.getCaseInsensitivePlayerInfo(clientPlayNetworkHandler.getProfile().name());
       }
 
       if (var2 == null) {
-         var2 = var1.method_73471(var0.field_1724.method_5477().getString());
+         var2 = clientPlayNetworkHandler.getCaseInsensitivePlayerInfo(minecraftClient.player.getName().getString());
       }
 
-      return var2 == null ? 0 : Math.max(0, var2.method_2959());
+      return var2 == null ? 0 : Math.max(0, var2.getLatency());
    }
 
-   private static int readServerPing(ClientPlayNetworkHandler var0) {
-      ServerInfo var1 = var0.method_45734();
-      return var1 != null && var1.field_3758 > 0L && var1.field_3758 <= 60000L ? (int)var1.field_3758 : 0;
+   private static int readServerPing(ClientPlayNetworkHandler clientPlayNetworkHandler) {
+      ServerInfo var1 = clientPlayNetworkHandler.getServerInfo();
+      return var1 != null && var1.ping > 0L && var1.ping <= 60000L ? (int)var1.ping : 0;
    }
 
-   private static float easeOutCubic(float var0) {
-      float var1 = clamp01(var0);
+   private static float easeOutCubic(float f) {
+      float var1 = clamp01(f);
       float var2 = 1.0F - var1;
       return 1.0F - var2 * var2 * var2;
    }
 
-   private static float smooth(float var0) {
-      float var1 = clamp01(var0);
+   private static float smooth(float f) {
+      float var1 = clamp01(f);
       return var1 * var1 * (3.0F - 2.0F * var1);
    }
 
-   private static float clamp01(float var0) {
-      return Math.max(0.0F, Math.min(1.0F, var0));
+   private static float clamp01(float f) {
+      return Math.max(0.0F, Math.min(1.0F, f));
    }
 
-   private static float elementScale(HudLayoutStore.HudElementState var0) {
-      return !Float.isNaN(var0.scale) && !Float.isInfinite(var0.scale) ? Math.max(0.5F, Math.min(3.0F, var0.scale)) : 1.0F;
+   private static float elementScale(HudLayoutStore.HudElementState hudElementState) {
+      return !Float.isNaN(hudElementState.scale) && !Float.isInfinite(hudElementState.scale) ? Math.max(0.5F, Math.min(3.0F, hudElementState.scale)) : 1.0F;
    }
 
-   static float scaleOf(HudLayoutStore.HudElementState var0) {
-      return elementScale(var0) * ImGuiManager.getInstance().uiScale();
+   static float scaleOf(HudLayoutStore.HudElementState hudElementState) {
+      return elementScale(hudElementState) * ImGuiManager.getInstance().uiScale();
    }
 
    @Environment(EnvType.CLIENT)
@@ -3991,8 +4037,8 @@ public final class HudRenderer {
          return new HudRenderer.DrawTransform(0.0F, 0.0F, 1.0F);
       }
 
-      private HudRenderer.DrawTransform down(float var1) {
-         return var1 == 0.0F ? this : new HudRenderer.DrawTransform(this.xOffset, this.yOffset + var1, this.alpha);
+      private HudRenderer.DrawTransform down(float f) {
+         return f == 0.0F ? this : new HudRenderer.DrawTransform(this.xOffset, this.yOffset + f, this.alpha);
       }
    }
 
@@ -4078,18 +4124,18 @@ public final class HudRenderer {
          HudChrome.TEXT_NAME, HudChrome.TEXT_LABEL, HudChrome.TEXT_VALUE, HudChrome.TEXT_LABEL, HudChrome.TEXT_VALUE
       );
 
-      static HudRenderer.SpotifyColors of(SpotifyHudModule var0) {
-         if (var0 == null) {
+      static HudRenderer.SpotifyColors of(SpotifyHudModule spotifyHudModule) {
+         if (spotifyHudModule == null) {
             return DEFAULT;
          } else {
-            SpotifyHudModule.LyricHighlight var1 = var0.lyricHighlight();
-            int var2 = GuiPalette.abgr(var0.lyricsColor());
-            int var3 = GuiPalette.abgr(var0.highlightColor());
+            SpotifyHudModule.LyricHighlight var1 = spotifyHudModule.lyricHighlight();
+            int var2 = GuiPalette.abgr(spotifyHudModule.lyricsColor());
+            int var3 = GuiPalette.abgr(spotifyHudModule.highlightColor());
             return new HudRenderer.SpotifyColors(
-               GuiPalette.abgr(var0.titleColor()),
-               GuiPalette.abgr(var0.artistColor()),
+               GuiPalette.abgr(spotifyHudModule.titleColor()),
+               GuiPalette.abgr(spotifyHudModule.artistColor()),
                var1 == SpotifyHudModule.LyricHighlight.LINE ? var3 : var2,
-               GuiPalette.abgr(var0.upcomingLyricsColor()),
+               GuiPalette.abgr(spotifyHudModule.upcomingLyricsColor()),
                var1 == SpotifyHudModule.LyricHighlight.OFF ? var2 : var3
             );
          }
@@ -4154,8 +4200,8 @@ public final class HudRenderer {
       float valueW,
       float serverTagW
    ) {
-      static HudRenderer.StaffLine plain(String var0, int var1, String var2, boolean var3, float var4, float var5) {
-         return new HudRenderer.StaffLine(var0, var1, var2, var3, var4, var5, false, false, 0.0F, "", 0.0F, "", 0.0F, 0.0F);
+      static HudRenderer.StaffLine plain(String string, int i, String string2, boolean bl, float f, float g) {
+         return new HudRenderer.StaffLine(string, i, string2, bl, f, g, false, false, 0.0F, "", 0.0F, "", 0.0F, 0.0F);
       }
    }
 
@@ -4169,10 +4215,10 @@ public final class HudRenderer {
 
    @Environment(EnvType.CLIENT)
    private record Type(ImFont value, int valuePx, ImFont text, int textPx, ImFont label, int labelPx) {
-      static HudRenderer.Type of(float var0) {
+      static HudRenderer.Type of(float f) {
          ImGuiManager var1 = ImGuiManager.getInstance();
          return new HudRenderer.Type(
-            var1.hudValueFont(), HudChrome.px(18.0F, var0), var1.hudTextFont(), HudChrome.px(17.0F, var0), var1.hudLabelFont(), HudChrome.px(14.0F, var0)
+            var1.hudValueFont(), HudChrome.px(18.0F, f), var1.hudTextFont(), HudChrome.px(17.0F, f), var1.hudLabelFont(), HudChrome.px(14.0F, f)
          );
       }
    }

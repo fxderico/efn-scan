@@ -37,214 +37,214 @@ public abstract class MixinPlayerBypass2ClientPacketListener {
    }
 
    @Inject(
-      method = {"method_11120"},
+      method = {"onGameJoin"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_2600;method_11074(Lnet/minecraft/class_2596;Lnet/minecraft/class_2547;Lnet/minecraft/class_11980;)V",
+         target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/network/PacketApplyBatcher;)V",
          shift = Shift.AFTER
       )}
    )
-   private void efn$pb2Login(GameJoinS2CPacket var1, CallbackInfo var2) {
-      SimulationSignals.onLogin(var1.comp_169(), var1.comp_98(), var1.comp_1727().comp_1554());
+   private void efn$pb2Login(GameJoinS2CPacket gameJoinS2CPacket, CallbackInfo callbackInfo) {
+      SimulationSignals.onLogin(gameJoinS2CPacket.simulationDistance(), gameJoinS2CPacket.viewDistance(), gameJoinS2CPacket.commonPlayerSpawnInfo().dimension());
    }
 
    @Inject(
-      method = {"method_11117"},
+      method = {"onPlayerRespawn"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_2600;method_11074(Lnet/minecraft/class_2596;Lnet/minecraft/class_2547;Lnet/minecraft/class_11980;)V",
+         target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/network/PacketApplyBatcher;)V",
          shift = Shift.AFTER
       )}
    )
-   private void efn$pb2Respawn(PlayerRespawnS2CPacket var1, CallbackInfo var2) {
-      SimulationSignals.onRespawn(var1.comp_1728().comp_1554());
+   private void efn$pb2Respawn(PlayerRespawnS2CPacket playerRespawnS2CPacket, CallbackInfo callbackInfo) {
+      SimulationSignals.onRespawn(playerRespawnS2CPacket.commonPlayerSpawnInfo().dimension());
    }
 
    @Inject(
-      method = {"method_11157"},
+      method = {"onPlayerPositionLook"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_2600;method_11074(Lnet/minecraft/class_2596;Lnet/minecraft/class_2547;Lnet/minecraft/class_11980;)V",
+         target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/network/PacketApplyBatcher;)V",
          shift = Shift.AFTER
       )}
    )
-   private void efn$pb2Teleport(PlayerPositionLookS2CPacket var1, CallbackInfo var2) {
+   private void efn$pb2Teleport(PlayerPositionLookS2CPacket playerPositionLookS2CPacket, CallbackInfo callbackInfo) {
       SimulationSignals.onTeleport();
    }
 
    @Inject(
-      method = {"method_39025"},
+      method = {"onSimulationDistance"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_2600;method_11074(Lnet/minecraft/class_2596;Lnet/minecraft/class_2547;Lnet/minecraft/class_11980;)V",
+         target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/network/PacketApplyBatcher;)V",
          shift = Shift.AFTER
       )}
    )
-   private void efn$pb2Simulation(SimulationDistanceS2CPacket var1, CallbackInfo var2) {
-      SimulationSignals.onSimulationDistance(var1.comp_170());
+   private void efn$pb2Simulation(SimulationDistanceS2CPacket simulationDistanceS2CPacket, CallbackInfo callbackInfo) {
+      SimulationSignals.onSimulationDistance(simulationDistanceS2CPacket.simulationDistance());
    }
 
    @Inject(
-      method = {"method_20203"},
+      method = {"onChunkLoadDistance"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_2600;method_11074(Lnet/minecraft/class_2596;Lnet/minecraft/class_2547;Lnet/minecraft/class_11980;)V",
+         target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/network/PacketApplyBatcher;)V",
          shift = Shift.AFTER
       )}
    )
-   private void efn$pb2View(ChunkLoadDistanceS2CPacket var1, CallbackInfo var2) {
-      SimulationSignals.onViewDistance(var1.method_20206());
+   private void efn$pb2View(ChunkLoadDistanceS2CPacket chunkLoadDistanceS2CPacket, CallbackInfo callbackInfo) {
+      SimulationSignals.onViewDistance(chunkLoadDistanceS2CPacket.getDistance());
    }
 
    @Inject(
-      method = {"method_11128"},
+      method = {"onChunkData"},
       at = {@At("TAIL")}
    )
-   private void efn$pb2Chunk(ChunkDataS2CPacket var1, CallbackInfo var2) {
-      SimulationSignals.onChunk(var1.method_11523(), var1.method_11524());
+   private void efn$pb2Chunk(ChunkDataS2CPacket chunkDataS2CPacket, CallbackInfo callbackInfo) {
+      SimulationSignals.onChunk(chunkDataS2CPacket.getChunkX(), chunkDataS2CPacket.getChunkZ());
    }
 
    @Inject(
-      method = {"method_11155"},
+      method = {"onEntity"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_2600;method_11074(Lnet/minecraft/class_2596;Lnet/minecraft/class_2547;Lnet/minecraft/class_11980;)V",
+         target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/network/PacketApplyBatcher;)V",
          shift = Shift.AFTER
       )}
    )
-   private void efn$pb2Move(EntityS2CPacket var1, CallbackInfo var2) {
-      SimulationSignals.onMove(var1);
+   private void efn$pb2Move(EntityS2CPacket entityS2CPacket, CallbackInfo callbackInfo) {
+      SimulationSignals.onMove(entityS2CPacket);
    }
 
    @Inject(
-      method = {"method_64553"},
+      method = {"onEntityPositionSync"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_2600;method_11074(Lnet/minecraft/class_2596;Lnet/minecraft/class_2547;Lnet/minecraft/class_11980;)V",
+         target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/network/PacketApplyBatcher;)V",
          shift = Shift.AFTER
       )}
    )
-   private void efn$pb2PositionSync(EntityPositionSyncS2CPacket var1, CallbackInfo var2) {
-      SimulationSignals.onPositionSync(var1);
+   private void efn$pb2PositionSync(EntityPositionSyncS2CPacket entityPositionSyncS2CPacket, CallbackInfo callbackInfo) {
+      SimulationSignals.onPositionSync(entityPositionSyncS2CPacket);
    }
 
    @Inject(
-      method = {"method_11139"},
+      method = {"onEntitySetHeadYaw"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_2600;method_11074(Lnet/minecraft/class_2596;Lnet/minecraft/class_2547;Lnet/minecraft/class_11980;)V",
+         target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/network/PacketApplyBatcher;)V",
          shift = Shift.AFTER
       )}
    )
-   private void efn$pb2Head(EntitySetHeadYawS2CPacket var1, CallbackInfo var2) {
-      SimulationSignals.onHeadRotation(var1);
+   private void efn$pb2Head(EntitySetHeadYawS2CPacket entitySetHeadYawS2CPacket, CallbackInfo callbackInfo) {
+      SimulationSignals.onHeadRotation(entitySetHeadYawS2CPacket);
    }
 
    @Inject(
-      method = {"method_11093"},
+      method = {"onEntityTrackerUpdate"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_2600;method_11074(Lnet/minecraft/class_2596;Lnet/minecraft/class_2547;Lnet/minecraft/class_11980;)V",
+         target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/network/PacketApplyBatcher;)V",
          shift = Shift.AFTER
       )}
    )
-   private void efn$pb2EntityData(EntityTrackerUpdateS2CPacket var1, CallbackInfo var2) {
-      SimulationSignals.onEntityData(var1);
+   private void efn$pb2EntityData(EntityTrackerUpdateS2CPacket entityTrackerUpdateS2CPacket, CallbackInfo callbackInfo) {
+      SimulationSignals.onEntityData(entityTrackerUpdateS2CPacket);
    }
 
    @Inject(
-      method = {"method_11148"},
+      method = {"onEntityStatus"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_2600;method_11074(Lnet/minecraft/class_2596;Lnet/minecraft/class_2547;Lnet/minecraft/class_11980;)V",
+         target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/network/PacketApplyBatcher;)V",
          shift = Shift.AFTER
       )}
    )
-   private void efn$pb2EntityEvent(EntityStatusS2CPacket var1, CallbackInfo var2) {
-      SimulationSignals.onEntityEvent(var1);
+   private void efn$pb2EntityEvent(EntityStatusS2CPacket entityStatusS2CPacket, CallbackInfo callbackInfo) {
+      SimulationSignals.onEntityEvent(entityStatusS2CPacket);
    }
 
    @Inject(
-      method = {"method_11112"},
+      method = {"onEntitySpawn"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_2600;method_11074(Lnet/minecraft/class_2596;Lnet/minecraft/class_2547;Lnet/minecraft/class_11980;)V",
+         target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/network/PacketApplyBatcher;)V",
          shift = Shift.AFTER
       )}
    )
-   private void efn$pb2AddEntity(EntitySpawnS2CPacket var1, CallbackInfo var2) {
-      SimulationSignals.onAddEntity(var1);
+   private void efn$pb2AddEntity(EntitySpawnS2CPacket entitySpawnS2CPacket, CallbackInfo callbackInfo) {
+      SimulationSignals.onAddEntity(entitySpawnS2CPacket);
    }
 
    @Inject(
-      method = {"method_11095"},
+      method = {"onEntitiesDestroy"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_2600;method_11074(Lnet/minecraft/class_2596;Lnet/minecraft/class_2547;Lnet/minecraft/class_11980;)V",
+         target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/network/PacketApplyBatcher;)V",
          shift = Shift.AFTER
       )}
    )
-   private void efn$pb2RemoveEntities(EntitiesDestroyS2CPacket var1, CallbackInfo var2) {
-      SimulationSignals.onRemoveEntities(var1.method_36548());
+   private void efn$pb2RemoveEntities(EntitiesDestroyS2CPacket entitiesDestroyS2CPacket, CallbackInfo callbackInfo) {
+      SimulationSignals.onRemoveEntities(entitiesDestroyS2CPacket.getEntityIds());
    }
 
    @Inject(
-      method = {"method_11136"},
+      method = {"onBlockUpdate"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_2600;method_11074(Lnet/minecraft/class_2596;Lnet/minecraft/class_2547;Lnet/minecraft/class_11980;)V",
+         target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/network/PacketApplyBatcher;)V",
          shift = Shift.AFTER
       )}
    )
-   private void efn$pb2Block(BlockUpdateS2CPacket var1, CallbackInfo var2) {
-      SimulationSignals.onBlockUpdate(var1);
+   private void efn$pb2Block(BlockUpdateS2CPacket blockUpdateS2CPacket, CallbackInfo callbackInfo) {
+      SimulationSignals.onBlockUpdate(blockUpdateS2CPacket);
    }
 
    @Inject(
-      method = {"method_11100"},
+      method = {"onChunkDeltaUpdate"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_2600;method_11074(Lnet/minecraft/class_2596;Lnet/minecraft/class_2547;Lnet/minecraft/class_11980;)V",
+         target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/network/PacketApplyBatcher;)V",
          shift = Shift.AFTER
       )}
    )
-   private void efn$pb2Section(ChunkDeltaUpdateS2CPacket var1, CallbackInfo var2) {
-      SimulationSignals.onSectionUpdate(var1);
+   private void efn$pb2Section(ChunkDeltaUpdateS2CPacket chunkDeltaUpdateS2CPacket, CallbackInfo callbackInfo) {
+      SimulationSignals.onSectionUpdate(chunkDeltaUpdateS2CPacket);
    }
 
    @Inject(
-      method = {"method_11150"},
+      method = {"onItemPickupAnimation"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_2600;method_11074(Lnet/minecraft/class_2596;Lnet/minecraft/class_2547;Lnet/minecraft/class_11980;)V",
+         target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/network/PacketApplyBatcher;)V",
          shift = Shift.AFTER
       )}
    )
-   private void efn$pb2TakeItem(ItemPickupAnimationS2CPacket var1, CallbackInfo var2) {
-      SimulationSignals.onTakeItem(var1);
+   private void efn$pb2TakeItem(ItemPickupAnimationS2CPacket itemPickupAnimationS2CPacket, CallbackInfo callbackInfo) {
+      SimulationSignals.onTakeItem(itemPickupAnimationS2CPacket);
    }
 
    @Inject(
-      method = {"method_49034"},
+      method = {"onEntityDamage"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_2600;method_11074(Lnet/minecraft/class_2596;Lnet/minecraft/class_2547;Lnet/minecraft/class_11980;)V",
+         target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/network/PacketApplyBatcher;)V",
          shift = Shift.AFTER
       )}
    )
-   private void efn$pb2Damage(EntityDamageS2CPacket var1, CallbackInfo var2) {
-      SimulationSignals.onDamage(var1);
+   private void efn$pb2Damage(EntityDamageS2CPacket entityDamageS2CPacket, CallbackInfo callbackInfo) {
+      SimulationSignals.onDamage(entityDamageS2CPacket);
    }
 
    @Inject(
-      method = {"method_11151"},
+      method = {"onEntityEquipmentUpdate"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_2600;method_11074(Lnet/minecraft/class_2596;Lnet/minecraft/class_2547;Lnet/minecraft/class_11980;)V",
+         target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/network/PacketApplyBatcher;)V",
          shift = Shift.AFTER
       )}
    )
-   private void efn$pb2Equipment(EntityEquipmentUpdateS2CPacket var1, CallbackInfo var2) {
-      SimulationSignals.onEquipment(var1);
+   private void efn$pb2Equipment(EntityEquipmentUpdateS2CPacket entityEquipmentUpdateS2CPacket, CallbackInfo callbackInfo) {
+      SimulationSignals.onEquipment(entityEquipmentUpdateS2CPacket);
    }
 }

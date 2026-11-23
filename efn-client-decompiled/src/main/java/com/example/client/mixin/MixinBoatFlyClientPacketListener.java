@@ -18,13 +18,13 @@ public abstract class MixinBoatFlyClientPacketListener {
    }
 
    @Inject(
-      method = {"method_11134"},
+      method = {"onVehicleMove"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_2833;method_65307(Lnet/minecraft/class_1297;)Lnet/minecraft/class_2833;"
+         target = "Lnet/minecraft/network/packet/c2s/play/VehicleMoveC2SPacket;fromVehicle(Lnet/minecraft/entity/Entity;)Lnet/minecraft/network/packet/c2s/play/VehicleMoveC2SPacket;"
       )}
    )
-   private void efn$boatFlyVehicleSetback(VehicleMoveS2CPacket var1, CallbackInfo var2) {
+   private void efn$boatFlyVehicleSetback(VehicleMoveS2CPacket vehicleMoveS2CPacket, CallbackInfo callbackInfo) {
       BoatFlyModule var4 = BoatFlyModule.active;
       if (var4 != null) {
          var4.onVehicleSetback();

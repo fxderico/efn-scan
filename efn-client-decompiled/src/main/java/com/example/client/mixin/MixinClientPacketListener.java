@@ -24,69 +24,69 @@ public abstract class MixinClientPacketListener {
    }
 
    @Inject(
-      method = {"method_45729"},
+      method = {"sendChatMessage"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$onSendChat(String var1, CallbackInfo var2) {
-      if (ChatSendEvent.dispatch(var1)) {
-         var2.cancel();
+   private void efn$onSendChat(String string, CallbackInfo callbackInfo) {
+      if (ChatSendEvent.dispatch(string)) {
+         callbackInfo.cancel();
       }
    }
 
    @Inject(
-      method = {"method_11148"},
+      method = {"onEntityStatus"},
       at = {@At("TAIL")}
    )
-   private void efn$afterEntityEvent(EntityStatusS2CPacket var1, CallbackInfo var2) {
-      PacketAppliedEvent.dispatch(var1);
+   private void efn$afterEntityEvent(EntityStatusS2CPacket entityStatusS2CPacket, CallbackInfo callbackInfo) {
+      PacketAppliedEvent.dispatch(entityStatusS2CPacket);
    }
 
    @Inject(
-      method = {"method_11120"},
+      method = {"onGameJoin"},
       at = {@At("TAIL")}
    )
-   private void efn$afterLogin(GameJoinS2CPacket var1, CallbackInfo var2) {
-      PacketAppliedEvent.dispatch(var1);
+   private void efn$afterLogin(GameJoinS2CPacket gameJoinS2CPacket, CallbackInfo callbackInfo) {
+      PacketAppliedEvent.dispatch(gameJoinS2CPacket);
    }
 
    @Inject(
-      method = {"method_11128"},
+      method = {"onChunkData"},
       at = {@At("TAIL")}
    )
-   private void efn$afterChunkData(ChunkDataS2CPacket var1, CallbackInfo var2) {
-      PacketAppliedEvent.dispatch(var1);
+   private void efn$afterChunkData(ChunkDataS2CPacket chunkDataS2CPacket, CallbackInfo callbackInfo) {
+      PacketAppliedEvent.dispatch(chunkDataS2CPacket);
    }
 
    @Inject(
-      method = {"method_11136"},
+      method = {"onBlockUpdate"},
       at = {@At("TAIL")}
    )
-   private void efn$afterBlockUpdate(BlockUpdateS2CPacket var1, CallbackInfo var2) {
-      PacketAppliedEvent.dispatch(var1);
+   private void efn$afterBlockUpdate(BlockUpdateS2CPacket blockUpdateS2CPacket, CallbackInfo callbackInfo) {
+      PacketAppliedEvent.dispatch(blockUpdateS2CPacket);
    }
 
    @Inject(
-      method = {"method_11100"},
+      method = {"onChunkDeltaUpdate"},
       at = {@At("TAIL")}
    )
-   private void efn$afterSectionUpdate(ChunkDeltaUpdateS2CPacket var1, CallbackInfo var2) {
-      PacketAppliedEvent.dispatch(var1);
+   private void efn$afterSectionUpdate(ChunkDeltaUpdateS2CPacket chunkDeltaUpdateS2CPacket, CallbackInfo callbackInfo) {
+      PacketAppliedEvent.dispatch(chunkDeltaUpdateS2CPacket);
    }
 
    @Inject(
-      method = {"method_11143"},
+      method = {"onLightUpdate"},
       at = {@At("TAIL")}
    )
-   private void efn$afterLightUpdate(LightUpdateS2CPacket var1, CallbackInfo var2) {
-      PacketAppliedEvent.dispatch(var1);
+   private void efn$afterLightUpdate(LightUpdateS2CPacket lightUpdateS2CPacket, CallbackInfo callbackInfo) {
+      PacketAppliedEvent.dispatch(lightUpdateS2CPacket);
    }
 
    @Inject(
-      method = {"method_11132"},
+      method = {"onEntityVelocityUpdate"},
       at = {@At("TAIL")}
    )
-   private void efn$afterEntityMotion(EntityVelocityUpdateS2CPacket var1, CallbackInfo var2) {
-      PacketAppliedEvent.dispatch(var1);
+   private void efn$afterEntityMotion(EntityVelocityUpdateS2CPacket entityVelocityUpdateS2CPacket, CallbackInfo callbackInfo) {
+      PacketAppliedEvent.dispatch(entityVelocityUpdateS2CPacket);
    }
 }

@@ -15,13 +15,13 @@ public abstract class MixinAtmosphereCloudRenderer {
    }
 
    @ModifyVariable(
-      method = {"method_62168"},
+      method = {"renderClouds"},
       at = {@At("HEAD")},
       argsOnly = true,
       ordinal = 0
    )
-   private int efn$cloudColour(int var1) {
+   private int efn$cloudColour(int i) {
       AtmosphereModule var2 = AtmosphereModule.get();
-      return var2 != null ? var2.clouds(var1) : var1;
+      return var2 != null ? var2.clouds(i) : i;
    }
 }

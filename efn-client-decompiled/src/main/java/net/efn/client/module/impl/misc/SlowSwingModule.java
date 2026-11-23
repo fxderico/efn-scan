@@ -14,13 +14,13 @@ public final class SlowSwingModule extends ClientModule {
       super("slow-swing", "Slow Swing", "Control hand swing animation speed.", ModuleCategory.MISC);
    }
 
-   public int getModifiedSwingDuration(int var1) {
+   public int getModifiedSwingDuration(int i) {
       float var2 = this.speed.get();
       if (var2 <= 0.0F) {
          var2 = 0.1F;
       }
 
-      int var3 = Math.round(var1 / var2);
+      int var3 = Math.round(i / var2);
       return Math.max(1, var3);
    }
 }

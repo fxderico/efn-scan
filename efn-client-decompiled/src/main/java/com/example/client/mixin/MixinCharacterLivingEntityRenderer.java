@@ -24,35 +24,37 @@ public abstract class MixinCharacterLivingEntityRenderer {
    }
 
    @Inject(
-      method = {"method_24302"},
+      method = {"getRenderLayer"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$hideModelUnderCharacter(LivingEntityRenderState var1, boolean var2, boolean var3, boolean var4, CallbackInfoReturnable<RenderLayer> var5) {
-      if (CharacterModule.hidesModel(var1)) {
-         var5.setReturnValue(null);
+   private void efn$hideModelUnderCharacter(
+      LivingEntityRenderState livingEntityRenderState, boolean bl, boolean bl2, boolean bl3, CallbackInfoReturnable<RenderLayer> callbackInfoReturnable
+   ) {
+      if (CharacterModule.hidesModel(livingEntityRenderState)) {
+         callbackInfoReturnable.setReturnValue(null);
       }
    }
 
    @WrapOperation(
-      method = {"method_4054"},
+      method = {"render"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_3887;method_4199(Lnet/minecraft/class_4587;Lnet/minecraft/class_11659;ILnet/minecraft/class_10017;FF)V"
+         target = "Lnet/minecraft/client/render/entity/feature/FeatureRenderer;render(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;ILnet/minecraft/client/render/entity/state/EntityRenderState;FF)V"
       )}
    )
    private void efn$hideLayersUnderCharacter(
-      FeatureRenderer<?, ?> var1,
-      MatrixStack var2,
-      OrderedRenderCommandQueue var3,
-      int var4,
-      EntityRenderState var5,
-      float var6,
-      float var7,
-      Operation<Void> var8
+      FeatureRenderer<?, ?> featureRenderer,
+      MatrixStack matrixStack,
+      OrderedRenderCommandQueue orderedRenderCommandQueue,
+      int i,
+      EntityRenderState entityRenderState,
+      float f,
+      float g,
+      Operation<Void> operation
    ) {
-      if (!CharacterModule.hidesLayer(var1, var5)) {
-         var8.call(new Object[]{var1, var2, var3, var4, var5, var6, var7});
+      if (!CharacterModule.hidesLayer(featureRenderer, entityRenderState)) {
+         operation.call(featureRenderer, matrixStack, orderedRenderCommandQueue, i, entityRenderState, f, g);
       }
    }
 }

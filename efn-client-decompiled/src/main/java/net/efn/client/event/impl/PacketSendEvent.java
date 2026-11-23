@@ -14,12 +14,12 @@ public final class PacketSendEvent extends CancellableEvent {
    private PacketSendEvent() {
    }
 
-   public static boolean dispatchSync(Packet<?> var0) {
+   public static boolean dispatchSync(Packet<?> packet) {
       if (!TYPE.hasPreListeners()) {
          return false;
       } else {
          PacketSendEvent var1 = TYPE.pool.acquire();
-         var1.packet = var0;
+         var1.packet = packet;
          var1.resetCancellation();
 
          boolean var3;

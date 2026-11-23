@@ -11,27 +11,32 @@ import net.minecraft.text.Text;
 @Environment(EnvType.CLIENT)
 public final class HudEditorScreen extends Screen {
    public HudEditorScreen() {
-      super(Text.method_43470("EFN HUD Layout"));
+      super(Text.literal("EFN HUD Layout"));
    }
 
-   public void method_25432() {
-      super.method_25432();
+   @Override
+   public void removed() {
+      super.removed();
       HudLayoutStore.getInstance().save();
    }
 
-   public void method_25419() {
+   @Override
+   public void close() {
       HudLayoutStore.getInstance().save();
-      MinecraftClient.method_1551().method_1507(null);
+      MinecraftClient.getInstance().setScreen(null);
    }
 
-   public void method_25420(DrawContext var1, int var2, int var3, float var4) {
+   @Override
+   public void renderBackground(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
    }
 
-   public void method_25394(DrawContext var1, int var2, int var3, float var4) {
-      ImGuiManager.getInstance().requestCursor(var1);
+   @Override
+   public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+      ImGuiManager.getInstance().requestCursor(context);
    }
 
-   public boolean method_25421() {
+   @Override
+   public boolean shouldPause() {
       return false;
    }
 }

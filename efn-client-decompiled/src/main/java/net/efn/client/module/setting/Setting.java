@@ -29,9 +29,9 @@ public abstract class Setting {
    private long defaultCheckedRevision = -1L;
    private boolean defaultCheckResult = true;
 
-   protected Setting(String var1) {
-      this.name = var1;
-      this.id = StableId.legacy(var1);
+   protected Setting(String string) {
+      this.name = string;
+      this.id = StableId.legacy(string);
    }
 
    public final String id() {
@@ -42,11 +42,11 @@ public abstract class Setting {
       return this.revision;
    }
 
-   public final void bindId(String var1) {
+   public final void bindId(String string) {
       if (this.idBound) {
          throw new IllegalStateException("Setting id already bound");
       } else {
-         this.id = StableId.validate(var1);
+         this.id = StableId.validate(string);
          this.idBound = true;
       }
    }
@@ -55,8 +55,8 @@ public abstract class Setting {
       return this.name;
    }
 
-   public final Setting onChange(Runnable var1) {
-      this.changeListeners.add(var1);
+   public final Setting onChange(Runnable runnable) {
+      this.changeListeners.add(runnable);
       return this;
    }
 
@@ -78,8 +78,8 @@ public abstract class Setting {
       }
    }
 
-   public final Setting visibleWhen(BooleanSupplier var1) {
-      this.visibility = var1;
+   public final Setting visibleWhen(BooleanSupplier booleanSupplier) {
+      this.visibility = booleanSupplier;
       return this;
    }
 
@@ -116,8 +116,8 @@ public abstract class Setting {
       }
    }
 
-   public final void adoptDefault(JsonElement var1) {
-      this.deserialize(var1);
+   public final void adoptDefault(JsonElement jsonElement) {
+      this.deserialize(jsonElement);
       this.defaultValue = this.serialize();
       this.defaultCheckedRevision = -1L;
    }
@@ -135,16 +135,16 @@ public abstract class Setting {
       }
    }
 
-   public final boolean isDefault(JsonElement var1) {
-      return this.defaultValue != null && sameValue(this.defaultValue, var1);
+   public final boolean isDefault(JsonElement jsonElement) {
+      return this.defaultValue != null && sameValue(this.defaultValue, jsonElement);
    }
 
-   public static boolean sameValue(JsonElement var0, JsonElement var1) {
-      if (var0 == null || var1 == null) {
-         return var0 == var1;
-      } else if (var0.isJsonPrimitive() && var1.isJsonPrimitive()) {
-         JsonPrimitive var8 = var0.getAsJsonPrimitive();
-         JsonPrimitive var10 = var1.getAsJsonPrimitive();
+   public static boolean sameValue(JsonElement jsonElement, JsonElement jsonElement2) {
+      if (jsonElement == null || jsonElement2 == null) {
+         return jsonElement == jsonElement2;
+      } else if (jsonElement.isJsonPrimitive() && jsonElement2.isJsonPrimitive()) {
+         JsonPrimitive var8 = jsonElement.getAsJsonPrimitive();
+         JsonPrimitive var10 = jsonElement2.getAsJsonPrimitive();
          if (var8.isNumber() && var10.isNumber()) {
             try {
                return var8.getAsBigDecimal().compareTo(var10.getAsBigDecimal()) == 0;
@@ -154,9 +154,9 @@ public abstract class Setting {
          } else {
             return var8.equals(var10);
          }
-      } else if (var0.isJsonArray() && var1.isJsonArray()) {
-         JsonArray var7 = var0.getAsJsonArray();
-         JsonArray var9 = var1.getAsJsonArray();
+      } else if (jsonElement.isJsonArray() && jsonElement2.isJsonArray()) {
+         JsonArray var7 = jsonElement.getAsJsonArray();
+         JsonArray var9 = jsonElement2.getAsJsonArray();
          if (var7.size() != var9.size()) {
             return false;
          } else {
@@ -168,9 +168,9 @@ public abstract class Setting {
 
             return true;
          }
-      } else if (var0.isJsonObject() && var1.isJsonObject()) {
-         JsonObject var2 = var0.getAsJsonObject();
-         JsonObject var3 = var1.getAsJsonObject();
+      } else if (jsonElement.isJsonObject() && jsonElement2.isJsonObject()) {
+         JsonObject var2 = jsonElement.getAsJsonObject();
+         JsonObject var3 = jsonElement2.getAsJsonObject();
          if (!var2.keySet().equals(var3.keySet())) {
             return false;
          } else {
@@ -183,7 +183,7 @@ public abstract class Setting {
             return true;
          }
       } else {
-         return var0.equals(var1);
+         return jsonElement.equals(jsonElement2);
       }
    }
 
@@ -193,8 +193,8 @@ public abstract class Setting {
       }
    }
 
-   public JsonElement compact(JsonElement var1) {
-      return var1;
+   public JsonElement compact(JsonElement jsonElement) {
+      return jsonElement;
    }
 
    protected final JsonElement defaultJson() {
@@ -203,10 +203,10 @@ public abstract class Setting {
 
    public abstract JsonElement serialize();
 
-   public final void deserialize(JsonElement var1) {
-      this.deserializeValue(var1);
+   public final void deserialize(JsonElement jsonElement) {
+      this.deserializeValue(jsonElement);
       this.notifyChanged();
    }
 
-   protected abstract void deserializeValue(JsonElement var1);
+   protected abstract void deserializeValue(JsonElement jsonElement);
 }

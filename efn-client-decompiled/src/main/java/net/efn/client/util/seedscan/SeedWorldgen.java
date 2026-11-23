@@ -39,7 +39,6 @@ import net.minecraft.world.biome.BuiltinBiomes;
 import net.minecraft.world.biome.GenerationSettings;
 import net.minecraft.world.biome.source.BiomeAccess;
 import net.minecraft.world.biome.source.BiomeCoords;
-import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.biome.source.MultiNoiseBiomeSource;
 import net.minecraft.world.biome.source.MultiNoiseBiomeSourceParameterLists;
 import net.minecraft.world.chunk.ChunkStatus;
@@ -56,13 +55,11 @@ import net.minecraft.world.gen.carver.ConfiguredCarver;
 import net.minecraft.world.gen.carver.ConfiguredCarvers;
 import net.minecraft.world.gen.chunk.AquiferSampler;
 import net.minecraft.world.gen.chunk.Blender;
-import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.gen.chunk.ChunkGeneratorSettings;
 import net.minecraft.world.gen.chunk.ChunkNoiseSampler;
 import net.minecraft.world.gen.chunk.NoiseChunkGenerator;
 import net.minecraft.world.gen.densityfunction.DensityFunctions;
 import net.minecraft.world.gen.feature.ConfiguredFeatures;
-import net.minecraft.world.gen.feature.PlacedFeature;
 import net.minecraft.world.gen.feature.PlacedFeatures;
 import net.minecraft.world.gen.feature.util.PlacedFeatureIndexer;
 import net.minecraft.world.gen.noise.BuiltinNoiseParameters;
@@ -81,7 +78,7 @@ public final class SeedWorldgen {
    private final List<OreSpec> specs;
    private final PalettesFactory containers;
    private final StructureAccessor noStructures;
-   private final HeightLimitView height = HeightLimitView.method_39034(-64, 384);
+   private final HeightLimitView height = HeightLimitView.create(-64, 384);
    private final long zoomSeed;
    private final Map<Long, GenerationSettings> carverBiomes = new ConcurrentHashMap<>();
    private final Map<Long, short[]> storedBiomes = new ConcurrentHashMap<>();
@@ -93,39 +90,44 @@ public final class SeedWorldgen {
    private static final int MAX_CARVER_BIOMES = 65536;
    private final BiomeAccess biomeManager;
    private static final DynamicRegistryManager CARVER_REGISTRIES = new ImmutableImpl(
-      List.of(new SimpleRegistry(RegistryKeys.field_41236, Lifecycle.stable()).method_40276())
+      List.of(new SimpleRegistry<>(RegistryKeys.BIOME, Lifecycle.stable()).freeze())
    );
    private static final Set<RegistryKey<Biome>> TALL_TREES = Set.of(
-      BiomeKeys.field_9417, BiomeKeys.field_9440, BiomeKeys.field_35118, BiomeKeys.field_35119, BiomeKeys.field_35113, BiomeKeys.field_38748
+      BiomeKeys.JUNGLE,
+      BiomeKeys.BAMBOO_JUNGLE,
+      BiomeKeys.SPARSE_JUNGLE,
+      BiomeKeys.OLD_GROWTH_PINE_TAIGA,
+      BiomeKeys.OLD_GROWTH_SPRUCE_TAIGA,
+      BiomeKeys.MANGROVE_SWAMP
    );
 
-   private SeedWorldgen(long var1) {
-      this.seed = var1;
+   private SeedWorldgen(long l) {
+      this.seed = l;
       WrapperLookup var3 = new RegistryBuilder()
-         .method_46777(RegistryKeys.field_41238, ConfiguredCarvers::method_46843)
-         .method_46777(RegistryKeys.field_41247, StructureProcessorLists::method_46846)
-         .method_46777(RegistryKeys.field_41239, ConfiguredFeatures::method_39702)
-         .method_46777(RegistryKeys.field_41245, PlacedFeatures::method_39735)
-         .method_46777(RegistryKeys.field_41236, BuiltinBiomes::method_40363)
-         .method_46777(RegistryKeys.field_43089, MultiNoiseBiomeSourceParameterLists::method_49522)
-         .method_46777(RegistryKeys.field_41244, BuiltinNoiseParameters::method_39216)
-         .method_46777(RegistryKeys.field_41240, DensityFunctions::method_41100)
-         .method_46777(RegistryKeys.field_41243, ChunkGeneratorSettings::method_31111)
-         .method_46780(DynamicRegistryManager.method_40302(Registries.field_41167));
-      Reference var4 = var3.method_46762(RegistryKeys.field_41243).method_46747(ChunkGeneratorSettings.field_26355);
-      this.settings = (ChunkGeneratorSettings)var4.comp_349();
-      this.randomState = NoiseConfig.method_41556(this.settings, var3.method_46762(RegistryKeys.field_41244), var1);
-      Reference var5 = var3.method_46762(RegistryKeys.field_43089).method_46747(MultiNoiseBiomeSourceParameterLists.field_42992);
-      this.biomeSource = MultiNoiseBiomeSource.method_49503(var5);
-      this.generator = new NoiseChunkGenerator((BiomeSource)this.biomeSource, var4);
-      List var6 = List.copyOf(this.biomeSource.method_28443());
-      List var7 = PlacedFeatureIndexer.method_44210(var6, var1x -> this.generator.method_44216(var1x).method_30983(), true);
+         .addRegistry(RegistryKeys.CONFIGURED_CARVER, ConfiguredCarvers::bootstrap)
+         .addRegistry(RegistryKeys.PROCESSOR_LIST, StructureProcessorLists::bootstrap)
+         .addRegistry(RegistryKeys.CONFIGURED_FEATURE, ConfiguredFeatures::bootstrap)
+         .addRegistry(RegistryKeys.PLACED_FEATURE, PlacedFeatures::bootstrap)
+         .addRegistry(RegistryKeys.BIOME, BuiltinBiomes::bootstrap)
+         .addRegistry(RegistryKeys.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST, MultiNoiseBiomeSourceParameterLists::bootstrap)
+         .addRegistry(RegistryKeys.NOISE_PARAMETERS, BuiltinNoiseParameters::bootstrap)
+         .addRegistry(RegistryKeys.DENSITY_FUNCTION, DensityFunctions::bootstrap)
+         .addRegistry(RegistryKeys.CHUNK_GENERATOR_SETTINGS, ChunkGeneratorSettings::bootstrap)
+         .createWrapperLookup(DynamicRegistryManager.of(Registries.REGISTRIES));
+      Reference var4 = var3.getOrThrow(RegistryKeys.CHUNK_GENERATOR_SETTINGS).getOrThrow(ChunkGeneratorSettings.OVERWORLD);
+      this.settings = (ChunkGeneratorSettings)var4.value();
+      this.randomState = NoiseConfig.create(this.settings, var3.getOrThrow(RegistryKeys.NOISE_PARAMETERS), l);
+      Reference var5 = var3.getOrThrow(RegistryKeys.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST).getOrThrow(MultiNoiseBiomeSourceParameterLists.OVERWORLD);
+      this.biomeSource = MultiNoiseBiomeSource.create(var5);
+      this.generator = new NoiseChunkGenerator(this.biomeSource, var4);
+      List var6 = List.copyOf(this.biomeSource.getBiomes());
+      List var7 = PlacedFeatureIndexer.collectIndexedFeatures(var6, registryEntry -> this.generator.getGenerationSettings(registryEntry).getFeatures(), true);
       IdentityHashMap var8 = new IdentityHashMap();
-      var3.method_46762(RegistryKeys.field_41245)
-         .method_42017()
-         .forEach(var1x -> var8.put((PlacedFeature)var1x.comp_349(), var1x.method_40237().method_29177().method_12832()));
-      this.specs = OreSpec.derive(var7, var6, (ChunkGenerator)this.generator, var1x -> var8.getOrDefault(var1x, "?"), -64, 319);
-      Reference var9 = var3.method_46762(RegistryKeys.field_41236).method_46747(BiomeKeys.field_9451);
+      var3.getOrThrow(RegistryKeys.PLACED_FEATURE)
+         .streamEntries()
+         .forEach(reference -> var8.put(reference.value(), reference.registryKey().getValue().getPath()));
+      this.specs = OreSpec.derive(var7, var6, this.generator, placedFeature -> var8.getOrDefault(placedFeature, "?"), -64, 319);
+      Reference var9 = var3.getOrThrow(RegistryKeys.BIOME).getOrThrow(BiomeKeys.PLAINS);
       ArrayList var10 = new ArrayList(var6);
       if (!var10.contains(var9)) {
          var10.add(var9);
@@ -138,29 +140,29 @@ public final class SeedWorldgen {
       }
 
       this.containers = new PalettesFactory(
-         PaletteProvider.method_74162(Block.field_10651), Blocks.field_10124.method_9564(), null, PaletteProvider.method_74165(listIds(var10)), var9, null
+         PaletteProvider.forBlockStates(Block.STATE_IDS), Blocks.AIR.getDefaultState(), null, PaletteProvider.forBiomes(listIds(var10)), var9, null
       );
-      this.noStructures = new StructureAccessor(emptyLevel(this.containers, this.height), new GeneratorOptions(var1, false, false), null);
-      this.zoomSeed = BiomeAccess.method_27984(var1);
+      this.noStructures = new StructureAccessor(emptyLevel(this.containers, this.height), new GeneratorOptions(l, false, false), null);
+      this.zoomSeed = BiomeAccess.hashSeed(l);
       this.biomeManager = new BiomeAccess(this::storedBiome, this.zoomSeed);
    }
 
-   public static SeedWorldgen create(long var0) {
-      return new SeedWorldgen(var0);
+   public static SeedWorldgen create(long l) {
+      return new SeedWorldgen(l);
    }
 
    public List<OreSpec> specs() {
       return this.specs;
    }
 
-   public int treeAllowance(int var1, int var2) {
+   public int treeAllowance(int i, int j) {
       for (int var3 = -1; var3 <= 1; var3++) {
          for (int var4 = -1; var4 <= 1; var4++) {
-            int var5 = (var1 + var3 << 4) + 8;
-            int var6 = (var2 + var4 << 4) + 8;
+            int var5 = (i + var3 << 4) + 8;
+            int var6 = (j + var4 << 4) + 8;
 
             for (byte var7 = 60; var7 <= 130; var7 += 10) {
-               if (this.biomeAt(var5, var7, var6).method_40230().filter(TALL_TREES::contains).isPresent()) {
+               if (this.biomeAt(var5, var7, var6).getKey().filter(TALL_TREES::contains).isPresent()) {
                   return GateHeights.TALL_TREE_ALLOWANCE;
                }
             }
@@ -170,38 +172,38 @@ public final class SeedWorldgen {
       return GateHeights.TREE_ALLOWANCE;
    }
 
-   public RegistryEntry<Biome> biomeAt(int var1, int var2, int var3) {
-      return this.biomeManager.method_22393(new BlockPos(var1, var2, var3));
+   public RegistryEntry<Biome> biomeAt(int i, int j, int k) {
+      return this.biomeManager.getBiome(new BlockPos(i, j, k));
    }
 
-   RegistryEntry<Biome> storedBiome(int var1, int var2, int var3) {
-      int var4 = Math.max(-16, Math.min(var2, 79));
-      short[] var5 = this.storedBiomes(BiomeCoords.method_33103(var1), BiomeCoords.method_33103(var3));
-      return this.biomeIds.get(var5[((var4 - -16) * 4 + (var3 & 3)) * 4 + (var1 & 3)]);
+   RegistryEntry<Biome> storedBiome(int i, int j, int k) {
+      int var4 = Math.max(-16, Math.min(j, 79));
+      short[] var5 = this.storedBiomes(BiomeCoords.toChunk(i), BiomeCoords.toChunk(k));
+      return this.biomeIds.get(var5[((var4 - -16) * 4 + (k & 3)) * 4 + (i & 3)]);
    }
 
-   private short[] storedBiomes(int var1, int var2) {
-      long var3 = ChunkPos.method_8331(var1, var2);
+   private short[] storedBiomes(int i, int j) {
+      long var3 = ChunkPos.toLong(i, j);
       short[] var5 = this.storedBiomes.get(var3);
       if (var5 != null) {
          return var5;
       } else {
-         ProtoChunk var6 = new ProtoChunk(new ChunkPos(var1, var2), UpgradeData.field_12950, this.height, this.containers, null);
+         ProtoChunk var6 = new ProtoChunk(new ChunkPos(i, j), UpgradeData.NO_UPGRADE_DATA, this.height, this.containers, null);
          return this.fillBiomes(var6);
       }
    }
 
-   private short[] fillBiomes(ProtoChunk var1) {
-      this.generator.method_38275(this.randomState, Blender.method_39336(), this.noStructures, var1).join();
-      var1.method_12308(ChunkStatus.field_12794);
-      int var2 = BiomeCoords.method_33100(var1.method_12004().method_8326());
-      int var3 = BiomeCoords.method_33100(var1.method_12004().method_8328());
+   private short[] fillBiomes(ProtoChunk protoChunk) {
+      this.generator.populateBiomes(this.randomState, Blender.getNoBlending(), this.noStructures, protoChunk).join();
+      protoChunk.setStatus(ChunkStatus.BIOMES);
+      int var2 = BiomeCoords.fromBlock(protoChunk.getPos().getStartX());
+      int var3 = BiomeCoords.fromBlock(protoChunk.getPos().getStartZ());
       short[] var4 = new short[1536];
 
       for (int var5 = 0; var5 < 96; var5++) {
          for (int var6 = 0; var6 < 4; var6++) {
             for (int var7 = 0; var7 < 4; var7++) {
-               Integer var8 = this.biomeIndex.get(var1.method_16359(var2 + var7, -16 + var5, var3 + var6));
+               Integer var8 = this.biomeIndex.get(protoChunk.getBiomeForNoiseGen(var2 + var7, -16 + var5, var3 + var6));
                var4[(var5 * 4 + var6) * 4 + var7] = (short)(var8 == null ? 0 : var8);
             }
          }
@@ -211,66 +213,64 @@ public final class SeedWorldgen {
          this.storedBiomes.clear();
       }
 
-      this.storedBiomes.put(var1.method_12004().method_8324(), var4);
+      this.storedBiomes.put(protoChunk.getPos().toLong(), var4);
       return var4;
    }
 
-   public ProtoChunk generateTerrain(int var1, int var2) {
-      ProtoChunk var3 = new ProtoChunk(new ChunkPos(var1, var2), UpgradeData.field_12950, this.height, this.containers, null);
+   public ProtoChunk generateTerrain(int i, int j) {
+      ProtoChunk var3 = new ProtoChunk(new ChunkPos(i, j), UpgradeData.NO_UPGRADE_DATA, this.height, this.containers, null);
       this.fillBiomes(var3);
-      this.generator.method_12088(Blender.method_39336(), this.randomState, this.noStructures, var3).join();
-      var3.method_12308(ChunkStatus.field_12804);
+      this.generator.populateNoise(Blender.getNoBlending(), this.randomState, this.noStructures, var3).join();
+      var3.setStatus(ChunkStatus.NOISE);
       this.generator
-         .method_41538(
-            var3, new HeightContext((ChunkGenerator)this.generator, var3), this.randomState, this.noStructures, this.biomeManager, null, Blender.method_39336()
-         );
-      var3.method_12308(ChunkStatus.field_12796);
+         .buildSurface(var3, new HeightContext(this.generator, var3), this.randomState, this.noStructures, this.biomeManager, null, Blender.getNoBlending());
+      var3.setStatus(ChunkStatus.SURFACE);
       this.carve(var3);
-      var3.method_12308(ChunkStatus.field_12801);
+      var3.setStatus(ChunkStatus.CARVERS);
       return var3;
    }
 
-   public TerrainChunk terrain(int var1, int var2) {
-      return TerrainChunk.of(this.generateTerrain(var1, var2));
+   public TerrainChunk terrain(int i, int j) {
+      return TerrainChunk.of(this.generateTerrain(i, j));
    }
 
-   void carve(ProtoChunk var1) {
+   void carve(ProtoChunk protoChunk) {
       if (this.carverBiomes.size() > 65536) {
          this.carverBiomes.clear();
       }
 
-      BiomeAccess var2 = new BiomeAccess(
-         (var1x, var2x, var3x) -> this.biomeSource.method_38109(var1x, var2x, var3x, this.randomState.method_42371()), this.zoomSeed
-      );
-      ChunkRandom var3 = new ChunkRandom(new CheckedRandom(RandomSeed.method_39001()));
-      ChunkPos var4 = var1.method_12004();
-      ChunkNoiseSampler var5 = var1.method_38255(var0 -> {
+      BiomeAccess var2 = new BiomeAccess((i, j, k) -> this.biomeSource.getBiome(i, j, k, this.randomState.getMultiNoiseSampler()), this.zoomSeed);
+      ChunkRandom var3 = new ChunkRandom(new CheckedRandom(RandomSeed.getSeed()));
+      ChunkPos var4 = protoChunk.getPos();
+      ChunkNoiseSampler var5 = protoChunk.getOrCreateChunkNoiseSampler(chunk -> {
          throw new IllegalStateException("carving before the noise fill");
       });
-      AquiferSampler var6 = var5.method_38354();
-      CarverContext var7 = new CarverContext(this.generator, CARVER_REGISTRIES, var1.method_39460(), var5, this.randomState, this.settings.comp_478());
-      CarvingMask var8 = var1.method_28510();
+      AquiferSampler var6 = var5.getAquiferSampler();
+      CarverContext var7 = new CarverContext(
+         this.generator, CARVER_REGISTRIES, protoChunk.getHeightLimitView(), var5, this.randomState, this.settings.surfaceRule()
+      );
+      CarvingMask var8 = protoChunk.getOrCreateCarvingMask();
 
       for (int var9 = -8; var9 <= 8; var9++) {
          for (int var10 = -8; var10 <= 8; var10++) {
-            ChunkPos var11 = new ChunkPos(var4.field_9181 + var9, var4.field_9180 + var10);
+            ChunkPos var11 = new ChunkPos(var4.x + var9, var4.z + var10);
             GenerationSettings var12 = this.carverBiomes
                .computeIfAbsent(
-                  var11.method_8324(),
-                  var2x -> this.generator
-                     .method_44216(
+                  var11.toLong(),
+                  long_ -> this.generator
+                     .getGenerationSettings(
                         this.biomeSource
-                           .method_38109(
-                              BiomeCoords.method_33100(var11.method_8326()), 0, BiomeCoords.method_33100(var11.method_8328()), this.randomState.method_42371()
+                           .getBiome(
+                              BiomeCoords.fromBlock(var11.getStartX()), 0, BiomeCoords.fromBlock(var11.getStartZ()), this.randomState.getMultiNoiseSampler()
                            )
                      )
                );
             int var13 = 0;
 
-            for (RegistryEntry var15 : var12.method_30976()) {
-               var3.method_12663(this.seed + var13, var11.field_9181, var11.field_9180);
-               if (((ConfiguredCarver)var15.comp_349()).method_12669(var3)) {
-                  ((ConfiguredCarver)var15.comp_349()).method_12668(var7, var1, var2::method_22393, var3, var6, var11, var8);
+            for (RegistryEntry var15 : var12.getCarversForStep()) {
+               var3.setCarverSeed(this.seed + var13, var11.x, var11.z);
+               if (((ConfiguredCarver)var15.value()).shouldCarve(var3)) {
+                  ((ConfiguredCarver)var15.value()).carve(var7, protoChunk, var2::getBiome, var3, var6, var11, var8);
                }
 
                var13++;
@@ -279,36 +279,38 @@ public final class SeedWorldgen {
       }
    }
 
-   private static IndexedIterable<RegistryEntry<Biome>> listIds(final List<RegistryEntry<Biome>> var0) {
+   private static IndexedIterable<RegistryEntry<Biome>> listIds(List<RegistryEntry<Biome>> list) {
       final IdentityHashMap var1 = new IdentityHashMap();
 
-      for (int var2 = 0; var2 < var0.size(); var2++) {
-         var1.put((RegistryEntry)var0.get(var2), var2);
+      for (int var2 = 0; var2 < list.size(); var2++) {
+         var1.put((RegistryEntry)list.get(var2), var2);
       }
 
       return new IndexedIterable<RegistryEntry<Biome>>() {
-         public int method_10206(RegistryEntry<Biome> var1x) {
-            Integer var2 = (Integer)var1.get(var1x);
+         public int method_10206(RegistryEntry<Biome> registryEntry) {
+            Integer var2 = (Integer)var1.get(registryEntry);
             return var2 == null ? -1 : var2;
          }
 
-         public RegistryEntry<Biome> method_10200(int var1x) {
-            return var1x >= 0 && var1x < var0.size() ? (RegistryEntry)var0.get(var1x) : null;
+         public RegistryEntry<Biome> method_10200(int i) {
+            return i >= 0 && i < list.size() ? (RegistryEntry)list.get(i) : null;
          }
 
-         public int method_10204() {
-            return var0.size();
+         @Override
+         public int size() {
+            return list.size();
          }
 
+         @Override
          public Iterator<RegistryEntry<Biome>> iterator() {
-            return var0.iterator();
+            return list.iterator();
          }
       };
    }
 
-   private static WorldAccess emptyLevel(PalettesFactory var0, HeightLimitView var1) {
-      ProtoChunk var2 = new ProtoChunk(new ChunkPos(0, 0), UpgradeData.field_12950, var1, var0, null);
-      InvocationHandler var3 = (var1x, var2x, var3x) -> {
+   private static WorldAccess emptyLevel(PalettesFactory palettesFactory, HeightLimitView heightLimitView) {
+      ProtoChunk var2 = new ProtoChunk(new ChunkPos(0, 0), UpgradeData.NO_UPGRADE_DATA, heightLimitView, palettesFactory, null);
+      InvocationHandler var3 = (object, method, objects) -> {
          // $VF: Couldn't be decompiled
          // Please report this to the Vineflower issue tracker, at https://github.com/Vineflower/vineflower/issues with a copy of the class file (if you have the rights to distribute it!)
          // java.lang.RuntimeException: invalid constant type: Ljava/lang/Object; with value SeedWorldgen.emptyLevel

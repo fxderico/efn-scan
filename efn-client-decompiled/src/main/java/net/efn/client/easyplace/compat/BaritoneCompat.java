@@ -50,19 +50,19 @@ public final class BaritoneCompat {
       return isAvailable() || chatPrefix() != null;
    }
 
-   public static void goTo(BlockPos var0) {
+   public static void goTo(BlockPos blockPos) {
       if (isAvailable()) {
-         setGoal("baritone.api.pathing.goals.GoalBlock", var0, -1);
+         setGoal("baritone.api.pathing.goals.GoalBlock", blockPos, -1);
       } else {
-         command("goto " + var0.method_10263() + " " + var0.method_10264() + " " + var0.method_10260());
+         command("goto " + blockPos.getX() + " " + blockPos.getY() + " " + blockPos.getZ());
       }
    }
 
-   public static void goNear(BlockPos var0, int var1) {
+   public static void goNear(BlockPos blockPos, int i) {
       if (!isAvailable()) {
-         goTo(var0);
+         goTo(blockPos);
       } else {
-         setGoal("baritone.api.pathing.goals.GoalNear", var0, var1);
+         setGoal("baritone.api.pathing.goals.GoalNear", blockPos, i);
       }
    }
 
@@ -116,26 +116,26 @@ public final class BaritoneCompat {
    public static void restoreSettings() {
       Map var0 = restore;
       restore = Map.of();
-      var0.forEach((var0x, var1) -> setSetting(var0x, Boolean.parseBoolean(var1)));
+      var0.forEach((string, string2) -> setSetting(string, Boolean.parseBoolean(string2)));
    }
 
-   private static void setSetting(String var0, boolean var1) {
+   private static void setSetting(String string, boolean bl) {
       if (isAvailable()) {
          try {
             Class var2 = Class.forName(resolvedClass);
             Object var3 = var2.getMethod("getSettings").invoke(null);
-            Object var4 = var3.getClass().getField(var0).get(var3);
+            Object var4 = var3.getClass().getField(string).get(var3);
             Field var5 = var4.getClass().getField("value");
-            var5.set(var4, var1);
+            var5.set(var4, bl);
          } catch (Exception var6) {
-            log("setting " + var0 + " failed: " + var6.getClass().getSimpleName());
+            log("setting " + string + " failed: " + var6.getClass().getSimpleName());
          }
       } else {
-         command("set " + var0 + " " + var1);
+         command("set " + string + " " + bl);
       }
    }
 
-   private static void setGoal(String var0, BlockPos var1, int var2) {
+   private static void setGoal(String string, BlockPos blockPos, int i) {
       try {
          Object var4 = getBaritone();
          if (var4 == null) {
@@ -143,20 +143,19 @@ public final class BaritoneCompat {
             return;
          }
 
-         Class var5 = Class.forName(var0);
+         Class var5 = Class.forName(string);
          Object var3;
-         if (var2 >= 0) {
+         if (i >= 0) {
             try {
-               var3 = var5.getConstructor(BlockPos.class, int.class).newInstance(var1, var2);
+               var3 = var5.getConstructor(BlockPos.class, int.class).newInstance(blockPos, i);
             } catch (NoSuchMethodException var10) {
-               var3 = var5.getConstructor(int.class, int.class, int.class, int.class)
-                  .newInstance(var1.method_10263(), var1.method_10264(), var1.method_10260(), var2);
+               var3 = var5.getConstructor(int.class, int.class, int.class, int.class).newInstance(blockPos.getX(), blockPos.getY(), blockPos.getZ(), i);
             }
          } else {
             try {
-               var3 = var5.getConstructor(BlockPos.class).newInstance(var1);
+               var3 = var5.getConstructor(BlockPos.class).newInstance(blockPos);
             } catch (NoSuchMethodException var9) {
-               var3 = var5.getConstructor(int.class, int.class, int.class).newInstance(var1.method_10263(), var1.method_10264(), var1.method_10260());
+               var3 = var5.getConstructor(int.class, int.class, int.class).newInstance(blockPos.getX(), blockPos.getY(), blockPos.getZ());
             }
          }
 
@@ -184,12 +183,12 @@ public final class BaritoneCompat {
       }
    }
 
-   private static void command(String var0) {
+   private static void command(String string) {
       String var1 = chatPrefix();
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      if (var1 != null && var2.method_1562() != null) {
-         var2.method_1562().method_45729(var1 + var0);
-         commanded = !var0.equals("stop");
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      if (var1 != null && var2.getNetworkHandler() != null) {
+         var2.getNetworkHandler().sendChatMessage(var1 + string);
+         commanded = !string.equals("stop");
       }
    }
 
@@ -209,7 +208,7 @@ public final class BaritoneCompat {
 
    private static Map<String, String> readSettingsFile() {
       HashMap var0 = new HashMap();
-      Path var1 = MinecraftClient.method_1551().field_1697.toPath().resolve("baritone").resolve("settings.txt");
+      Path var1 = MinecraftClient.getInstance().runDirectory.toPath().resolve("baritone").resolve("settings.txt");
 
       try {
          if (!Files.isRegularFile(var1)) {
@@ -230,8 +229,8 @@ public final class BaritoneCompat {
       return var0;
    }
 
-   private static void log(String var0) {
-      EasyPlace.LOG.warn("[Baritone] {}", var0);
+   private static void log(String string) {
+      EasyPlace.LOG.warn("[Baritone] {}", string);
    }
 
    private static Object getBaritone() throws Exception {
@@ -254,18 +253,18 @@ public final class BaritoneCompat {
       }
    }
 
-   private static Method findMethod(Object var0, String var1) {
+   private static Method findMethod(Object object, String string) {
       try {
-         return var0.getClass().getMethod(var1);
+         return object.getClass().getMethod(string);
       } catch (Exception var3) {
          return null;
       }
    }
 
-   private static Method findMethodByName(Object var0, String var1) {
-      for (Class var2 = var0.getClass(); var2 != null; var2 = var2.getSuperclass()) {
+   private static Method findMethodByName(Object object, String string) {
+      for (Class var2 = object.getClass(); var2 != null; var2 = var2.getSuperclass()) {
          for (Method var6 : var2.getMethods()) {
-            if (var6.getName().equals(var1)) {
+            if (var6.getName().equals(string)) {
                return var6;
             }
          }

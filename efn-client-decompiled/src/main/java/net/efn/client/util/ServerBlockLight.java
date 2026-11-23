@@ -22,60 +22,60 @@ public final class ServerBlockLight {
    public static final int TOP_SECTION = 3;
    public static final int TOP_Y = 63;
    private static final byte[] DARK = new byte[0];
-   private final Long2ObjectOpenHashMap<ServerBlockLight.Column> columns = new Long2ObjectOpenHashMap();
+   private final Long2ObjectOpenHashMap<ServerBlockLight.Column> columns = new Long2ObjectOpenHashMap<>();
 
    public ServerBlockLight() {
    }
 
-   public void onChunk(ClientWorld var1, int var2, int var3, LightData var4) {
-      this.columns.put(ChunkPos.method_8331(var2, var3), apply(var1, null, var4));
+   public void onChunk(ClientWorld clientWorld, int i, int j, LightData lightData) {
+      this.columns.put(ChunkPos.toLong(i, j), apply(clientWorld, null, lightData));
    }
 
-   public void onLight(ClientWorld var1, int var2, int var3, LightData var4) {
-      long var5 = ChunkPos.method_8331(var2, var3);
-      this.columns.put(var5, apply(var1, (ServerBlockLight.Column)this.columns.get(var5), var4));
+   public void onLight(ClientWorld clientWorld, int i, int j, LightData lightData) {
+      long var5 = ChunkPos.toLong(i, j);
+      this.columns.put(var5, apply(clientWorld, this.columns.get(var5), lightData));
    }
 
-   public void onBlockChanged(BlockPos var1) {
-      if (var1.method_10264() <= 63) {
-         ServerBlockLight.Column var2 = (ServerBlockLight.Column)this.columns.get(ChunkPos.method_8331(var1.method_10263() >> 4, var1.method_10260() >> 4));
+   public void onBlockChanged(BlockPos blockPos) {
+      if (blockPos.getY() <= 63) {
+         ServerBlockLight.Column var2 = this.columns.get(ChunkPos.toLong(blockPos.getX() >> 4, blockPos.getZ() >> 4));
          if (var2 != null) {
             if (var2.touched == null) {
                var2.touched = new LongOpenHashSet();
             }
 
-            var2.touched.add(var1.method_10063());
+            var2.touched.add(blockPos.asLong());
          }
       }
    }
 
-   public ServerBlockLight.Column column(ClientWorld var1, int var2, int var3) {
-      long var4 = ChunkPos.method_8331(var2, var3);
-      ServerBlockLight.Column var6 = (ServerBlockLight.Column)this.columns.get(var4);
-      if (var6 == null && LevelUtil.isLoaded(var1, var2, var3)) {
-         var6 = fromClient(var1, var2, var3);
+   public ServerBlockLight.Column column(ClientWorld clientWorld, int i, int j) {
+      long var4 = ChunkPos.toLong(i, j);
+      ServerBlockLight.Column var6 = this.columns.get(var4);
+      if (var6 == null && LevelUtil.isLoaded(clientWorld, i, j)) {
+         var6 = fromClient(clientWorld, i, j);
          this.columns.put(var4, var6);
       }
 
       return var6;
    }
 
-   public void forgetUnloaded(ClientWorld var1) {
-      this.columns.keySet().removeIf(var1x -> !LevelUtil.isLoaded(var1, ChunkPos.method_8325(var1x), ChunkPos.method_8332(var1x)));
+   public void forgetUnloaded(ClientWorld clientWorld) {
+      this.columns.keySet().removeIf(l -> !LevelUtil.isLoaded(clientWorld, ChunkPos.getPackedX(l), ChunkPos.getPackedZ(l)));
    }
 
    public void clear() {
       this.columns.clear();
    }
 
-   private static ServerBlockLight.Column apply(ClientWorld var0, ServerBlockLight.Column var1, LightData var2) {
-      LightingProvider var3 = var0.method_22336();
-      int var4 = var3.method_31929();
-      int var5 = var3.method_31928();
-      byte[][] var6 = var1 != null && var1.minSection == var4 && var1.sections.length == var5 ? (byte[][])var1.sections.clone() : new byte[var5][];
-      BitSet var7 = var2.method_38608();
-      BitSet var8 = var2.method_38609();
-      Iterator var9 = var2.method_38610().iterator();
+   private static ServerBlockLight.Column apply(ClientWorld clientWorld, ServerBlockLight.Column column, LightData lightData) {
+      LightingProvider var3 = clientWorld.getLightingProvider();
+      int var4 = var3.getBottomY();
+      int var5 = var3.getHeight();
+      byte[][] var6 = column != null && column.minSection == var4 && column.sections.length == var5 ? (byte[][])column.sections.clone() : new byte[var5][];
+      BitSet var7 = lightData.getInitedBlock();
+      BitSet var8 = lightData.getUninitedBlock();
+      Iterator var9 = lightData.getBlockNibbles().iterator();
 
       for (int var10 = 0; var10 < var5; var10++) {
          boolean var11 = var4 + var10 <= 3;
@@ -90,16 +90,16 @@ public final class ServerBlockLight {
       return new ServerBlockLight.Column(var4, var6);
    }
 
-   private static ServerBlockLight.Column fromClient(ClientWorld var0, int var1, int var2) {
-      LightingProvider var3 = var0.method_22336();
-      ChunkLightingView var4 = var3.method_15562(LightType.field_9282);
-      int var5 = var3.method_31929();
-      byte[][] var6 = new byte[var3.method_31928()][];
+   private static ServerBlockLight.Column fromClient(ClientWorld clientWorld, int i, int j) {
+      LightingProvider var3 = clientWorld.getLightingProvider();
+      ChunkLightingView var4 = var3.get(LightType.BLOCK);
+      int var5 = var3.getBottomY();
+      byte[][] var6 = new byte[var3.getHeight()][];
 
       for (int var7 = 0; var7 < var6.length && var5 + var7 <= 3; var7++) {
-         ChunkNibbleArray var8 = var4.method_15544(ChunkSectionPos.method_18676(var1, var5 + var7, var2));
+         ChunkNibbleArray var8 = var4.getLightSection(ChunkSectionPos.from(i, var5 + var7, j));
          if (var8 != null) {
-            var6[var7] = var8.method_12146() ? DARK : (byte[])var8.method_12137().clone();
+            var6[var7] = var8.isUninitialized() ? DARK : (byte[])var8.asByteArray().clone();
          }
       }
 
@@ -112,23 +112,23 @@ public final class ServerBlockLight {
       private final byte[][] sections;
       private LongOpenHashSet touched;
 
-      private Column(int var1, byte[][] var2) {
-         this.minSection = var1;
-         this.sections = var2;
+      private Column(int i, byte[][] bs) {
+         this.minSection = i;
+         this.sections = bs;
       }
 
-      public int get(int var1, int var2, int var3) {
-         int var4 = (var2 >> 4) - this.minSection;
+      public int get(int i, int j, int k) {
+         int var4 = (j >> 4) - this.minSection;
          if (var4 >= 0 && var4 < this.sections.length) {
             byte[] var5 = this.sections[var4];
             if (var5 == null) {
                return -1;
-            } else if (this.touched != null && this.touched.contains(BlockPos.method_10064(var1, var2, var3))) {
+            } else if (this.touched != null && this.touched.contains(BlockPos.asLong(i, j, k))) {
                return -1;
             } else if (var5 == ServerBlockLight.DARK) {
                return 0;
             } else {
-               int var6 = (var2 & 15) << 8 | (var3 & 15) << 4 | var1 & 15;
+               int var6 = (j & 15) << 8 | (k & 15) << 4 | i & 15;
                return var5[var6 >> 1] >> ((var6 & 1) << 2) & 15;
             }
          } else {

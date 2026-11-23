@@ -62,20 +62,19 @@ final class PeepArt {
       return var0;
    }
 
-   static int[] rim(int[] var0, int var1, int var2) {
-      float[] var3 = new float[var1 * var2];
+   static int[] rim(int[] is, int i, int j) {
+      float[] var3 = new float[i * j];
 
       for (int var4 = 0; var4 < var3.length; var4++) {
-         var3[var4] = (var0[var4] >>> 24) / 255.0F;
+         var3[var4] = (is[var4] >>> 24) / 255.0F;
       }
 
-      float[] var11 = PeepSky.blur(var3, var1, var2, 3);
-      float[] var5 = PeepSky.blur(var3, var1, var2, 7);
+      float[] var11 = PeepSky.blur(var3, i, j, 3);
+      float[] var5 = PeepSky.blur(var3, i, j, 7);
       float[] var6 = new float[var3.length];
 
       for (int var7 = 0; var7 < var6.length; var7++) {
-         float var8 = MathHelper.method_15363(var11[var7] * 2.2F - smooth(0.55F, 0.95F, var3[var7]) * 1.2F, 0.0F, 1.0F)
-            * (1.0F - smooth(0.6F, 0.8F, var5[var7]));
+         float var8 = MathHelper.clamp(var11[var7] * 2.2F - smooth(0.55F, 0.95F, var3[var7]) * 1.2F, 0.0F, 1.0F) * (1.0F - smooth(0.6F, 0.8F, var5[var7]));
          float var9 = var3[var7] * smooth(0.4F, 0.6F, var5[var7]) * (1.0F - smooth(0.85F, 0.97F, var5[var7]));
          float var10 = var3[var7] * (1.0F - smooth(0.45F, 0.6F, var5[var7]));
          var6[var7] = Math.max(var8, Math.max(var9, var10));
@@ -84,30 +83,29 @@ final class PeepArt {
       return white(var6);
    }
 
-   static int[] gold(int[] var0, int var1, int var2) {
-      float[] var3 = new float[var1 * var2];
+   static int[] gold(int[] is, int i, int j) {
+      float[] var3 = new float[i * j];
 
       for (int var4 = 0; var4 < var3.length; var4++) {
-         var3[var4] = smooth(0.3F, 0.65F, (var0[var4] >>> 24) / 255.0F);
+         var3[var4] = smooth(0.3F, 0.65F, (is[var4] >>> 24) / 255.0F);
       }
 
-      float[] var17 = PeepSky.blur(var3, var1, var2, 7);
-      float[] var5 = PeepSky.blur(var3, var1, var2, 12);
-      float[] var6 = PeepSky.blur(var3, var1, var2, 2);
-      int[] var7 = new int[var1 * var2];
+      float[] var17 = PeepSky.blur(var3, i, j, 7);
+      float[] var5 = PeepSky.blur(var3, i, j, 12);
+      float[] var6 = PeepSky.blur(var3, i, j, 2);
+      int[] var7 = new int[i * j];
 
-      for (int var8 = 0; var8 < var2; var8++) {
-         for (int var9 = 0; var9 < var1; var9++) {
-            int var10 = var8 * var1 + var9;
+      for (int var8 = 0; var8 < j; var8++) {
+         for (int var9 = 0; var9 < i; var9++) {
+            int var10 = var8 * i + var9;
             float var11 = var3[var10] * (1.0F - smooth(0.88F, 0.98F, var5[var10]));
             if (!((var11 = Math.max(var11, Math.min(1.0F, var6[var10] * 1.8F) * (1.0F - smooth(0.25F, 0.45F, var17[var10])))) <= 0.002F)) {
-               float var12 = var6[Math.min(var2 - 1, var8 + 2) * var1 + Math.min(var1 - 1, var9 + 2)]
-                  - var6[Math.max(0, var8 - 2) * var1 + Math.max(0, var9 - 2)];
-               float var13 = MathHelper.method_15363(0.5F + 1.1F * var12, 0.0F, 1.0F);
-               int var14 = Math.round(MathHelper.method_16439(var13, 0.85F, 1.0F) * 255.0F);
-               int var15 = Math.round(MathHelper.method_16439(var13, 0.8F, 1.0F) * 255.0F);
-               int var16 = Math.round(MathHelper.method_16439(var13, 0.45F, 1.0F) * 255.0F);
-               var7[var10] = Math.round(MathHelper.method_15363(var11, 0.0F, 1.0F) * 255.0F) << 24 | var14 << 16 | var15 << 8 | var16;
+               float var12 = var6[Math.min(j - 1, var8 + 2) * i + Math.min(i - 1, var9 + 2)] - var6[Math.max(0, var8 - 2) * i + Math.max(0, var9 - 2)];
+               float var13 = MathHelper.clamp(0.5F + 1.1F * var12, 0.0F, 1.0F);
+               int var14 = Math.round(MathHelper.lerp(var13, 0.85F, 1.0F) * 255.0F);
+               int var15 = Math.round(MathHelper.lerp(var13, 0.8F, 1.0F) * 255.0F);
+               int var16 = Math.round(MathHelper.lerp(var13, 0.45F, 1.0F) * 255.0F);
+               var7[var10] = Math.round(MathHelper.clamp(var11, 0.0F, 1.0F) * 255.0F) << 24 | var14 << 16 | var15 << 8 | var16;
             }
          }
       }
@@ -115,16 +113,16 @@ final class PeepArt {
       return var7;
    }
 
-   static int[] veil(int[] var0, int var1, int var2) {
-      float[] var3 = new float[var1 * var2];
+   static int[] veil(int[] is, int i, int j) {
+      float[] var3 = new float[i * j];
 
       for (int var4 = 0; var4 < var3.length; var4++) {
-         var3[var4] = (var0[var4] >>> 24) / 255.0F;
+         var3[var4] = (is[var4] >>> 24) / 255.0F;
       }
 
-      float[] var11 = PeepSky.blur(var3, var1, var2, 3);
-      float[] var5 = PeepSky.blur(var3, var1, var2, 7);
-      float[] var6 = PeepSky.blur(var3, var1, var2, 11);
+      float[] var11 = PeepSky.blur(var3, i, j, 3);
+      float[] var5 = PeepSky.blur(var3, i, j, 7);
+      float[] var6 = PeepSky.blur(var3, i, j, 11);
       float[] var7 = new float[var3.length];
 
       for (int var8 = 0; var8 < var7.length; var8++) {
@@ -174,12 +172,12 @@ final class PeepArt {
       return new PeepArt.Art(var0, var1, white(fadeBorder(var2, var0, var1, 1)));
    }
 
-   private static PeepArt.Art petal(boolean var0) {
+   private static PeepArt.Art petal(boolean bl) {
       byte var1 = 60;
       byte var2 = 68;
       byte var3 = 6;
       Float var4 = new Float();
-      if (var0) {
+      if (bl) {
          var4.moveTo(0.52, 0.99);
          var4.curveTo(0.2, 0.84, 0.03, 0.52, 0.12, 0.22);
          var4.curveTo(0.17, 0.06, 0.31, 0.02, 0.41, 0.13);
@@ -217,13 +215,13 @@ final class PeepArt {
                var16 = mix(var16, 16768232, var19 * 0.2F);
                float var20 = (1.0F - smooth(0.55F, 0.9F, var7[var11])) * (1.0F - smooth(0.4F, 0.9F, var14));
                var16 = mix(var16, 16758996, var20 * 0.55F);
-               if (var0) {
+               if (bl) {
                   float var21 = (1.0F - smooth(0.5F, 0.85F, var7[var11])) * (1.0F - smooth(0.16F, 0.4F, var14));
                   float var22 = smooth(0.14F, 0.26F, var14) * (1.0F - smooth(0.26F, 0.46F, var14)) * smooth(0.3F, 0.8F, var7[var11]);
                   var16 = mix(mix(var16, 16767462, var21 * 0.7F), 11546719, var22 * 0.35F);
                }
 
-               var8[var11] = ColorHelper.method_71346(MathHelper.method_15363(var12 * 0.95F, 0.0F, 1.0F), var16);
+               var8[var11] = ColorHelper.withAlpha(MathHelper.clamp(var12 * 0.95F, 0.0F, 1.0F), var16);
             }
          }
       }
@@ -267,7 +265,7 @@ final class PeepArt {
                float var16 = (var13 + 0.5F - var2) / (var0 - var2 * 2.0F);
                float var17 = (var12 + 0.5F - var2) / (var1 - var2 * 2.0F);
                float var18 = var28[var15];
-               float var19 = MathHelper.method_15363((var18 - var9[var15]) * 2.6F, 0.0F, 1.0F) * var18;
+               float var19 = MathHelper.clamp((var18 - var9[var15]) * 2.6F, 0.0F, 1.0F) * var18;
                float var20 = gauss((float)Math.hypot(var16 - 0.3F, var17 - 0.27F), 0.09F) * var18;
                int var21 = mix(12720235, 16732080, 0.25F + var20 * 0.5F);
                float var22 = Math.max(var18 * (0.16F + 0.1F * (1.0F - var17)), var19);
@@ -275,7 +273,7 @@ final class PeepArt {
                if (!(var23 <= 0.002F)) {
                   int var24 = mix(16751320, 16770806, smooth(0.75F, 1.0F, var19) * 0.45F);
                   int var25 = mix(16732080, mix(var21, var24, var19 / Math.max(var22, 1.0E-4F)), var22 / var23);
-                  var11[var15] = ColorHelper.method_71346(MathHelper.method_15363(var23, 0.0F, 1.0F), var25);
+                  var11[var15] = ColorHelper.withAlpha(MathHelper.clamp(var23, 0.0F, 1.0F), var25);
                }
             }
          }
@@ -286,15 +284,15 @@ final class PeepArt {
       return var26;
    }
 
-   static float crack(float var0) {
+   static float crack(float f) {
       float[] var1 = new float[]{0.2F, 0.34F, 0.47F, 0.6F, 0.73F, 0.86F, 1.0F};
       float[] var2 = new float[]{0.0F, -0.05F, 0.045F, -0.04F, 0.04F, -0.025F, 0.0F};
-      if (var0 <= var1[0]) {
+      if (f <= var1[0]) {
          return 0.0F;
       } else {
          for (int var3 = 1; var3 < var1.length; var3++) {
-            if (var0 <= var1[var3]) {
-               return MathHelper.method_16439((var0 - var1[var3 - 1]) / (var1[var3] - var1[var3 - 1]), var2[var3 - 1], var2[var3]);
+            if (f <= var1[var3]) {
+               return MathHelper.lerp((f - var1[var3 - 1]) / (var1[var3] - var1[var3 - 1]), var2[var3 - 1], var2[var3]);
             }
          }
 
@@ -374,9 +372,7 @@ final class PeepArt {
       int[] var33 = new int[var0 * var1];
 
       for (int var34 = 0; var34 < var33.length; var34++) {
-         var33[var34] = ColorHelper.method_71346(
-            MathHelper.method_15363(var26[var34], 0.0F, 1.0F), mix(16764134, 16777215, Math.min(1.0F, var32[var34] * 1.6F))
-         );
+         var33[var34] = ColorHelper.withAlpha(MathHelper.clamp(var26[var34], 0.0F, 1.0F), mix(16764134, 16777215, Math.min(1.0F, var32[var34] * 1.6F)));
       }
 
       return new PeepArt.Art(var0, var1, var33);
@@ -471,9 +467,9 @@ final class PeepArt {
       return new PeepArt.Art(var0, var1, white(fadeBorder(var2, var0, var1, 1)));
    }
 
-   private static float glintRay(float var0, float var1) {
-      float var2 = Math.max(0.0F, 1.0F - Math.abs(var0) / 15.0F);
-      return gauss(var1, 0.7F + 0.9F * var2) * var2 * var2 * 0.9F;
+   private static float glintRay(float f, float g) {
+      float var2 = Math.max(0.0F, 1.0F - Math.abs(f) / 15.0F);
+      return gauss(g, 0.7F + 0.9F * var2) * var2 * var2 * 0.9F;
    }
 
    private static PeepArt.Art twinkle() {
@@ -565,7 +561,7 @@ final class PeepArt {
       return new PeepArt.Art(var1, var2, white(var13));
    }
 
-   private static PeepArt.Art bolt(int var0, boolean var1) {
+   private static PeepArt.Art bolt(int i, boolean bl) {
       short var2 = 128;
       short var3 = 256;
       BufferedImage var4 = new BufferedImage(var2, var3, 2);
@@ -573,17 +569,17 @@ final class PeepArt {
       var5.setColor(Color.WHITE);
       float[] var6 = new float[33];
       float[] var7 = new float[33];
-      jag(var6, var7, var2 * 0.5F, 12.0F, var2 * 0.5F + (PeepSky.hash01(var0) - 0.5F) * 30.0F, var3 - 12.0F, var0);
+      jag(var6, var7, var2 * 0.5F, 12.0F, var2 * 0.5F + (PeepSky.hash01(i) - 0.5F) * 30.0F, var3 - 12.0F, i);
       var5.setStroke(new BasicStroke(2.6F, 1, 1));
       var5.draw(polyline(var6, var7));
       float[] var8 = new float[17];
       float[] var9 = new float[17];
-      int var10 = var1 ? 2 : 1;
+      int var10 = bl ? 2 : 1;
 
       for (int var11 = 0; var11 < var10; var11++) {
          int var12 = 9 + var11 * 8;
-         float var13 = (var11 % 2 == 0 ? 1.0F : -1.0F) * (PeepSky.hash01(var0 + var11) < 0.5F ? 1.0F : -1.0F);
-         jag(var8, var9, var6[var12], var7[var12], var6[var12] + var13 * (26.0F + 14.0F * var11), var7[var12] + 58.0F - 10.0F * var11, var0 * 3 + 1 + var11);
+         float var13 = (var11 % 2 == 0 ? 1.0F : -1.0F) * (PeepSky.hash01(i + var11) < 0.5F ? 1.0F : -1.0F);
+         jag(var8, var9, var6[var12], var7[var12], var6[var12] + var13 * (26.0F + 14.0F * var11), var7[var12] + 58.0F - 10.0F * var11, i * 3 + 1 + var11);
          var5.setStroke(new BasicStroke(1.5F - 0.3F * var11, 1, 1));
          var5.draw(polyline(var8, var9));
       }
@@ -605,93 +601,91 @@ final class PeepArt {
 
       for (int var21 = 0; var21 < var20.length; var21++) {
          float var22 = Math.min(1.0F, var18[var21] * 3.0F);
-         var20[var21] = ColorHelper.method_71346(
-            MathHelper.method_15363(Math.max(var16[var21], var22 * 0.7F), 0.0F, 1.0F), mix(16732080, 16774395, var16[var21])
-         );
+         var20[var21] = ColorHelper.withAlpha(MathHelper.clamp(Math.max(var16[var21], var22 * 0.7F), 0.0F, 1.0F), mix(16732080, 16774395, var16[var21]));
       }
 
       return new PeepArt.Art(var2, var3, var20);
    }
 
-   private static void jag(float[] var0, float[] var1, float var2, float var3, float var4, float var5, int var6) {
-      int var7 = var0.length - 1;
-      var0[0] = var2;
-      var1[0] = var3;
-      var0[var7] = var4;
-      var1[var7] = var5;
-      float var8 = (float)Math.hypot(var4 - var2, var5 - var3) * 0.32F;
+   private static void jag(float[] fs, float[] gs, float f, float g, float h, float i, int j) {
+      int var7 = fs.length - 1;
+      fs[0] = f;
+      gs[0] = g;
+      fs[var7] = h;
+      gs[var7] = i;
+      float var8 = (float)Math.hypot(h - f, i - g) * 0.32F;
 
       for (int var9 = var7; var9 > 1; var9 /= 2) {
          for (int var10 = 0; var10 + var9 <= var7; var10 += var9) {
             int var11 = var10 + var9 / 2;
-            var0[var11] = (var0[var10] + var0[var10 + var9]) * 0.5F + (PeepSky.hash01(var6 * 131 + var11 * 17 + var9) - 0.5F) * var8;
-            float var12 = (var1[var10] + var1[var10 + var9]) * 0.5F + (PeepSky.hash01(var6 * 151 + var11 * 13 + var9) - 0.5F) * var8 * 0.25F;
-            float var13 = var1[var10] + 0.3F * (var1[var10 + var9] - var1[var10]);
-            float var14 = var1[var10] + 0.7F * (var1[var10 + var9] - var1[var10]);
-            var1[var11] = MathHelper.method_15363(var12, Math.min(var13, var14), Math.max(var13, var14));
+            fs[var11] = (fs[var10] + fs[var10 + var9]) * 0.5F + (PeepSky.hash01(j * 131 + var11 * 17 + var9) - 0.5F) * var8;
+            float var12 = (gs[var10] + gs[var10 + var9]) * 0.5F + (PeepSky.hash01(j * 151 + var11 * 13 + var9) - 0.5F) * var8 * 0.25F;
+            float var13 = gs[var10] + 0.3F * (gs[var10 + var9] - gs[var10]);
+            float var14 = gs[var10] + 0.7F * (gs[var10 + var9] - gs[var10]);
+            gs[var11] = MathHelper.clamp(var12, Math.min(var13, var14), Math.max(var13, var14));
          }
 
          var8 *= 0.62F;
       }
    }
 
-   private static Float polyline(float[] var0, float[] var1) {
+   private static Float polyline(float[] fs, float[] gs) {
       Float var2 = new Float();
-      var2.moveTo(var0[0], var1[0]);
+      var2.moveTo(fs[0], gs[0]);
 
-      for (int var3 = 1; var3 < var0.length; var3++) {
-         var2.lineTo(var0[var3], var1[var3]);
+      for (int var3 = 1; var3 < fs.length; var3++) {
+         var2.lineTo(fs[var3], gs[var3]);
       }
 
       return var2;
    }
 
-   private static float ray(float var0, float var1, float var2) {
-      float var3 = Math.max(0.0F, 1.0F - Math.abs(var0) / var2);
-      return gauss(var1, 0.85F + 0.6F * var3) * var3 * var3;
+   private static float ray(float f, float g, float h) {
+      float var3 = Math.max(0.0F, 1.0F - Math.abs(f) / h);
+      return gauss(g, 0.85F + 0.6F * var3) * var3 * var3;
    }
 
-   private static float valueNoise(float var0, float var1, int var2, int var3) {
-      int var4 = (int)Math.floor(var0);
-      int var5 = (int)Math.floor(var1);
-      float var6 = var0 - var4;
-      float var7 = var1 - var5;
+   private static float valueNoise(float f, float g, int i, int j) {
+      int var4 = (int)Math.floor(f);
+      int var5 = (int)Math.floor(g);
+      float var6 = f - var4;
+      float var7 = g - var5;
       var6 = var6 * var6 * (3.0F - 2.0F * var6);
       var7 = var7 * var7 * (3.0F - 2.0F * var7);
-      float var8 = lattice(var4, var5, var2, var3);
-      float var9 = lattice(var4 + 1, var5, var2, var3);
-      float var10 = lattice(var4, var5 + 1, var2, var3);
-      float var11 = lattice(var4 + 1, var5 + 1, var2, var3);
-      return MathHelper.method_16439(var7, MathHelper.method_16439(var6, var8, var9), MathHelper.method_16439(var6, var10, var11));
+      float var8 = lattice(var4, var5, i, j);
+      float var9 = lattice(var4 + 1, var5, i, j);
+      float var10 = lattice(var4, var5 + 1, i, j);
+      float var11 = lattice(var4 + 1, var5 + 1, i, j);
+      return MathHelper.lerp(var7, MathHelper.lerp(var6, var8, var9), MathHelper.lerp(var6, var10, var11));
    }
 
-   private static float lattice(int var0, int var1, int var2, int var3) {
-      return PeepSky.hash01(Math.floorMod(var0, var2) * 7919 + var1 * 104729 + var3 * 15485863);
+   private static float lattice(int i, int j, int k, int l) {
+      return PeepSky.hash01(Math.floorMod(i, k) * 7919 + j * 104729 + l * 15485863);
    }
 
-   private static float[] fill(Float var0, int var1, int var2, int var3) {
-      BufferedImage var4 = new BufferedImage(var1, var2, 2);
+   private static float[] fill(Float float_, int i, int j, int k) {
+      BufferedImage var4 = new BufferedImage(i, j, 2);
       Graphics2D var5 = smooth(var4);
-      var5.translate(var3, var3);
-      var5.scale(var1 - var3 * 2.0, var2 - var3 * 2.0);
+      var5.translate(k, k);
+      var5.scale(i - k * 2.0, j - k * 2.0);
       var5.setColor(Color.WHITE);
-      var5.fill(var0);
+      var5.fill(float_);
       var5.dispose();
       return alpha(var4);
    }
 
-   private static Graphics2D smooth(BufferedImage var0) {
-      Graphics2D var1 = var0.createGraphics();
+   private static Graphics2D smooth(BufferedImage bufferedImage) {
+      Graphics2D var1 = bufferedImage.createGraphics();
       var1.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
       var1.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
       var1.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
       return var1;
    }
 
-   private static float[] alpha(BufferedImage var0) {
-      int var1 = var0.getWidth();
-      int var2 = var0.getHeight();
-      int[] var3 = var0.getRGB(0, 0, var1, var2, null, 0, var1);
+   private static float[] alpha(BufferedImage bufferedImage) {
+      int var1 = bufferedImage.getWidth();
+      int var2 = bufferedImage.getHeight();
+      int[] var3 = bufferedImage.getRGB(0, 0, var1, var2, null, 0, var1);
       float[] var4 = new float[var3.length];
 
       for (int var5 = 0; var5 < var4.length; var5++) {
@@ -701,50 +695,50 @@ final class PeepArt {
       return var4;
    }
 
-   private static float[] fadeBorder(float[] var0, int var1, int var2, int var3) {
-      for (int var4 = 0; var4 < var2; var4++) {
-         for (int var5 = 0; var5 < var1; var5++) {
-            int var6 = Math.min(Math.min(var5, var1 - 1 - var5), Math.min(var4, var2 - 1 - var4));
-            if (var6 < var3) {
-               int var7 = var4 * var1 + var5;
-               var0[var7] *= (float)var6 / var3;
+   private static float[] fadeBorder(float[] fs, int i, int j, int k) {
+      for (int var4 = 0; var4 < j; var4++) {
+         for (int var5 = 0; var5 < i; var5++) {
+            int var6 = Math.min(Math.min(var5, i - 1 - var5), Math.min(var4, j - 1 - var4));
+            if (var6 < k) {
+               int var7 = var4 * i + var5;
+               fs[var7] *= (float)var6 / k;
             }
          }
       }
 
-      return var0;
+      return fs;
    }
 
-   private static int[] white(float[] var0) {
-      int[] var1 = new int[var0.length];
+   private static int[] white(float[] fs) {
+      int[] var1 = new int[fs.length];
 
-      for (int var2 = 0; var2 < var0.length; var2++) {
-         var1[var2] = Math.round(MathHelper.method_15363(var0[var2], 0.0F, 1.0F) * 255.0F) << 24 | 16777215;
+      for (int var2 = 0; var2 < fs.length; var2++) {
+         var1[var2] = Math.round(MathHelper.clamp(fs[var2], 0.0F, 1.0F) * 255.0F) << 24 | 16777215;
       }
 
       return var1;
    }
 
-   private static float quad(float var0, float var1, float var2, float var3) {
-      float var4 = 1.0F - var3;
-      return var4 * var4 * var0 + 2.0F * var4 * var3 * var1 + var3 * var3 * var2;
+   private static float quad(float f, float g, float h, float i) {
+      float var4 = 1.0F - i;
+      return var4 * var4 * f + 2.0F * var4 * i * g + i * i * h;
    }
 
-   private static float quadSlope(float var0, float var1, float var2, float var3) {
-      return 2.0F * (1.0F - var3) * (var1 - var0) + 2.0F * var3 * (var2 - var1);
+   private static float quadSlope(float f, float g, float h, float i) {
+      return 2.0F * (1.0F - i) * (g - f) + 2.0F * i * (h - g);
    }
 
-   private static float gauss(float var0, float var1) {
-      return (float)Math.exp(-var0 * var0 / (2.0F * var1 * var1));
+   private static float gauss(float f, float g) {
+      return (float)Math.exp(-f * f / (2.0F * g * g));
    }
 
-   private static float smooth(float var0, float var1, float var2) {
-      float var3 = MathHelper.method_15363((var2 - var0) / (var1 - var0), 0.0F, 1.0F);
+   private static float smooth(float f, float g, float h) {
+      float var3 = MathHelper.clamp((h - f) / (g - f), 0.0F, 1.0F);
       return var3 * var3 * (3.0F - 2.0F * var3);
    }
 
-   private static int mix(int var0, int var1, float var2) {
-      return ColorHelper.method_61319(MathHelper.method_15363(var2, 0.0F, 1.0F), var0, var1) & 16777215;
+   private static int mix(int i, int j, float f) {
+      return ColorHelper.lerp(MathHelper.clamp(f, 0.0F, 1.0F), i, j) & 16777215;
    }
 
    @Environment(EnvType.CLIENT)

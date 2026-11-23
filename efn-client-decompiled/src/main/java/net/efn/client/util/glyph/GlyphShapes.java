@@ -73,23 +73,23 @@ public final class GlyphShapes {
       return new GlyphShapes.Builder().quad(0.0F, -1.0F, 1.0F, 0.0F, 0.0F, 1.0F, -1.0F, 0.0F).build();
    }
 
-   private static float[] curve(float var0, float var1, float var2, float var3, float var4, float var5, int var6) {
-      float[] var7 = new float[(var6 + 1) * 2];
+   private static float[] curve(float f, float g, float h, float i, float j, float k, int l) {
+      float[] var7 = new float[(l + 1) * 2];
 
-      for (int var8 = 0; var8 <= var6; var8++) {
-         float var9 = (float)var8 / var6;
+      for (int var8 = 0; var8 <= l; var8++) {
+         float var9 = (float)var8 / l;
          float var10 = 1.0F - var9;
-         var7[var8 * 2] = var10 * var10 * var0 + 2.0F * var10 * var9 * var2 + var9 * var9 * var4;
-         var7[var8 * 2 + 1] = var10 * var10 * var1 + 2.0F * var10 * var9 * var3 + var9 * var9 * var5;
+         var7[var8 * 2] = var10 * var10 * f + 2.0F * var10 * var9 * h + var9 * var9 * j;
+         var7[var8 * 2 + 1] = var10 * var10 * g + 2.0F * var10 * var9 * i + var9 * var9 * k;
       }
 
       return var7;
    }
 
-   private static float[] append(float[] var0, float var1, float var2) {
-      float[] var3 = Arrays.copyOf(var0, var0.length + 2);
-      var3[var0.length] = var1;
-      var3[var0.length + 1] = var2;
+   private static float[] append(float[] fs, float f, float g) {
+      float[] var3 = Arrays.copyOf(fs, fs.length + 2);
+      var3[fs.length] = f;
+      var3[fs.length + 1] = g;
       return var3;
    }
 
@@ -103,62 +103,53 @@ public final class GlyphShapes {
       private Builder() {
       }
 
-      GlyphShapes.Builder offset(float var1, float var2) {
-         this.offsetX = var1;
-         this.offsetY = var2;
+      GlyphShapes.Builder offset(float f, float g) {
+         this.offsetX = f;
+         this.offsetY = g;
          return this;
       }
 
-      GlyphShapes.Builder quad(float var1, float var2, float var3, float var4, float var5, float var6, float var7, float var8) {
+      GlyphShapes.Builder quad(float f, float g, float h, float i, float j, float k, float l, float m) {
          if (this.size + 8 > this.data.length) {
             this.data = Arrays.copyOf(this.data, this.data.length * 2);
          }
 
-         this.data[this.size++] = var1 + this.offsetX;
-         this.data[this.size++] = var2 + this.offsetY;
-         this.data[this.size++] = var3 + this.offsetX;
-         this.data[this.size++] = var4 + this.offsetY;
-         this.data[this.size++] = var5 + this.offsetX;
-         this.data[this.size++] = var6 + this.offsetY;
-         this.data[this.size++] = var7 + this.offsetX;
-         this.data[this.size++] = var8 + this.offsetY;
+         this.data[this.size++] = f + this.offsetX;
+         this.data[this.size++] = g + this.offsetY;
+         this.data[this.size++] = h + this.offsetX;
+         this.data[this.size++] = i + this.offsetY;
+         this.data[this.size++] = j + this.offsetX;
+         this.data[this.size++] = k + this.offsetY;
+         this.data[this.size++] = l + this.offsetX;
+         this.data[this.size++] = m + this.offsetY;
          return this;
       }
 
-      GlyphShapes.Builder arc(float var1, float var2, float var3, float var4, float var5, float var6, float var7, float var8, int var9) {
-         for (int var10 = 0; var10 < var9; var10++) {
-            double var11 = var7 + (double)((var8 - var7) * var10) / var9;
-            double var13 = var7 + (double)((var8 - var7) * (var10 + 1)) / var9;
+      GlyphShapes.Builder arc(float f, float g, float h, float i, float j, float k, float l, float m, int n) {
+         for (int var10 = 0; var10 < n; var10++) {
+            double var11 = l + (double)((m - l) * var10) / n;
+            double var13 = l + (double)((m - l) * (var10 + 1)) / n;
             float var15 = (float)Math.cos(var11);
             float var16 = (float)Math.sin(var11);
             float var17 = (float)Math.cos(var13);
             float var18 = (float)Math.sin(var13);
-            this.quad(
-               var1 + var15 * var3,
-               var2 + var16 * var4,
-               var1 + var15 * var5,
-               var2 + var16 * var6,
-               var1 + var17 * var5,
-               var2 + var18 * var6,
-               var1 + var17 * var3,
-               var2 + var18 * var4
-            );
+            this.quad(f + var15 * h, g + var16 * i, f + var15 * j, g + var16 * k, f + var17 * j, g + var18 * k, f + var17 * h, g + var18 * i);
          }
 
          return this;
       }
 
-      GlyphShapes.Builder disk(float var1, float var2, float var3, float var4, int var5) {
-         float[] var7 = new float[var5 * 2];
+      GlyphShapes.Builder disk(float f, float g, float h, float i, int j) {
+         float[] var7 = new float[j * 2];
 
-         for (int var6 = 0; var6 < var5; var6++) {
-            double var8 = 6.283185307179586 * var6 / var5 + 3.141592653589793 / var5;
-            var7[var6 * 2] = var1 + (float)Math.cos(var8) * var3;
-            var7[var6 * 2 + 1] = var2 + (float)Math.sin(var8) * var4;
+         for (int var6 = 0; var6 < j; var6++) {
+            double var8 = 6.283185307179586 * var6 / j + 3.141592653589793 / j;
+            var7[var6 * 2] = f + (float)Math.cos(var8) * h;
+            var7[var6 * 2 + 1] = g + (float)Math.sin(var8) * i;
          }
 
-         for (byte var10 = 1; var10 + 1 < var5; var10 += 2) {
-            int var11 = Math.min(var10 + 2, var5 - 1);
+         for (byte var10 = 1; var10 + 1 < j; var10 += 2) {
+            int var11 = Math.min(var10 + 2, j - 1);
             this.quad(
                var7[0], var7[1], var7[var10 * 2], var7[var10 * 2 + 1], var7[(var10 + 1) * 2], var7[(var10 + 1) * 2 + 1], var7[var11 * 2], var7[var11 * 2 + 1]
             );
@@ -167,12 +158,12 @@ public final class GlyphShapes {
          return this;
       }
 
-      GlyphShapes.Builder stroke(float var1, float... var2) {
-         int var4 = var2.length / 2;
+      GlyphShapes.Builder stroke(float f, float... fs) {
+         int var4 = fs.length / 2;
          if (var4 < 2) {
             return this;
          } else {
-            float var5 = var1 * 0.5F;
+            float var5 = f * 0.5F;
             float[] var6 = new float[var4];
             float[] var7 = new float[var4];
 
@@ -185,7 +176,7 @@ public final class GlyphShapes {
                float var10;
                float var11;
                if (var3 > 0
-                  && (var11 = (float)Math.sqrt((var10 = var2[var3 * 2] - var2[var3 * 2 - 2]) * var10 + (var9 = var2[var3 * 2 + 1] - var2[var3 * 2 - 1]) * var9))
+                  && (var11 = (float)Math.sqrt((var10 = fs[var3 * 2] - fs[var3 * 2 - 2]) * var10 + (var9 = fs[var3 * 2 + 1] - fs[var3 * 2 - 1]) * var9))
                      > 1.0E-6F) {
                   var14 = -var9 / var11;
                   var15 = var10 / var11;
@@ -194,7 +185,7 @@ public final class GlyphShapes {
                }
 
                if (var3 < var4 - 1
-                  && (var11 = (float)Math.sqrt((var10 = var2[var3 * 2 + 2] - var2[var3 * 2]) * var10 + (var9 = var2[var3 * 2 + 3] - var2[var3 * 2 + 1]) * var9))
+                  && (var11 = (float)Math.sqrt((var10 = fs[var3 * 2 + 2] - fs[var3 * 2]) * var10 + (var9 = fs[var3 * 2 + 3] - fs[var3 * 2 + 1]) * var9))
                      > 1.0E-6F) {
                   var12 += -var9 / var11;
                   var13 += var10 / var11;
@@ -219,10 +210,10 @@ public final class GlyphShapes {
             }
 
             for (int var17 = 0; var17 < var4 - 1; var17++) {
-               float var18 = var2[var17 * 2];
-               float var20 = var2[var17 * 2 + 1];
-               float var22 = var2[var17 * 2 + 2];
-               float var24 = var2[var17 * 2 + 3];
+               float var18 = fs[var17 * 2];
+               float var20 = fs[var17 * 2 + 1];
+               float var22 = fs[var17 * 2 + 2];
+               float var24 = fs[var17 * 2 + 3];
                this.quad(
                   var18 - var6[var17],
                   var20 - var7[var17],

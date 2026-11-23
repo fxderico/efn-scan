@@ -22,16 +22,16 @@ public final class CharacterBuilder {
    private CharacterBuilder() {
    }
 
-   public static CharacterModel build(CharacterDesign var0, Detail var1) {
-      if (var0 instanceof BakedDesign var33) {
-         return BakedModel.load(var33, var1);
+   public static CharacterModel build(CharacterDesign characterDesign, Detail detail) {
+      if (characterDesign instanceof BakedDesign var33) {
+         return BakedModel.load(var33, detail);
       } else {
          long var2 = System.nanoTime();
-         Rig var4 = var0.rig();
+         Rig var4 = characterDesign.rig();
          List var5 = order(var4);
          int var6 = var5.size();
          if (var6 == 0) {
-            throw new IllegalStateException(var0.id() + ": the design defines no parts");
+            throw new IllegalStateException(characterDesign.id() + ": the design defines no parts");
          } else {
             IdentityHashMap var7 = new IdentityHashMap();
 
@@ -56,14 +56,14 @@ public final class CharacterBuilder {
                      throw new IllegalStateException(var13.name + ": shape is larger than 160.0 units");
                   }
 
-                  var11[var12] = SurfaceNets.fitStep(var14.maxX - var14.minX, var14.maxY - var14.minY, var14.maxZ - var14.minZ, var1.step * var13.resolution);
+                  var11[var12] = SurfaceNets.fitStep(var14.maxX - var14.minX, var14.maxY - var14.minY, var14.maxZ - var14.minZ, detail.step * var13.resolution);
                   float var15 = var11[var12] * 0.75F;
-                  var14 = var14.map(var1x -> {
+                  var14 = var14.map(shape -> {
                      Object var2x;
-                     if (var1x instanceof Strand var3) {
+                     if (shape instanceof Strand var3) {
                         var2x = var3.thickened(var15);
                      } else {
-                        var2x = var1x;
+                        var2x = shape;
                      }
 
                      return (Shape)var2x;
@@ -89,21 +89,21 @@ public final class CharacterBuilder {
 
             Mesh[] var42 = new Mesh[var6];
             float[] var43 = new float[var6];
-            IntStream.range(0, var6).parallel().forEach(var5x -> {
-               Shape var6x = var10[var5x];
+            IntStream.range(0, var6).parallel().forEach(i -> {
+               Shape var6x = var10[i];
                if (var6x != null) {
-                  var42[var5x] = SurfaceNets.mesh(var6x, var6x.minX, var6x.minY, var6x.minZ, var6x.maxX, var6x.maxY, var6x.maxZ, var11[var5x]);
-                  var43[var5x] = visible(var42[var5x], var36[var5x]);
+                  var42[i] = SurfaceNets.mesh(var6x, var6x.minX, var6x.minY, var6x.minZ, var6x.maxX, var6x.maxY, var6x.maxZ, var11[i]);
+                  var43[i] = visible(var42[i], var36[i]);
                }
             });
             int[] var18 = new int[var6];
-            budget(var5, var42, var43, var1, var18, var41);
+            budget(var5, var42, var43, detail, var18, var41);
             Mesh[] var19 = new Mesh[var6];
-            IntStream.range(0, var6).parallel().forEach(var3 -> {
-               if (var42[var3] != null && var42[var3].triCount != 0) {
-                  Simplifier var4x = new Simplifier(var42[var3]);
-                  var4x.reduce(var18[var3]);
-                  var19[var3] = var4x.snapshot();
+            IntStream.range(0, var6).parallel().forEach(i -> {
+               if (var42[i] != null && var42[i].triCount != 0) {
+                  Simplifier var4x = new Simplifier(var42[i]);
+                  var4x.reduce(var18[i]);
+                  var19[i] = var4x.snapshot();
                }
             });
             PartMesh[] var20 = new PartMesh[var6];
@@ -119,21 +119,19 @@ public final class CharacterBuilder {
             IntStream.range(0, var6)
                .parallel()
                .forEach(
-                  var13x -> {
-                     Part var16x = (Part)var5.get(var13x);
+                  i -> {
+                     Part var16x = (Part)var5.get(i);
                      Surface var17x = null;
                      Surface var18x = null;
                      Surface var19x = null;
-                     if (var19[var13x] != null && var19[var13x].triCount > 0) {
+                     if (var19[i] != null && var19[i].triCount > 0) {
                         float var22x = var16x.occlusion >= 0.0F ? var16x.occlusion : var4.occlusion;
-                        CharacterBuilder.Shaded var23x = shade(
-                           var10[var13x], var35, var19[var13x], var11[var13x], var22x, var16x.flat >= 0.0F ? var16x.flat : var4.flat
-                        );
+                        CharacterBuilder.Shaded var23x = shade(var10[i], var35, var19[i], var11[i], var22x, var16x.flat >= 0.0F ? var16x.flat : var4.flat);
                         Mesh var20x;
-                        var17x = baseSurface(var23x, var20x = bury(var23x, var19[var13x], var36[var13x], var11[var13x]), var16x, var39);
-                        if (var17x != null && var41[var13x] > 0.0F) {
+                        var17x = baseSurface(var23x, var20x = bury(var23x, var19[i], var36[i], var11[i]), var16x, var39);
+                        if (var17x != null && var41[i] > 0.0F) {
                            int var24x = var16x.outlineColorSet ? var16x.outlineColor : var4.outlineColor;
-                           var18x = hullSurface(var10[var13x], var23x, var17x, var16x, var41[var13x], var11[var13x], var24x, var39);
+                           var18x = hullSurface(var10[i], var23x, var17x, var16x, var41[i], var11[i], var24x, var39);
                         }
 
                         if (!var16x.decals.isEmpty()) {
@@ -174,7 +172,7 @@ public final class CharacterBuilder {
                         }
                      }
 
-                     var20[var13x] = new PartMesh(
+                     var20[i] = new PartMesh(
                         var16x.name,
                         var16x.bone,
                         var26x,
@@ -189,7 +187,7 @@ public final class CharacterBuilder {
                         var17x,
                         var18x,
                         var19x,
-                        var22[var13x],
+                        var22[i],
                         var28x ? var16x.swing : 1.0F,
                         var28x ? var16x.swingLimit : 0.0F,
                         var14x,
@@ -219,9 +217,9 @@ public final class CharacterBuilder {
             float var30 = var21[1] == -3.4028235E38F ? 32.0F : var21[1];
             long var31 = (var44 - var2) / 1000000L;
             return new CharacterModel(
-               var0.id(),
-               var0.name(),
-               var1,
+               characterDesign.id(),
+               characterDesign.name(),
+               detail,
                var4.scale,
                var20,
                var23,
@@ -240,25 +238,25 @@ public final class CharacterBuilder {
       }
    }
 
-   private static List<Part> order(Rig var0) {
+   private static List<Part> order(Rig rig) {
       ArrayList var1 = new ArrayList();
 
-      for (Part var5 : var0.bones) {
+      for (Part var5 : rig.bones) {
          if (var5 != null) {
             var1.add(var5);
          }
       }
 
-      var1.addAll(var0.extras);
+      var1.addAll(rig.extras);
       return var1;
    }
 
-   private static Shape[] covers(List<Part> var0, Shape[] var1) {
-      int var2 = var0.size();
+   private static Shape[] covers(List<Part> list, Shape[] shapes) {
+      int var2 = list.size();
       Part[] var3 = new Part[var2];
 
       for (int var4 = 0; var4 < var2; var4++) {
-         Part var5 = (Part)var0.get(var4);
+         Part var5 = (Part)list.get(var4);
 
          while (var5.extra && var5.motion == null && var5.parent != null) {
             var5 = var5.parent;
@@ -270,12 +268,12 @@ public final class CharacterBuilder {
       Shape[] var8 = new Shape[var2];
 
       for (int var9 = 0; var9 < var2; var9++) {
-         if (var1[var9] != null) {
+         if (shapes[var9] != null) {
             ArrayList var6 = new ArrayList();
 
             for (int var7 = 0; var7 < var2; var7++) {
-               if (var7 != var9 && var1[var7] != null && var3[var7] == var3[var9] && overlaps(var1[var9], var1[var7])) {
-                  var6.add(var1[var7]);
+               if (var7 != var9 && shapes[var7] != null && var3[var7] == var3[var9] && overlaps(shapes[var9], shapes[var7])) {
+                  var6.add(shapes[var7]);
                }
             }
 
@@ -288,88 +286,88 @@ public final class CharacterBuilder {
       return var8;
    }
 
-   private static boolean overlaps(Shape var0, Shape var1) {
-      return var0.minX <= var1.maxX
-         && var1.minX <= var0.maxX
-         && var0.minY <= var1.maxY
-         && var1.minY <= var0.maxY
-         && var0.minZ <= var1.maxZ
-         && var1.minZ <= var0.maxZ;
+   private static boolean overlaps(Shape shape, Shape shape2) {
+      return shape.minX <= shape2.maxX
+         && shape2.minX <= shape.maxX
+         && shape.minY <= shape2.maxY
+         && shape2.minY <= shape.maxY
+         && shape.minZ <= shape2.maxZ
+         && shape2.minZ <= shape.maxZ;
    }
 
-   private static float visible(Mesh var0, Shape var1) {
-      if (var1 != null && var0.triCount != 0) {
-         boolean[] var2 = new boolean[var0.vertexCount];
+   private static float visible(Mesh mesh, Shape shape) {
+      if (shape != null && mesh.triCount != 0) {
+         boolean[] var2 = new boolean[mesh.vertexCount];
 
-         for (int var3 = 0; var3 < var0.vertexCount; var3++) {
-            var2[var3] = var1.distance(var0.pos[var3 * 3], var0.pos[var3 * 3 + 1], var0.pos[var3 * 3 + 2]) < -0.02F;
+         for (int var3 = 0; var3 < mesh.vertexCount; var3++) {
+            var2[var3] = shape.distance(mesh.pos[var3 * 3], mesh.pos[var3 * 3 + 1], mesh.pos[var3 * 3 + 2]) < -0.02F;
          }
 
          int var5 = 0;
 
-         for (int var4 = 0; var4 < var0.triCount; var4++) {
-            if (var2[var0.tris[var4 * 3]] && var2[var0.tris[var4 * 3 + 1]] && var2[var0.tris[var4 * 3 + 2]]) {
+         for (int var4 = 0; var4 < mesh.triCount; var4++) {
+            if (var2[mesh.tris[var4 * 3]] && var2[mesh.tris[var4 * 3 + 1]] && var2[mesh.tris[var4 * 3 + 2]]) {
                var5++;
             }
          }
 
-         return Math.max(0.05F, 1.0F - (float)var5 / var0.triCount);
+         return Math.max(0.05F, 1.0F - (float)var5 / mesh.triCount);
       } else {
          return 1.0F;
       }
    }
 
-   private static void budget(List<Part> var0, Mesh[] var1, float[] var2, Detail var3, int[] var4, float[] var5) {
-      int var6 = var0.size();
+   private static void budget(List<Part> list, Mesh[] meshs, float[] fs, Detail detail, int[] is, float[] gs) {
+      int var6 = list.size();
       float var7 = 0.0F;
       float var8 = 0.0F;
       float[] var9 = new float[var6];
 
       for (int var10 = 0; var10 < var6; var10++) {
-         Part var11 = (Part)var0.get(var10);
-         if (var1[var10] != null) {
-            var9[var10] = var1[var10].triCount * var2[var10] * var11.detail;
+         Part var11 = (Part)list.get(var10);
+         if (meshs[var10] != null) {
+            var9[var10] = meshs[var10].triCount * fs[var10] * var11.detail;
             var7 += var9[var10];
-            if (var5[var10] > 0.0F) {
+            if (gs[var10] > 0.0F) {
                var8 += var9[var10];
             }
          }
       }
 
       if (!(var7 <= 0.0F)) {
-         float var14 = var3.budget * 0.9F;
+         float var14 = detail.budget * 0.9F;
          float var15 = var14 / (1.0F + var8 / var7);
 
          for (int var12 = 0; var12 < var6; var12++) {
-            if (var1[var12] != null) {
-               int var13 = Math.max(24, Math.round(var15 * var9[var12] / var7 / var2[var12]));
-               var4[var12] = Math.min(var13, var1[var12].triCount);
+            if (meshs[var12] != null) {
+               int var13 = Math.max(24, Math.round(var15 * var9[var12] / var7 / fs[var12]));
+               is[var12] = Math.min(var13, meshs[var12].triCount);
             }
          }
       }
    }
 
-   private static CharacterBuilder.Shaded shade(Shape var0, Shape var1, Mesh var2, float var3, float var4, float var5) {
-      CharacterBuilder.Shaded var6 = new CharacterBuilder.Shaded(var2.vertexCount);
-      int var7 = (var2.vertexCount + 255) / 256;
-      IntStream.range(0, var7).parallel().forEach(var7x -> {
+   private static CharacterBuilder.Shaded shade(Shape shape, Shape shape2, Mesh mesh, float f, float g, float h) {
+      CharacterBuilder.Shaded var6 = new CharacterBuilder.Shaded(mesh.vertexCount);
+      int var7 = (mesh.vertexCount + 255) / 256;
+      IntStream.range(0, var7).parallel().forEach(i -> {
          float[] var8 = new float[3];
          float[] var9 = new float[3];
          Sample var10 = new Sample();
-         int var11 = Math.min(var2.vertexCount, (var7x + 1) * 256);
+         int var11 = Math.min(mesh.vertexCount, (i + 1) * 256);
 
-         for (int var12 = var7x * 256; var12 < var11; var12++) {
-            var8[0] = var2.pos[var12 * 3];
-            var8[1] = var2.pos[var12 * 3 + 1];
-            var8[2] = var2.pos[var12 * 3 + 2];
-            project(var0, var8, var9, var3);
+         for (int var12 = i * 256; var12 < var11; var12++) {
+            var8[0] = mesh.pos[var12 * 3];
+            var8[1] = mesh.pos[var12 * 3 + 1];
+            var8[2] = mesh.pos[var12 * 3 + 2];
+            project(shape, var8, var9, f);
             System.arraycopy(var8, 0, var6.pos, var12 * 3, 3);
             System.arraycopy(var9, 0, var6.nrm, var12 * 3, 3);
-            var0.sample(var8[0], var8[1], var8[2], var10);
-            float var13 = occlusion(var1, var8[0], var8[1], var8[2], var9[0], var9[1], var9[2], var10.occlusion(var4));
+            shape.sample(var8[0], var8[1], var8[2], var10);
+            float var13 = occlusion(shape2, var8[0], var8[1], var8[2], var9[0], var9[1], var9[2], var10.occlusion(g));
             var13 += (1.0F - var13) * Math.min(1.0F, var10.glow);
             var6.ao[var12] = var13;
-            var6.flat[var12] = var10.flat(var5);
+            var6.flat[var12] = var10.flat(h);
             var6.glow[var12] = (byte)(var10.glow >= 0.5F ? 1 : 0);
             var6.color[var12] = 0xFF000000 | Sample.channel(var10.r * var13) << 16 | Sample.channel(var10.g * var13) << 8 | Sample.channel(var10.b * var13);
          }
@@ -377,48 +375,48 @@ public final class CharacterBuilder {
       return var6;
    }
 
-   private static Mesh bury(CharacterBuilder.Shaded var0, Mesh var1, Shape var2, float var3) {
-      if (var2 == null) {
-         return var1;
+   private static Mesh bury(CharacterBuilder.Shaded shaded, Mesh mesh, Shape shape, float f) {
+      if (shape == null) {
+         return mesh;
       } else {
-         float[] var4 = new float[var0.count];
-         int var5 = (var0.count + 255) / 256;
-         IntStream.range(0, var5).parallel().forEach(var4x -> {
+         float[] var4 = new float[shaded.count];
+         int var5 = (shaded.count + 255) / 256;
+         IntStream.range(0, var5).parallel().forEach(i -> {
             float[] var5x = new float[3];
             float[] var6x = new float[3];
-            int var7x = Math.min(var0.count, (var4x + 1) * 256);
+            int var7x = Math.min(shaded.count, (i + 1) * 256);
 
-            for (int var8x = var4x * 256; var8x < var7x; var8x++) {
-               var5x[0] = var0.pos[var8x * 3];
-               var5x[1] = var0.pos[var8x * 3 + 1];
-               var5x[2] = var0.pos[var8x * 3 + 2];
+            for (int var8x = i * 256; var8x < var7x; var8x++) {
+               var5x[0] = shaded.pos[var8x * 3];
+               var5x[1] = shaded.pos[var8x * 3 + 1];
+               var5x[2] = shaded.pos[var8x * 3 + 2];
                float var9;
-               var4[var8x] = var9 = var2.distance(var5x[0], var5x[1], var5x[2]);
+               var4[var8x] = var9 = shape.distance(var5x[0], var5x[1], var5x[2]);
                if (var9 < 0.0F) {
-                  gradient(var2, var5x, Math.max(0.01F, var3 * 0.3F), var6x);
+                  gradient(shape, var5x, Math.max(0.01F, f * 0.3F), var6x);
                   float var10 = Math.min(0.12F, -2.0F * var9);
-                  var0.pos[var8x * 3] = var5x[0] - var6x[0] * var10;
-                  var0.pos[var8x * 3 + 1] = var5x[1] - var6x[1] * var10;
-                  var0.pos[var8x * 3 + 2] = var5x[2] - var6x[2] * var10;
+                  shaded.pos[var8x * 3] = var5x[0] - var6x[0] * var10;
+                  shaded.pos[var8x * 3 + 1] = var5x[1] - var6x[1] * var10;
+                  shaded.pos[var8x * 3 + 2] = var5x[2] - var6x[2] * var10;
                }
             }
          });
-         var0.cover = var4;
-         int[] var6 = new int[var1.triCount * 3];
+         shaded.cover = var4;
+         int[] var6 = new int[mesh.triCount * 3];
          int var7 = 0;
 
-         for (int var8 = 0; var8 < var1.triCount; var8++) {
-            int var12 = var1.tris[var8 * 3];
-            int var13 = var1.tris[var8 * 3 + 1];
-            int var14 = var1.tris[var8 * 3 + 2];
+         for (int var8 = 0; var8 < mesh.triCount; var8++) {
+            int var12 = mesh.tris[var8 * 3];
+            int var13 = mesh.tris[var8 * 3 + 1];
+            int var14 = mesh.tris[var8 * 3 + 2];
             if (!(var4[var12] < -0.02F)
                || !(var4[var13] < -0.02F)
                || !(var4[var14] < -0.02F)
                || !(
-                  var2.distance(
-                        (var1.pos[var12 * 3] + var1.pos[var13 * 3] + var1.pos[var14 * 3]) / 3.0F,
-                        (var1.pos[var12 * 3 + 1] + var1.pos[var13 * 3 + 1] + var1.pos[var14 * 3 + 1]) / 3.0F,
-                        (var1.pos[var12 * 3 + 2] + var1.pos[var13 * 3 + 2] + var1.pos[var14 * 3 + 2]) / 3.0F
+                  shape.distance(
+                        (mesh.pos[var12 * 3] + mesh.pos[var13 * 3] + mesh.pos[var14 * 3]) / 3.0F,
+                        (mesh.pos[var12 * 3 + 1] + mesh.pos[var13 * 3 + 1] + mesh.pos[var14 * 3 + 1]) / 3.0F,
+                        (mesh.pos[var12 * 3 + 2] + mesh.pos[var13 * 3 + 2] + mesh.pos[var14 * 3 + 2]) / 3.0F
                      )
                      < -0.02F
                )) {
@@ -429,127 +427,127 @@ public final class CharacterBuilder {
             }
          }
 
-         return var7 == var1.triCount ? var1 : new Mesh(var1.pos, var1.vertexCount, Arrays.copyOf(var6, var7 * 3), var7);
+         return var7 == mesh.triCount ? mesh : new Mesh(mesh.pos, mesh.vertexCount, Arrays.copyOf(var6, var7 * 3), var7);
       }
    }
 
-   static void project(Shape var0, float[] var1, float[] var2, float var3) {
-      project(var0, var1, var2, var3, 0.0F);
+   static void project(Shape shape, float[] fs, float[] gs, float f) {
+      project(shape, fs, gs, f, 0.0F);
    }
 
-   static void project(Shape var0, float[] var1, float[] var2, float var3, float var4) {
-      float var5 = Math.max(0.01F, var3 * 0.3F);
-      float var6 = var3 * 0.01F;
-      float var7 = var0.distance(var1[0], var1[1], var1[2]) - var4;
-      gradient(var0, var1, var5, var2);
+   static void project(Shape shape, float[] fs, float[] gs, float f, float g) {
+      float var5 = Math.max(0.01F, f * 0.3F);
+      float var6 = f * 0.01F;
+      float var7 = shape.distance(fs[0], fs[1], fs[2]) - g;
+      gradient(shape, fs, var5, gs);
 
       for (int var8 = 0; var8 < 2 && Math.abs(var7) > var6; var8++) {
-         float var9 = Math.max(-var3, Math.min(var3, var7));
-         var1[0] -= var2[0] * var9;
-         var1[1] -= var2[1] * var9;
-         var1[2] -= var2[2] * var9;
-         var7 = var0.distance(var1[0], var1[1], var1[2]) - var4;
-         gradient(var0, var1, var5, var2);
+         float var9 = Math.max(-f, Math.min(f, var7));
+         fs[0] -= gs[0] * var9;
+         fs[1] -= gs[1] * var9;
+         fs[2] -= gs[2] * var9;
+         var7 = shape.distance(fs[0], fs[1], fs[2]) - g;
+         gradient(shape, fs, var5, gs);
       }
    }
 
-   static void gradient(Shape var0, float[] var1, float var2, float[] var3) {
-      float var6 = var1[0];
-      float var7 = var1[1];
-      float var8 = var1[2];
-      float var9 = var0.distance(var6 + var2, var7, var8) - var0.distance(var6 - var2, var7, var8);
+   static void gradient(Shape shape, float[] fs, float f, float[] gs) {
+      float var6 = fs[0];
+      float var7 = fs[1];
+      float var8 = fs[2];
+      float var9 = shape.distance(var6 + f, var7, var8) - shape.distance(var6 - f, var7, var8);
       float var4;
       float var5;
       float var10 = (float)Math.sqrt(
          var9 * var9
-            + (var5 = var0.distance(var6, var7 + var2, var8) - var0.distance(var6, var7 - var2, var8)) * var5
-            + (var4 = var0.distance(var6, var7, var8 + var2) - var0.distance(var6, var7, var8 - var2)) * var4
+            + (var5 = shape.distance(var6, var7 + f, var8) - shape.distance(var6, var7 - f, var8)) * var5
+            + (var4 = shape.distance(var6, var7, var8 + f) - shape.distance(var6, var7, var8 - f)) * var4
       );
       if (var10 < 1.0E-12F) {
-         var3[0] = 0.0F;
-         var3[1] = 1.0F;
-         var3[2] = 0.0F;
+         gs[0] = 0.0F;
+         gs[1] = 1.0F;
+         gs[2] = 0.0F;
       } else {
-         var3[0] = var9 / var10;
-         var3[1] = var5 / var10;
-         var3[2] = var4 / var10;
+         gs[0] = var9 / var10;
+         gs[1] = var5 / var10;
+         gs[2] = var4 / var10;
       }
    }
 
-   private static float occlusion(Shape var0, float var1, float var2, float var3, float var4, float var5, float var6, float var7) {
-      if (var0 != null && !(var7 <= 0.0F)) {
+   private static float occlusion(Shape shape, float f, float g, float h, float i, float j, float k, float l) {
+      if (shape != null && !(l <= 0.0F)) {
          float var8 = 0.0F;
          float var9 = 0.0F;
          float var10 = 1.0F;
 
          for (int var11 = 1; var11 <= 5; var11++) {
             float var12 = 0.38F * var11;
-            float var13 = var0.distance(var1 + var4 * var12, var2 + var5 * var12, var3 + var6 * var12);
+            float var13 = shape.distance(f + i * var12, g + j * var12, h + k * var12);
             var8 += Math.max(0.0F, var12 - var13) * var10;
             var9 += var12 * var10;
             var10 *= 0.72F;
          }
 
          float var14 = Math.min(1.0F, var8 / var9 * 1.6F);
-         return 1.0F - var7 * var14 * (1.4F - 0.4F * var14);
+         return 1.0F - l * var14 * (1.4F - 0.4F * var14);
       } else {
          return 1.0F;
       }
    }
 
-   private static Surface baseSurface(CharacterBuilder.Shaded var0, Mesh var1, Part var2, Atlas var3) {
-      if (var1.triCount == 0) {
+   private static Surface baseSurface(CharacterBuilder.Shaded shaded, Mesh mesh, Part part, Atlas atlas) {
+      if (mesh.triCount == 0) {
          return null;
       } else {
          Surface.Builder var4 = new Surface.Builder();
-         float var5 = var3.whiteU();
-         float var6 = var3.whiteV();
+         float var5 = atlas.whiteU();
+         float var6 = atlas.whiteV();
 
-         for (int var7 = 0; var7 < var0.count; var7++) {
+         for (int var7 = 0; var7 < shaded.count; var7++) {
             var4.vertex(
-               var0.pos[var7 * 3] - var2.pivotX,
-               var0.pos[var7 * 3 + 1] - var2.pivotY,
-               var0.pos[var7 * 3 + 2] - var2.pivotZ,
-               var0.nrm[var7 * 3],
-               var0.nrm[var7 * 3 + 1],
-               var0.nrm[var7 * 3 + 2],
+               shaded.pos[var7 * 3] - part.pivotX,
+               shaded.pos[var7 * 3 + 1] - part.pivotY,
+               shaded.pos[var7 * 3 + 2] - part.pivotZ,
+               shaded.nrm[var7 * 3],
+               shaded.nrm[var7 * 3 + 1],
+               shaded.nrm[var7 * 3 + 2],
                var5,
                var6,
-               var0.color[var7],
-               var0.glow[var7] != 0,
-               var0.flat[var7]
+               shaded.color[var7],
+               shaded.glow[var7] != 0,
+               shaded.flat[var7]
             );
          }
 
-         pair(var1.tris, var1.triCount, var1.vertexCount, var4);
+         pair(mesh.tris, mesh.triCount, mesh.vertexCount, var4);
          return var4.build();
       }
    }
 
-   private static Surface hullSurface(Shape var0, CharacterBuilder.Shaded var1, Surface var2, Part var3, float var4, float var5, int var6, Atlas var7) {
-      float[] var8 = new float[var1.count * 3];
-      float[] var9 = new float[var1.count];
-      float var10 = var4 / 0.5F * 1.5F;
-      int var11 = (var1.count + 255) / 256;
-      IntStream.range(0, var11).parallel().forEach(var7x -> {
+   private static Surface hullSurface(Shape shape, CharacterBuilder.Shaded shaded, Surface surface, Part part, float f, float g, int i, Atlas atlas) {
+      float[] var8 = new float[shaded.count * 3];
+      float[] var9 = new float[shaded.count];
+      float var10 = f / 0.5F * 1.5F;
+      int var11 = (shaded.count + 255) / 256;
+      IntStream.range(0, var11).parallel().forEach(ix -> {
          float[] var8x = new float[3];
          float[] var9x = new float[3];
-         int var10x = Math.min(var1.count, (var7x + 1) * 256);
+         int var10x = Math.min(shaded.count, (ix + 1) * 256);
 
-         for (int var11x = var7x * 256; var11x < var10x; var11x++) {
-            float var13x = var1.pos[var11x * 3];
-            float var14x = var1.pos[var11x * 3 + 1];
-            float var15x = var1.pos[var11x * 3 + 2];
-            float var16x = var1.nrm[var11x * 3];
-            float var17x = var1.nrm[var11x * 3 + 1];
-            float var18x = var1.nrm[var11x * 3 + 2];
-            float var12x = var1.cover != null && var1.cover[var11x] < 0.0F ? 0.0F : var4;
+         for (int var11x = ix * 256; var11x < var10x; var11x++) {
+            float var13x = shaded.pos[var11x * 3];
+            float var14x = shaded.pos[var11x * 3 + 1];
+            float var15x = shaded.pos[var11x * 3 + 2];
+            float var16x = shaded.nrm[var11x * 3];
+            float var17x = shaded.nrm[var11x * 3 + 1];
+            float var18x = shaded.nrm[var11x * 3 + 2];
+            float var12x = shaded.cover != null && shaded.cover[var11x] < 0.0F ? 0.0F : f;
             if (var12x > 0.0F) {
                float var20x = 0.0F;
 
                for (int var21x = 1; var21x <= 5; var21x++) {
                   float var22 = var10 * var21x / 5.0F;
-                  var20x = Math.max(var20x, -var0.distance(var13x - var16x * var22, var14x - var17x * var22, var15x - var18x * var22));
+                  var20x = Math.max(var20x, -shape.distance(var13x - var16x * var22, var14x - var17x * var22, var15x - var18x * var22));
                }
 
                var12x = Math.min(var12x, 0.5F * var20x);
@@ -559,7 +557,7 @@ public final class CharacterBuilder {
             var8x[1] = var14x + var17x * var12x;
             var8x[2] = var15x + var18x * var12x;
             if (var12x > 0.0F) {
-               project(var0, var8x, var9x, var5, var12x);
+               project(shape, var8x, var9x, g, var12x);
             }
 
             var8[var11x * 3] = var8x[0];
@@ -569,25 +567,25 @@ public final class CharacterBuilder {
          }
       });
       Surface.Builder var12 = new Surface.Builder();
-      float var13 = var7.whiteU();
-      float var14 = var7.whiteV();
+      float var13 = atlas.whiteU();
+      float var14 = atlas.whiteV();
 
-      for (int var15 = 0; var15 < var1.count; var15++) {
+      for (int var15 = 0; var15 < shaded.count; var15++) {
          var12.vertex(
-            var8[var15 * 3] - var3.pivotX,
-            var8[var15 * 3 + 1] - var3.pivotY,
-            var8[var15 * 3 + 2] - var3.pivotZ,
+            var8[var15 * 3] - part.pivotX,
+            var8[var15 * 3 + 1] - part.pivotY,
+            var8[var15 * 3 + 2] - part.pivotZ,
             0.0F,
             1.0F,
             0.0F,
             var13,
             var14,
-            var6 | 0xFF000000,
+            i | 0xFF000000,
             false
          );
       }
 
-      int[] var21 = var2.quads;
+      int[] var21 = surface.quads;
 
       for (byte var16 = 0; var16 < var21.length; var16 += 4) {
          int var17 = var21[var16];
@@ -602,20 +600,20 @@ public final class CharacterBuilder {
       return var12.build();
    }
 
-   static void pair(int[] var0, int var1, int var2, Surface.Builder var3) {
-      long[] var4 = new long[var1 * 3];
+   static void pair(int[] is, int i, int j, Surface.Builder builder) {
+      long[] var4 = new long[i * 3];
 
-      for (int var5 = 0; var5 < var1; var5++) {
+      for (int var5 = 0; var5 < i; var5++) {
          for (int var6 = 0; var6 < 3; var6++) {
-            int var7 = var0[var5 * 3 + var6];
-            int var8 = var0[var5 * 3 + (var6 + 1) % 3];
-            long var9 = (long)Math.min(var7, var8) * var2 + Math.max(var7, var8);
+            int var7 = is[var5 * 3 + var6];
+            int var8 = is[var5 * 3 + (var6 + 1) % 3];
+            long var9 = (long)Math.min(var7, var8) * j + Math.max(var7, var8);
             var4[var5 * 3 + var6] = var9 << 21 | var5 * 3L + var6;
          }
       }
 
       Arrays.sort(var4);
-      int[] var21 = new int[var1 * 3];
+      int[] var21 = new int[i * 3];
       Arrays.fill(var21, -1);
       long var22 = 2097151L;
 
@@ -635,9 +633,9 @@ public final class CharacterBuilder {
          }
       }
 
-      boolean[] var25 = new boolean[var1];
+      boolean[] var25 = new boolean[i];
 
-      for (int var26 = 0; var26 < var1; var26++) {
+      for (int var26 = 0; var26 < i; var26++) {
          if (!var25[var26]) {
             int var11 = -1;
 
@@ -648,52 +646,52 @@ public final class CharacterBuilder {
                }
             }
 
-            int var27 = var0[var26 * 3];
-            int var28 = var0[var26 * 3 + 1];
-            int var14 = var0[var26 * 3 + 2];
+            int var27 = is[var26 * 3];
+            int var28 = is[var26 * 3 + 1];
+            int var14 = is[var26 * 3 + 2];
             if (var11 < 0) {
                var25[var26] = true;
-               var3.quad(var27, var28, var14, var14, 1);
+               builder.quad(var27, var28, var14, var14, 1);
             } else {
                int var15 = var21[var26 * 3 + var11];
                int var16 = var15 / 3;
                var25[var26] = true;
                var25[var16] = true;
-               int var17 = var0[var26 * 3 + var11];
-               int var18 = var0[var26 * 3 + (var11 + 1) % 3];
-               int var19 = var0[var26 * 3 + (var11 + 2) % 3];
-               int var20 = var0[var16 * 3 + (var15 % 3 + 2) % 3];
-               var3.quad(var17, var20, var18, var19, 2);
+               int var17 = is[var26 * 3 + var11];
+               int var18 = is[var26 * 3 + (var11 + 1) % 3];
+               int var19 = is[var26 * 3 + (var11 + 2) % 3];
+               int var20 = is[var16 * 3 + (var15 % 3 + 2) % 3];
+               builder.quad(var17, var20, var18, var19, 2);
             }
          }
       }
    }
 
-   private static Surface decalSurface(Part var0, CharacterBuilder.Shaded var1, Mesh var2, Atlas var3) {
+   private static Surface decalSurface(Part part, CharacterBuilder.Shaded shaded, Mesh mesh, Atlas atlas) {
       Surface.Builder var4 = new Surface.Builder();
       float[] var5 = new float[200];
       float[] var6 = new float[200];
 
-      for (Decal var8 : var0.decals) {
-         for (int var9 = 0; var9 < var2.triCount; var9++) {
-            int var10 = var2.tris[var9 * 3];
-            int var11 = var2.tris[var9 * 3 + 1];
-            int var12 = var2.tris[var9 * 3 + 2];
-            if (faces(var8, var1, var10, var11, var12)) {
+      for (Decal var8 : part.decals) {
+         for (int var9 = 0; var9 < mesh.triCount; var9++) {
+            int var10 = mesh.tris[var9 * 3];
+            int var11 = mesh.tris[var9 * 3 + 1];
+            int var12 = mesh.tris[var9 * 3 + 2];
+            if (faces(var8, shaded, var10, var11, var12)) {
                int[] var13 = new int[]{var10, var11, var12};
                float var14 = 0.0F;
 
                for (int var15 = 0; var15 < 3; var15++) {
                   int var16 = var13[var15];
                   int var17 = var15 * 10;
-                  var5[var17] = var1.pos[var16 * 3];
-                  var5[var17 + 1] = var1.pos[var16 * 3 + 1];
-                  var5[var17 + 2] = var1.pos[var16 * 3 + 2];
-                  var5[var17 + 3] = var1.nrm[var16 * 3];
-                  var5[var17 + 4] = var1.nrm[var16 * 3 + 1];
-                  var5[var17 + 5] = var1.nrm[var16 * 3 + 2];
-                  var5[var17 + 8] = var1.ao[var16];
-                  var5[var17 + 9] = var1.flat[var16];
+                  var5[var17] = shaded.pos[var16 * 3];
+                  var5[var17 + 1] = shaded.pos[var16 * 3 + 1];
+                  var5[var17 + 2] = shaded.pos[var16 * 3 + 2];
+                  var5[var17 + 3] = shaded.nrm[var16 * 3];
+                  var5[var17 + 4] = shaded.nrm[var16 * 3 + 1];
+                  var5[var17 + 5] = shaded.nrm[var16 * 3 + 2];
+                  var5[var17 + 8] = shaded.ao[var16];
+                  var5[var17 + 9] = shaded.flat[var16];
                   float var18 = var5[var17] - var8.cx;
                   float var19 = var5[var17 + 1] - var8.cy;
                   float var20 = var5[var17 + 2] - var8.cz;
@@ -729,10 +727,10 @@ public final class CharacterBuilder {
                   }
                }
 
-               emitClipped(var8, var5, var6, 0.0F, var0, var3, var4);
+               emitClipped(var8, var5, var6, 0.0F, part, atlas, var4);
                if (var8.wrap && var8.width >= 359.9F) {
-                  emitClipped(var8, var5, var6, 1.0F, var0, var3, var4);
-                  emitClipped(var8, var5, var6, -1.0F, var0, var3, var4);
+                  emitClipped(var8, var5, var6, 1.0F, part, atlas, var4);
+                  emitClipped(var8, var5, var6, -1.0F, part, atlas, var4);
                }
             }
          }
@@ -741,17 +739,17 @@ public final class CharacterBuilder {
       return var4.build();
    }
 
-   private static boolean faces(Decal var0, CharacterBuilder.Shaded var1, int var2, int var3, int var4) {
-      float var5 = var1.pos[var2 * 3 + 1];
-      float var6 = var1.pos[var3 * 3 + 1] - var5;
-      float var7 = var1.pos[var2 * 3 + 2];
-      float var8 = var1.pos[var4 * 3 + 2] - var7;
-      float var9 = var1.pos[var3 * 3 + 2] - var7;
-      float var10 = var1.pos[var4 * 3 + 1] - var5;
+   private static boolean faces(Decal decal, CharacterBuilder.Shaded shaded, int i, int j, int k) {
+      float var5 = shaded.pos[i * 3 + 1];
+      float var6 = shaded.pos[j * 3 + 1] - var5;
+      float var7 = shaded.pos[i * 3 + 2];
+      float var8 = shaded.pos[k * 3 + 2] - var7;
+      float var9 = shaded.pos[j * 3 + 2] - var7;
+      float var10 = shaded.pos[k * 3 + 1] - var5;
       float var11 = var6 * var8 - var9 * var10;
-      float var12 = var1.pos[var2 * 3];
-      float var13 = var1.pos[var4 * 3] - var12;
-      float var14 = var1.pos[var3 * 3] - var12;
+      float var12 = shaded.pos[i * 3];
+      float var13 = shaded.pos[k * 3] - var12;
+      float var14 = shaded.pos[j * 3] - var12;
       float var15 = var9 * var13 - var14 * var8;
       float var16 = var14 * var10 - var6 * var13;
       float var17 = (float)Math.sqrt(var11 * var11 + var15 * var15 + var16 * var16);
@@ -761,16 +759,16 @@ public final class CharacterBuilder {
          var11 /= var17;
          var15 /= var17;
          var16 /= var17;
-         int[] var18 = new int[]{var2, var3, var4};
-         if (!var0.wrap) {
-            if (var11 * var0.dx + var15 * var0.dy + var16 * var0.dz < var0.cosLimit) {
+         int[] var18 = new int[]{i, j, k};
+         if (!decal.wrap) {
+            if (var11 * decal.dx + var15 * decal.dy + var16 * decal.dz < decal.cosLimit) {
                return false;
             } else {
                for (int var34 : var18) {
-                  float var35 = (var1.pos[var34 * 3] - var0.cx) * var0.dx
-                     + (var1.pos[var34 * 3 + 1] - var0.cy) * var0.dy
-                     + (var1.pos[var34 * 3 + 2] - var0.cz) * var0.dz;
-                  if (var35 < var0.near || var35 > var0.far) {
+                  float var35 = (shaded.pos[var34 * 3] - decal.cx) * decal.dx
+                     + (shaded.pos[var34 * 3 + 1] - decal.cy) * decal.dy
+                     + (shaded.pos[var34 * 3 + 2] - decal.cz) * decal.dz;
+                  if (var35 < decal.near || var35 > decal.far) {
                      return false;
                   }
                }
@@ -778,41 +776,41 @@ public final class CharacterBuilder {
                return true;
             }
          } else {
-            float var19 = (var1.pos[var2 * 3] + var1.pos[var3 * 3] + var1.pos[var4 * 3]) / 3.0F - var0.cx;
-            float var20 = (var1.pos[var2 * 3 + 1] + var1.pos[var3 * 3 + 1] + var1.pos[var4 * 3 + 1]) / 3.0F - var0.cy;
-            float var21 = (var1.pos[var2 * 3 + 2] + var1.pos[var3 * 3 + 2] + var1.pos[var4 * 3 + 2]) / 3.0F - var0.cz;
-            float var22 = var19 * var0.dx + var20 * var0.dy + var21 * var0.dz;
-            float var23 = var19 - var22 * var0.dx;
-            float var24 = var20 - var22 * var0.dy;
-            float var25 = var21 - var22 * var0.dz;
+            float var19 = (shaded.pos[i * 3] + shaded.pos[j * 3] + shaded.pos[k * 3]) / 3.0F - decal.cx;
+            float var20 = (shaded.pos[i * 3 + 1] + shaded.pos[j * 3 + 1] + shaded.pos[k * 3 + 1]) / 3.0F - decal.cy;
+            float var21 = (shaded.pos[i * 3 + 2] + shaded.pos[j * 3 + 2] + shaded.pos[k * 3 + 2]) / 3.0F - decal.cz;
+            float var22 = var19 * decal.dx + var20 * decal.dy + var21 * decal.dz;
+            float var23 = var19 - var22 * decal.dx;
+            float var24 = var20 - var22 * decal.dy;
+            float var25 = var21 - var22 * decal.dz;
             float var26 = (float)Math.sqrt(var23 * var23 + var24 * var24 + var25 * var25);
             if (var26 < 1.0E-5F) {
                return false;
-            } else if ((var11 * var23 + var15 * var24 + var16 * var25) / var26 < var0.cosLimit) {
+            } else if ((var11 * var23 + var15 * var24 + var16 * var25) / var26 < decal.cosLimit) {
                return false;
             } else {
-               float var27 = var0.near == -3.4028235E38F ? 0.0F : var0.near;
-               return var26 >= var27 && var26 <= var0.far;
+               float var27 = decal.near == -3.4028235E38F ? 0.0F : decal.near;
+               return var26 >= var27 && var26 <= decal.far;
             }
          }
       }
    }
 
-   private static void emitClipped(Decal var0, float[] var1, float[] var2, float var3, Part var4, Atlas var5, Surface.Builder var6) {
+   private static void emitClipped(Decal decal, float[] fs, float[] gs, float f, Part part, Atlas atlas, Surface.Builder builder) {
       float[] var7 = new float[200];
-      System.arraycopy(var1, 0, var7, 0, 30);
-      if (var3 != 0.0F) {
+      System.arraycopy(fs, 0, var7, 0, 30);
+      if (f != 0.0F) {
          for (int var8 = 0; var8 < 3; var8++) {
             int var9 = var8 * 10 + 6;
-            var7[var9] += var3;
+            var7[var9] += f;
          }
       }
 
       int var20 = 3;
-      var20 = clip(var7, var20, var2, 6, 0.0F, true);
-      var20 = clip(var2, var20, var7, 6, 1.0F, false);
-      var20 = clip(var7, var20, var2, 7, 0.0F, true);
-      if ((var20 = clip(var2, var20, var7, 7, 1.0F, false)) >= 3) {
+      var20 = clip(var7, var20, gs, 6, 0.0F, true);
+      var20 = clip(gs, var20, var7, 6, 1.0F, false);
+      var20 = clip(var7, var20, gs, 7, 0.0F, true);
+      if ((var20 = clip(gs, var20, var7, 7, 1.0F, false)) >= 3) {
          int var25 = -1;
 
          for (int var10 = 0; var10 < var20; var10++) {
@@ -827,20 +825,20 @@ public final class CharacterBuilder {
                var14 /= var15;
             }
 
-            int var16 = Sample.channel(1.0F - var0.occlusion * (1.0F - var7[var11 + 8]));
+            int var16 = Sample.channel(1.0F - decal.occlusion * (1.0F - var7[var11 + 8]));
             int var17 = 0xFF000000 | var16 << 16 | var16 << 8 | var16;
-            float var18 = var0.flat == var0.flat ? var0.flat : var7[var11 + 9];
-            int var19 = var6.vertex(
-               var7[var11] + var12 * var0.offset - var4.pivotX,
-               var7[var11 + 1] + var13 * var0.offset - var4.pivotY,
-               var7[var11 + 2] + var14 * var0.offset - var4.pivotZ,
+            float var18 = decal.flat == decal.flat ? decal.flat : var7[var11 + 9];
+            int var19 = builder.vertex(
+               var7[var11] + var12 * decal.offset - part.pivotX,
+               var7[var11 + 1] + var13 * decal.offset - part.pivotY,
+               var7[var11 + 2] + var14 * decal.offset - part.pivotZ,
                var12,
                var13,
                var14,
-               var5.u(var0.canvas, var7[var11 + 6]),
-               var5.v(var0.canvas, var7[var11 + 7]),
+               atlas.u(decal.canvas, var7[var11 + 6]),
+               atlas.v(decal.canvas, var7[var11 + 7]),
                var17,
-               var0.glow,
+               decal.glow,
                var18
             );
             if (var25 < 0) {
@@ -850,32 +848,32 @@ public final class CharacterBuilder {
 
          byte var26;
          for (var26 = 1; var26 + 2 < var20; var26 += 2) {
-            var6.quad(var25, var25 + var26, var25 + var26 + 1, var25 + var26 + 2, 2);
+            builder.quad(var25, var25 + var26, var25 + var26 + 1, var25 + var26 + 2, 2);
          }
 
          if (var26 + 1 < var20) {
-            var6.quad(var25, var25 + var26, var25 + var26 + 1, var25 + var26 + 1, 1);
+            builder.quad(var25, var25 + var26, var25 + var26 + 1, var25 + var26 + 1, 1);
          }
       }
    }
 
-   private static int clip(float[] var0, int var1, float[] var2, int var3, float var4, boolean var5) {
+   private static int clip(float[] fs, int i, float[] gs, int j, float f, boolean bl) {
       int var6 = 0;
 
-      for (int var7 = 0; var7 < var1; var7++) {
+      for (int var7 = 0; var7 < i; var7++) {
          int var9 = var7 * 10;
-         int var10 = (var7 + var1 - 1) % var1 * 10;
-         float var11 = var5 ? var0[var9 + var3] - var4 : var4 - var0[var9 + var3];
-         float var8 = var5 ? var0[var10 + var3] - var4 : var4 - var0[var10 + var3];
+         int var10 = (var7 + i - 1) % i * 10;
+         float var11 = bl ? fs[var9 + j] - f : f - fs[var9 + j];
+         float var8 = bl ? fs[var10 + j] - f : f - fs[var10 + j];
          if (var11 >= 0.0F) {
             if (var8 < 0.0F) {
-               var6 = cut(var0, var10, var9, var8, var11, var2, var6);
+               var6 = cut(fs, var10, var9, var8, var11, gs, var6);
             }
 
-            System.arraycopy(var0, var9, var2, var6 * 10, 10);
+            System.arraycopy(fs, var9, gs, var6 * 10, 10);
             var6++;
          } else if (var8 >= 0.0F) {
-            var6 = cut(var0, var10, var9, var8, var11, var2, var6);
+            var6 = cut(fs, var10, var9, var8, var11, gs, var6);
          }
 
          if (var6 >= 19) {
@@ -886,26 +884,26 @@ public final class CharacterBuilder {
       return var6;
    }
 
-   private static int cut(float[] var0, int var1, int var2, float var3, float var4, float[] var5, int var6) {
-      float var7 = var3 / (var3 - var4);
+   private static int cut(float[] fs, int i, int j, float f, float g, float[] gs, int k) {
+      float var7 = f / (f - g);
 
       for (int var8 = 0; var8 < 10; var8++) {
-         var5[var6 * 10 + var8] = var0[var1 + var8] + (var0[var2 + var8] - var0[var1 + var8]) * var7;
+         gs[k * 10 + var8] = fs[i + var8] + (fs[j + var8] - fs[i + var8]) * var7;
       }
 
-      return var6 + 1;
+      return k + 1;
    }
 
-   private static float reach(Surface var0) {
-      if (var0 == null) {
+   private static float reach(Surface surface) {
+      if (surface == null) {
          return 1.0F;
       } else {
          float var1 = 0.0F;
 
-         for (int var2 = 0; var2 < var0.vertexCount(); var2++) {
-            float var3 = var0.pos[var2 * 3];
-            float var4 = var0.pos[var2 * 3 + 1];
-            float var5 = var0.pos[var2 * 3 + 2];
+         for (int var2 = 0; var2 < surface.vertexCount(); var2++) {
+            float var3 = surface.pos[var2 * 3];
+            float var4 = surface.pos[var2 * 3 + 1];
+            float var5 = surface.pos[var2 * 3 + 2];
             var1 = Math.max(var1, var3 * var3 + var4 * var4 + var5 * var5);
          }
 
@@ -913,43 +911,43 @@ public final class CharacterBuilder {
       }
    }
 
-   private static void jointWeights(Surface var0, Part var1, Part var2) {
-      if (var0 != null) {
-         float[] var3 = new float[var0.vertexCount()];
-         float var4 = var2.jointX - var1.pivotX;
-         float var5 = var2.jointY - var1.pivotY;
-         float var6 = var2.jointZ - var1.pivotZ;
-         float var7 = var2.jointBlend;
+   private static void jointWeights(Surface surface, Part part, Part part2) {
+      if (surface != null) {
+         float[] var3 = new float[surface.vertexCount()];
+         float var4 = part2.jointX - part.pivotX;
+         float var5 = part2.jointY - part.pivotY;
+         float var6 = part2.jointZ - part.pivotZ;
+         float var7 = part2.jointBlend;
          boolean var8 = false;
 
          for (int var9 = 0; var9 < var3.length; var9++) {
-            float var10 = (var0.pos[var9 * 3] - var4) * var2.jointDirX
-               + (var0.pos[var9 * 3 + 1] - var5) * var2.jointDirY
-               + (var0.pos[var9 * 3 + 2] - var6) * var2.jointDirZ;
+            float var10 = (surface.pos[var9 * 3] - var4) * part2.jointDirX
+               + (surface.pos[var9 * 3 + 1] - var5) * part2.jointDirY
+               + (surface.pos[var9 * 3 + 2] - var6) * part2.jointDirZ;
             float var11 = Math.max(0.0F, Math.min(1.0F, (var10 + var7) / (2.0F * var7)));
             var3[var9] = var11 * var11 * (3.0F - 2.0F * var11);
             var8 |= var3[var9] > 0.0F;
          }
 
          if (var8) {
-            var0.joint = var3;
+            surface.joint = var3;
          }
       }
    }
 
-   private static void weigh(Surface var0, float var1, float var2) {
-      if (var0 != null) {
-         float[] var3 = new float[var0.vertexCount()];
+   private static void weigh(Surface surface, float f, float g) {
+      if (surface != null) {
+         float[] var3 = new float[surface.vertexCount()];
 
          for (int var4 = 0; var4 < var3.length; var4++) {
-            float var5 = var0.pos[var4 * 3];
-            float var6 = var0.pos[var4 * 3 + 1];
-            float var7 = var0.pos[var4 * 3 + 2];
-            float var8 = Math.min(1.0F, (float)Math.sqrt(var5 * var5 + var6 * var6 + var7 * var7) / var1);
-            var3[var4] = (float)Math.pow(var8, var2);
+            float var5 = surface.pos[var4 * 3];
+            float var6 = surface.pos[var4 * 3 + 1];
+            float var7 = surface.pos[var4 * 3 + 2];
+            float var8 = Math.min(1.0F, (float)Math.sqrt(var5 * var5 + var6 * var6 + var7 * var7) / f);
+            var3[var4] = (float)Math.pow(var8, g);
          }
 
-         var0.weight = var3;
+         surface.weight = var3;
       }
    }
 
@@ -964,14 +962,14 @@ public final class CharacterBuilder {
       final float[] flat;
       float[] cover;
 
-      Shaded(int var1) {
-         this.count = var1;
-         this.pos = new float[var1 * 3];
-         this.nrm = new float[var1 * 3];
-         this.color = new int[var1];
-         this.glow = new byte[var1];
-         this.ao = new float[var1];
-         this.flat = new float[var1];
+      Shaded(int i) {
+         this.count = i;
+         this.pos = new float[i * 3];
+         this.nrm = new float[i * 3];
+         this.color = new int[i];
+         this.glow = new byte[i];
+         this.ao = new float[i];
+         this.flat = new float[i];
       }
    }
 }

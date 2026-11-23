@@ -81,8 +81,8 @@ public final class MediaSession implements PlayerSource {
    private long nextThumbnailCheckAt;
    private byte[] staleThumbnail;
 
-   public MediaSession(String var1) {
-      this.appFilter = var1 == null ? null : var1.toLowerCase(Locale.ROOT);
+   public MediaSession(String string) {
+      this.appFilter = string == null ? null : string.toLowerCase(Locale.ROOT);
    }
 
    public static MediaSession spotify() {
@@ -227,8 +227,8 @@ public final class MediaSession implements PlayerSource {
       }
    }
 
-   private MediaSession.Snapshot fail(String var1) {
-      this.lastError = var1;
+   private MediaSession.Snapshot fail(String string) {
+      this.lastError = string;
       return null;
    }
 
@@ -341,23 +341,23 @@ public final class MediaSession implements PlayerSource {
       return var36;
    }
 
-   private Pointer findSession(WinRt.Refs var1) {
+   private Pointer findSession(WinRt.Refs refs) {
       if (this.appFilter == null) {
-         Pointer var7 = var1.add(this.managerCall(6, "GetCurrentSession"));
+         Pointer var7 = refs.add(this.managerCall(6, "GetCurrentSession"));
          if (var7 != null) {
             this.sessionApp = WinRt.getString(var7, 6, "SourceAppUserModelId");
          }
 
          return var7;
       } else {
-         Pointer var2 = var1.add(this.managerCall(7, "GetSessions"));
+         Pointer var2 = refs.add(this.managerCall(7, "GetSessions"));
          if (var2 == null) {
             return null;
          } else {
             int var3 = Math.min(WinRt.getInt32(var2, 7, "Sessions.Size"), 64);
 
             for (int var4 = 0; var4 < var3; var4++) {
-               Pointer var6 = var1.add(WinRt.callForObject(var2, 6, "Sessions.GetAt", var4));
+               Pointer var6 = refs.add(WinRt.callForObject(var2, 6, "Sessions.GetAt", var4));
                String var5;
                if (var6 != null && (var5 = WinRt.getString(var6, 6, "SourceAppUserModelId")).toLowerCase(Locale.ROOT).contains(this.appFilter)) {
                   this.sessionApp = var5;
@@ -370,9 +370,9 @@ public final class MediaSession implements PlayerSource {
       }
    }
 
-   private Pointer managerCall(int var1, String var2) {
+   private Pointer managerCall(int i, String string) {
       try {
-         return WinRt.callForObject(this.manager, var1, var2);
+         return WinRt.callForObject(this.manager, i, string);
       } catch (WinRt.WinRtException var4) {
          this.dropManager();
          throw var4;
@@ -387,19 +387,19 @@ public final class MediaSession implements PlayerSource {
       this.setThumbnail(null, "");
    }
 
-   private void setThumbnail(byte[] var1, String var2) {
-      if (var1 == null ? this.thumbnail != null : !Arrays.equals(var1, this.thumbnail)) {
-         this.thumbnail = var1;
-         this.thumbnailType = var1 == null ? "" : var2;
+   private void setThumbnail(byte[] bs, String string) {
+      if (bs == null ? this.thumbnail != null : !Arrays.equals(bs, this.thumbnail)) {
+         this.thumbnail = bs;
+         this.thumbnailType = bs == null ? "" : string;
          this.thumbnailVersion++;
       }
    }
 
-   private MediaSession.Thumbnail readThumbnail(Pointer var1) {
+   private MediaSession.Thumbnail readThumbnail(Pointer pointer) {
       try {
          MediaSession.Thumbnail var37;
          try (WinRt.Refs var2 = new WinRt.Refs()) {
-            Pointer var6 = var2.add(WinRt.callForObject(var1, 15, "Thumbnail"));
+            Pointer var6 = var2.add(WinRt.callForObject(pointer, 15, "Thumbnail"));
             if (var6 == null) {
                return null;
             }
@@ -478,7 +478,7 @@ public final class MediaSession implements PlayerSource {
       return this.dataReaderFactory;
    }
 
-   private boolean control(int var1, String var2, Object... var3) {
+   private boolean control(int i, String string, Object... objects) {
       try {
          if (!this.prepare()) {
             return false;
@@ -490,8 +490,8 @@ public final class MediaSession implements PlayerSource {
                   return false;
                }
 
-               Pointer var6 = var4.add(WinRt.callForObject(var5, var1, var2, var3));
-               boolean var7 = WinRt.awaitBoolean(var6, 1000L, var2);
+               Pointer var6 = var4.add(WinRt.callForObject(var5, i, string, objects));
+               boolean var7 = WinRt.awaitBoolean(var6, 1000L, string);
                this.lastError = null;
                var9 = var7;
             }
@@ -525,8 +525,8 @@ public final class MediaSession implements PlayerSource {
       private PlaybackState() {
       }
 
-      static MediaSession.PlaybackState of(int var0) {
-         return var0 >= 0 && var0 < VALUES.length ? VALUES[var0] : CLOSED;
+      static MediaSession.PlaybackState of(int i) {
+         return i >= 0 && i < VALUES.length ? VALUES[i] : CLOSED;
       }
    }
 

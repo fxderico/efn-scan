@@ -10,9 +10,9 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Environment(EnvType.CLIENT)
 @Mixin({ClientPlayerInteractionManager.class})
 public interface AccessorBlockOverlayMultiPlayerGameMode {
-   @Accessor("field_3715")
+   @Accessor("currentBreakingProgress")
    float efn$blockOverlayDestroyProgress();
 
-   @Accessor("field_3714")
+   @Accessor("currentBreakingPos")
    BlockPos efn$blockOverlayDestroyPos();
 }

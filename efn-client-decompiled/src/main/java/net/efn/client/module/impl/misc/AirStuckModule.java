@@ -32,9 +32,9 @@ public final class AirStuckModule extends ClientModule {
       active = null;
    }
 
-   private void onPacketSend(PacketSendEvent var1) {
-      if (var1.packet instanceof ClientTickEndC2SPacket || var1.packet instanceof PlayerMoveC2SPacket) {
-         var1.setCancelled(true);
+   private void onPacketSend(PacketSendEvent packetSendEvent) {
+      if (packetSendEvent.packet instanceof ClientTickEndC2SPacket || packetSendEvent.packet instanceof PlayerMoveC2SPacket) {
+         packetSendEvent.setCancelled(true);
       }
    }
 }

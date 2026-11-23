@@ -17,14 +17,14 @@ public abstract class MixinBlockOverlayLevelRenderer {
    }
 
    @Inject(
-      method = {"method_62210"},
+      method = {"renderTargetBlockOutline"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$hideVanillaOutline(CallbackInfo var1) {
+   private void efn$hideVanillaOutline(CallbackInfo callbackInfo) {
       BlockOverlayModule var2 = ModuleRegistry.get(BlockOverlayModule.class);
       if (var2 != null && var2.isEnabled()) {
-         var1.cancel();
+         callbackInfo.cancel();
       }
    }
 }

@@ -14,83 +14,36 @@ public final class AlbumArt {
    private final int size;
    private final byte[] rgba;
 
-   private AlbumArt(int var1, byte[] var2) {
-      this.size = var1;
-      this.rgba = var2;
+   private AlbumArt(int i, byte[] bs) {
+      this.size = i;
+      this.rgba = bs;
    }
 
-   public static AlbumArt decode(byte[] var0, int var1) {
-      if (var0 != null && var0.length != 0 && var1 > 0) {
-         ByteBuffer var2 = MemoryUtil.memAlloc(var0.length);
+   public static AlbumArt decode(byte[] bs, int i) {
+      if (bs != null && bs.length != 0 && i > 0) {
+         ByteBuffer var2 = MemoryUtil.memAlloc(bs.length);
          ByteBuffer var3 = null;
 
-         try {
-            MemoryStack var4 = MemoryStack.stackPush();
-
-            AlbumArt var18;
-            label211: {
-               label212: {
-                  label213: {
-                     try {
-                        var2.put(var0).flip();
-                        IntBuffer var5 = var4.mallocInt(1);
-                        IntBuffer var6 = var4.mallocInt(1);
-                        IntBuffer var7 = var4.mallocInt(1);
-                        if (!STBImage.stbi_info_from_memory(var2, var5, var6, var7)) {
-                           var18 = null;
-                           break label211;
-                        }
-
-                        if (var5.get(0) > 0 && var6.get(0) > 0 && var5.get(0) <= 4096 && var6.get(0) <= 4096) {
-                           var3 = STBImage.stbi_load_from_memory(var2, var5, var6, var7, 4);
-                           if (var3 == null) {
-                              var18 = null;
-                              break label212;
-                           }
-
-                           var18 = crop(var3, var5.get(0), var6.get(0), var1);
-                           break label213;
-                        }
-
-                        var18 = null;
-                     } catch (Throwable var14) {
-                        if (var4 != null) {
-                           try {
-                              var4.close();
-                           } catch (Throwable var13) {
-                              var14.addSuppressed(var13);
-                           }
-                        }
-
-                        throw var14;
-                     }
-
-                     if (var4 != null) {
-                        var4.close();
-                     }
-
-                     return var18;
-                  }
-
-                  if (var4 != null) {
-                     var4.close();
-                  }
-
-                  return var18;
-               }
-
-               if (var4 != null) {
-                  var4.close();
-               }
-
-               return (AlbumArt)var18;
+         Object var8;
+         try (MemoryStack var4 = MemoryStack.stackPush()) {
+            var2.put(bs).flip();
+            IntBuffer var5 = var4.mallocInt(1);
+            IntBuffer var6 = var4.mallocInt(1);
+            IntBuffer var7 = var4.mallocInt(1);
+            if (!STBImage.stbi_info_from_memory(var2, var5, var6, var7)) {
+               return null;
             }
 
-            if (var4 != null) {
-               var4.close();
+            if (var5.get(0) > 0 && var6.get(0) > 0 && var5.get(0) <= 4096 && var6.get(0) <= 4096) {
+               var3 = STBImage.stbi_load_from_memory(var2, var5, var6, var7, 4);
+               if (var3 == null) {
+                  return null;
+               }
+
+               return crop(var3, var5.get(0), var6.get(0), i);
             }
 
-            return var18;
+            var8 = null;
          } finally {
             if (var3 != null) {
                STBImage.stbi_image_free(var3);
@@ -98,16 +51,18 @@ public final class AlbumArt {
 
             MemoryUtil.memFree(var2);
          }
+
+         return (AlbumArt)var8;
       } else {
          return null;
       }
    }
 
-   static AlbumArt crop(ByteBuffer var0, int var1, int var2, int var3) {
-      int var4 = Math.min(var1, var2);
-      int var5 = (var1 - var4) / 2;
-      int var6 = (var2 - var4) / 2;
-      int var7 = Math.min(var4, var3);
+   static AlbumArt crop(ByteBuffer byteBuffer, int i, int j, int k) {
+      int var4 = Math.min(i, j);
+      int var5 = (i - var4) / 2;
+      int var6 = (j - var4) / 2;
+      int var7 = Math.min(var4, k);
       byte[] var8 = new byte[var7 * var7 * 4];
       int var9 = 0;
 
@@ -124,13 +79,13 @@ public final class AlbumArt {
             long var22 = 0L;
 
             for (int var24 = var11; var24 < var12; var24++) {
-               int var25 = (var24 * var1 + var14) * 4;
+               int var25 = (var24 * i + var14) * 4;
 
                for (int var26 = var14; var26 < var15; var25 += 4) {
-                  var16 += var0.get(var25) & 255;
-                  var18 += var0.get(var25 + 1) & 255;
-                  var20 += var0.get(var25 + 2) & 255;
-                  var22 += var0.get(var25 + 3) & 255;
+                  var16 += byteBuffer.get(var25) & 255;
+                  var18 += byteBuffer.get(var25 + 1) & 255;
+                  var20 += byteBuffer.get(var25 + 2) & 255;
+                  var22 += byteBuffer.get(var25 + 3) & 255;
                   var26++;
                }
             }
@@ -154,7 +109,7 @@ public final class AlbumArt {
       return this.rgba.length;
    }
 
-   public void copyTo(ByteBuffer var1) {
-      var1.put(this.rgba);
+   public void copyTo(ByteBuffer byteBuffer) {
+      byteBuffer.put(this.rgba);
    }
 }

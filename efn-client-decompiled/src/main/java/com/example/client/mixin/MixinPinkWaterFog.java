@@ -15,10 +15,10 @@ public abstract class MixinPinkWaterFog {
    }
 
    @ModifyReturnValue(
-      method = {"method_71654"},
+      method = {"getFogColor"},
       at = {@At("RETURN")}
    )
-   private int efn$pinkWaterFog(int var1) {
-      return PinkWater.waterFog(var1);
+   private int efn$pinkWaterFog(int i) {
+      return PinkWater.waterFog(i);
    }
 }

@@ -11,11 +11,11 @@ public final class LevelUtil {
    private LevelUtil() {
    }
 
-   public static boolean isOverworld(ClientWorld var0) {
-      return var0.method_27983() == World.field_25179 || var0.method_40134().method_40225(DimensionTypes.field_37666);
+   public static boolean isOverworld(ClientWorld clientWorld) {
+      return clientWorld.getRegistryKey() == World.OVERWORLD || clientWorld.getDimensionEntry().matchesKey(DimensionTypes.OVERWORLD);
    }
 
-   public static boolean isLoaded(ClientWorld var0, int var1, int var2) {
-      return var0.method_2935().method_12123(var1, var2);
+   public static boolean isLoaded(ClientWorld clientWorld, int i, int j) {
+      return clientWorld.getChunkManager().isChunkLoaded(i, j);
    }
 }

@@ -21,12 +21,12 @@ public class EfnGlfw extends ImGuiImplGlfw {
       this(EfnAndroidNative.isAndroidRuntime());
    }
 
-   protected EfnGlfw(boolean var1) {
-      this.android = var1;
+   protected EfnGlfw(boolean bl) {
+      this.android = bl;
    }
 
-   public boolean init(long var1, boolean var3) {
-      boolean var4 = super.init(var1, var3);
+   public boolean init(long l, boolean bl) {
+      boolean var4 = super.init(l, bl);
       if (var4 && this.android) {
          ImGui.getIO().removeBackendFlags(2);
          System.err.println("[EFN ImGui] Android cursor management delegated to launcher");
@@ -41,14 +41,14 @@ public class EfnGlfw extends ImGuiImplGlfw {
       }
    }
 
-   public void installCallbacks(long var1) {
-      super.installCallbacks(var1);
+   public void installCallbacks(long l) {
+      super.installCallbacks(l);
       if (this.android) {
          this.ownedCharMods = GLFWCharModsCallback.create(this::charModsCallback);
 
          try {
-            this.previousCharMods = GLFW.glfwSetCharModsCallback(var1, this.ownedCharMods);
-            this.charModsWindow = var1;
+            this.previousCharMods = GLFW.glfwSetCharModsCallback(l, this.ownedCharMods);
+            this.charModsWindow = l;
             this.usingCharMods = true;
             System.err.println("[EFN ImGui] Android text input: Minecraft character-with-modifiers channel enabled");
          } catch (LinkageError var4) {
@@ -60,13 +60,13 @@ public class EfnGlfw extends ImGuiImplGlfw {
       }
    }
 
-   public void charModsCallback(long var1, int var3, int var4) {
-      if (this.previousCharMods != null && this.shouldChainCallback(var1)) {
-         this.previousCharMods.invoke(var1, var3, var4);
+   public void charModsCallback(long l, int i, int j) {
+      if (this.previousCharMods != null && this.shouldChainCallback(l)) {
+         this.previousCharMods.invoke(l, i, j);
       }
 
-      if (this.usingCharMods && var1 == this.charModsWindow) {
-         ImGui.getIO().addInputCharacter(var3);
+      if (this.usingCharMods && l == this.charModsWindow) {
+         ImGui.getIO().addInputCharacter(i);
          if (!this.reportedCharacters) {
             System.err.println("[EFN ImGui] Android text character received");
             this.reportedCharacters = true;
@@ -74,11 +74,11 @@ public class EfnGlfw extends ImGuiImplGlfw {
       }
    }
 
-   public void charCallback(long var1, int var3) {
-      if (!this.usingCharMods || var1 != this.charModsWindow) {
-         super.charCallback(var1, var3);
-      } else if (this.data.prevUserCallbackChar != null && this.shouldChainCallback(var1)) {
-         this.data.prevUserCallbackChar.invoke(var1, var3);
+   public void charCallback(long l, int i) {
+      if (!this.usingCharMods || l != this.charModsWindow) {
+         super.charCallback(l, i);
+      } else if (this.data.prevUserCallbackChar != null && this.shouldChainCallback(l)) {
+         this.data.prevUserCallbackChar.invoke(l, i);
       }
    }
 
@@ -91,18 +91,18 @@ public class EfnGlfw extends ImGuiImplGlfw {
       }
    }
 
-   public void windowFocusCallback(long var1, boolean var3) {
-      if (!var3) {
-         EfnKeys.clear(var1);
+   public void windowFocusCallback(long l, boolean bl) {
+      if (!bl) {
+         EfnKeys.clear(l);
       }
 
-      super.windowFocusCallback(var1, var3);
+      super.windowFocusCallback(l, bl);
    }
 
-   public void restoreCallbacks(long var1) {
-      EfnKeys.clear(var1);
-      if (this.usingCharMods && var1 == this.charModsWindow) {
-         GLFW.glfwSetCharModsCallback(var1, this.previousCharMods);
+   public void restoreCallbacks(long l) {
+      EfnKeys.clear(l);
+      if (this.usingCharMods && l == this.charModsWindow) {
+         GLFW.glfwSetCharModsCallback(l, this.previousCharMods);
          this.usingCharMods = false;
          this.previousCharMods = null;
          this.charModsWindow = 0L;
@@ -112,6 +112,6 @@ public class EfnGlfw extends ImGuiImplGlfw {
          this.wantedTextInput = false;
       }
 
-      super.restoreCallbacks(var1);
+      super.restoreCallbacks(l);
    }
 }

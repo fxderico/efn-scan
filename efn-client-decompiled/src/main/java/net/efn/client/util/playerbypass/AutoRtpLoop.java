@@ -37,7 +37,7 @@ public final class AutoRtpLoop {
    public AutoRtpLoop() {
    }
 
-   public void start(long var1, AutoRtpLoop.Config var3) {
+   public void start(long l, AutoRtpLoop.Config config) {
       this.phase = AutoRtpLoop.Phase.WAITING;
       this.sent = 0;
       this.landings = 0;
@@ -45,9 +45,9 @@ public final class AutoRtpLoop {
       this.rejected = false;
       this.tryLanded = false;
       this.tryRefunded = false;
-      this.nextSendAt = this.lastSendAt == -2305843009213693952L ? var1 : Math.max(var1, this.lastSendAt + var3.delayMs());
+      this.nextSendAt = this.lastSendAt == -2305843009213693952L ? l : Math.max(l, this.lastSendAt + config.delayMs());
       this.holdUntil = 0L;
-      this.waitingSince = var1;
+      this.waitingSince = l;
       this.tryEndedAt = -2305843009213693952L;
       this.lastDataAt = -2305843009213693952L;
    }
@@ -60,19 +60,19 @@ public final class AutoRtpLoop {
       this.cooldownUntil = 0L;
    }
 
-   public AutoRtpLoop.Step tick(long var1, AutoRtpLoop.Config var3) {
+   public AutoRtpLoop.Step tick(long l, AutoRtpLoop.Config config) {
       switch (this.phase) {
          case WAITING:
-            if (var1 < this.sendAt()) {
+            if (l < this.sendAt()) {
                return AutoRtpLoop.Step.NONE;
             } else {
-               if (var3.maxRtps() > 0 && this.sent >= var3.maxRtps()) {
+               if (config.maxRtps() > 0 && this.sent >= config.maxRtps()) {
                   return AutoRtpLoop.Step.LIMIT;
                }
 
                this.sent++;
-               this.lastSendAt = var1;
-               this.deadline = var1 + var3.timeoutMs();
+               this.lastSendAt = l;
+               this.deadline = l + config.timeoutMs();
                this.rejected = false;
                this.tryLanded = false;
                this.tryRefunded = false;
@@ -80,7 +80,7 @@ public final class AutoRtpLoop {
                return AutoRtpLoop.Step.SEND;
             }
          case TELEPORTING:
-            if (var1 < this.deadline) {
+            if (l < this.deadline) {
                return AutoRtpLoop.Step.NONE;
             } else {
                if (this.rejected) {
@@ -95,40 +95,40 @@ public final class AutoRtpLoop {
                   this.failsInRow++;
                }
 
-               this.toWaiting(var1, var3);
+               this.toWaiting(l, config);
                return AutoRtpLoop.Step.TIMED_OUT;
             }
          case SCANNING:
-            if (var1 < this.scanUntil) {
+            if (l < this.scanUntil) {
                return AutoRtpLoop.Step.NONE;
             }
 
-            this.toWaiting(var1, var3);
+            this.toWaiting(l, config);
             return AutoRtpLoop.Step.SCAN_CLEAR;
          default:
             return AutoRtpLoop.Step.NONE;
       }
    }
 
-   public void landed(long var1, AutoRtpLoop.Config var3) {
+   public void landed(long l, AutoRtpLoop.Config config) {
       if (this.phase == AutoRtpLoop.Phase.TELEPORTING) {
          this.phase = AutoRtpLoop.Phase.SCANNING;
          this.landings++;
          this.failsInRow = 0;
          this.rejected = false;
          this.tryLanded = true;
-         this.scanUntil = var1 + var3.scanMs();
+         this.scanUntil = l + config.scanMs();
       }
    }
 
-   public void relanded(long var1, AutoRtpLoop.Config var3) {
+   public void relanded(long l, AutoRtpLoop.Config config) {
       if (this.phase == AutoRtpLoop.Phase.SCANNING) {
-         this.scanUntil = Math.max(this.scanUntil, var1 + var3.scanMs());
+         this.scanUntil = Math.max(this.scanUntil, l + config.scanMs());
       }
    }
 
-   public boolean landedLate(long var1, AutoRtpLoop.Config var3) {
-      if (this.phase == AutoRtpLoop.Phase.WAITING && this.tryEndedAt != -2305843009213693952L && var1 - this.tryEndedAt <= 5000L) {
+   public boolean landedLate(long l, AutoRtpLoop.Config config) {
+      if (this.phase == AutoRtpLoop.Phase.WAITING && this.tryEndedAt != -2305843009213693952L && l - this.tryEndedAt <= 5000L) {
          if (!this.tryLanded) {
             this.landings++;
             if (this.tryRefunded) {
@@ -142,68 +142,68 @@ public final class AutoRtpLoop {
          this.tryLanded = true;
          this.tryRefunded = false;
          this.tryEndedAt = -2305843009213693952L;
-         this.scanUntil = var1 + var3.scanMs();
+         this.scanUntil = l + config.scanMs();
          return true;
       } else {
          return false;
       }
    }
 
-   public void cooldown(long var1, long var3) {
+   public void cooldown(long l, long m) {
       if (this.phase != AutoRtpLoop.Phase.OFF) {
-         this.nextUseIn(var1, var3);
+         this.nextUseIn(l, m);
          if (this.phase == AutoRtpLoop.Phase.TELEPORTING) {
             this.rejected = true;
-            this.deadline = Math.min(this.deadline, var1 + 2000L);
+            this.deadline = Math.min(this.deadline, l + 2000L);
          }
       }
    }
 
-   public void nextUseIn(long var1, long var3) {
+   public void nextUseIn(long l, long m) {
       if (this.phase != AutoRtpLoop.Phase.OFF) {
-         long var5 = Math.min(900000L, Math.max(0L, var3)) + 1000L;
-         this.cooldownUntil = Math.max(this.cooldownUntil, var1 + var5);
+         long var5 = Math.min(900000L, Math.max(0L, m)) + 1000L;
+         this.cooldownUntil = Math.max(this.cooldownUntil, l + var5);
       }
    }
 
-   public void warmup(long var1, long var3, AutoRtpLoop.Config var5) {
+   public void warmup(long l, long m, AutoRtpLoop.Config config) {
       if (this.phase == AutoRtpLoop.Phase.TELEPORTING && !this.rejected) {
-         this.deadline = Math.max(this.deadline, var1 + Math.min(60000L, Math.max(0L, var3)) + var5.timeoutMs());
+         this.deadline = Math.max(this.deadline, l + Math.min(60000L, Math.max(0L, m)) + config.timeoutMs());
       }
    }
 
-   public void extend(long var1, AutoRtpLoop.Config var3) {
+   public void extend(long l, AutoRtpLoop.Config config) {
       if (this.phase == AutoRtpLoop.Phase.TELEPORTING) {
-         this.deadline = Math.max(this.deadline, var1 + var3.timeoutMs());
+         this.deadline = Math.max(this.deadline, l + config.timeoutMs());
       }
    }
 
-   public void cancelled(long var1) {
+   public void cancelled(long l) {
       if (this.phase == AutoRtpLoop.Phase.TELEPORTING && !this.rejected) {
-         this.deadline = Math.min(this.deadline, var1);
+         this.deadline = Math.min(this.deadline, l);
       }
    }
 
-   public void interrupt(long var1, AutoRtpLoop.Config var3) {
+   public void interrupt(long l, AutoRtpLoop.Config config) {
       if (this.phase == AutoRtpLoop.Phase.TELEPORTING || this.phase == AutoRtpLoop.Phase.SCANNING) {
-         this.toWaiting(var1, var3);
+         this.toWaiting(l, config);
       }
    }
 
-   public void holdUntil(long var1) {
-      this.holdUntil = Math.max(this.holdUntil, var1);
+   public void holdUntil(long l) {
+      this.holdUntil = Math.max(this.holdUntil, l);
    }
 
-   public void dataArrived(long var1) {
-      this.lastDataAt = var1;
+   public void dataArrived(long l) {
+      this.lastDataAt = l;
    }
 
-   private void toWaiting(long var1, AutoRtpLoop.Config var3) {
+   private void toWaiting(long l, AutoRtpLoop.Config config) {
       this.phase = AutoRtpLoop.Phase.WAITING;
       this.rejected = false;
-      this.nextSendAt = Math.max(var1, this.lastSendAt + var3.delayMs());
-      this.waitingSince = var1;
-      this.tryEndedAt = var1;
+      this.nextSendAt = Math.max(l, this.lastSendAt + config.delayMs());
+      this.waitingSince = l;
+      this.tryEndedAt = l;
    }
 
    private long readyAt() {
@@ -239,24 +239,24 @@ public final class AutoRtpLoop {
       return this.landings;
    }
 
-   public boolean sentWithin(long var1, long var3) {
-      return this.lastSendAt != -2305843009213693952L && var1 - this.lastSendAt <= var3;
+   public boolean sentWithin(long l, long m) {
+      return this.lastSendAt != -2305843009213693952L && l - this.lastSendAt <= m;
    }
 
-   public long nextSendIn(long var1) {
-      return Math.max(0L, this.sendAt() - var1);
+   public long nextSendIn(long l) {
+      return Math.max(0L, this.sendAt() - l);
    }
 
-   public boolean settling(long var1) {
-      return this.phase == AutoRtpLoop.Phase.WAITING && var1 >= this.readyAt() && var1 < this.settleUntil();
+   public boolean settling(long l) {
+      return this.phase == AutoRtpLoop.Phase.WAITING && l >= this.readyAt() && l < this.settleUntil();
    }
 
-   public long cooldownLeft(long var1) {
-      return Math.max(0L, this.cooldownUntil - var1);
+   public long cooldownLeft(long l) {
+      return Math.max(0L, this.cooldownUntil - l);
    }
 
-   public long scanLeft(long var1) {
-      return this.phase == AutoRtpLoop.Phase.SCANNING ? Math.max(0L, this.scanUntil - var1) : 0L;
+   public long scanLeft(long l) {
+      return this.phase == AutoRtpLoop.Phase.SCANNING ? Math.max(0L, this.scanUntil - l) : 0L;
    }
 
    @Environment(EnvType.CLIENT)

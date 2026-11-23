@@ -140,32 +140,32 @@ public final class StaffLiveModule extends ClientModule implements HudOverlayPro
       return var1;
    }
 
-   private void check(StaffLiveModule.Channel var1) {
+   private void check(StaffLiveModule.Channel channel) {
       StaffLiveModule.Stream var2;
       try {
-         var2 = var1.youtube() ? this.youtube(var1.handle()) : this.tiktok(var1.handle());
+         var2 = channel.youtube() ? this.youtube(channel.handle()) : this.tiktok(channel.handle());
       } catch (InterruptedException var4) {
          Thread.currentThread().interrupt();
          return;
       } catch (Exception var5) {
-         LOGGER.debug("[Staff Live] check of {} failed: {}", var1.key(), var5.toString());
+         LOGGER.debug("[Staff Live] check of {} failed: {}", channel.key(), var5.toString());
          return;
       }
 
       if (var2 != null) {
-         Boolean var3 = this.live.put(var1.key(), var2.live());
+         Boolean var3 = this.live.put(channel.key(), var2.live());
          if (var2.live() && !Boolean.TRUE.equals(var3)) {
-            this.announce(var1, var2);
+            this.announce(channel, var2);
          }
 
          if (!var2.live()) {
-            this.shown.remove(var1.key());
+            this.shown.remove(channel.key());
          }
       }
    }
 
-   private StaffLiveModule.Stream youtube(String var1) throws Exception {
-      HttpRequest var2 = HttpRequest.newBuilder(URI.create("https://www.youtube.com/@" + var1 + "/live"))
+   private StaffLiveModule.Stream youtube(String string) throws Exception {
+      HttpRequest var2 = HttpRequest.newBuilder(URI.create("https://www.youtube.com/@" + string + "/live"))
          .timeout(Duration.ofSeconds(20L))
          .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36")
          .header("Accept-Language", "en-US,en;q=0.9")
@@ -180,7 +180,7 @@ public final class StaffLiveModule extends ClientModule implements HudOverlayPro
             return null;
          }
 
-         boolean var6 = var3.headers().firstValue("Content-Encoding").map(var0 -> var0.equalsIgnoreCase("gzip")).orElse(false);
+         boolean var6 = var3.headers().firstValue("Content-Encoding").map(stringx -> stringx.equalsIgnoreCase("gzip")).orElse(false);
          InputStreamReader var7 = new InputStreamReader((InputStream)(var6 ? new GZIPInputStream(var4) : var4), StandardCharsets.UTF_8);
          char[] var8 = new char[16384];
          StringBuilder var9 = new StringBuilder();
@@ -225,9 +225,9 @@ public final class StaffLiveModule extends ClientModule implements HudOverlayPro
       return var23;
    }
 
-   private StaffLiveModule.Stream tiktok(String var1) throws Exception {
+   private StaffLiveModule.Stream tiktok(String string) throws Exception {
       String var2 = "https://www.tiktok.com/api-live/user/room/?aid=1988&app_language=en&app_name=tiktok_web&sourceType=54&uniqueId="
-         + URLEncoder.encode(var1, StandardCharsets.UTF_8);
+         + URLEncoder.encode(string, StandardCharsets.UTF_8);
       HttpRequest var3 = HttpRequest.newBuilder(URI.create(var2))
          .timeout(Duration.ofSeconds(20L))
          .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36")
@@ -249,7 +249,7 @@ public final class StaffLiveModule extends ClientModule implements HudOverlayPro
                String var10 = var9 != null && var9.has("nickname") ? var9.get("nickname").getAsString() : null;
                String var11 = var7.has("title") ? var7.get("title").getAsString() : null;
                long var12 = var7.has("startTime") ? var7.get("startTime").getAsLong() * 1000L : 0L;
-               return new StaffLiveModule.Stream(var8, clean(var11), "https://www.tiktok.com/@" + var1 + "/live", var10, var12);
+               return new StaffLiveModule.Stream(var8, clean(var11), "https://www.tiktok.com/@" + string + "/live", var10, var12);
             } else {
                return null;
             }
@@ -257,16 +257,18 @@ public final class StaffLiveModule extends ClientModule implements HudOverlayPro
       }
    }
 
-   private void announce(StaffLiveModule.Channel var1, StaffLiveModule.Stream var2) {
-      String var3 = var2.link() != null ? var2.link() : "https://www.youtube.com/@" + var1.handle() + "/live";
-      String var4 = var2.nick() != null && !var2.nick().equalsIgnoreCase(var1.handle()) ? var1.handle() + " (" + var2.nick() + ")" : var1.handle();
-      String var5 = var1.youtube() ? "YouTube" : "TikTok";
+   private void announce(StaffLiveModule.Channel channel, StaffLiveModule.Stream stream) {
+      String var3 = stream.link() != null ? stream.link() : "https://www.youtube.com/@" + channel.handle() + "/live";
+      String var4 = stream.nick() != null && !stream.nick().equalsIgnoreCase(channel.handle())
+         ? channel.handle() + " (" + stream.nick() + ")"
+         : channel.handle();
+      String var5 = channel.youtube() ? "YouTube" : "TikTok";
       long var6 = System.currentTimeMillis();
-      long var8 = var2.started() > 0L && var2.started() <= var6 ? var2.started() : var6;
-      this.shown.putIfAbsent(var1.key(), new StaffLiveModule.Live(var4, var5, var2.title(), var8, var6));
+      long var8 = stream.started() > 0L && stream.started() <= var6 ? stream.started() : var6;
+      this.shown.putIfAbsent(channel.key(), new StaffLiveModule.Live(var4, var5, stream.title(), var8, var6));
       LOGGER.info("[Staff Live] {} is live on {}", var4, var5);
-      MinecraftClient var10 = MinecraftClient.method_1551();
-      var10.execute(() -> this.lambda$announce$2(var10, var4, var5, var2, (String)var3));
+      MinecraftClient var10 = MinecraftClient.getInstance();
+      var10.execute(() -> this.lambda$announce$2(var10, var4, var5, stream, (String)var3));
    }
 
    private List<StaffLiveModule.Live> rows() {
@@ -275,11 +277,11 @@ public final class StaffLiveModule extends ClientModule implements HudOverlayPro
 
    @Override
    public boolean isHudOverlayEnabled() {
-      return this.isEnabled() && MinecraftClient.method_1551().field_1724 != null && !this.shown.isEmpty();
+      return this.isEnabled() && MinecraftClient.getInstance().player != null && !this.shown.isEmpty();
    }
 
    @Override
-   public void renderHudOverlay(ImDrawList var1, float var2, float var3) {
+   public void renderHudOverlay(ImDrawList imDrawList, float f, float g) {
       List var4 = this.rows();
       if (!var4.isEmpty()) {
          long var5 = System.currentTimeMillis();
@@ -292,65 +294,65 @@ public final class StaffLiveModule extends ClientModule implements HudOverlayPro
             }
          }
 
-         this.panel.card(var1, "LIVE", String.valueOf(var4.size()), -47814, var7, "staff_list", var2, var3, 0.5F, 10.0F);
+         this.panel.card(imDrawList, "LIVE", String.valueOf(var4.size()), -47814, var7, "staff_list", f, g, 0.5F, 10.0F);
       }
    }
 
-   private static String shorten(String var0) {
-      return var0.length() <= 48 ? var0 : var0.substring(0, 47).stripTrailing() + "\u2026";
+   private static String shorten(String string) {
+      return string.length() <= 48 ? string : string.substring(0, 47).stripTrailing() + "\u2026";
    }
 
-   private static String ago(long var0) {
-      long var2 = var0 / 60000L;
+   private static String ago(long l) {
+      long var2 = l / 60000L;
       return var2 < 1L ? "now" : (var2 < 60L ? var2 + "m" : var2 / 60L + "h " + var2 % 60L + "m");
    }
 
-   private static String after(CharSequence var0, String var1) {
-      String var2 = var0.toString();
-      int var3 = var2.indexOf(var1);
-      int var4 = var3 < 0 ? -1 : var2.indexOf(34, var3 + var1.length());
-      return var4 < 0 ? null : var2.substring(var3 + var1.length(), var4);
+   private static String after(CharSequence charSequence, String string) {
+      String var2 = charSequence.toString();
+      int var3 = var2.indexOf(string);
+      int var4 = var3 < 0 ? -1 : var2.indexOf(34, var3 + string.length());
+      return var4 < 0 ? null : var2.substring(var3 + string.length(), var4);
    }
 
-   private static String clean(String var0) {
-      if (var0 == null) {
+   private static String clean(String string) {
+      if (string == null) {
          return null;
       } else {
-         var0 = var0.replace("&quot;", "\"").replace("&#39;", "'").replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&");
-         StringBuilder var1 = new StringBuilder(var0.length());
-         var0.codePoints().filter(var0x -> var0x >= 32 && var0x < 8192 || var0x >= 8208 && var0x < 9728).forEach(var1::appendCodePoint);
+         string = string.replace("&quot;", "\"").replace("&#39;", "'").replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&");
+         StringBuilder var1 = new StringBuilder(string.length());
+         string.codePoints().filter(i -> i >= 32 && i < 8192 || i >= 8208 && i < 9728).forEach(var1::appendCodePoint);
          return var1.toString().replaceAll("\\s+", " ").trim();
       }
    }
 
-   private static long parseStart(String var0) {
+   private static long parseStart(String string) {
       try {
-         return var0 == null ? 0L : OffsetDateTime.parse(var0).toInstant().toEpochMilli();
+         return string == null ? 0L : OffsetDateTime.parse(string).toInstant().toEpochMilli();
       } catch (RuntimeException var2) {
          return 0L;
       }
    }
 
-   private static JsonObject object(JsonObject var0, String var1) {
-      if (var0 == null) {
+   private static JsonObject object(JsonObject jsonObject, String string) {
+      if (jsonObject == null) {
          return null;
       } else {
-         JsonElement var2 = var0.get(var1);
+         JsonElement var2 = jsonObject.get(string);
          return var2 != null && var2.isJsonObject() ? var2.getAsJsonObject() : null;
       }
    }
 
-   private void lambda$announce$2(MinecraftClient var1, String var2, String var3, StaffLiveModule.Stream var4, String var5) {
-      if (this.isEnabled() && var1.field_1724 != null) {
-         ModuleChat.Body var6 = ModuleChat.body().name(var2).text(" is ").danger("LIVE").text(" on " + var3);
-         if (var4.title() != null && !var4.title().isBlank()) {
-            var6.text(": " + var4.title());
+   private void lambda$announce$2(MinecraftClient minecraftClient, String string, String string2, StaffLiveModule.Stream stream, String string3) {
+      if (this.isEnabled() && minecraftClient.player != null) {
+         ModuleChat.Body var6 = ModuleChat.body().name(string).text(" is ").danger("LIVE").text(" on " + string2);
+         if (stream.title() != null && !stream.title().isBlank()) {
+            var6.text(": " + stream.title());
          }
 
-         var6.text(" ").append(Text.method_43470("[watch]").method_27694(var1x -> var1x.method_10958(new OpenUrl(URI.create(var5))).method_30938(true)));
+         var6.text(" ").append(Text.literal("[watch]").styled(style -> style.withClickEvent(new OpenUrl(URI.create(string3))).withUnderline(true)));
          ModuleChat.send(this, var6);
          if (this.notificationsOn()) {
-            var1.method_1483().method_4873(PositionedSoundInstance.method_47978(SoundEvents.field_14725, 1.25F));
+            minecraftClient.getSoundManager().play(PositionedSoundInstance.ui(SoundEvents.BLOCK_NOTE_BLOCK_CHIME, 1.25F));
          }
       }
    }

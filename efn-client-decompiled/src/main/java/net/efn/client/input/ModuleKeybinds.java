@@ -32,8 +32,8 @@ public final class ModuleKeybinds {
    public ModuleKeybinds() {
    }
 
-   public void update(List<ClientModule> var1, IntPredicate var2, boolean var3) {
-      List var5 = this.boundModules(var1);
+   public void update(List<ClientModule> list, IntPredicate intPredicate, boolean bl) {
+      List var5 = this.boundModules(list);
 
       for (int var6 = 0; var6 < this.previousCount; var6++) {
          int var7 = this.previousKeys[var6];
@@ -46,7 +46,7 @@ public final class ModuleKeybinds {
       for (ClientModule var15 : var5) {
          int var8 = var15.keybind();
          if (!this.sampled[var8]) {
-            this.current[var8] = var2.test(var8);
+            this.current[var8] = intPredicate.test(var8);
             this.sampled[var8] = true;
             this.sampledKeys[this.sampledCount++] = var8;
          }
@@ -59,14 +59,14 @@ public final class ModuleKeybinds {
             Entry var16 = (Entry)var12.next();
             ClientModule var18 = (ClientModule)var16.getKey();
             int var9 = (Integer)var16.getValue();
-            if (!var3 || !var18.isHoldMode() || var18.keybind() != var9 || !this.current[var9]) {
+            if (!bl || !var18.isHoldMode() || var18.keybind() != var9 || !this.current[var9]) {
                var12.remove();
                var18.setEnabled(false);
             }
          }
       }
 
-      if (var3 && this.wasAcceptingInput) {
+      if (bl && this.wasAcceptingInput) {
          for (ClientModule var17 : var5) {
             int var19 = var17.keybind();
             if (isBindable(var19) && this.current[var19] && !this.previous[var19]) {
@@ -96,28 +96,28 @@ public final class ModuleKeybinds {
       this.previousKeys = this.sampledKeys;
       this.sampledKeys = var14;
       this.previousCount = this.sampledCount;
-      this.wasAcceptingInput = var3;
+      this.wasAcceptingInput = bl;
    }
 
-   private List<ClientModule> boundModules(List<ClientModule> var1) {
+   private List<ClientModule> boundModules(List<ClientModule> list) {
       long var2 = ModuleRevision.current();
-      if (var1 != this.boundFrom || var2 != this.boundRevision) {
+      if (list != this.boundFrom || var2 != this.boundRevision) {
          this.bound.clear();
 
-         for (ClientModule var5 : var1) {
+         for (ClientModule var5 : list) {
             if (isBindable(var5.keybind())) {
                this.bound.add(var5);
             }
          }
 
-         this.boundFrom = var1;
+         this.boundFrom = list;
          this.boundRevision = var2;
       }
 
       return this.bound;
    }
 
-   public static boolean isBindable(int var0) {
-      return var0 >= 32 && var0 <= 348 || var0 >= 1000 && var0 < 1008;
+   public static boolean isBindable(int i) {
+      return i >= 32 && i <= 348 || i >= 1000 && i < 1008;
    }
 }

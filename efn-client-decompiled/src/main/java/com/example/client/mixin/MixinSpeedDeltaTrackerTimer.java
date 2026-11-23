@@ -14,23 +14,23 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin({Dynamic.class})
 public abstract class MixinSpeedDeltaTrackerTimer {
    @Shadow
-   private float field_51958;
+   private float dynamicDeltaTicks;
 
    public MixinSpeedDeltaTrackerTimer() {
    }
 
    @Inject(
-      method = {"method_60639"},
+      method = {"beginRenderTick"},
       at = {@At(
          value = "FIELD",
-         target = "Lnet/minecraft/class_9779$class_9781;field_51962:J",
+         target = "Lnet/minecraft/client/render/RenderTickCounter$Dynamic;lastTimeMillis:J",
          opcode = 181
       )}
    )
-   private void efn$speedTimer(long var1, CallbackInfoReturnable<Integer> var3) {
+   private void efn$speedTimer(long l, CallbackInfoReturnable<Integer> callbackInfoReturnable) {
       float var4 = SpeedModule.timerMultiplier;
       if (var4 != 1.0F) {
-         this.field_51958 *= var4;
+         this.dynamicDeltaTicks *= var4;
       }
    }
 }

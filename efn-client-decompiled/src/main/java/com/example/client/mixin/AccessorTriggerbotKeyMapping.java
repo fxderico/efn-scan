@@ -9,6 +9,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Environment(EnvType.CLIENT)
 @Mixin({KeyBinding.class})
 public interface AccessorTriggerbotKeyMapping {
-   @Accessor("field_1661")
+   @Accessor("timesPressed")
    int efn$triggerbotClickCount();
 }

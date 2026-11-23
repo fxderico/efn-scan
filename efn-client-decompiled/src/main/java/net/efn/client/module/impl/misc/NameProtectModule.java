@@ -99,89 +99,89 @@ public final class NameProtectModule extends ClientModule {
       this.othersLabel.onChange(this::markEdited);
    }
 
-   public static Text protect(Text var0) {
+   public static Text protect(Text text) {
       NameMatcher var3 = active;
-      if (var3 != null && var0 != null) {
+      if (var3 != null && text != null) {
          boolean var4 = onRenderThread();
          Object var2;
-         if (var4 && (var2 = cached(var3, var0)) instanceof Text) {
+         if (var4 && (var2 = cached(var3, text)) instanceof Text) {
             Text var5 = (Text)var2;
             return var5;
          } else {
             Text var1;
             try {
-               var1 = ProtectedText.rewrite(var3, var0);
+               var1 = ProtectedText.rewrite(var3, text);
             } catch (RuntimeException var6) {
                reportFailure(var6);
-               return var0;
+               return text;
             }
 
             if (var4) {
-               remember(var0, var1);
+               remember(text, var1);
             }
 
             return var1;
          }
       } else {
-         return var0;
+         return text;
       }
    }
 
-   public static boolean hidesName(String var0) {
+   public static boolean hidesName(String string) {
       NameMatcher var1 = active;
-      return var1 != null && var0 != null && var1.aliasAt(var0, 0, var0.length()) != null;
+      return var1 != null && string != null && var1.aliasAt(string, 0, string.length()) != null;
    }
 
-   public static SkinTextures hiddenHead(UUID var0, SkinTextures var1) {
+   public static SkinTextures hiddenHead(UUID uUID, SkinTextures skinTextures) {
       SkinChangeModule var3 = ModuleRegistry.get(SkinChangeModule.class);
       SkinTextures var2;
-      return var3 != null && var3.isEnabled() && (var2 = var3.skinFor(var0, var1)) != var1 ? var2 : DefaultSkinHelper.method_4648(var0);
+      return var3 != null && var3.isEnabled() && (var2 = var3.skinFor(uUID, skinTextures)) != skinTextures ? var2 : DefaultSkinHelper.getSkinTextures(uUID);
    }
 
-   public static StringVisitable protectText(StringVisitable var0) {
+   public static StringVisitable protectText(StringVisitable stringVisitable) {
       NameMatcher var3 = active;
-      if (var3 != null && var0 != null) {
+      if (var3 != null && stringVisitable != null) {
          boolean var4 = onRenderThread();
          Object var2;
-         if (var4 && (var2 = cached(var3, var0)) instanceof StringVisitable) {
+         if (var4 && (var2 = cached(var3, stringVisitable)) instanceof StringVisitable) {
             StringVisitable var5 = (StringVisitable)var2;
             return var5;
          } else {
             StringVisitable var1;
             try {
-               var1 = ProtectedText.rewrite(var3, var0);
+               var1 = ProtectedText.rewrite(var3, stringVisitable);
             } catch (RuntimeException var6) {
                reportFailure(var6);
-               return var0;
+               return stringVisitable;
             }
 
             if (var4) {
-               remember(var0, var1);
+               remember(stringVisitable, var1);
             }
 
             return var1;
          }
       } else {
-         return var0;
+         return stringVisitable;
       }
    }
 
-   public static StringVisitable protectChatLine(StringVisitable var0) {
+   public static StringVisitable protectChatLine(StringVisitable stringVisitable) {
       NameMatcher var1 = active;
-      if (var1 != null && var0 != null) {
+      if (var1 != null && stringVisitable != null) {
          try {
             if (onRenderThread()) {
-               recentChat[recentChatNext] = var0.getString();
+               recentChat[recentChatNext] = stringVisitable.getString();
                recentChatNext = (recentChatNext + 1) % 100;
             }
 
-            return ProtectedText.rewrite(var1, var0);
+            return ProtectedText.rewrite(var1, stringVisitable);
          } catch (RuntimeException var3) {
             reportFailure(var3);
-            return var0;
+            return stringVisitable;
          }
       } else {
-         return var0;
+         return stringVisitable;
       }
    }
 
@@ -189,13 +189,13 @@ public final class NameProtectModule extends ClientModule {
       return generation;
    }
 
-   public static void onPlayerInfoApplied(PlayerListS2CPacket var0) {
+   public static void onPlayerInfoApplied(PlayerListS2CPacket playerListS2CPacket) {
       NameProtectModule var1 = running;
-      if (var1 != null && var0 != null) {
-         EnumSet var2 = var0.method_46327();
-         if (var2.contains(Action.field_29136) || var2.contains(Action.field_40700)) {
-            MinecraftClient var3 = MinecraftClient.method_1551();
-            if (var3.method_18854()) {
+      if (var1 != null && playerListS2CPacket != null) {
+         EnumSet var2 = playerListS2CPacket.getActions();
+         if (var2.contains(Action.ADD_PLAYER) || var2.contains(Action.UPDATE_LISTED)) {
+            MinecraftClient var3 = MinecraftClient.getInstance();
+            if (var3.isOnThread()) {
                var1.syncConnection(var3);
                var1.rebuild();
             }
@@ -203,38 +203,38 @@ public final class NameProtectModule extends ClientModule {
       }
    }
 
-   private static String filterName(String var0) {
+   private static String filterName(String string) {
       NameMatcher var1 = active;
-      return var1 != null ? var1.replace(var0) : var0;
+      return var1 != null ? var1.replace(string) : string;
    }
 
-   private static void reportFailure(RuntimeException var0) {
+   private static void reportFailure(RuntimeException runtimeException) {
       if (!failureLogged) {
          failureLogged = true;
-         LOGGER.error("Name Protect could not rewrite a text; showing it unchanged", var0);
+         LOGGER.error("Name Protect could not rewrite a text; showing it unchanged", (Throwable)runtimeException);
       }
    }
 
    private static boolean onRenderThread() {
-      MinecraftClient var0 = MinecraftClient.method_1551();
-      return var0 != null && var0.method_18854();
+      MinecraftClient var0 = MinecraftClient.getInstance();
+      return var0 != null && var0.isOnThread();
    }
 
-   private static Object cached(NameMatcher var0, Object var1) {
-      if (cacheMatcher != var0) {
+   private static Object cached(NameMatcher nameMatcher, Object object) {
+      if (cacheMatcher != nameMatcher) {
          clearDisplayCache();
-         cacheMatcher = var0;
+         cacheMatcher = nameMatcher;
          return null;
       } else {
-         int var2 = System.identityHashCode(var1) & 63;
-         return cacheInputs[var2] == var1 ? cacheOutputs[var2] : null;
+         int var2 = System.identityHashCode(object) & 63;
+         return cacheInputs[var2] == object ? cacheOutputs[var2] : null;
       }
    }
 
-   private static void remember(Object var0, Object var1) {
-      int var2 = System.identityHashCode(var0) & 63;
-      cacheInputs[var2] = var0;
-      cacheOutputs[var2] = var1;
+   private static void remember(Object object, Object object2) {
+      int var2 = System.identityHashCode(object) & 63;
+      cacheInputs[var2] = object;
+      cacheOutputs[var2] = object2;
    }
 
    private static void clearDisplayCache() {
@@ -246,7 +246,7 @@ public final class NameProtectModule extends ClientModule {
    @Override
    protected void onEnable() {
       running = this;
-      MinecraftClient var1 = MinecraftClient.method_1551();
+      MinecraftClient var1 = MinecraftClient.getInstance();
       this.syncConnection(var1);
       this.settingsEdited = false;
       this.rebuild();
@@ -267,13 +267,13 @@ public final class NameProtectModule extends ClientModule {
       this.dirty = true;
       this.refusedAlias = null;
       this.noticedAlias = null;
-      MinecraftClient var1 = MinecraftClient.method_1551();
+      MinecraftClient var1 = MinecraftClient.getInstance();
       if (var1 != null) {
          var1.execute(() -> {
             clearDisplayCache();
             Arrays.fill(recentChat, null);
-            if (var1.field_1705 != null) {
-               var1.field_1705.method_1743().method_1817();
+            if (var1.inGameHud != null) {
+               var1.inGameHud.getChatHud().reset();
             }
          });
       }
@@ -284,10 +284,10 @@ public final class NameProtectModule extends ClientModule {
       this.dirty = true;
    }
 
-   private void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
+   private void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
       this.syncConnection(var2);
-      if (listSize(var2.method_1562()) != this.builtListSize) {
+      if (listSize(var2.getNetworkHandler()) != this.builtListSize) {
          this.dirty = true;
       }
 
@@ -304,15 +304,15 @@ public final class NameProtectModule extends ClientModule {
          this.chatRefreshCooldown--;
       }
 
-      if (this.chatRefreshPending && this.chatRefreshCooldown == 0 && !chatOpen(var2) && var2.field_1705 != null) {
+      if (this.chatRefreshPending && this.chatRefreshCooldown == 0 && !chatOpen(var2) && var2.inGameHud != null) {
          this.chatRefreshPending = false;
          this.chatRefreshCooldown = 20;
-         var2.field_1705.method_1743().method_1817();
+         var2.inGameHud.getChatHud().reset();
       }
    }
 
-   private void syncConnection(MinecraftClient var1) {
-      ClientPlayNetworkHandler var2 = var1 != null ? var1.method_1562() : null;
+   private void syncConnection(MinecraftClient minecraftClient) {
+      ClientPlayNetworkHandler var2 = minecraftClient != null ? minecraftClient.getNetworkHandler() : null;
       if (var2 != this.trackedConnection.get()) {
          this.trackedConnection = new WeakReference<>(var2);
          this.knownOthers.clear();
@@ -327,10 +327,10 @@ public final class NameProtectModule extends ClientModule {
       this.dirty = false;
       boolean var1 = this.settingsEdited;
       this.settingsEdited = false;
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientPlayNetworkHandler var3 = var2 != null ? var2.method_1562() : null;
-      Session var4 = var2 != null ? var2.method_1548() : null;
-      String var5 = NameMatcher.nameCore(var4 != null ? var4.method_1676() : null);
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientPlayNetworkHandler var3 = var2 != null ? var2.getNetworkHandler() : null;
+      Session var4 = var2 != null ? var2.getSession() : null;
+      String var5 = NameMatcher.nameCore(var4 != null ? var4.getUsername() : null);
       this.builtProfileName = profileName(var2);
       String var6 = NameMatcher.nameCore(this.builtProfileName);
       this.builtListSize = listSize(var3);
@@ -374,24 +374,24 @@ public final class NameProtectModule extends ClientModule {
       this.publish(new NameMatcher(var17), var1);
    }
 
-   private void publish(NameMatcher var1, boolean var2) {
+   private void publish(NameMatcher nameMatcher, boolean bl) {
       NameMatcher var3 = this.matcher;
-      this.matcher = var1;
-      active = var1;
-      if (!var1.sameMapping(var3)) {
+      this.matcher = nameMatcher;
+      active = nameMatcher;
+      if (!nameMatcher.sameMapping(var3)) {
          generation++;
-         if (var2 || recentChatMentions(var1.newNamesSince(var3))) {
+         if (bl || recentChatMentions(nameMatcher.newNamesSince(var3))) {
             this.chatRefreshPending = true;
          }
       }
    }
 
-   private static boolean recentChatMentions(NameMatcher var0) {
-      if (var0.isEmpty()) {
+   private static boolean recentChatMentions(NameMatcher nameMatcher) {
+      if (nameMatcher.isEmpty()) {
          return false;
       } else {
          for (String var4 : recentChat) {
-            if (var0.mentionsAny(var4)) {
+            if (nameMatcher.mentionsAny(var4)) {
                return true;
             }
          }
@@ -400,16 +400,16 @@ public final class NameProtectModule extends ClientModule {
       }
    }
 
-   private String resolveOwnAlias(List<String> var1) {
+   private String resolveOwnAlias(List<String> list) {
       String var2 = AliasPolicy.sanitize(this.selfAlias.get());
       if (!var2.isEmpty() && !var2.equalsIgnoreCase("You")) {
          HashSet var3 = new HashSet();
 
-         for (String var5 : var1) {
+         for (String var5 : list) {
             var3.add(AliasPolicy.skeleton(var5));
          }
 
-         AliasPolicy.Refusal var6 = AliasPolicy.check(var2, var2x -> this.seenSkeletons.contains(var2x) || var3.contains(var2x));
+         AliasPolicy.Refusal var6 = AliasPolicy.check(var2, string -> this.seenSkeletons.contains(string) || var3.contains(string));
          if (var6 == null) {
             this.refusedAlias = null;
             return var2;
@@ -428,13 +428,13 @@ public final class NameProtectModule extends ClientModule {
       }
    }
 
-   private void announceRefusal(MinecraftClient var1) {
+   private void announceRefusal(MinecraftClient minecraftClient) {
       if (this.refusedAlias == null) {
          this.noticedAlias = null;
       } else if (!this.refusedAlias.equals(this.noticedAlias)) {
          if (this.refusalNoticeDelay > 0) {
             this.refusalNoticeDelay--;
-         } else if (var1.field_1724 != null) {
+         } else if (minecraftClient.player != null) {
             this.noticedAlias = this.refusedAlias;
             ModuleChat.send(
                this,
@@ -451,12 +451,12 @@ public final class NameProtectModule extends ClientModule {
       }
    }
 
-   private void rememberOnline(ClientPlayNetworkHandler var1, String var2, String var3) {
-      if (var1 != null) {
-         for (PlayerListEntry var5 : var1.method_2880()) {
-            GameProfile var6 = var5.method_2966();
+   private void rememberOnline(ClientPlayNetworkHandler clientPlayNetworkHandler, String string, String string2) {
+      if (clientPlayNetworkHandler != null) {
+         for (PlayerListEntry var5 : clientPlayNetworkHandler.getPlayerList()) {
+            GameProfile var6 = var5.getProfile();
             String var7 = NameMatcher.nameCore(var6 != null ? var6.name() : null);
-            if (var7 != null && !var7.equalsIgnoreCase(var2) && !var7.equalsIgnoreCase(var3)) {
+            if (var7 != null && !var7.equalsIgnoreCase(string) && !var7.equalsIgnoreCase(string2)) {
                String var8 = AliasPolicy.skeleton(var7);
                this.seenSkeletons.remove(var8);
                this.seenSkeletons.add(var8);
@@ -472,21 +472,21 @@ public final class NameProtectModule extends ClientModule {
       }
    }
 
-   private void trackOthers(ClientPlayNetworkHandler var1, List<String> var2) {
-      if (var1 != null) {
+   private void trackOthers(ClientPlayNetworkHandler clientPlayNetworkHandler, List<String> list) {
+      if (clientPlayNetworkHandler != null) {
          int var3 = 0;
 
-         for (PlayerListEntry var5 : var1.method_45732()) {
-            GameProfile var7 = var5.method_2966();
+         for (PlayerListEntry var5 : clientPlayNetworkHandler.getListedPlayerListEntries()) {
+            GameProfile var7 = var5.getProfile();
             String var6;
             if (var7 != null
                && (var7.id() == null || var7.id().version() != 2)
                && isLikelyPlayer(var6 = NameMatcher.nameCore(var7.name()))
-               && !isOwn(var6, var2)) {
+               && !isOwn(var6, list)) {
                String var8 = var6.toLowerCase(Locale.ROOT);
                this.knownOthers.remove(var8);
                this.knownOthers.put(var8, var6);
-               this.numbers.computeIfAbsent(var8, var1x -> this.nextNumber++);
+               this.numbers.computeIfAbsent(var8, string -> this.nextNumber++);
                var3++;
             }
          }
@@ -500,17 +500,17 @@ public final class NameProtectModule extends ClientModule {
       }
    }
 
-   private static void put(Map<String, String> var0, String var1, String var2) {
-      String var3 = NameMatcher.nameCore(var1);
-      if (var3 != null && !var2.equalsIgnoreCase(var3)) {
-         var0.putIfAbsent(var3, var2);
+   private static void put(Map<String, String> map, String string, String string2) {
+      String var3 = NameMatcher.nameCore(string);
+      if (var3 != null && !string2.equalsIgnoreCase(var3)) {
+         map.putIfAbsent(var3, string2);
       }
    }
 
-   private static boolean isLikelyPlayer(String var0) {
-      if (var0 != null && var0.length() >= 3) {
-         for (int var1 = 0; var1 < var0.length(); var1++) {
-            if (Character.isLetter(var0.charAt(var1))) {
+   private static boolean isLikelyPlayer(String string) {
+      if (string != null && string.length() >= 3) {
+         for (int var1 = 0; var1 < string.length(); var1++) {
+            if (Character.isLetter(string.charAt(var1))) {
                return true;
             }
          }
@@ -521,9 +521,9 @@ public final class NameProtectModule extends ClientModule {
       }
    }
 
-   private static boolean isOwn(String var0, List<String> var1) {
-      for (String var3 : var1) {
-         if (var3.equalsIgnoreCase(var0)) {
+   private static boolean isOwn(String string, List<String> list) {
+      for (String var3 : list) {
+         if (var3.equalsIgnoreCase(string)) {
             return true;
          }
       }
@@ -531,15 +531,15 @@ public final class NameProtectModule extends ClientModule {
       return false;
    }
 
-   private static String profileName(MinecraftClient var0) {
-      return var0 != null && var0.field_1724 != null ? var0.field_1724.method_7334().name() : null;
+   private static String profileName(MinecraftClient minecraftClient) {
+      return minecraftClient != null && minecraftClient.player != null ? minecraftClient.player.getGameProfile().name() : null;
    }
 
-   private static int listSize(ClientPlayNetworkHandler var0) {
-      return var0 != null ? var0.method_45732().size() : -1;
+   private static int listSize(ClientPlayNetworkHandler clientPlayNetworkHandler) {
+      return clientPlayNetworkHandler != null ? clientPlayNetworkHandler.getListedPlayerListEntries().size() : -1;
    }
 
-   private static boolean chatOpen(MinecraftClient var0) {
-      return var0.field_1705 != null && var0.field_1705.method_1743().method_1819();
+   private static boolean chatOpen(MinecraftClient minecraftClient) {
+      return minecraftClient.inGameHud != null && minecraftClient.inGameHud.getChatHud().isChatFocused();
    }
 }

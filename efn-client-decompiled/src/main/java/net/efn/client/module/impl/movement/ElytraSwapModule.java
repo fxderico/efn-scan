@@ -89,33 +89,33 @@ public final class ElytraSwapModule extends ClientModule {
       this.storedItem = null;
    }
 
-   private void onKey(KeyInputEvent var1) {
-      if (var1.action == 1) {
-         this.onPress(var1.key);
+   private void onKey(KeyInputEvent keyInputEvent) {
+      if (keyInputEvent.action == 1) {
+         this.onPress(keyInputEvent.key);
       }
    }
 
-   private void onMouse(MouseInputEvent var1) {
-      if (var1.action == 1) {
-         this.onPress(1000 + var1.button);
+   private void onMouse(MouseInputEvent mouseInputEvent) {
+      if (mouseInputEvent.action == 1) {
+         this.onPress(1000 + mouseInputEvent.button);
       }
    }
 
-   private void onPress(int var1) {
+   private void onPress(int i) {
       int var2 = this.key.value();
-      if (ModuleKeybinds.isBindable(var2) && var1 == var2) {
-         MinecraftClient var3 = MinecraftClient.method_1551();
-         if (var3.field_1755 == null && var3.field_1724 != null) {
+      if (ModuleKeybinds.isBindable(var2) && i == var2) {
+         MinecraftClient var3 = MinecraftClient.getInstance();
+         if (var3.currentScreen == null && var3.player != null) {
             this.pending = true;
             this.pendingTicks = 0;
          }
       }
    }
 
-   private void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientPlayerEntity var3 = var2.field_1724;
-      if (var3 == null || var2.field_1687 == null || var2.field_1761 == null) {
+   private void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientPlayerEntity var3 = var2.player;
+      if (var3 == null || var2.world == null || var2.interactionManager == null) {
          this.reset();
       } else if (!this.pending) {
          if (this.armed) {
@@ -124,7 +124,7 @@ public final class ElytraSwapModule extends ClientModule {
       } else {
          String var4 = this.busyReason(var3);
          if (var4 == null) {
-            if (var2.field_1755 != null || this.swap(var2, var3)) {
+            if (var2.currentScreen != null || this.swap(var2, var3)) {
                this.pending = false;
                return;
             }
@@ -139,41 +139,41 @@ public final class ElytraSwapModule extends ClientModule {
       }
    }
 
-   private String busyReason(ClientPlayerEntity var1) {
+   private String busyReason(ClientPlayerEntity clientPlayerEntity) {
       if (CombatMacroLock.heldByOther(this)) {
          return "another macro kept the inventory busy";
       } else if (AutoInvTotemModule.busy()) {
          return "the totem refill kept the inventory busy";
-      } else if (var1.method_6115()) {
+      } else if (clientPlayerEntity.isUsingItem()) {
          return "you kept using an item";
       } else {
-         return ((AccessorLocalPlayer)var1).efn$lastSentInput().comp_3164() ? "you kept sneaking" : null;
+         return ((AccessorLocalPlayer)clientPlayerEntity).efn$lastSentInput().sneak() ? "you kept sneaking" : null;
       }
    }
 
-   private void followFlight(MinecraftClient var1, ClientPlayerEntity var2) {
-      if (!this.swapBackOnLanding.get() || !var2.method_6118(EquipmentSlot.field_6174).method_57826(DataComponentTypes.field_54197)) {
+   private void followFlight(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      if (!this.swapBackOnLanding.get() || !clientPlayerEntity.getEquippedStack(EquipmentSlot.CHEST).contains(DataComponentTypes.GLIDER)) {
          this.disarm();
-      } else if (var2.method_6128()) {
+      } else if (clientPlayerEntity.isGliding()) {
          this.glided = true;
          this.groundTicks = 0;
       } else if (this.glided) {
-         if (!var2.method_24828() && !var2.method_5799()) {
+         if (!clientPlayerEntity.isOnGround() && !clientPlayerEntity.isTouchingWater()) {
             this.groundTicks = 0;
          } else if (this.groundTicks++ >= this.landingDelay.getInt()) {
-            if (var1.field_1755 == null && inventoryReady(var2) && this.busyReason(var2) == null) {
-               if (!isBound(var2, var2.method_6118(EquipmentSlot.field_6174))) {
-                  int var3 = this.chestplateToEquip(var2);
+            if (minecraftClient.currentScreen == null && inventoryReady(clientPlayerEntity) && this.busyReason(clientPlayerEntity) == null) {
+               if (!isBound(clientPlayerEntity, clientPlayerEntity.getEquippedStack(EquipmentSlot.CHEST))) {
+                  int var3 = this.chestplateToEquip(clientPlayerEntity);
                   if (var3 == -1) {
                      ModuleChat.send(this, ModuleChat.body().danger("Can't swap back").text(", no ").name("chestplate").text(" left in your inventory"));
-                  } else if (!AutoInvTotemModule.clickSafe(var2)) {
+                  } else if (!AutoInvTotemModule.clickSafe(clientPlayerEntity)) {
                      if (++this.settleTicks <= 20) {
                         InputControl.idle();
                         return;
                      }
 
                      ModuleChat.send(this, ModuleChat.body().warn("Swap back skipped").text(", you kept moving"));
-                  } else if (!equip(var1, var2, var3)) {
+                  } else if (!equip(minecraftClient, clientPlayerEntity, var3)) {
                      ModuleChat.send(this, SWAP_FAILED);
                   }
                }
@@ -184,28 +184,28 @@ public final class ElytraSwapModule extends ClientModule {
       }
    }
 
-   private boolean swap(MinecraftClient var1, ClientPlayerEntity var2) {
-      if (var2.method_7325()) {
+   private boolean swap(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      if (clientPlayerEntity.isSpectator()) {
          return true;
-      } else if (!inventoryReady(var2)) {
+      } else if (!inventoryReady(clientPlayerEntity)) {
          ModuleChat.send(this, ModuleChat.body().warn("Swap skipped").text(", close the open container first"));
          return true;
       } else {
-         ItemStack var4 = var2.method_6118(EquipmentSlot.field_6174);
-         if (isBound(var2, var4)) {
+         ItemStack var4 = clientPlayerEntity.getEquippedStack(EquipmentSlot.CHEST);
+         if (isBound(clientPlayerEntity, var4)) {
             ModuleChat.send(this, ModuleChat.body().danger("Can't swap").text(", your chest piece has ").name("Curse of Binding"));
             return true;
-         } else if (var4.method_57826(DataComponentTypes.field_54197)) {
-            int var7 = this.chestplateToEquip(var2);
+         } else if (var4.contains(DataComponentTypes.GLIDER)) {
+            int var7 = this.chestplateToEquip(clientPlayerEntity);
             if (var7 == -1) {
                ModuleChat.send(this, ModuleChat.body().danger("Can't swap").text(", no ").name("chestplate").text(" in your inventory"));
             } else {
-               if (!AutoInvTotemModule.clickSafe(var2)) {
+               if (!AutoInvTotemModule.clickSafe(clientPlayerEntity)) {
                   InputControl.idle();
                   return false;
                }
 
-               if (!equip(var1, var2, var7)) {
+               if (!equip(minecraftClient, clientPlayerEntity, var7)) {
                   ModuleChat.send(this, SWAP_FAILED);
                }
             }
@@ -213,16 +213,16 @@ public final class ElytraSwapModule extends ClientModule {
             this.disarm();
             return true;
          } else {
-            int var5 = findElytra(var2);
+            int var5 = findElytra(clientPlayerEntity);
             if (var5 == -1) {
                ModuleChat.send(this, ModuleChat.body().danger("Can't swap").text(", no usable ").name("elytra").text(" in your inventory"));
                return true;
-            } else if (!AutoInvTotemModule.clickSafe(var2)) {
+            } else if (!AutoInvTotemModule.clickSafe(clientPlayerEntity)) {
                InputControl.idle();
                return false;
             } else {
-               Item var3 = isChestplate(var4) ? var4.method_7909() : null;
-               if (!equip(var1, var2, var5)) {
+               Item var3 = isChestplate(var4) ? var4.getItem() : null;
+               if (!equip(minecraftClient, clientPlayerEntity, var5)) {
                   ModuleChat.send(this, SWAP_FAILED);
                   return true;
                } else {
@@ -240,46 +240,47 @@ public final class ElytraSwapModule extends ClientModule {
       }
    }
 
-   private int chestplateToEquip(ClientPlayerEntity var1) {
+   private int chestplateToEquip(ClientPlayerEntity clientPlayerEntity) {
       ItemStack var2;
       return this.storedIndex >= 0
             && this.storedItem != null
-            && (var2 = var1.method_31548().method_5438(this.storedIndex)).method_31574(this.storedItem)
-            && !isBound(var1, var2)
+            && (var2 = clientPlayerEntity.getInventory().getStack(this.storedIndex)).isOf(this.storedItem)
+            && !isBound(clientPlayerEntity, var2)
          ? this.storedIndex
-         : findBestChestplate(var1);
+         : findBestChestplate(clientPlayerEntity);
    }
 
-   private static boolean equip(MinecraftClient var0, ClientPlayerEntity var1, int var2) {
-      Item var3 = var1.method_31548().method_5438(var2).method_7909();
-      ((AccessorElytraFlyMultiPlayerGameMode)var0.field_1761).efn$elytraFlySyncSelected();
-      if (!PlayerInventory.method_7380(var2) && var2 != 40) {
-         ElytraFlyInventory.moveToChest(var2);
+   private static boolean equip(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, int i) {
+      Item var3 = clientPlayerEntity.getInventory().getStack(i).getItem();
+      ((AccessorElytraFlyMultiPlayerGameMode)minecraftClient.interactionManager).efn$elytraFlySyncSelected();
+      if (!PlayerInventory.isValidHotbarIndex(i) && i != 40) {
+         ElytraFlyInventory.moveToChest(i);
       } else {
-         var0.field_1761.method_2906(var1.field_7498.field_7763, 6, var2, SlotActionType.field_7791, var1);
+         minecraftClient.interactionManager.clickSlot(clientPlayerEntity.playerScreenHandler.syncId, 6, i, SlotActionType.SWAP, clientPlayerEntity);
       }
 
-      var1.field_3944.method_52787(new CloseHandledScreenC2SPacket(0));
-      return var1.method_6118(EquipmentSlot.field_6174).method_31574(var3);
+      clientPlayerEntity.networkHandler.sendPacket(new CloseHandledScreenC2SPacket(0));
+      return clientPlayerEntity.getEquippedStack(EquipmentSlot.CHEST).isOf(var3);
    }
 
-   private static boolean inventoryReady(ClientPlayerEntity var0) {
-      return var0.field_7512 == var0.field_7498 && var0.field_7512.method_34255().method_7960();
+   private static boolean inventoryReady(ClientPlayerEntity clientPlayerEntity) {
+      return clientPlayerEntity.currentScreenHandler == clientPlayerEntity.playerScreenHandler
+         && clientPlayerEntity.currentScreenHandler.getCursorStack().isEmpty();
    }
 
-   private static boolean isBound(ClientPlayerEntity var0, ItemStack var1) {
-      return !var0.method_68878() && EnchantmentHelper.method_60142(var1, EnchantmentEffectComponentTypes.field_51656);
+   private static boolean isBound(ClientPlayerEntity clientPlayerEntity, ItemStack itemStack) {
+      return !clientPlayerEntity.isCreative() && EnchantmentHelper.hasAnyEnchantmentsWith(itemStack, EnchantmentEffectComponentTypes.PREVENT_ARMOR_CHANGE);
    }
 
-   private static int findElytra(ClientPlayerEntity var0) {
-      PlayerInventory var1 = var0.method_31548();
+   private static int findElytra(ClientPlayerEntity clientPlayerEntity) {
+      PlayerInventory var1 = clientPlayerEntity.getInventory();
       int var2 = -1;
       int var3 = -1;
 
       for (int var7 : SOURCE_INDICES) {
-         ItemStack var9 = var1.method_5438(var7);
+         ItemStack var9 = var1.getStack(var7);
          int var8;
-         if (LivingEntity.method_63624(var9, EquipmentSlot.field_6174) && !isBound(var0, var9) && (var8 = durabilityLeft(var9)) > var3) {
+         if (LivingEntity.canGlideWith(var9, EquipmentSlot.CHEST) && !isBound(clientPlayerEntity, var9) && (var8 = durabilityLeft(var9)) > var3) {
             var2 = var7;
             var3 = var8;
          }
@@ -288,15 +289,15 @@ public final class ElytraSwapModule extends ClientModule {
       return var2;
    }
 
-   private static int findBestChestplate(ClientPlayerEntity var0) {
-      PlayerInventory var1 = var0.method_31548();
+   private static int findBestChestplate(ClientPlayerEntity clientPlayerEntity) {
+      PlayerInventory var1 = clientPlayerEntity.getInventory();
       int var2 = -1;
       double var3 = -1.0;
       int var5 = -1;
 
       for (int var9 : SOURCE_INDICES) {
-         ItemStack var10 = var1.method_5438(var9);
-         if (isChestplate(var10) && !isBound(var0, var10)) {
+         ItemStack var10 = var1.getStack(var9);
+         if (isChestplate(var10) && !isBound(clientPlayerEntity, var10)) {
             double var11 = armorScore(var10);
             int var13 = durabilityLeft(var10);
             if (var11 > var3 || var11 == var3 && var13 > var5) {
@@ -310,23 +311,23 @@ public final class ElytraSwapModule extends ClientModule {
       return var2;
    }
 
-   private static boolean isChestplate(ItemStack var0) {
-      if (!var0.method_7960() && !var0.method_57826(DataComponentTypes.field_54197)) {
-         EquippableComponent var1 = (EquippableComponent)var0.method_58694(DataComponentTypes.field_54196);
-         return var1 != null && var1.comp_3174() == EquipmentSlot.field_6174;
+   private static boolean isChestplate(ItemStack itemStack) {
+      if (!itemStack.isEmpty() && !itemStack.contains(DataComponentTypes.GLIDER)) {
+         EquippableComponent var1 = itemStack.get(DataComponentTypes.EQUIPPABLE);
+         return var1 != null && var1.slot() == EquipmentSlot.CHEST;
       } else {
          return false;
       }
    }
 
-   private static double armorScore(ItemStack var0) {
-      AttributeModifiersComponent var1 = (AttributeModifiersComponent)var0.method_58695(DataComponentTypes.field_49636, AttributeModifiersComponent.field_49326);
-      return var1.method_57481(EntityAttributes.field_23724, 0.0, EquipmentSlot.field_6174)
-         + var1.method_57481(EntityAttributes.field_23725, 0.0, EquipmentSlot.field_6174);
+   private static double armorScore(ItemStack itemStack) {
+      AttributeModifiersComponent var1 = itemStack.getOrDefault(DataComponentTypes.ATTRIBUTE_MODIFIERS, AttributeModifiersComponent.DEFAULT);
+      return var1.applyOperations(EntityAttributes.ARMOR, 0.0, EquipmentSlot.CHEST)
+         + var1.applyOperations(EntityAttributes.ARMOR_TOUGHNESS, 0.0, EquipmentSlot.CHEST);
    }
 
-   private static int durabilityLeft(ItemStack var0) {
-      return var0.method_7963() ? var0.method_7936() - var0.method_7919() : 2147483647;
+   private static int durabilityLeft(ItemStack itemStack) {
+      return itemStack.isDamageable() ? itemStack.getMaxDamage() - itemStack.getDamage() : 2147483647;
    }
 
    private static int[] sourceIndices() {

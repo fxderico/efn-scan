@@ -17,14 +17,14 @@ public final class PlayerMoveEvent extends CancellableEvent {
    private PlayerMoveEvent() {
    }
 
-   public static void move(Vec3d var0, Consumer<Vec3d> var1) {
+   public static void move(Vec3d vec3d, Consumer<Vec3d> consumer) {
       if (!TYPE.hasListeners()) {
-         var1.accept(var0);
+         consumer.accept(vec3d);
       } else {
          PlayerMoveEvent var2 = TYPE.pool.acquire();
-         var2.x = var0.field_1352;
-         var2.y = var0.field_1351;
-         var2.z = var0.field_1350;
+         var2.x = vec3d.x;
+         var2.y = vec3d.y;
+         var2.z = vec3d.z;
          var2.resetCancellation();
 
          try {
@@ -34,8 +34,8 @@ public final class PlayerMoveEvent extends CancellableEvent {
             }
 
             if (Double.isFinite(var2.x) && Double.isFinite(var2.y) && Double.isFinite(var2.z)) {
-               Vec3d var3 = var2.x == var0.field_1352 && var2.y == var0.field_1351 && var2.z == var0.field_1350 ? var0 : new Vec3d(var2.x, var2.y, var2.z);
-               var1.accept(var3);
+               Vec3d var3 = var2.x == vec3d.x && var2.y == vec3d.y && var2.z == vec3d.z ? vec3d : new Vec3d(var2.x, var2.y, var2.z);
+               consumer.accept(var3);
                TYPE.dispatchPost(var2);
                return;
             }

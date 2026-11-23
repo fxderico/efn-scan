@@ -18,16 +18,16 @@ public final class HiddenDebrisScanner {
    private HiddenDebrisScanner() {
    }
 
-   public static List<Integer> findHiddenSections(ChunkData var0, int var1, int var2, int var3) {
-      Objects.requireNonNull(var0, "data");
-      if (var3 < 0) {
+   public static List<Integer> findHiddenSections(ChunkData chunkData, int i, int j, int k) {
+      Objects.requireNonNull(chunkData, "data");
+      if (k < 0) {
          throw new IllegalArgumentException("targetStateId must be non-negative");
       } else {
-         PacketByteBuf var4 = var0.method_38586();
+         PacketByteBuf var4 = chunkData.getSectionsDataBuf();
 
          List var7;
          try {
-            List var5 = scanSections(var4, var1, var2, var3);
+            List var5 = scanSections(var4, i, j, k);
             return var4.readableBytes() == 0 ? var5 : List.of();
          } catch (RuntimeException var11) {
             List var6 = List.of();
@@ -40,17 +40,17 @@ public final class HiddenDebrisScanner {
       }
    }
 
-   static List<Integer> scanSections(PacketByteBuf var0, int var1, int var2, int var3) {
-      Objects.requireNonNull(var0, "buf");
-      if (var1 >= 0 && var3 >= 0) {
+   static List<Integer> scanSections(PacketByteBuf packetByteBuf, int i, int j, int k) {
+      Objects.requireNonNull(packetByteBuf, "buf");
+      if (i >= 0 && k >= 0) {
          ArrayList var4 = new ArrayList();
 
-         for (int var5 = 0; var5 < var1; var5++) {
-            int var6 = var0.readUnsignedShort();
-            HiddenDebrisScanner.PaletteRead var7 = readPalette(var0, 4096, 8, 4, var3);
-            readPalette(var0, 64, 3, 1, -1);
+         for (int var5 = 0; var5 < i; var5++) {
+            int var6 = packetByteBuf.readUnsignedShort();
+            HiddenDebrisScanner.PaletteRead var7 = readPalette(packetByteBuf, 4096, 8, 4, k);
+            readPalette(packetByteBuf, 64, 3, 1, -1);
             if (var6 > 0 && var7.hiddenTarget()) {
-               var4.add(var2 + var5);
+               var4.add(j + var5);
             }
          }
 
@@ -60,16 +60,16 @@ public final class HiddenDebrisScanner {
       }
    }
 
-   private static HiddenDebrisScanner.PaletteRead readPalette(PacketByteBuf var0, int var1, int var2, int var3, int var4) {
-      short var9 = var0.readUnsignedByte();
+   private static HiddenDebrisScanner.PaletteRead readPalette(PacketByteBuf packetByteBuf, int i, int j, int k, int l) {
+      short var9 = packetByteBuf.readUnsignedByte();
       int[] var7;
       int var8;
       if (var9 == 0) {
          var8 = 0;
-         var7 = new int[]{var0.method_10816()};
-      } else if (var9 <= var2) {
-         var8 = Math.max(var3, var9);
-         int var10 = var0.method_10816();
+         var7 = new int[]{packetByteBuf.readVarInt()};
+      } else if (var9 <= j) {
+         var8 = Math.max(k, var9);
+         int var10 = packetByteBuf.readVarInt();
          if (var10 <= 0 || var10 > 1 << var8) {
             throw new IllegalArgumentException("invalid local palette size");
          }
@@ -77,7 +77,7 @@ public final class HiddenDebrisScanner {
          var7 = new int[var10];
 
          for (int var11 = 0; var11 < var10; var11++) {
-            var7[var11] = var0.method_10816();
+            var7[var11] = packetByteBuf.readVarInt();
          }
       } else {
          var8 = var9;
@@ -92,54 +92,54 @@ public final class HiddenDebrisScanner {
       if (var8 > 0 && var6 == 0) {
          throw new IllegalArgumentException("invalid palette storage width");
       } else {
-         int var25 = var8 == 0 ? 0 : (var1 + var6 - 1) / var6;
+         int var25 = var8 == 0 ? 0 : (i + var6 - 1) / var6;
          long var12 = var25 * 8L;
-         if (var12 > var0.readableBytes()) {
+         if (var12 > packetByteBuf.readableBytes()) {
             throw new IndexOutOfBoundsException("truncated palette data");
          } else {
-            boolean var5 = var7 != null && contains(var7, var4);
+            boolean var5 = var7 != null && contains(var7, l);
             if (!var5) {
-               var0.method_52994((int)var12);
+               packetByteBuf.skipBytes((int)var12);
                return new HiddenDebrisScanner.PaletteRead(false, true);
             } else {
                int var15 = 0;
                if (var8 == 0) {
-                  if (var7[0] == var4) {
-                     var15 = var1;
+                  if (var7[0] == l) {
+                     var15 = i;
                   }
                } else {
-                  int var16 = var0.readerIndex();
+                  int var16 = packetByteBuf.readerIndex();
                   long var17 = (1L << var8) - 1L;
 
-                  for (int var19 = 0; var19 < var1; var19++) {
+                  for (int var19 = 0; var19 < i; var19++) {
                      int var21 = var19 / var6;
                      int var22 = var19 - var21 * var6;
-                     int var23 = (int)(var0.getLong(var16 + var21 * 8) >>> var22 * var8 & var17);
+                     int var23 = (int)(packetByteBuf.getLong(var16 + var21 * 8) >>> var22 * var8 & var17);
                      int var20 = var7 == null ? var23 : paletteValue(var7, var23);
-                     if (var20 == var4) {
+                     if (var20 == l) {
                         var15++;
                      }
                   }
                }
 
-               var0.method_52994((int)var12);
+               packetByteBuf.skipBytes((int)var12);
                return new HiddenDebrisScanner.PaletteRead(var5, var15 == 0);
             }
          }
       }
    }
 
-   private static int paletteValue(int[] var0, int var1) {
-      if (var1 >= 0 && var1 < var0.length) {
-         return var0[var1];
+   private static int paletteValue(int[] is, int i) {
+      if (i >= 0 && i < is.length) {
+         return is[i];
       } else {
          throw new IllegalArgumentException("packed palette index is invalid");
       }
    }
 
-   private static boolean contains(int[] var0, int var1) {
-      for (int var5 : var0) {
-         if (var5 == var1) {
+   private static boolean contains(int[] is, int i) {
+      for (int var5 : is) {
+         if (var5 == i) {
             return true;
          }
       }

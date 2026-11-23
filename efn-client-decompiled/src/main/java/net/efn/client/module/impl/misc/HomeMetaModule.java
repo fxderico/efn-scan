@@ -38,7 +38,7 @@ public final class HomeMetaModule extends ClientModule {
 
    @Override
    protected void onEnable() {
-      if (MinecraftClient.method_1551().field_1724 == null) {
+      if (MinecraftClient.getInstance().player == null) {
          this.requestDisable();
       } else {
          this.home = this.homeNumber.getInt();
@@ -48,9 +48,9 @@ public final class HomeMetaModule extends ClientModule {
    }
 
    @EventHandler
-   public void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      if (var2.field_1724 != null && var2.method_1562() != null) {
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      if (var2.player != null && var2.getNetworkHandler() != null) {
          long var3 = System.currentTimeMillis();
          if (var3 >= this.nextAtMs) {
             long var5 = (long)(this.delay.get() * 1000.0);
@@ -66,13 +66,13 @@ public final class HomeMetaModule extends ClientModule {
                   this.nextAtMs = var3 + var5;
                   break;
                case RTP:
-                  this.rtpStart = var2.field_1724.method_73189();
+                  this.rtpStart = var2.player.getEntityPos();
                   command(var2, "rtp");
                   this.rtpDeadlineMs = var3 + (long)(this.rtpTimeout.get() * 1000.0);
                   this.step = HomeMetaModule.Step.WAIT_TELEPORT;
                   break;
                case WAIT_TELEPORT:
-                  boolean var7 = var2.field_1724.method_73189().method_1025(this.rtpStart) > 25.0;
+                  boolean var7 = var2.player.getEntityPos().squaredDistanceTo(this.rtpStart) > 25.0;
                   if (var7 || var3 >= this.rtpDeadlineMs) {
                      this.step = HomeMetaModule.Step.HOME;
                      this.nextAtMs = var3 + var5;
@@ -88,8 +88,8 @@ public final class HomeMetaModule extends ClientModule {
       }
    }
 
-   private static void command(MinecraftClient var0, String var1) {
-      var0.method_1562().method_45730(var1);
+   private static void command(MinecraftClient minecraftClient, String string) {
+      minecraftClient.getNetworkHandler().sendChatCommand(string);
    }
 
    @Environment(EnvType.CLIENT)

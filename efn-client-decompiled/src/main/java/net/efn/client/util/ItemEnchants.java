@@ -29,8 +29,8 @@ public final class ItemEnchants {
    private ItemEnchants() {
    }
 
-   public static Item resolve(String var0) {
-      String var2 = var0 == null ? "" : var0.trim().toLowerCase(Locale.ROOT).replace(' ', '_');
+   public static Item resolve(String string) {
+      String var2 = string == null ? "" : string.trim().toLowerCase(Locale.ROOT).replace(' ', '_');
       if (var2.isEmpty()) {
          return null;
       } else {
@@ -39,33 +39,33 @@ public final class ItemEnchants {
          }
 
          Identifier var1;
-         if ((var1 = Identifier.method_12829(var2)) != null && Registries.field_41178.method_10250(var1)) {
-            Item var4 = (Item)Registries.field_41178.method_63535(var1);
-            return var4 == Items.field_8162 ? null : var4;
+         if ((var1 = Identifier.tryParse(var2)) != null && Registries.ITEM.containsId(var1)) {
+            Item var4 = Registries.ITEM.get(var1);
+            return var4 == Items.AIR ? null : var4;
          } else {
             return null;
          }
       }
    }
 
-   public static String stored(Item var0) {
-      Identifier var1 = Registries.field_41178.method_10221(var0);
-      return "minecraft".equals(var1.method_12836()) ? var1.method_12832() : var1.toString();
+   public static String stored(Item item) {
+      Identifier var1 = Registries.ITEM.getId(item);
+      return "minecraft".equals(var1.getNamespace()) ? var1.getPath() : var1.toString();
    }
 
-   public static boolean supports(Item var0) {
-      if (var0 == null) {
+   public static boolean supports(Item item) {
+      if (item == null) {
          return false;
-      } else if (var0 == Items.field_8598) {
+      } else if (item == Items.ENCHANTED_BOOK) {
          return true;
       } else {
          List var1 = all();
-         ItemStack var2 = var0.method_7854();
+         ItemStack var2 = item.getDefaultStack();
          if (var1.isEmpty()) {
-            return var2.method_57826(DataComponentTypes.field_53695);
+            return var2.contains(DataComponentTypes.ENCHANTABLE);
          } else {
             for (RegistryEntry var4 : var1) {
-               if (((Enchantment)var4.comp_349()).method_60046(var2)) {
+               if (((Enchantment)var4.value()).isSupportedItem(var2)) {
                   return true;
                }
             }
@@ -75,34 +75,34 @@ public final class ItemEnchants {
       }
    }
 
-   public static List<RegistryEntry<Enchantment>> applicable(Item var0) {
+   public static List<RegistryEntry<Enchantment>> applicable(Item item) {
       ArrayList var1 = new ArrayList();
-      if (var0 == null) {
+      if (item == null) {
          return var1;
       } else {
-         ItemStack var2 = var0.method_7854();
-         boolean var3 = var0 == Items.field_8598;
+         ItemStack var2 = item.getDefaultStack();
+         boolean var3 = item == Items.ENCHANTED_BOOK;
 
          for (RegistryEntry var5 : all()) {
-            if (var3 || ((Enchantment)var5.comp_349()).method_60046(var2)) {
+            if (var3 || ((Enchantment)var5.value()).isSupportedItem(var2)) {
                var1.add(var5);
             }
          }
 
-         var1.sort(Comparator.comparing(var0x -> ((Enchantment)var0x.comp_349()).comp_2686().getString(), String.CASE_INSENSITIVE_ORDER));
+         var1.sort(Comparator.comparing(registryEntry -> ((Enchantment)registryEntry.value()).description().getString(), String.CASE_INSENSITIVE_ORDER));
          return var1;
       }
    }
 
    public static List<RegistryEntry<Enchantment>> all() {
-      MinecraftClient var0 = MinecraftClient.method_1551();
-      if (var0.field_1687 == null) {
+      MinecraftClient var0 = MinecraftClient.getInstance();
+      if (var0.world == null) {
          return List.of();
       } else {
-         DynamicRegistryManager var1 = var0.field_1687.method_30349();
+         DynamicRegistryManager var1 = var0.world.getRegistryManager();
          if (var1 != cachedFor) {
             ArrayList var2 = new ArrayList();
-            var1.method_30530(RegistryKeys.field_41265).method_42017().forEach(var2::add);
+            var1.getOrThrow(RegistryKeys.ENCHANTMENT).streamEntries().forEach(var2::add);
             cached = List.copyOf(var2);
             cachedFor = var1;
          }
@@ -111,12 +111,12 @@ public final class ItemEnchants {
       }
    }
 
-   public static String path(RegistryEntry<Enchantment> var0) {
-      return var0.method_40230().map(var0x -> var0x.method_29177().method_12832()).orElse("");
+   public static String path(RegistryEntry<Enchantment> registryEntry) {
+      return registryEntry.getKey().map(registryKey -> registryKey.getValue().getPath()).orElse("");
    }
 
-   public static String key(String var0) {
-      String var1 = var0 == null ? "" : var0.toLowerCase(Locale.ROOT);
+   public static String key(String string) {
+      String var1 = string == null ? "" : string.toLowerCase(Locale.ROOT);
       StringBuilder var2 = new StringBuilder(var1.length());
 
       for (int var3 = 0; var3 < var1.length(); var3++) {
@@ -129,12 +129,12 @@ public final class ItemEnchants {
       return var2.toString();
    }
 
-   public static Map<String, Integer> parse(String var0) {
+   public static Map<String, Integer> parse(String string) {
       LinkedHashMap var1 = new LinkedHashMap();
-      if (var0 == null) {
+      if (string == null) {
          return var1;
       } else {
-         for (String var5 : var0.split("[,;]")) {
+         for (String var5 : string.split("[,;]")) {
             String var8 = var5.trim();
             if (!var8.isEmpty()) {
                int var9 = 1;
@@ -156,12 +156,12 @@ public final class ItemEnchants {
       }
    }
 
-   private static int level(String var0) {
+   private static int level(String string) {
       try {
-         int var1 = Integer.parseInt(var0);
+         int var1 = Integer.parseInt(string);
          return var1 >= 1 && var1 <= 10 ? var1 : 0;
       } catch (NumberFormatException var4) {
-         String var2 = var0.toLowerCase(Locale.ROOT);
+         String var2 = string.toLowerCase(Locale.ROOT);
 
          for (int var3 = 0; var3 < ROMAN.length; var3++) {
             if (ROMAN[var3].equals(var2)) {
@@ -173,7 +173,7 @@ public final class ItemEnchants {
       }
    }
 
-   public static String roman(int var0) {
-      return var0 >= 1 && var0 <= ROMAN.length ? ROMAN[var0 - 1].toUpperCase(Locale.ROOT) : Integer.toString(var0);
+   public static String roman(int i) {
+      return i >= 1 && i <= ROMAN.length ? ROMAN[i - 1].toUpperCase(Locale.ROOT) : Integer.toString(i);
    }
 }

@@ -74,24 +74,24 @@ public final class BlockNotifierModule extends ClientModule implements ChunkScan
    }
 
    @Override
-   public boolean wants(BlockState var1) {
-      return this.blocks.isEnabled(var1.method_26204());
+   public boolean wants(BlockState blockState) {
+      return this.blocks.isEnabled(blockState.getBlock());
    }
 
    @Override
-   public void found(long var1, BlockState var3) {
-      MinecraftClient var6 = MinecraftClient.method_1551();
-      if (var6.field_1687 != null) {
+   public void found(long l, BlockState blockState) {
+      MinecraftClient var6 = MinecraftClient.getInstance();
+      if (var6.world != null) {
          this.syncDimension(var6);
-         if (this.known.add(var1)) {
+         if (this.known.add(l)) {
             if (this.known.size() > 50000) {
                this.known.removeFirstLong();
             }
 
-            BlockPos var7 = BlockPos.method_10092(var1);
-            BlockNotifierModule.Finds var8 = this.pending.computeIfAbsent(var3.method_26204(), var0 -> new BlockNotifierModule.Finds());
+            BlockPos var7 = BlockPos.fromLong(l);
+            BlockNotifierModule.Finds var8 = this.pending.computeIfAbsent(blockState.getBlock(), block -> new BlockNotifierModule.Finds());
             var8.count++;
-            double var4 = var6.field_1724 == null ? 0.0 : var6.field_1724.method_5707(Vec3d.method_24953(var7));
+            double var4 = var6.player == null ? 0.0 : var6.player.squaredDistanceTo(Vec3d.ofCenter(var7));
             if (var4 < var8.nearestSq) {
                var8.nearestSq = var4;
                var8.nearest = var7;
@@ -101,8 +101,8 @@ public final class BlockNotifierModule extends ClientModule implements ChunkScan
    }
 
    @Override
-   public void removed(long var1) {
-      this.known.remove(var1);
+   public void removed(long l) {
+      this.known.remove(l);
    }
 
    @Override
@@ -111,9 +111,9 @@ public final class BlockNotifierModule extends ClientModule implements ChunkScan
       this.pending.clear();
    }
 
-   private void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      if (var2.field_1687 != null) {
+   private void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      if (var2.world != null) {
          this.syncDimension(var2);
          if (!this.pending.isEmpty()) {
             for (Entry var4 : this.pending.entrySet()) {
@@ -125,8 +125,8 @@ public final class BlockNotifierModule extends ClientModule implements ChunkScan
       }
    }
 
-   private void syncDimension(MinecraftClient var1) {
-      RegistryKey var2 = var1.field_1687.method_27983();
+   private void syncDimension(MinecraftClient minecraftClient) {
+      RegistryKey var2 = minecraftClient.world.getRegistryKey();
       if (!var2.equals(this.dimension)) {
          this.dimension = var2;
          this.known.clear();
@@ -134,14 +134,14 @@ public final class BlockNotifierModule extends ClientModule implements ChunkScan
       }
    }
 
-   private void notify(Block var1, BlockNotifierModule.Finds var2) {
-      Item var3 = var1.method_8389();
-      ItemStack var4 = new ItemStack(var3 == Items.field_8162 ? Items.field_8251 : var3);
-      String var5 = var1.method_9518().getString();
-      BlockPos var6 = var2.nearest;
-      MutableText var7 = Text.method_43470("at " + var6.method_10263() + ", " + var6.method_10264() + ", " + var6.method_10260());
+   private void notify(Block block, BlockNotifierModule.Finds finds) {
+      Item var3 = block.asItem();
+      ItemStack var4 = new ItemStack(var3 == Items.AIR ? Items.COMPASS : var3);
+      String var5 = block.getName().getString();
+      BlockPos var6 = finds.nearest;
+      MutableText var7 = Text.literal("at " + var6.getX() + ", " + var6.getY() + ", " + var6.getZ());
 
-      for (int var8 = 0; var8 < var2.count; var8++) {
+      for (int var8 = 0; var8 < finds.count; var8++) {
          ChallengeToast.addOrUpdate(var4, var5, var7, this.sound.get());
       }
    }

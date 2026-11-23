@@ -9,6 +9,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Environment(EnvType.CLIENT)
 @Mixin({PlayerEntityModel.class})
 public interface AccessorHandPlayerModel {
-   @Accessor("field_3480")
+   @Accessor("thinArms")
    boolean efn$handSlim();
 }

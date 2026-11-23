@@ -24,32 +24,36 @@ public abstract class MixinTranslationGuardClientLanguage {
    }
 
    @Inject(
-      method = {"method_4675"},
+      method = {"load"},
       at = {@At("HEAD")},
       require = 0
    )
-   private static void efn$beginLoad(ResourceManager var0, List<String> var1, boolean var2, CallbackInfoReturnable<TranslationStorage> var3) {
+   private static void efn$beginLoad(
+      ResourceManager resourceManager, List<String> list, boolean bl, CallbackInfoReturnable<TranslationStorage> callbackInfoReturnable
+   ) {
       TranslationGuard.beginLoad();
    }
 
    @WrapOperation(
-      method = {"method_4676"},
+      method = {"load"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_2477;method_29425(Ljava/io/InputStream;Ljava/util/function/BiConsumer;)V"
+         target = "Lnet/minecraft/util/Language;load(Ljava/io/InputStream;Ljava/util/function/BiConsumer;)V"
       )},
       require = 0
    )
-   private static void efn$tapLoad(InputStream var0, BiConsumer<String, String> var1, Operation<Void> var2, @Local Resource var3) {
-      var2.call(new Object[]{var0, TranslationGuard.tap(var3, var1)});
+   private static void efn$tapLoad(InputStream inputStream, BiConsumer<String, String> biConsumer, Operation<Void> operation, @Local Resource resource) {
+      operation.call(inputStream, TranslationGuard.tap(resource, biConsumer));
    }
 
    @Inject(
-      method = {"method_4675"},
+      method = {"load"},
       at = {@At("RETURN")},
       require = 0
    )
-   private static void efn$endLoad(ResourceManager var0, List<String> var1, boolean var2, CallbackInfoReturnable<TranslationStorage> var3) {
+   private static void efn$endLoad(
+      ResourceManager resourceManager, List<String> list, boolean bl, CallbackInfoReturnable<TranslationStorage> callbackInfoReturnable
+   ) {
       TranslationGuard.endLoad();
    }
 }

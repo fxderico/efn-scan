@@ -4,7 +4,6 @@ import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.pipeline.RenderPipeline.Snippet;
 import com.mojang.blaze3d.platform.DepthTestFunction;
 import com.mojang.blaze3d.systems.ProjectionType;
 import com.mojang.blaze3d.systems.RenderPass;
@@ -48,89 +47,75 @@ public final class WorldQuads {
    private int[] colors = new int[256];
    private int quads;
 
-   private WorldQuads(RenderPipeline var1) {
-      this.pipeline = var1;
+   private WorldQuads(RenderPipeline renderPipeline) {
+      this.pipeline = renderPipeline;
    }
 
-   private static RenderPipeline pipeline(String var0, DepthTestFunction var1) {
-      return RenderPipeline.builder(new Snippet[]{RenderPipelines.field_60125})
-         .withLocation(Identifier.method_60655("efn", "pipeline/" + var0))
+   private static RenderPipeline pipeline(String string, DepthTestFunction depthTestFunction) {
+      return RenderPipeline.builder(RenderPipelines.TRANSFORMS_AND_PROJECTION_SNIPPET)
+         .withLocation(Identifier.of("efn", "pipeline/" + string))
          .withVertexShader("core/position_color")
          .withFragmentShader("core/position_color")
          .withBlend(BlendFunction.TRANSLUCENT)
          .withDepthWrite(false)
-         .withDepthTestFunction(var1)
+         .withDepthTestFunction(depthTestFunction)
          .withCull(false)
-         .withVertexFormat(VertexFormats.field_1576, DrawMode.field_27382)
+         .withVertexFormat(VertexFormats.POSITION_COLOR, DrawMode.QUADS)
          .build();
    }
 
-   public static WorldQuads layer(boolean var0) {
-      return var0 ? TOP : TESTED;
+   public static WorldQuads layer(boolean bl) {
+      return bl ? TOP : TESTED;
    }
 
-   public static void beginFrame(Vec3d var0) {
-      originX = var0.field_1352;
-      originY = var0.field_1351;
-      originZ = var0.field_1350;
+   public static void beginFrame(Vec3d vec3d) {
+      originX = vec3d.x;
+      originY = vec3d.y;
+      originZ = vec3d.z;
       TESTED.quads = 0;
       TOP.quads = 0;
    }
 
-   public boolean quad(
-      double var1,
-      double var3,
-      double var5,
-      double var7,
-      double var9,
-      double var11,
-      double var13,
-      double var15,
-      double var17,
-      double var19,
-      double var21,
-      double var23,
-      int var25
-   ) {
-      if (var25 >>> 24 >= 3 && this.reserve(1)) {
+   public boolean quad(double d, double e, double f, double g, double h, double i, double j, double k, double l, double m, double n, double o, int p) {
+      if (p >>> 24 >= 3 && this.reserve(1)) {
          int var26 = this.quads * 12;
          float[] var27 = this.corners;
-         var27[var26] = (float)(var1 - originX);
-         var27[var26 + 1] = (float)(var3 - originY);
-         var27[var26 + 2] = (float)(var5 - originZ);
-         var27[var26 + 3] = (float)(var7 - originX);
-         var27[var26 + 4] = (float)(var9 - originY);
-         var27[var26 + 5] = (float)(var11 - originZ);
-         var27[var26 + 6] = (float)(var13 - originX);
-         var27[var26 + 7] = (float)(var15 - originY);
-         var27[var26 + 8] = (float)(var17 - originZ);
-         var27[var26 + 9] = (float)(var19 - originX);
-         var27[var26 + 10] = (float)(var21 - originY);
-         var27[var26 + 11] = (float)(var23 - originZ);
-         this.colors[this.quads++] = var25;
+         var27[var26] = (float)(d - originX);
+         var27[var26 + 1] = (float)(e - originY);
+         var27[var26 + 2] = (float)(f - originZ);
+         var27[var26 + 3] = (float)(g - originX);
+         var27[var26 + 4] = (float)(h - originY);
+         var27[var26 + 5] = (float)(i - originZ);
+         var27[var26 + 6] = (float)(j - originX);
+         var27[var26 + 7] = (float)(k - originY);
+         var27[var26 + 8] = (float)(l - originZ);
+         var27[var26 + 9] = (float)(m - originX);
+         var27[var26 + 10] = (float)(n - originY);
+         var27[var26 + 11] = (float)(o - originZ);
+         this.colors[this.quads++] = p;
          return true;
       } else {
          return false;
       }
    }
 
-   public void quads(double[] var1, int[] var2, int var3) {
-      if (var3 > 0) {
-         int var4 = Math.min(var3, 64000 - this.quads);
+   public void quads(double[] ds, int[] is, int i) {
+      if (i > 0) {
+         int var4 = Math.min(i, 64000 - this.quads);
          if (var4 > 0 && this.reserve(var4)) {
             float[] var5 = this.corners;
             int var6 = this.quads * 12;
             int var7 = 0;
 
             for (int var8 = 0; var8 < var4; var8++) {
-               int var9 = var2[var8];
+               int var9 = is[var8];
                if (var9 >>> 24 >= 3) {
                   int var10 = var8 * 12;
 
                   for (byte var11 = 0; var11 < 12; var11 += 3) {
-                     var5[var6 + var11] = (float)(var1[var10 + var11] - originX);
-                     var5[var6 + var11 + 1] = (float)(var1[var10 + var11 + 1] - originY);
-                     var5[var6 + var11 + 2] = (float)(var1[var10 + var11 + 2] - originZ);
+                     var5[var6 + var11] = (float)(ds[var10 + var11] - originX);
+                     var5[var6 + var11 + 1] = (float)(ds[var10 + var11 + 1] - originY);
+                     var5[var6 + var11 + 2] = (float)(ds[var10 + var11 + 2] - originZ);
                   }
 
                   this.colors[this.quads + var7] = var9;
@@ -144,31 +129,31 @@ public final class WorldQuads {
       }
    }
 
-   private boolean reserve(int var1) {
-      if (this.quads + var1 <= this.colors.length) {
+   private boolean reserve(int i) {
+      if (this.quads + i <= this.colors.length) {
          return true;
-      } else if (this.quads + var1 > 64000) {
+      } else if (this.quads + i > 64000) {
          return false;
       } else {
-         int var2 = Math.min(64000, Math.max(this.colors.length * 2, this.quads + var1));
+         int var2 = Math.min(64000, Math.max(this.colors.length * 2, this.quads + i));
          this.colors = Arrays.copyOf(this.colors, var2);
          this.corners = Arrays.copyOf(this.corners, var2 * 12);
          return true;
       }
    }
 
-   public static void render(Matrix4f var0, Matrix4f var1) {
+   public static void render(Matrix4f matrix4f, Matrix4f matrix4f2) {
       if (TESTED.quads != 0 || TOP.quads != 0) {
          if (projectionBuffer == null) {
             projectionBuffer = new RawProjectionMatrix("efn world quads");
          }
 
          RenderSystem.backupProjectionMatrix();
-         RenderSystem.setProjectionMatrix(projectionBuffer.method_71123(var1), ProjectionType.field_54953);
+         RenderSystem.setProjectionMatrix(projectionBuffer.set(matrix4f2), ProjectionType.PERSPECTIVE);
 
          try {
-            TESTED.draw(var0);
-            TOP.draw(var0);
+            TESTED.draw(matrix4f);
+            TOP.draw(matrix4f);
          } finally {
             RenderSystem.restoreProjectionMatrix();
             TESTED.quads = 0;
@@ -177,86 +162,48 @@ public final class WorldQuads {
       }
    }
 
-   private void draw(Matrix4f var1) {
+   private void draw(Matrix4f matrix4f) {
       if (this.quads != 0) {
          if (bytes == null) {
-            bytes = new BufferAllocator(this.quads * 4 * VertexFormats.field_1576.getVertexSize());
+            bytes = new BufferAllocator(this.quads * 4 * VertexFormats.POSITION_COLOR.getVertexSize());
          }
 
-         BufferBuilder var2 = new BufferBuilder(bytes, DrawMode.field_27382, VertexFormats.field_1576);
+         BufferBuilder var2 = new BufferBuilder(bytes, DrawMode.QUADS, VertexFormats.POSITION_COLOR);
          float[] var3 = this.corners;
          int var4 = 0;
 
          for (byte var5 = 0; var4 < this.quads; var5 += 12) {
             int var6 = this.colors[var4];
-            var2.method_22912(var3[var5], var3[var5 + 1], var3[var5 + 2]).method_39415(var6);
-            var2.method_22912(var3[var5 + 3], var3[var5 + 4], var3[var5 + 5]).method_39415(var6);
-            var2.method_22912(var3[var5 + 6], var3[var5 + 7], var3[var5 + 8]).method_39415(var6);
-            var2.method_22912(var3[var5 + 9], var3[var5 + 10], var3[var5 + 11]).method_39415(var6);
+            var2.vertex(var3[var5], var3[var5 + 1], var3[var5 + 2]).color(var6);
+            var2.vertex(var3[var5 + 3], var3[var5 + 4], var3[var5 + 5]).color(var6);
+            var2.vertex(var3[var5 + 6], var3[var5 + 7], var3[var5 + 8]).color(var6);
+            var2.vertex(var3[var5 + 9], var3[var5 + 10], var3[var5 + 11]).color(var6);
             var4++;
          }
 
-         BuiltBuffer var19 = var2.method_60794();
+         try (BuiltBuffer var19 = var2.endNullable()) {
+            if (var19 == null) {
+               return;
+            }
 
-         label78: {
-            try {
-               if (var19 == null) {
-                  break label78;
-               }
+            GpuBuffer var7 = VertexFormats.POSITION_COLOR.uploadImmediateVertexBuffer(var19.getBuffer());
+            ShapeIndexBuffer var8 = RenderSystem.getSequentialBuffer(DrawMode.QUADS);
+            int var9 = var19.getDrawParameters().indexCount();
+            GpuBufferSlice var10 = RenderSystem.getDynamicUniforms().write(matrix4f, new Vector4f(1.0F, 1.0F, 1.0F, 1.0F), new Vector3f(), new Matrix4f());
+            Framebuffer var11 = MinecraftClient.getInstance().getFramebuffer();
 
-               GpuBuffer var7 = VertexFormats.field_1576.uploadImmediateVertexBuffer(var19.method_60818());
-               ShapeIndexBuffer var8 = RenderSystem.getSequentialBuffer(DrawMode.field_27382);
-               int var9 = var19.method_60822().comp_751();
-               GpuBufferSlice var10 = RenderSystem.getDynamicUniforms()
-                  .method_71106(var1, new Vector4f(1.0F, 1.0F, 1.0F, 1.0F), new Vector3f(), new Matrix4f());
-               Framebuffer var11 = MinecraftClient.method_1551().method_1522();
-               RenderPass var12 = RenderSystem.getDevice()
+            try (RenderPass var12 = RenderSystem.getDevice()
                   .createCommandEncoder()
-                  .createRenderPass(() -> "EFN world quads", var11.method_71639(), OptionalInt.empty(), var11.method_71640(), OptionalDouble.empty());
-
-               try {
-                  var12.setPipeline(this.pipeline);
-                  RenderSystem.bindDefaultUniforms(var12);
-                  var12.setUniform("DynamicTransforms", var10);
-                  var12.setVertexBuffer(0, var7);
-                  var12.setIndexBuffer(var8.method_68274(var9), var8.method_31924());
-                  var12.drawIndexed(0, 0, var9, 1);
-               } catch (Throwable var17) {
-                  if (var12 != null) {
-                     try {
-                        var12.close();
-                     } catch (Throwable var16) {
-                        var17.addSuppressed(var16);
-                     }
-                  }
-
-                  throw var17;
-               }
-
-               if (var12 != null) {
-                  var12.close();
-               }
-            } catch (Throwable var18) {
-               if (var19 != null) {
-                  try {
-                     var19.close();
-                  } catch (Throwable var15) {
-                     var18.addSuppressed(var15);
-                  }
-               }
-
-               throw var18;
+                  .createRenderPass(
+                     () -> "EFN world quads", var11.getColorAttachmentView(), OptionalInt.empty(), var11.getDepthAttachmentView(), OptionalDouble.empty()
+                  )) {
+               var12.setPipeline(this.pipeline);
+               RenderSystem.bindDefaultUniforms(var12);
+               var12.setUniform("DynamicTransforms", var10);
+               var12.setVertexBuffer(0, var7);
+               var12.setIndexBuffer(var8.getIndexBuffer(var9), var8.getIndexType());
+               var12.drawIndexed(0, 0, var9, 1);
             }
-
-            if (var19 != null) {
-               var19.close();
-            }
-
-            return;
-         }
-
-         if (var19 != null) {
-            var19.close();
          }
       }
    }

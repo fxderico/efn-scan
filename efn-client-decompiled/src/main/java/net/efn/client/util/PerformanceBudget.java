@@ -17,12 +17,12 @@ public final class PerformanceBudget {
       WORK.reset(PerformanceModule.scanBudgetNanos());
    }
 
-   public static long acquire(long var0) {
-      return PerformanceModule.optimizationsEnabled() ? WORK.acquire(var0) : System.nanoTime() + Math.max(0L, var0);
+   public static long acquire(long l) {
+      return PerformanceModule.optimizationsEnabled() ? WORK.acquire(l) : System.nanoTime() + Math.max(0L, l);
    }
 
-   public static void record(long var0) {
-      WORK.record(var0);
+   public static void record(long l) {
+      WORK.record(l);
    }
 
    public static long lastTickNanos() {

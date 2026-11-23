@@ -29,40 +29,26 @@ public final class Decal {
    float flat = 0.0F / 0.0F;
    float occlusion = 1.0F;
 
-   private Decal(
-      Canvas var1,
-      boolean var2,
-      float var3,
-      float var4,
-      float var5,
-      float var6,
-      float var7,
-      float var8,
-      float var9,
-      float var10,
-      float var11,
-      float var12,
-      float var13
-   ) {
-      if (var1 == null) {
+   private Decal(Canvas canvas, boolean bl, float f, float g, float h, float i, float j, float k, float l, float m, float n, float o, float p) {
+      if (canvas == null) {
          throw new IllegalArgumentException("decal needs a canvas");
-      } else if (!(var12 <= 0.0F) && !(var13 <= 0.0F)) {
-         this.canvas = var1;
-         this.wrap = var2;
-         this.cx = var3;
-         this.cy = var4;
-         this.cz = var5;
-         float var14 = (float)Math.sqrt(var6 * var6 + var7 * var7 + var8 * var8);
+      } else if (!(o <= 0.0F) && !(p <= 0.0F)) {
+         this.canvas = canvas;
+         this.wrap = bl;
+         this.cx = f;
+         this.cy = g;
+         this.cz = h;
+         float var14 = (float)Math.sqrt(i * i + j * j + k * k);
          if (var14 < 1.0E-6F) {
             throw new IllegalArgumentException("decal direction must not be zero");
          } else {
-            this.dx = var6 / var14;
-            this.dy = var7 / var14;
-            this.dz = var8 / var14;
-            float var15 = var9 * this.dx + var10 * this.dy + var11 * this.dz;
-            float var16 = var9 - var15 * this.dx;
-            float var17 = var10 - var15 * this.dy;
-            float var18 = var11 - var15 * this.dz;
+            this.dx = i / var14;
+            this.dy = j / var14;
+            this.dz = k / var14;
+            float var15 = l * this.dx + m * this.dy + n * this.dz;
+            float var16 = l - var15 * this.dx;
+            float var17 = m - var15 * this.dy;
+            float var18 = n - var15 * this.dz;
             float var19 = (float)Math.sqrt(var16 * var16 + var17 * var17 + var18 * var18);
             if (var19 < 1.0E-6F) {
                throw new IllegalArgumentException("decal up/front direction must not be parallel to its axis");
@@ -70,7 +56,7 @@ public final class Decal {
                this.ux = var16 / var19;
                this.uy = var17 / var19;
                this.uz = var18 / var19;
-               if (var2) {
+               if (bl) {
                   this.rx = this.dy * this.uz - this.dz * this.uy;
                   this.ry = this.dz * this.ux - this.dx * this.uz;
                   this.rz = this.dx * this.uy - this.dy * this.ux;
@@ -80,8 +66,8 @@ public final class Decal {
                   this.rz = this.ux * this.dy - this.uy * this.dx;
                }
 
-               this.width = var12;
-               this.height = var13;
+               this.width = o;
+               this.height = p;
             }
          }
       } else {
@@ -89,57 +75,53 @@ public final class Decal {
       }
    }
 
-   public static Decal front(Canvas var0, float var1, float var2, float var3, float var4, float var5) {
-      return new Decal(var0, false, var1, var2, var3, 0.0F, 0.0F, 1.0F, 0.0F, 1.0F, 0.0F, var4, var5);
+   public static Decal front(Canvas canvas, float f, float g, float h, float i, float j) {
+      return new Decal(canvas, false, f, g, h, 0.0F, 0.0F, 1.0F, 0.0F, 1.0F, 0.0F, i, j);
    }
 
-   public static Decal back(Canvas var0, float var1, float var2, float var3, float var4, float var5) {
-      return new Decal(var0, false, var1, var2, var3, 0.0F, 0.0F, -1.0F, 0.0F, 1.0F, 0.0F, var4, var5);
+   public static Decal back(Canvas canvas, float f, float g, float h, float i, float j) {
+      return new Decal(canvas, false, f, g, h, 0.0F, 0.0F, -1.0F, 0.0F, 1.0F, 0.0F, i, j);
    }
 
-   public static Decal left(Canvas var0, float var1, float var2, float var3, float var4, float var5) {
-      return new Decal(var0, false, var1, var2, var3, 1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, var4, var5);
+   public static Decal left(Canvas canvas, float f, float g, float h, float i, float j) {
+      return new Decal(canvas, false, f, g, h, 1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, i, j);
    }
 
-   public static Decal right(Canvas var0, float var1, float var2, float var3, float var4, float var5) {
-      return new Decal(var0, false, var1, var2, var3, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, var4, var5);
+   public static Decal right(Canvas canvas, float f, float g, float h, float i, float j) {
+      return new Decal(canvas, false, f, g, h, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, i, j);
    }
 
-   public static Decal top(Canvas var0, float var1, float var2, float var3, float var4, float var5) {
-      return new Decal(var0, false, var1, var2, var3, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, -1.0F, var4, var5);
+   public static Decal top(Canvas canvas, float f, float g, float h, float i, float j) {
+      return new Decal(canvas, false, f, g, h, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, -1.0F, i, j);
    }
 
-   public static Decal project(
-      Canvas var0, float var1, float var2, float var3, float var4, float var5, float var6, float var7, float var8, float var9, float var10, float var11
-   ) {
-      return new Decal(var0, false, var1, var2, var3, var4, var5, var6, var7, var8, var9, var10, var11);
+   public static Decal project(Canvas canvas, float f, float g, float h, float i, float j, float k, float l, float m, float n, float o, float p) {
+      return new Decal(canvas, false, f, g, h, i, j, k, l, m, n, o, p);
    }
 
-   public static Decal wrap(
-      Canvas var0, float var1, float var2, float var3, float var4, float var5, float var6, float var7, float var8, float var9, float var10, float var11
-   ) {
-      return new Decal(var0, true, var1, var2, var3, var4, var5, var6, var7, var8, var9, Math.min(360.0F, var10), var11);
+   public static Decal wrap(Canvas canvas, float f, float g, float h, float i, float j, float k, float l, float m, float n, float o, float p) {
+      return new Decal(canvas, true, f, g, h, i, j, k, l, m, n, Math.min(360.0F, o), p);
    }
 
-   public Decal depth(float var1, float var2) {
-      this.near = -Math.abs(var1);
-      this.far = Math.abs(var2);
+   public Decal depth(float f, float g) {
+      this.near = -Math.abs(f);
+      this.far = Math.abs(g);
       return this;
    }
 
-   public Decal radius(float var1, float var2) {
-      this.near = var1;
-      this.far = var2;
+   public Decal radius(float f, float g) {
+      this.near = f;
+      this.far = g;
       return this;
    }
 
-   public Decal maxAngle(float var1) {
-      this.cosLimit = (float)Math.cos(Math.toRadians(Math.max(1.0F, Math.min(89.5F, var1))));
+   public Decal maxAngle(float f) {
+      this.cosLimit = (float)Math.cos(Math.toRadians(Math.max(1.0F, Math.min(89.5F, f))));
       return this;
    }
 
-   public Decal offset(float var1) {
-      this.offset = var1;
+   public Decal offset(float f) {
+      this.offset = f;
       return this;
    }
 
@@ -148,13 +130,13 @@ public final class Decal {
       return this;
    }
 
-   public Decal flatLight(float var1) {
-      this.flat = Math.max(0.0F, Math.min(1.0F, var1));
+   public Decal flatLight(float f) {
+      this.flat = Math.max(0.0F, Math.min(1.0F, f));
       return this;
    }
 
-   public Decal occlusion(float var1) {
-      this.occlusion = Math.max(0.0F, Math.min(1.0F, var1));
+   public Decal occlusion(float f) {
+      this.occlusion = Math.max(0.0F, Math.min(1.0F, f));
       return this;
    }
 

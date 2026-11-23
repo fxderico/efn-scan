@@ -25,35 +25,35 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class MixinSpeedMineMultiPlayerGameMode {
    @Shadow
    @Final
-   private MinecraftClient field_3712;
+   private MinecraftClient client;
    @Shadow
-   private int field_3716;
+   private int blockBreakingCooldown;
 
    public MixinSpeedMineMultiPlayerGameMode() {
    }
 
    @Inject(
-      method = {"method_2902"},
+      method = {"updateBlockBreakingProgress"},
       at = {@At("HEAD")}
    )
-   private void efn$speedMineDelay(BlockPos var1, Direction var2, CallbackInfoReturnable<Boolean> var3) {
-      ClientPlayerEntity var4 = this.field_3712.field_1724;
-      if (this.field_3716 > 0 && var4 != null && this.field_3712.field_1687 != null && !var4.method_31549().field_7477) {
-         BlockState var5 = this.field_3712.field_1687.method_8320(var1);
-         if (SpeedMineModule.dropsDelay(var5, var5.method_26165(var4, (BlockView)this.field_3712.field_1687, var1))) {
-            this.field_3716 = 0;
+   private void efn$speedMineDelay(BlockPos blockPos, Direction direction, CallbackInfoReturnable<Boolean> callbackInfoReturnable) {
+      ClientPlayerEntity var4 = this.client.player;
+      if (this.blockBreakingCooldown > 0 && var4 != null && this.client.world != null && !var4.getAbilities().creativeMode) {
+         BlockState var5 = this.client.world.getBlockState(blockPos);
+         if (SpeedMineModule.dropsDelay(var5, var5.calcBlockBreakingDelta(var4, this.client.world, blockPos))) {
+            this.blockBreakingCooldown = 0;
          }
       }
    }
 
    @WrapOperation(
-      method = {"method_2902"},
+      method = {"updateBlockBreakingProgress"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_2680;method_26165(Lnet/minecraft/class_1657;Lnet/minecraft/class_1922;Lnet/minecraft/class_2338;)F"
+         target = "Lnet/minecraft/block/BlockState;calcBlockBreakingDelta(Lnet/minecraft/entity/player/PlayerEntity;Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;)F"
       )}
    )
-   private float efn$speedMineProgress(BlockState var1, PlayerEntity var2, BlockView var3, BlockPos var4, Operation<Float> var5) {
-      return SpeedMineModule.scaleProgress(var1, (Float)var5.call(new Object[]{var1, var2, var3, var4}));
+   private float efn$speedMineProgress(BlockState blockState, PlayerEntity playerEntity, BlockView blockView, BlockPos blockPos, Operation<Float> operation) {
+      return SpeedMineModule.scaleProgress(blockState, (Float)operation.call(blockState, playerEntity, blockView, blockPos));
    }
 }

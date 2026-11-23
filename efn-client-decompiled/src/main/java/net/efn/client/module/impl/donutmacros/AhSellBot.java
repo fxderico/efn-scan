@@ -18,14 +18,14 @@ final class AhSellBot {
    private boolean warnedFull;
    private boolean warnedEmpty;
 
-   AhSellBot(AhSellModule var1, MacroWorker var2, List<Product> var3, boolean var4, AuctionHouse.Config var5, String var6) {
-      this.ah = new AuctionHouse(var1, var2, var5, var6);
-      this.worker = var2;
-      this.config = var5;
+   AhSellBot(AhSellModule ahSellModule, MacroWorker macroWorker, List<Product> list, boolean bl, AuctionHouse.Config config, String string) {
+      this.ah = new AuctionHouse(ahSellModule, macroWorker, config, string);
+      this.worker = macroWorker;
+      this.config = config;
       ArrayList var7 = new ArrayList();
 
-      for (Product var9 : var3) {
-         var7.add(new AuctionHouse.Stock(var9, var4));
+      for (Product var9 : list) {
+         var7.add(new AuctionHouse.Stock(var9, bl));
       }
 
       this.stocks = List.copyOf(var7);
@@ -144,8 +144,8 @@ final class AhSellBot {
       return var1;
    }
 
-   void onChat(String var1) {
-      String var2 = ServerText.normalize(var1);
+   void onChat(String string) {
+      String var2 = ServerText.normalize(string);
       if (!var2.isEmpty()) {
          this.ah.onChat(var2, this.stocks);
       }

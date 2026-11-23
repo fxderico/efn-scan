@@ -11,9 +11,9 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Environment(EnvType.CLIENT)
 @Mixin({ItemCooldownManager.class})
 public interface AccessorHudItemCooldowns {
-   @Accessor("field_8024")
+   @Accessor("entries")
    Map<Identifier, ?> efn$hudCooldowns();
 
-   @Accessor("field_8025")
+   @Accessor("tick")
    int efn$hudTickCount();
 }

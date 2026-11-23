@@ -11,13 +11,13 @@ public final class TickJitter {
    private TickJitter() {
    }
 
-   public static int apply(int var0) {
-      if (var0 <= 0) {
-         return var0;
+   public static int apply(int i) {
+      if (i <= 0) {
+         return i;
       } else {
-         int var1 = Math.max(1, Math.round(var0 * 0.2F));
+         int var1 = Math.max(1, Math.round(i * 0.2F));
          int var2 = ThreadLocalRandom.current().nextInt(-var1, var1 + 1);
-         return Math.max(1, var0 + var2);
+         return Math.max(1, i + var2);
       }
    }
 }

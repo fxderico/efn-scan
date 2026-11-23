@@ -98,59 +98,59 @@ public final class CustomCrosshairModule extends ClientModule implements HudOver
    }
 
    @Override
-   public void renderHudOverlay(ImDrawList var1, float var2, float var3) {
-      MinecraftClient var5 = MinecraftClient.method_1551();
-      ClientPlayerEntity var6 = var5.field_1724;
+   public void renderHudOverlay(ImDrawList imDrawList, float f, float g) {
+      MinecraftClient var5 = MinecraftClient.getInstance();
+      ClientPlayerEntity var6 = var5.player;
       if (var6 != null && isVisible(var5)) {
          float var7 = Math.min(Math.max(ImGui.getIO().getDeltaTime(), 0.0F), 0.1F);
          float var8 = ImGuiManager.getInstance().uiScale();
          this.updateMotion(var5, var6, var7);
-         CustomCrosshairModule.Geometry var9 = this.geometry(var2 * 0.5F, var3 * 0.5F, var8);
+         CustomCrosshairModule.Geometry var9 = this.geometry(f * 0.5F, g * 0.5F, var8);
          int var10 = GuiPalette.abgr(this.currentColor());
          float var11 = (var10 >>> 24 & 0xFF) / 255.0F;
          float var4 = this.outline.get() ? Math.max(1.0F, (float)Math.round(var8)) : 0.0F;
          if (var4 > 0.0F) {
-            this.drawShape(var1, var9, EfnWidgets.withAlpha(-1946157056, var11), var4);
+            this.drawShape(imDrawList, var9, EfnWidgets.withAlpha(-1946157056, var11), var4);
          }
 
-         this.drawShape(var1, var9, var10, 0.0F);
-         this.drawCooldown(var1, var5, var6, var9, var10, var4, var8, var7);
+         this.drawShape(imDrawList, var9, var10, 0.0F);
+         this.drawCooldown(imDrawList, var5, var6, var9, var10, var4, var8, var7);
       }
    }
 
-   private static boolean isVisible(MinecraftClient var0) {
-      if (var0.field_1687 == null || var0.field_1761 == null || var0.field_1690.field_1842) {
+   private static boolean isVisible(MinecraftClient minecraftClient) {
+      if (minecraftClient.world == null || minecraftClient.interactionManager == null || minecraftClient.options.hudHidden) {
          return false;
-      } else if (var0.field_1755 != null && !(var0.field_1755 instanceof ChatScreen)) {
+      } else if (minecraftClient.currentScreen != null && !(minecraftClient.currentScreen instanceof ChatScreen)) {
          return false;
-      } else if (!var0.field_1690.method_31044().method_31034()) {
+      } else if (!minecraftClient.options.getPerspective().isFirstPerson()) {
          return false;
       } else {
-         return var0.field_61504.method_72772(DebugHudEntries.field_61583)
+         return minecraftClient.debugHudEntryList.isEntryVisible(DebugHudEntries.THREE_DIMENSIONAL_CROSSHAIR)
             ? false
-            : var0.field_1761.method_2920() != GameMode.field_9219 || spectatorCanInteract(var0);
+            : minecraftClient.interactionManager.getCurrentGameMode() != GameMode.SPECTATOR || spectatorCanInteract(minecraftClient);
       }
    }
 
-   private static boolean spectatorCanInteract(MinecraftClient var0) {
-      HitResult var1 = var0.field_1765;
+   private static boolean spectatorCanInteract(MinecraftClient minecraftClient) {
+      HitResult var1 = minecraftClient.crosshairTarget;
       if (var1 instanceof EntityHitResult var4) {
-         return var4.method_17782() instanceof NamedScreenHandlerFactory;
-      } else if (var1 instanceof BlockHitResult var2 && var1.method_17783() == Type.field_1332) {
-         BlockPos var3 = var2.method_17777();
-         return var0.field_1687.method_8320(var3).method_26196(var0.field_1687, var3) != null;
+         return var4.getEntity() instanceof NamedScreenHandlerFactory;
+      } else if (var1 instanceof BlockHitResult var2 && var1.getType() == Type.BLOCK) {
+         BlockPos var3 = var2.getBlockPos();
+         return minecraftClient.world.getBlockState(var3).createScreenHandlerFactory(minecraftClient.world, var3) != null;
       } else {
          return false;
       }
    }
 
-   private void updateMotion(MinecraftClient var1, ClientPlayerEntity var2, float var3) {
+   private void updateMotion(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, float f) {
       boolean var10000;
       label23: {
          if (this.targetTint.get()) {
-            Entity var5 = var1.field_1692;
+            Entity var5 = minecraftClient.targetedEntity;
             LivingEntity var4;
-            if (var1.field_1692 instanceof LivingEntity && (var4 = (LivingEntity)var5).method_5805()) {
+            if (minecraftClient.targetedEntity instanceof LivingEntity && (var4 = (LivingEntity)var5).isAlive()) {
                var10000 = true;
                break label23;
             }
@@ -160,21 +160,21 @@ public final class CustomCrosshairModule extends ClientModule implements HudOver
       }
 
       boolean var6 = var10000;
-      this.tint = approach(this.tint, var6 ? 1.0F : 0.0F, 14.0F, var3);
+      this.tint = approach(this.tint, var6 ? 1.0F : 0.0F, 14.0F, f);
       float var7 = 0.0F;
       if (this.dynamicGap.get()) {
-         double var8 = Math.hypot(var2.method_23317() - var2.field_6014, var2.method_23321() - var2.field_5969);
+         double var8 = Math.hypot(clientPlayerEntity.getX() - clientPlayerEntity.lastX, clientPlayerEntity.getZ() - clientPlayerEntity.lastZ);
          float var10 = (float)Math.min(1.0, var8 / 0.28);
-         float var11 = 1.0F - var2.method_7261(0.0F);
+         float var11 = 1.0F - clientPlayerEntity.getAttackCooldownProgress(0.0F);
          var7 = this.spread.get() * Math.max(var10, var11);
       }
 
-      this.extraGap = approach(this.extraGap, var7, 12.0F, var3);
+      this.extraGap = approach(this.extraGap, var7, 12.0F, f);
    }
 
-   private static float approach(float var0, float var1, float var2, float var3) {
-      float var4 = var0 + (var1 - var0) * (1.0F - (float)Math.exp(-var2 * var3));
-      return Math.abs(var1 - var4) < 0.001F ? var1 : var4;
+   private static float approach(float f, float g, float h, float i) {
+      float var4 = f + (g - f) * (1.0F - (float)Math.exp(-h * i));
+      return Math.abs(g - var4) < 0.001F ? g : var4;
    }
 
    private int currentColor() {
@@ -186,133 +186,138 @@ public final class CustomCrosshairModule extends ClientModule implements HudOver
       return this.style.is("Cross") || this.style.is("T") || this.style.is("X");
    }
 
-   private CustomCrosshairModule.Geometry geometry(float var1, float var2, float var3) {
-      float var4 = Math.max(1.0F, (float)Math.round(this.thickness.get() * var3));
-      float var5 = Math.max(1.0F, (float)Math.round(this.size.get() * var3));
+   private CustomCrosshairModule.Geometry geometry(float f, float g, float h) {
+      float var4 = Math.max(1.0F, (float)Math.round(this.thickness.get() * h));
+      float var5 = Math.max(1.0F, (float)Math.round(this.size.get() * h));
       float var6 = this.hasArms() ? this.gap.get() : 0.0F;
-      float var7 = Math.round((var6 + this.extraGap) * var3);
+      float var7 = Math.round((var6 + this.extraGap) * h);
       float var8 = this.dynamicGap.get() && !this.style.is("Dot") ? this.spread.get() : 0.0F;
-      float var9 = this.reachBelow(var5, Math.round((var6 + var8) * var3), var4);
-      return new CustomCrosshairModule.Geometry(var1, var2, var5, var7, var4, var9);
+      float var9 = this.reachBelow(var5, Math.round((var6 + var8) * h), var4);
+      return new CustomCrosshairModule.Geometry(f, g, var5, var7, var4, var9);
    }
 
-   private float reachBelow(float var1, float var2, float var3) {
+   private float reachBelow(float f, float g, float h) {
       String var5 = this.style.get();
 
       float var4 = switch (var5) {
-         case "Dot" -> var1 * 0.5F;
-         case "Circle" -> var1 + var2 + var3 * 0.5F;
-         case "X" -> (var2 + var1) * 0.70710677F + var3 * 0.5F;
-         default -> var2 + var1 + var3 * 0.5F;
+         case "Dot" -> f * 0.5F;
+         case "Circle" -> f + g + h * 0.5F;
+         case "X" -> (g + f) * 0.70710677F + h * 0.5F;
+         default -> g + f + h * 0.5F;
       };
-      return this.centerDot.get() ? Math.max(var4, var3 * 0.5F) : var4;
+      return this.centerDot.get() ? Math.max(var4, h * 0.5F) : var4;
    }
 
-   private boolean armsJoined(CustomCrosshairModule.Geometry var1) {
-      return (this.style.is("Cross") || this.style.is("T")) && var1.open() < 1.0F;
+   private boolean armsJoined(CustomCrosshairModule.Geometry geometry) {
+      return (this.style.is("Cross") || this.style.is("T")) && geometry.open() < 1.0F;
    }
 
-   private void drawShape(ImDrawList var1, CustomCrosshairModule.Geometry var2, int var3, float var4) {
+   private void drawShape(ImDrawList imDrawList, CustomCrosshairModule.Geometry geometry, int i, float f) {
       String var5 = this.style.get();
       switch (var5) {
          case "Dot":
-            var1.addCircleFilled(var2.cx(), var2.cy(), Math.max(1.0F, var2.size() * 0.5F) + var4, var3, 0);
+            imDrawList.addCircleFilled(geometry.cx(), geometry.cy(), Math.max(1.0F, geometry.size() * 0.5F) + f, i, 0);
             break;
          case "Circle":
-            var1.addCircle(var2.cx(), var2.cy(), var2.size() + var2.open(), var3, 0, var2.thick() + var4 * 2.0F);
+            imDrawList.addCircle(geometry.cx(), geometry.cy(), geometry.size() + geometry.open(), i, 0, geometry.thick() + f * 2.0F);
             break;
          case "X":
-            drawDiagonals(var1, var2, var3, var4);
+            drawDiagonals(imDrawList, geometry, i, f);
             break;
          default:
-            drawArms(var1, var2, var3, var4, !this.style.is("T"));
+            drawArms(imDrawList, geometry, i, f, !this.style.is("T"));
       }
 
-      if (this.centerDot.get() && !this.style.is("Dot") && !this.armsJoined(var2)) {
-         float var7 = (float)Math.floor(var2.cx() - var2.thick() * 0.5F);
-         float var8 = (float)Math.floor(var2.cy() - var2.thick() * 0.5F);
-         rect(var1, var7, var8, var7 + var2.thick(), var8 + var2.thick(), var3, var4);
+      if (this.centerDot.get() && !this.style.is("Dot") && !this.armsJoined(geometry)) {
+         float var7 = (float)Math.floor(geometry.cx() - geometry.thick() * 0.5F);
+         float var8 = (float)Math.floor(geometry.cy() - geometry.thick() * 0.5F);
+         rect(imDrawList, var7, var8, var7 + geometry.thick(), var8 + geometry.thick(), i, f);
       }
    }
 
-   private static void drawArms(ImDrawList var0, CustomCrosshairModule.Geometry var1, int var2, float var3, boolean var4) {
-      float var5 = (float)Math.floor(var1.cx() - var1.thick() * 0.5F);
-      float var6 = var5 + var1.thick();
-      float var7 = (float)Math.floor(var1.cy() - var1.thick() * 0.5F);
-      float var8 = var7 + var1.thick();
-      float var9 = var1.open();
-      float var10 = var1.open() + var1.size();
+   private static void drawArms(ImDrawList imDrawList, CustomCrosshairModule.Geometry geometry, int i, float f, boolean bl) {
+      float var5 = (float)Math.floor(geometry.cx() - geometry.thick() * 0.5F);
+      float var6 = var5 + geometry.thick();
+      float var7 = (float)Math.floor(geometry.cy() - geometry.thick() * 0.5F);
+      float var8 = var7 + geometry.thick();
+      float var9 = geometry.open();
+      float var10 = geometry.open() + geometry.size();
       if (var9 < 1.0F) {
-         rect(var0, var5 - var10, var7, var6 + var10, var8, var2, var3);
-         var0.addRectFilled(var5 - var3, var8 + var3, var6 + var3, var8 + var10 + var3, var2);
-         if (var4) {
-            var0.addRectFilled(var5 - var3, var7 - var10 - var3, var6 + var3, var7 - var3, var2);
+         rect(imDrawList, var5 - var10, var7, var6 + var10, var8, i, f);
+         imDrawList.addRectFilled(var5 - f, var8 + f, var6 + f, var8 + var10 + f, i);
+         if (bl) {
+            imDrawList.addRectFilled(var5 - f, var7 - var10 - f, var6 + f, var7 - f, i);
          }
       } else {
-         rect(var0, var5 - var10, var7, var5 - var9, var8, var2, var3);
-         rect(var0, var6 + var9, var7, var6 + var10, var8, var2, var3);
-         rect(var0, var5, var8 + var9, var6, var8 + var10, var2, var3);
-         if (var4) {
-            rect(var0, var5, var7 - var10, var6, var7 - var9, var2, var3);
+         rect(imDrawList, var5 - var10, var7, var5 - var9, var8, i, f);
+         rect(imDrawList, var6 + var9, var7, var6 + var10, var8, i, f);
+         rect(imDrawList, var5, var8 + var9, var6, var8 + var10, i, f);
+         if (bl) {
+            rect(imDrawList, var5, var7 - var10, var6, var7 - var9, i, f);
          }
       }
    }
 
-   private static void drawDiagonals(ImDrawList var0, CustomCrosshairModule.Geometry var1, int var2, float var3) {
-      float var4 = Math.max(0.0F, var1.open() - var3) * 0.70710677F;
-      float var5 = (var1.open() + var1.size() + var3) * 0.70710677F;
-      float var6 = var1.thick() + var3 * 2.0F;
+   private static void drawDiagonals(ImDrawList imDrawList, CustomCrosshairModule.Geometry geometry, int i, float f) {
+      float var4 = Math.max(0.0F, geometry.open() - f) * 0.70710677F;
+      float var5 = (geometry.open() + geometry.size() + f) * 0.70710677F;
+      float var6 = geometry.thick() + f * 2.0F;
 
       for (byte var7 = -1; var7 <= 1; var7 += 2) {
          for (byte var8 = -1; var8 <= 1; var8 += 2) {
-            var0.addLine(var1.cx() + var7 * var4, var1.cy() + var8 * var4, var1.cx() + var7 * var5, var1.cy() + var8 * var5, var2, var6);
+            imDrawList.addLine(geometry.cx() + var7 * var4, geometry.cy() + var8 * var4, geometry.cx() + var7 * var5, geometry.cy() + var8 * var5, i, var6);
          }
       }
    }
 
-   private static void rect(ImDrawList var0, float var1, float var2, float var3, float var4, int var5, float var6) {
-      var0.addRectFilled(var1 - var6, var2 - var6, var3 + var6, var4 + var6, var5);
+   private static void rect(ImDrawList imDrawList, float f, float g, float h, float i, int j, float k) {
+      imDrawList.addRectFilled(f - k, g - k, h + k, i + k, j);
    }
 
    private void drawCooldown(
-      ImDrawList var1, MinecraftClient var2, ClientPlayerEntity var3, CustomCrosshairModule.Geometry var4, int var5, float var6, float var7, float var8
+      ImDrawList imDrawList,
+      MinecraftClient minecraftClient,
+      ClientPlayerEntity clientPlayerEntity,
+      CustomCrosshairModule.Geometry geometry,
+      int i,
+      float f,
+      float g,
+      float h
    ) {
-      boolean var9 = var2.field_1690.method_42565().method_41753() == AttackIndicator.field_18152;
-      float var10 = var3.method_7261(0.0F);
-      boolean var11 = var9 && readyOnTarget(var2, var3, var10);
+      boolean var9 = minecraftClient.options.getAttackIndicator().getValue() == AttackIndicator.CROSSHAIR;
+      float var10 = clientPlayerEntity.getAttackCooldownProgress(0.0F);
+      boolean var11 = var9 && readyOnTarget(minecraftClient, clientPlayerEntity, var10);
       this.barFill = var11 ? 1.0F : Math.min(1.0F, var10);
-      this.barAlpha = approach(this.barAlpha, !var9 || !var11 && !(var10 < 1.0F) ? 0.0F : 1.0F, 18.0F, var8);
+      this.barAlpha = approach(this.barAlpha, !var9 || !var11 && !(var10 < 1.0F) ? 0.0F : 1.0F, 18.0F, h);
       if (!(this.barAlpha < 0.01F)) {
-         float var12 = Math.max(12.0F, 2.0F * Math.round(10.0F * var7));
-         float var13 = Math.max(2.0F, (float)Math.round(3.0F * var7));
-         float var14 = (float)Math.floor(var4.cx() - var12 * 0.5F);
-         float var15 = Math.round(var4.cy() + var4.below() + var6 + 5.0F * var7);
-         float var16 = this.barAlpha * (var5 >>> 24 & 0xFF) / 255.0F;
-         if (var6 > 0.0F) {
-            var1.addRectFilled(
-               var14 - var6, var15 - var6, var14 + var12 + var6, var15 + var13 + var6, EfnWidgets.withAlpha(-1946157056, var16), var13 * 0.5F + var6
-            );
+         float var12 = Math.max(12.0F, 2.0F * Math.round(10.0F * g));
+         float var13 = Math.max(2.0F, (float)Math.round(3.0F * g));
+         float var14 = (float)Math.floor(geometry.cx() - var12 * 0.5F);
+         float var15 = Math.round(geometry.cy() + geometry.below() + f + 5.0F * g);
+         float var16 = this.barAlpha * (i >>> 24 & 0xFF) / 255.0F;
+         if (f > 0.0F) {
+            imDrawList.addRectFilled(var14 - f, var15 - f, var14 + var12 + f, var15 + var13 + f, EfnWidgets.withAlpha(-1946157056, var16), var13 * 0.5F + f);
          }
 
-         var1.addRectFilled(var14, var15, var14 + var12, var15 + var13, EfnWidgets.withAlpha(GuiPalette.abgr(-870967267), var16), var13 * 0.5F);
+         imDrawList.addRectFilled(var14, var15, var14 + var12, var15 + var13, EfnWidgets.withAlpha(GuiPalette.abgr(-870967267), var16), var13 * 0.5F);
          float var17 = Math.round(var12 * this.barFill);
          if (var17 >= 1.0F) {
-            var1.addRectFilled(var14, var15, var14 + var17, var15 + var13, EfnWidgets.withAlpha(var5 | 0xFF000000, var16), var13 * 0.5F);
+            imDrawList.addRectFilled(var14, var15, var14 + var17, var15 + var13, EfnWidgets.withAlpha(i | 0xFF000000, var16), var13 * 0.5F);
          }
       }
    }
 
-   private static boolean readyOnTarget(MinecraftClient var0, ClientPlayerEntity var1, float var2) {
-      if (!(var2 < 1.0F)) {
-         Entity var4 = var0.field_1692;
+   private static boolean readyOnTarget(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, float f) {
+      if (!(f < 1.0F)) {
+         Entity var4 = minecraftClient.targetedEntity;
          LivingEntity var3;
-         if (var0.field_1692 instanceof LivingEntity && (var3 = (LivingEntity)var4).method_5805()) {
-            if (var1.method_7279() <= 5.0F) {
+         if (minecraftClient.targetedEntity instanceof LivingEntity && (var3 = (LivingEntity)var4).isAlive()) {
+            if (clientPlayerEntity.getAttackCooldownProgressPerTick() <= 5.0F) {
                return false;
             }
 
-            AttackRangeComponent var5 = (AttackRangeComponent)var1.method_76694().method_58694(DataComponentTypes.field_64680);
-            return var5 == null || var0.field_1765 == null || var5.method_76736(var1, var0.field_1765.method_17784());
+            AttackRangeComponent var5 = clientPlayerEntity.getActiveOrMainHandStack().get(DataComponentTypes.ATTACK_RANGE);
+            return var5 == null || minecraftClient.crosshairTarget == null || var5.isWithinRange(clientPlayerEntity, minecraftClient.crosshairTarget.getPos());
          }
       }
 

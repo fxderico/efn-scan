@@ -15,26 +15,26 @@ public abstract class MixinEntityControlAbstractBoat {
    }
 
    @ModifyExpressionValue(
-      method = {"method_64482"},
+      method = {"updatePaddles"},
       at = {@At(
          value = "FIELD",
-         target = "Lnet/minecraft/class_10255;field_54444:Z",
+         target = "Lnet/minecraft/entity/vehicle/AbstractBoatEntity;pressingLeft:Z",
          opcode = 180
       )}
    )
-   private boolean efn$entityControlInputLeft(boolean var1) {
-      return var1 && !EntityControlVehicleHook.locksBoatTurning((AbstractBoatEntity)this);
+   private boolean efn$entityControlInputLeft(boolean bl) {
+      return bl && !EntityControlVehicleHook.locksBoatTurning((AbstractBoatEntity)this);
    }
 
    @ModifyExpressionValue(
-      method = {"method_64482"},
+      method = {"updatePaddles"},
       at = {@At(
          value = "FIELD",
-         target = "Lnet/minecraft/class_10255;field_54428:Z",
+         target = "Lnet/minecraft/entity/vehicle/AbstractBoatEntity;pressingRight:Z",
          opcode = 180
       )}
    )
-   private boolean efn$entityControlInputRight(boolean var1) {
-      return var1 && !EntityControlVehicleHook.locksBoatTurning((AbstractBoatEntity)this);
+   private boolean efn$entityControlInputRight(boolean bl) {
+      return bl && !EntityControlVehicleHook.locksBoatTurning((AbstractBoatEntity)this);
    }
 }

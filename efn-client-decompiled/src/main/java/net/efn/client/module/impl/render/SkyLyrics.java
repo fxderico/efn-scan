@@ -60,8 +60,8 @@ public final class SkyLyrics {
    private static final int PEEP_LINE = -24876;
    private static final int PEEP_TITLE = -34104;
    private static final int PEEP_GLOW = 16723349;
-   private final ExecutorService raster = Executors.newSingleThreadExecutor(var0 -> {
-      Thread var1 = new Thread(var0, "EFN Sky Lyrics");
+   private final ExecutorService raster = Executors.newSingleThreadExecutor(runnable -> {
+      Thread var1 = new Thread(runnable, "EFN Sky Lyrics");
       var1.setDaemon(true);
       return var1;
    });
@@ -119,8 +119,8 @@ public final class SkyLyrics {
                   this.canvas = new SkyCanvas();
                }
 
-               Camera var13 = MinecraftClient.method_1551().field_1773.method_19418();
-               float var14 = MathHelper.method_15341(var13.method_19330() / 360.0F + 0.25F, 1.0F);
+               Camera var13 = MinecraftClient.getInstance().gameRenderer.getCamera();
+               float var14 = MathHelper.floorMod(var13.getYaw() / 360.0F + 0.25F, 1.0F);
                float var15 = this.viewU = Float.isNaN(this.viewU) ? var14 : wrap(this.viewU + wrapDelta(var14 - this.viewU) * Math.min(1.0F, var3 * 2.2F));
                if (this.peepLevel > 0.0F) {
                   NowPlaying var16 = var4 != null ? var4.nowPlaying() : null;
@@ -131,7 +131,7 @@ public final class SkyLyrics {
 
                   this.peep.ready(this.canvas, this.raster);
                   this.peepLyrics(var7 ? var4 : null);
-                  this.peep.update(var3, this.peepSong, this.peepLevel, this.viewU, var14, -var13.method_19329(), var6 ? linePulse(var4, var16) : 0.0F);
+                  this.peep.update(var3, this.peepSong, this.peepLevel, this.viewU, var14, -var13.getPitch(), var6 ? linePulse(var4, var16) : 0.0F);
                   this.peepClock = (this.peepClock + var3) % 21600.0;
                   this.peep.draw(this.canvas, this.peepLevel, (float)this.peepClock);
                   this.canvas.flush(1.0F);
@@ -174,26 +174,26 @@ public final class SkyLyrics {
                this.line.close();
                this.title.close();
                this.peep.close();
-               LOGGER.error("[EFN] Sky lyrics stopped drawing", var24);
+               LOGGER.error("[EFN] Sky lyrics stopped drawing", (Throwable)var24);
             }
          }
       }
    }
 
-   private static float titleElevation(float var0, float var1, float var2) {
-      return var0 + (7.0F * var1 + 4.0F * var2) * 0.5F + 0.6F * Math.max(var1, var2);
+   private static float titleElevation(float f, float g, float h) {
+      return f + (7.0F * g + 4.0F * h) * 0.5F + 0.6F * Math.max(g, h);
    }
 
-   private void peepLyrics(SpotifyHudModule var1) {
-      if (var1 == null) {
+   private void peepLyrics(SpotifyHudModule spotifyHudModule) {
+      if (spotifyHudModule == null) {
          this.peep.lyrics(this.viewU, 0.0F / 0.0F, 0.0F, 0.0F, this.viewU, 0.0F / 0.0F, 0.0F, 0.0F);
       } else {
-         float var2 = var1.skySize();
-         float var3 = var1.skyTitleSize();
-         float var4 = var1.skyHeight();
+         float var2 = spotifyHudModule.skySize();
+         float var3 = spotifyHudModule.skyTitleSize();
+         float var4 = spotifyHudModule.skyHeight();
          SkyLyrics.Shown var5 = this.line.current != null ? this.line.current : this.line.leaving;
          SkyLyrics.Shown var6 = this.title.current != null ? this.title.current : this.title.leaving;
-         boolean var7 = var1.skyFollow();
+         boolean var7 = spotifyHudModule.skyFollow();
          float var8 = !var7 && var5 != null ? var5.u : this.viewU;
          float var9 = !var7 && var6 != null ? var6.u : var8;
          this.peep
@@ -210,97 +210,95 @@ public final class SkyLyrics {
       }
    }
 
-   private static float halfWidth(SkyLyrics.Shown var0, float var1) {
-      return var0 == null ? 0.0F : Math.min(var1 * var0.aspect, 140.0F) * 0.5F;
+   private static float halfWidth(SkyLyrics.Shown shown, float f) {
+      return shown == null ? 0.0F : Math.min(f * shown.aspect, 140.0F) * 0.5F;
    }
 
-   private void drawSlot(SkyLyrics.Slot var1, boolean var2, float var3, float var4, int var5, int var6) {
-      SkyLyrics.Shown var7 = var1.leaving;
-      SkyLyrics.Shown var8 = var1.current;
+   private void drawSlot(SkyLyrics.Slot slot, boolean bl, float f, float g, int i, int j) {
+      SkyLyrics.Shown var7 = slot.leaving;
+      SkyLyrics.Shown var8 = slot.current;
       if (var7 != null) {
-         this.drawShown(var7, var2, var3 + (1.0F - var7.alpha) * 1.6F * var4, var1.degrees * var4, var5, var6);
+         this.drawShown(var7, bl, f + (1.0F - var7.alpha) * 1.6F * g, slot.degrees * g, i, j);
       }
 
       if (var8 != null) {
          float var9 = 1.0F - var8.alpha;
-         this.drawShown(var8, var2, var3 - var9 * var9 * 1.6F * var4, var1.degrees * var4, var5, var6);
+         this.drawShown(var8, bl, f - var9 * var9 * 1.6F * g, slot.degrees * g, i, j);
       }
    }
 
-   private void drawShown(SkyLyrics.Shown var1, boolean var2, float var3, float var4, int var5, int var6) {
-      float var7 = MathHelper.method_15363(var1.alpha, 0.0F, 1.0F);
+   private void drawShown(SkyLyrics.Shown shown, boolean bl, float f, float g, int i, int j) {
+      float var7 = MathHelper.clamp(shown.alpha, 0.0F, 1.0F);
       if (!(var7 <= 0.003F)) {
-         float var8 = var4;
-         float var9 = var4 * var1.aspect;
+         float var8 = g;
+         float var9 = g * shown.aspect;
          if (var9 > 140.0F) {
-            var8 = var4 * (140.0F / var9);
+            var8 = g * (140.0F / var9);
             var9 = 140.0F;
          }
 
-         float var10 = var3 * 0.017453292F;
+         float var10 = f * 0.017453292F;
          float var11 = 0.72F - var10 / 1.0471976F;
          float var12 = var8 * 0.017453292F / 1.0471976F * 0.5F;
-         float var13 = var9 / (360.0F * Math.max(0.2F, MathHelper.method_15362(var10))) * 0.5F;
-         float var14 = var2 ? this.viewU : var1.u;
+         float var13 = var9 / (360.0F * Math.max(0.2F, MathHelper.cos(var10))) * 0.5F;
+         float var14 = bl ? this.viewU : shown.u;
          float var15 = var11 - var12;
          float var16 = var11 + var12;
-         float var17 = !(var1.alpha >= 1.0F) && var1 == this.line.current ? backOut(var7) : var7;
+         float var17 = !(shown.alpha >= 1.0F) && shown == this.line.current ? backOut(var7) : var7;
          float var18 = (float)(System.nanoTime() % 3600000000000L) / 1.0E9F;
-         if (var1.emoji != null && var1.style == SpotifyHudModule.SkyEmojiStyle.BEHIND) {
+         if (shown.emoji != null && shown.style == SpotifyHudModule.SkyEmojiStyle.BEHIND) {
             float var19 = var8 * 2.8F * this.emojiScale * var17 * 0.017453292F / 1.0471976F;
             this.canvas
-               .sprite(
-                  var1.emoji, var14, var11, var19, var19, MathHelper.method_15374(var18 * 0.9F + var1.phase) * 0.05F, withAlpha(16777215, var7 * 0.32F), false
-               );
+               .sprite(shown.emoji, var14, var11, var19, var19, MathHelper.sin(var18 * 0.9F + shown.phase) * 0.05F, withAlpha(16777215, var7 * 0.32F), false);
          }
 
          if (this.glowAlpha > 0.0F) {
-            this.canvas.band(var1.glow, var14 - var13, var14 + var13, var15, var16, withAlpha(var6, var7 * this.glowAlpha), true, 32);
+            this.canvas.band(shown.glow, var14 - var13, var14 + var13, var15, var16, withAlpha(j, var7 * this.glowAlpha), true, 32);
          }
 
-         this.canvas.band(var1.fill, var14 - var13, var14 + var13, var15, var16, withAlpha(var5, var7 * (var5 >>> 24) / 255.0F), false, 32);
-         if (var1.emoji != null && var1.style != SpotifyHudModule.SkyEmojiStyle.BEHIND) {
-            if (var1.style == SpotifyHudModule.SkyEmojiStyle.REPLACE_WORD) {
-               float var27 = MathHelper.method_15374(var18 * 2.2F + var1.phase) * var8 * 0.03F * 0.017453292F / 1.0471976F;
-               float var28 = var1.emojiSize * (var16 - var15) * var17;
+         this.canvas.band(shown.fill, var14 - var13, var14 + var13, var15, var16, withAlpha(i, var7 * (i >>> 24) / 255.0F), false, 32);
+         if (shown.emoji != null && shown.style != SpotifyHudModule.SkyEmojiStyle.BEHIND) {
+            if (shown.style == SpotifyHudModule.SkyEmojiStyle.REPLACE_WORD) {
+               float var27 = MathHelper.sin(var18 * 2.2F + shown.phase) * var8 * 0.03F * 0.017453292F / 1.0471976F;
+               float var28 = shown.emojiSize * (var16 - var15) * var17;
                this.canvas
                   .sprite(
-                     var1.emoji,
-                     var14 - var13 + var1.emojiX * var13 * 2.0F,
-                     var15 + var1.emojiY * (var16 - var15) - var27,
+                     shown.emoji,
+                     var14 - var13 + shown.emojiX * var13 * 2.0F,
+                     var15 + shown.emojiY * (var16 - var15) - var27,
                      var28,
                      var28,
-                     MathHelper.method_15374(var18 * 1.7F + var1.phase) * 0.06F,
+                     MathHelper.sin(var18 * 1.7F + shown.phase) * 0.06F,
                      withAlpha(16777215, var7),
                      false
                   );
             } else {
                float var26 = var8 * 1.0F * this.emojiScale;
                float var20 = var26 * var17;
-               float var21 = (var26 * 0.5F + 0.8F) / (360.0F * Math.max(0.2F, MathHelper.method_15362(var10)));
-               float var22 = MathHelper.method_15374(var18 * 2.2F + var1.phase) * var8 * 0.06F;
-               float var23 = 0.72F - (var3 + var22) * 0.017453292F / 1.0471976F;
+               float var21 = (var26 * 0.5F + 0.8F) / (360.0F * Math.max(0.2F, MathHelper.cos(var10)));
+               float var22 = MathHelper.sin(var18 * 2.2F + shown.phase) * var8 * 0.06F;
+               float var23 = 0.72F - (f + var22) * 0.017453292F / 1.0471976F;
                float var24 = var20 * 0.017453292F / 1.0471976F;
-               float var25 = MathHelper.method_15374(var18 * 1.7F + var1.phase) * 0.12F;
+               float var25 = MathHelper.sin(var18 * 1.7F + shown.phase) * 0.12F;
                this.canvas
-                  .sprite(var1.emoji, var14 + (var1.right ? 1.0F : -1.0F) * (var13 + var21), var23, var24, var24, var25, withAlpha(16777215, var7), false);
+                  .sprite(shown.emoji, var14 + (shown.right ? 1.0F : -1.0F) * (var13 + var21), var23, var24, var24, var25, withAlpha(16777215, var7), false);
             }
          }
       }
    }
 
-   private SkyLyrics.Shown show(SkyLyrics.Raster var1, float var2) {
+   private SkyLyrics.Shown show(SkyLyrics.Raster raster, float f) {
       int var3 = this.serial++;
-      SkyTexture var4 = SkyTexture.upload("sky_lyrics_" + var3, var1.width(), var1.height(), var1.fill());
-      SkyTexture var5 = SkyTexture.upload("sky_lyrics_glow_" + var3, var1.width(), var1.height(), var1.glow());
-      SkyLyrics.Shown var6 = new SkyLyrics.Shown(var4, var5, (float)var1.width() / var1.height(), var2);
-      SkyEmoji var7 = var1.emoji();
+      SkyTexture var4 = SkyTexture.upload("sky_lyrics_" + var3, raster.width(), raster.height(), raster.fill());
+      SkyTexture var5 = SkyTexture.upload("sky_lyrics_glow_" + var3, raster.width(), raster.height(), raster.glow());
+      SkyLyrics.Shown var6 = new SkyLyrics.Shown(var4, var5, (float)raster.width() / raster.height(), f);
+      SkyEmoji var7 = raster.emoji();
       if (var7 == null) {
          return var6;
       } else {
          SkyTexture var8 = this.emojiTextures.get(var7);
-         if (var8 == null && var1.emojiPixels() != null) {
-            var8 = SkyTexture.upload("sky_emoji_" + var7.name().toLowerCase(Locale.ROOT), 256, 256, var1.emojiPixels());
+         if (var8 == null && raster.emojiPixels() != null) {
+            var8 = SkyTexture.upload("sky_emoji_" + var7.name().toLowerCase(Locale.ROOT), 256, 256, raster.emojiPixels());
             this.emojiTextures.put(var7, var8);
             this.uploadedEmojis.add(var7);
          }
@@ -309,11 +307,11 @@ public final class SkyLyrics {
             return var6;
          } else {
             var6.emoji = var8;
-            var6.style = var1.style();
-            var6.emojiX = var1.emojiX();
-            var6.emojiY = var1.emojiY();
-            var6.emojiSize = var1.emojiSize();
-            if (var1.style() == SpotifyHudModule.SkyEmojiStyle.BESIDE) {
+            var6.style = raster.style();
+            var6.emojiX = raster.emojiX();
+            var6.emojiY = raster.emojiY();
+            var6.emojiSize = raster.emojiSize();
+            if (raster.style() == SpotifyHudModule.SkyEmojiStyle.BESIDE) {
                var6.right = this.emojiRight;
                this.emojiRight = !this.emojiRight;
             }
@@ -324,18 +322,18 @@ public final class SkyLyrics {
       }
    }
 
-   private static float backOut(float var0) {
+   private static float backOut(float f) {
       float var1 = 1.70158F;
-      float var2 = var0 - 1.0F;
+      float var2 = f - 1.0F;
       return 1.0F + (var1 + 1.0F) * var2 * var2 * var2 + var1 * var2 * var2;
    }
 
-   private static String currentLine(SpotifyHudModule var0, NowPlaying var1) {
-      if (var1 != null && var1.playing()) {
-         Lyrics var2 = var0.lyricsFor(var1);
+   private static String currentLine(SpotifyHudModule spotifyHudModule, NowPlaying nowPlaying) {
+      if (nowPlaying != null && nowPlaying.playing()) {
+         Lyrics var2 = spotifyHudModule.lyricsFor(nowPlaying);
          if (var2 != null && var2.status() == Lyrics.Status.SYNCED) {
             SyncedLyrics var3 = var2.synced();
-            int var4 = var3.indexAt(var1.positionAt(System.currentTimeMillis()) + 200L);
+            int var4 = var3.indexAt(nowPlaying.positionAt(System.currentTimeMillis()) + 200L);
             if (var4 < 0) {
                return "";
             } else {
@@ -362,12 +360,12 @@ public final class SkyLyrics {
       }
    }
 
-   private static float linePulse(SpotifyHudModule var0, NowPlaying var1) {
-      if (var1 != null && var1.playing()) {
-         Lyrics var2 = var0.lyricsFor(var1);
+   private static float linePulse(SpotifyHudModule spotifyHudModule, NowPlaying nowPlaying) {
+      if (nowPlaying != null && nowPlaying.playing()) {
+         Lyrics var2 = spotifyHudModule.lyricsFor(nowPlaying);
          if (var2 != null && var2.status() == Lyrics.Status.SYNCED) {
             SyncedLyrics var3 = var2.synced();
-            long var4 = var1.positionAt(System.currentTimeMillis()) + 200L;
+            long var4 = nowPlaying.positionAt(System.currentTimeMillis()) + 200L;
             int var6 = var3.indexAt(var4);
             float var7 = 0.0F;
 
@@ -389,9 +387,9 @@ public final class SkyLyrics {
       }
    }
 
-   private static boolean hasWords(SyncedLyrics var0, int var1, int var2) {
-      for (int var3 = var1; var3 <= var2; var3++) {
-         if (!var0.line(var3).text().isBlank()) {
+   private static boolean hasWords(SyncedLyrics syncedLyrics, int i, int j) {
+      for (int var3 = i; var3 <= j; var3++) {
+         if (!syncedLyrics.line(var3).text().isBlank()) {
             return true;
          }
       }
@@ -399,28 +397,28 @@ public final class SkyLyrics {
       return false;
    }
 
-   private SkyLyrics.Raster rasterize(int var1, String var2, float var3, SpotifyHudModule.SkyEmojiStyle var4, float var5) {
-      SkyEmoji.Match var7 = var4 != null ? SkyEmoji.match(var2) : null;
+   private SkyLyrics.Raster rasterize(int i, String string, float f, SpotifyHudModule.SkyEmojiStyle skyEmojiStyle, float g) {
+      SkyEmoji.Match var7 = skyEmojiStyle != null ? SkyEmoji.match(string) : null;
       SkyEmoji var8 = var7 != null ? var7.emoji() : null;
       int[] var6 = var8 != null && !this.uploadedEmojis.contains(var8) ? var8.draw() : null;
       if (var6 == null && var8 != null && !this.uploadedEmojis.contains(var8)) {
          var8 = null;
       }
 
-      boolean var10 = var8 != null && var4 == SpotifyHudModule.SkyEmojiStyle.REPLACE_WORD;
-      String var11 = var10 ? var2.substring(0, var7.start()) : var2;
-      String var12 = var10 ? var2.substring(var7.end()) : "";
-      Font var13 = this.fontFor(var2);
+      boolean var10 = var8 != null && skyEmojiStyle == SpotifyHudModule.SkyEmojiStyle.REPLACE_WORD;
+      String var11 = var10 ? string.substring(0, var7.start()) : string;
+      String var12 = var10 ? string.substring(var7.end()) : "";
+      Font var13 = this.fontFor(string);
       BufferedImage var14 = new BufferedImage(1, 1, 2);
       Graphics2D var15 = var14.createGraphics();
       hints(var15);
-      Font var16 = var13.deriveFont(var3);
+      Font var16 = var13.deriveFont(f);
       FontMetrics var17 = var15.getFontMetrics(var16);
-      float var18 = var10 ? var3 * 1.6F * var5 : 0.0F;
+      float var18 = var10 ? f * 1.6F * g : 0.0F;
       int var19 = Math.max(1, var17.stringWidth(var11) + Math.round(var18) + var17.stringWidth(var12));
       if (var19 + 56 > 4096) {
          float var20 = 4040.0F / var19;
-         var16 = var13.deriveFont(var3 * var20);
+         var16 = var13.deriveFont(f * var20);
          var17 = var15.getFontMetrics(var16);
          var19 = Math.max(1, Math.min(4040, var17.stringWidth(var11) + Math.round(var18 *= var20) + var17.stringWidth(var12)));
       }
@@ -446,10 +444,10 @@ public final class SkyLyrics {
       int[] var28 = glow(var27, var31, var21);
       float var29 = var10 ? (28 + var23 + var18 * 0.5F) / var31 : 0.0F;
       float var30 = var10 ? (var22 - var26 * 0.5F) / var21 : 0.0F;
-      return new SkyLyrics.Raster(var1, var31, var21, var27, var28, var8, var6, var8 != null ? var4 : null, var29, var30, var10 ? var18 / var21 : 0.0F);
+      return new SkyLyrics.Raster(i, var31, var21, var27, var28, var8, var6, var8 != null ? skyEmojiStyle : null, var29, var30, var10 ? var18 / var21 : 0.0F);
    }
 
-   private Font fontFor(String var1) {
+   private Font fontFor(String string) {
       if (this.font == null && !this.fontMissing) {
          try (InputStream var2 = SkyLyrics.class.getResourceAsStream("/assets/efn/fonts/manrope-bold.ttf")) {
             if (var2 != null) {
@@ -459,32 +457,32 @@ public final class SkyLyrics {
             }
          } catch (Exception var7) {
             this.fontMissing = true;
-            LOGGER.warn("[EFN] Sky lyrics font couldn't load; using the system font", var7);
+            LOGGER.warn("[EFN] Sky lyrics font couldn't load; using the system font", (Throwable)var7);
          }
       }
 
-      return this.font != null && this.font.canDisplayUpTo(var1) == -1 ? this.font : new Font("SansSerif", 1, 1);
+      return this.font != null && this.font.canDisplayUpTo(string) == -1 ? this.font : new Font("SansSerif", 1, 1);
    }
 
-   private static void hints(Graphics2D var0) {
-      var0.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-      var0.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-      var0.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
-      var0.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+   private static void hints(Graphics2D graphics2D) {
+      graphics2D.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+      graphics2D.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+      graphics2D.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+      graphics2D.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
    }
 
-   private static int[] glow(int[] var0, int var1, int var2) {
-      float[] var3 = new float[var1 * var2];
+   private static int[] glow(int[] is, int i, int j) {
+      float[] var3 = new float[i * j];
 
       for (int var4 = 0; var4 < var3.length; var4++) {
-         var3[var4] = (var0[var4] >>> 24) / 255.0F;
+         var3[var4] = (is[var4] >>> 24) / 255.0F;
       }
 
       float[] var7 = new float[var3.length];
 
       for (int var5 = 0; var5 < 2; var5++) {
-         blurRows(var3, var7, var1, var2);
-         blurColumns(var7, var3, var1, var2);
+         blurRows(var3, var7, i, j);
+         blurColumns(var7, var3, i, j);
       }
 
       int[] var8 = new int[var3.length];
@@ -496,67 +494,67 @@ public final class SkyLyrics {
       return var8;
    }
 
-   private static void blurRows(float[] var0, float[] var1, int var2, int var3) {
+   private static void blurRows(float[] fs, float[] gs, int i, int j) {
       float var4 = 0.04761905F;
 
-      for (int var5 = 0; var5 < var3; var5++) {
-         int var7 = var5 * var2;
+      for (int var5 = 0; var5 < j; var5++) {
+         int var7 = var5 * i;
          float var8 = 0.0F;
 
-         for (int var6 = 0; var6 <= Math.min(10, var2 - 1); var6++) {
-            var8 += var0[var7 + var6];
+         for (int var6 = 0; var6 <= Math.min(10, i - 1); var6++) {
+            var8 += fs[var7 + var6];
          }
 
-         for (int var11 = 0; var11 < var2; var11++) {
-            var1[var7 + var11] = var8 * var4;
+         for (int var11 = 0; var11 < i; var11++) {
+            gs[var7 + var11] = var8 * var4;
             int var9 = var11 + 10 + 1;
             int var10 = var11 - 10;
-            if (var9 < var2) {
-               var8 += var0[var7 + var9];
+            if (var9 < i) {
+               var8 += fs[var7 + var9];
             }
 
             if (var10 >= 0) {
-               var8 -= var0[var7 + var10];
+               var8 -= fs[var7 + var10];
             }
          }
       }
    }
 
-   private static void blurColumns(float[] var0, float[] var1, int var2, int var3) {
+   private static void blurColumns(float[] fs, float[] gs, int i, int j) {
       float var4 = 0.04761905F;
 
-      for (int var5 = 0; var5 < var2; var5++) {
+      for (int var5 = 0; var5 < i; var5++) {
          float var7 = 0.0F;
 
-         for (int var6 = 0; var6 <= Math.min(10, var3 - 1); var6++) {
-            var7 += var0[var6 * var2 + var5];
+         for (int var6 = 0; var6 <= Math.min(10, j - 1); var6++) {
+            var7 += fs[var6 * i + var5];
          }
 
-         for (int var10 = 0; var10 < var3; var10++) {
-            var1[var10 * var2 + var5] = var7 * var4;
+         for (int var10 = 0; var10 < j; var10++) {
+            gs[var10 * i + var5] = var7 * var4;
             int var8 = var10 + 10 + 1;
             int var9 = var10 - 10;
-            if (var8 < var3) {
-               var7 += var0[var8 * var2 + var5];
+            if (var8 < j) {
+               var7 += fs[var8 * i + var5];
             }
 
             if (var9 >= 0) {
-               var7 -= var0[var9 * var2 + var5];
+               var7 -= fs[var9 * i + var5];
             }
          }
       }
    }
 
-   private static int withAlpha(int var0, float var1) {
-      return Math.round(MathHelper.method_15363(var1, 0.0F, 1.0F) * 255.0F) << 24 | var0 & 16777215;
+   private static int withAlpha(int i, float f) {
+      return Math.round(MathHelper.clamp(f, 0.0F, 1.0F) * 255.0F) << 24 | i & 16777215;
    }
 
-   private static float wrap(float var0) {
-      return var0 - (float)Math.floor(var0);
+   private static float wrap(float f) {
+      return f - (float)Math.floor(f);
    }
 
-   private static float wrapDelta(float var0) {
-      return var0 - Math.round(var0);
+   private static float wrapDelta(float f) {
+      return f - Math.round(f);
    }
 
    @Environment(EnvType.CLIENT)
@@ -590,11 +588,11 @@ public final class SkyLyrics {
       float emojiY;
       float emojiSize;
 
-      Shown(SkyTexture var1, SkyTexture var2, float var3, float var4) {
-         this.fill = var1;
-         this.glow = var2;
-         this.aspect = var3;
-         this.u = var4;
+      Shown(SkyTexture skyTexture, SkyTexture skyTexture2, float f, float g) {
+         this.fill = skyTexture;
+         this.glow = skyTexture2;
+         this.aspect = f;
+         this.u = g;
       }
 
       void close() {
@@ -614,49 +612,49 @@ public final class SkyLyrics {
       private SkyLyrics.Shown current;
       private SkyLyrics.Shown leaving;
 
-      Slot(float nullx, float nullxx) {
-         this.degrees = nullx;
-         this.pixels = nullxx;
+      Slot(float f, float g) {
+         this.degrees = f;
+         this.pixels = g;
       }
 
-      void want(String var1, SpotifyHudModule.SkyEmojiStyle var2, float var3) {
-         if (!var1.equals(this.wanted) || var2 != this.wantedStyle) {
-            this.wanted = var1;
-            this.wantedStyle = var2;
+      void want(String string, SpotifyHudModule.SkyEmojiStyle skyEmojiStyle, float f) {
+         if (!string.equals(this.wanted) || skyEmojiStyle != this.wantedStyle) {
+            this.wanted = string;
+            this.wantedStyle = skyEmojiStyle;
             int var4 = ++this.request;
             this.ready = null;
-            if (!var1.isEmpty()) {
-               SpotifyHudModule.SkyEmojiStyle var5 = System.nanoTime() - SkyLyrics.this.lastEmojiAt >= 5000000000L ? var2 : null;
+            if (!string.isEmpty()) {
+               SpotifyHudModule.SkyEmojiStyle var5 = System.nanoTime() - SkyLyrics.this.lastEmojiAt >= 5000000000L ? skyEmojiStyle : null;
                SkyLyrics.this.raster.submit(() -> {
                   try {
-                     SkyLyrics.Raster var5x = SkyLyrics.this.rasterize(var4, var1, this.pixels, var5, var3);
+                     SkyLyrics.Raster var5x = SkyLyrics.this.rasterize(var4, string, this.pixels, var5, f);
                      if (var4 == this.request) {
                         this.ready = var5x;
                      }
                   } catch (RuntimeException | Error var6) {
-                     SkyLyrics.LOGGER.warn("[EFN] Sky lyrics couldn't draw a line", var6);
+                     SkyLyrics.LOGGER.warn("[EFN] Sky lyrics couldn't draw a line", (Throwable)var6);
                   }
                });
             }
          }
       }
 
-      void step(float var1, float var2) {
+      void step(float f, float g) {
          SkyLyrics.Raster var3 = this.ready;
          if (var3 != null && var3.id() == this.request) {
             this.ready = null;
             this.retire();
-            this.current = SkyLyrics.this.show(var3, var2);
+            this.current = SkyLyrics.this.show(var3, g);
          } else if (this.wanted.isEmpty()) {
             this.retire();
          }
 
          if (this.current != null) {
-            this.current.alpha = Math.min(1.0F, this.current.alpha + var1 * 2.6F);
+            this.current.alpha = Math.min(1.0F, this.current.alpha + f * 2.6F);
          }
 
          if (this.leaving != null) {
-            this.leaving.alpha -= var1 * 2.6F;
+            this.leaving.alpha -= f * 2.6F;
             if (this.leaving.alpha <= 0.0F) {
                this.leaving.close();
                this.leaving = null;

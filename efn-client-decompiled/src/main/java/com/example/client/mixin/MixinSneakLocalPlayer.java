@@ -16,19 +16,21 @@ public abstract class MixinSneakLocalPlayer {
    }
 
    @ModifyExpressionValue(
-      method = {"method_5773"},
+      method = {"tick"},
       at = {@At(
          value = "FIELD",
-         target = "Lnet/minecraft/class_744;field_54155:Lnet/minecraft/class_10185;",
+         target = "Lnet/minecraft/client/input/Input;playerInput:Lnet/minecraft/util/PlayerInput;",
          opcode = 180
       )},
       require = 3,
       allow = 3
    )
-   private PlayerInput efn$packetSneak(PlayerInput var1) {
+   private PlayerInput efn$packetSneak(PlayerInput playerInput) {
       SneakModule var2 = SneakModule.active;
-      return var2 != null && !var1.comp_3164() && var2.doPacket()
-         ? new PlayerInput(var1.comp_3159(), var1.comp_3160(), var1.comp_3161(), var1.comp_3162(), var1.comp_3163(), true, var1.comp_3165())
-         : var1;
+      return var2 != null && !playerInput.sneak() && var2.doPacket()
+         ? new PlayerInput(
+            playerInput.forward(), playerInput.backward(), playerInput.left(), playerInput.right(), playerInput.jump(), true, playerInput.sprint()
+         )
+         : playerInput;
    }
 }

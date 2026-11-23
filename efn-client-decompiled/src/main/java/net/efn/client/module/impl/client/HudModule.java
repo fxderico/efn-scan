@@ -153,8 +153,8 @@ public final class HudModule extends ClientModule {
       };
    }
 
-   public List<Setting> elementSettings(String var1) {
-      return switch (var1) {
+   public List<Setting> elementSettings(String string) {
+      return switch (string) {
          case "info_bar" -> List.of(this.clock, this.fps, this.ping);
          case "coordinates" -> List.of(this.coordinates, this.netherCoordinates);
          case "module_list" -> List.of(this.moduleList);

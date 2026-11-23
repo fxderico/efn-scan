@@ -27,44 +27,51 @@ public abstract class MixinWeaponInspectItemInHandRenderer {
    }
 
    @Inject(
-      method = {"method_22976"},
+      method = {"renderItem"},
       at = {@At("HEAD")}
    )
-   private void efn$inspectHands(float var1, MatrixStack var2, OrderedRenderCommandQueue var3, ClientPlayerEntity var4, int var5, CallbackInfo var6) {
+   private void efn$inspectHands(
+      float f,
+      MatrixStack matrixStack,
+      OrderedRenderCommandQueue orderedRenderCommandQueue,
+      ClientPlayerEntity clientPlayerEntity,
+      int i,
+      CallbackInfo callbackInfo
+   ) {
       if (WeaponInspectModule.active != null) {
-         WeaponInspectModule.handsBegin(var2);
+         WeaponInspectModule.handsBegin(matrixStack);
       }
    }
 
    @WrapOperation(
-      method = {"method_3228"},
+      method = {"renderFirstPersonItem"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_759;method_3233(Lnet/minecraft/class_1309;Lnet/minecraft/class_1799;Lnet/minecraft/class_811;Lnet/minecraft/class_4587;Lnet/minecraft/class_11659;I)V"
+         target = "Lnet/minecraft/client/render/item/HeldItemRenderer;renderItem(Lnet/minecraft/entity/LivingEntity;Lnet/minecraft/item/ItemStack;Lnet/minecraft/item/ItemDisplayContext;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;I)V"
       )}
    )
    private void efn$inspectItem(
-      HeldItemRenderer var1,
-      LivingEntity var2,
-      ItemStack var3,
-      ItemDisplayContext var4,
-      MatrixStack var5,
-      OrderedRenderCommandQueue var6,
-      int var7,
-      Operation<Void> var8,
-      @Local(argsOnly = true) Hand var9
+      HeldItemRenderer heldItemRenderer,
+      LivingEntity livingEntity,
+      ItemStack itemStack,
+      ItemDisplayContext itemDisplayContext,
+      MatrixStack matrixStack,
+      OrderedRenderCommandQueue orderedRenderCommandQueue,
+      int i,
+      Operation<Void> operation,
+      @Local(argsOnly = true) Hand hand
    ) {
-      boolean var10 = var9 == Hand.field_5808;
+      boolean var10 = hand == Hand.MAIN_HAND;
       if (WeaponInspectModule.active != null) {
-         if (!WeaponInspectModule.renderItem(var5, var2, var3, var4, var6, var7, var10)) {
-            var8.call(new Object[]{var1, var2, var3, var4, var5, var6, var7});
+         if (!WeaponInspectModule.renderItem(matrixStack, livingEntity, itemStack, itemDisplayContext, orderedRenderCommandQueue, i, var10)) {
+            operation.call(heldItemRenderer, livingEntity, itemStack, itemDisplayContext, matrixStack, orderedRenderCommandQueue, i);
          }
       } else {
          if (HandModelModule.active != null) {
-            HandModelModule.renderArm(var5, var2, var3, var4, var6, var7, var10);
+            HandModelModule.renderArm(matrixStack, livingEntity, itemStack, itemDisplayContext, orderedRenderCommandQueue, i, var10);
          }
 
-         var8.call(new Object[]{var1, var2, var3, var4, var5, var6, var7});
+         operation.call(heldItemRenderer, livingEntity, itemStack, itemDisplayContext, matrixStack, orderedRenderCommandQueue, i);
       }
    }
 }

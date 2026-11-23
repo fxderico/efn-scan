@@ -29,11 +29,11 @@ public final class DoubleHand {
       return this.holding;
    }
 
-   public void tick(MinecraftClient var1, ClientPlayerEntity var2, boolean var3) {
-      PlayerInventory var5 = var2.method_31548();
-      int var6 = var5.method_67532();
-      boolean var7 = var2.method_6047().method_31574(Items.field_8288);
-      boolean var8 = var3 && inDanger(var1.field_1687, var2);
+   public void tick(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, boolean bl) {
+      PlayerInventory var5 = clientPlayerEntity.getInventory();
+      int var6 = var5.getSelectedSlot();
+      boolean var7 = clientPlayerEntity.getMainHandStack().isOf(Items.TOTEM_OF_UNDYING);
+      boolean var8 = bl && inDanger(minecraftClient.world, clientPlayerEntity);
       int var9 = this.safeTicks = var8 ? 0 : Math.min(this.safeTicks + 1, 10);
       if (this.safeTicks == 10) {
          this.holding = false;
@@ -46,7 +46,7 @@ public final class DoubleHand {
          this.returnSlot = -1;
       }
 
-      boolean var4 = var1.field_1755 == null && !var2.method_6115() && !MeleeAttacks.actedThisTick(var2);
+      boolean var4 = minecraftClient.currentScreen == null && !clientPlayerEntity.isUsingItem() && !MeleeAttacks.actedThisTick(clientPlayerEntity);
       if (this.holding) {
          if (var7 || !var4) {
             return;
@@ -55,7 +55,7 @@ public final class DoubleHand {
          int var11 = hotbarTotem(var5);
          if (var11 != -1) {
             this.holdSlot = var11;
-            var5.method_61496(var11);
+            var5.setSelectedSlot(var11);
             return;
          }
 
@@ -72,11 +72,11 @@ public final class DoubleHand {
          }
 
          int var12 = hotbarTotem(var5);
-         if (var12 != -1 && var4 && var2.method_6079().method_31574(Items.field_8288)) {
+         if (var12 != -1 && var4 && clientPlayerEntity.getOffHandStack().isOf(Items.TOTEM_OF_UNDYING)) {
             this.holding = true;
             this.holdSlot = var12;
             this.returnSlot = var6;
-            var5.method_61496(var12);
+            var5.setSelectedSlot(var12);
             return;
          }
       }
@@ -86,10 +86,10 @@ public final class DoubleHand {
       }
    }
 
-   public void putBack(PlayerInventory var1) {
+   public void putBack(PlayerInventory playerInventory) {
       if (this.returnSlot != -1) {
-         if (var1.method_67532() == this.holdSlot) {
-            var1.method_61496(this.returnSlot);
+         if (playerInventory.getSelectedSlot() == this.holdSlot) {
+            playerInventory.setSelectedSlot(this.returnSlot);
          }
 
          this.returnSlot = -1;
@@ -104,13 +104,13 @@ public final class DoubleHand {
       this.safeTicks = 0;
    }
 
-   private static boolean inDanger(ClientWorld var0, ClientPlayerEntity var1) {
-      float var2 = CrystalDamage.health(var1);
+   private static boolean inDanger(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity) {
+      float var2 = CrystalDamage.health(clientPlayerEntity);
       if (var2 <= 6.0F) {
          return true;
       } else {
-         for (EndCrystalEntity var4 : var0.method_18467(EndCrystalEntity.class, var1.method_5829().method_1014(6.0))) {
-            if (var1.method_5739(var4) <= 6.0 && CrystalDamage.estimate(var4.method_73189(), var1) >= var2) {
+         for (EndCrystalEntity var4 : clientWorld.getNonSpectatingEntities(EndCrystalEntity.class, clientPlayerEntity.getBoundingBox().expand(6.0))) {
+            if (clientPlayerEntity.distanceTo(var4) <= 6.0 && CrystalDamage.estimate(var4.getEntityPos(), clientPlayerEntity) >= var2) {
                return true;
             }
          }
@@ -119,15 +119,15 @@ public final class DoubleHand {
       }
    }
 
-   private static int hotbarTotem(PlayerInventory var0) {
-      int var1 = var0.method_67532();
+   private static int hotbarTotem(PlayerInventory playerInventory) {
+      int var1 = playerInventory.getSelectedSlot();
 
       for (int var2 = 0; var2 < 9; var2++) {
-         if (var2 != var1 && var0.method_5438(var2).method_31574(Items.field_8288)) {
+         if (var2 != var1 && playerInventory.getStack(var2).isOf(Items.TOTEM_OF_UNDYING)) {
             return var2;
          }
       }
 
-      return var0.method_5438(var1).method_31574(Items.field_8288) ? var1 : -1;
+      return playerInventory.getStack(var1).isOf(Items.TOTEM_OF_UNDYING) ? var1 : -1;
    }
 }

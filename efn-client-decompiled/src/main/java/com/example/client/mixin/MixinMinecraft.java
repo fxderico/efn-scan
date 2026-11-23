@@ -26,45 +26,45 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin({MinecraftClient.class})
 public abstract class MixinMinecraft {
    @Shadow
-   public ClientWorld field_1687;
+   public ClientWorld world;
 
    public MixinMinecraft() {
    }
 
    @Shadow
-   public abstract void method_1507(Screen var1);
+   public abstract void setScreen(Screen screen);
 
    @Inject(
-      method = {"method_1507"},
+      method = {"setScreen"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$replaceTitleScreen(Screen var1, CallbackInfo var2) {
-      if (!(var1 instanceof EfnTitleScreen)) {
-         boolean var3 = var1 instanceof TitleScreen || var1 == null && this.field_1687 == null;
+   private void efn$replaceTitleScreen(Screen screen, CallbackInfo callbackInfo) {
+      if (!(screen instanceof EfnTitleScreen)) {
+         boolean var3 = screen instanceof TitleScreen || screen == null && this.world == null;
          if (var3 && EfnTitleScreen.enabled()) {
-            var2.cancel();
-            this.method_1507(new EfnTitleScreen());
+            callbackInfo.cancel();
+            this.setScreen(new EfnTitleScreen());
          }
       }
    }
 
    @Inject(
-      method = {"method_24287"},
+      method = {"getWindowTitle"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$windowTitle(CallbackInfoReturnable<String> var1) {
+   private void efn$windowTitle(CallbackInfoReturnable<String> callbackInfoReturnable) {
       if (EfnTitleScreen.enabled()) {
-         var1.setReturnValue("Minecraft " + SharedConstants.method_16673().comp_4025() + " - EFN Client");
+         callbackInfoReturnable.setReturnValue("Minecraft " + SharedConstants.getGameVersion().name() + " - EFN Client");
       }
    }
 
    @Inject(
-      method = {"method_1574"},
+      method = {"tick"},
       at = {@At("HEAD")}
    )
-   private void efn$onTickStart(CallbackInfo var1) {
+   private void efn$onTickStart(CallbackInfo callbackInfo) {
       PerformanceBudget.beginTick();
       EventBus.INSTANCE.drainAsync();
       ServerRotation.startTick();
@@ -72,21 +72,21 @@ public abstract class MixinMinecraft {
    }
 
    @Inject(
-      method = {"method_1574"},
+      method = {"tick"},
       at = {@At("RETURN")}
    )
-   private void efn$onTickEnd(CallbackInfo var1) {
+   private void efn$onTickEnd(CallbackInfo callbackInfo) {
       TickEvent.dispatchPost();
    }
 
    @ModifyExpressionValue(
-      method = {"method_1583"},
+      method = {"doItemUse"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_239;method_17783()Lnet/minecraft/class_239$class_240;"
+         target = "Lnet/minecraft/util/hit/HitResult;getType()Lnet/minecraft/util/hit/HitResult$Type;"
       )}
    )
-   private Type efn$autoEatIgnoreCrosshair(Type var1) {
-      return AutoEatModule.isEating() ? Type.field_1333 : var1;
+   private Type efn$autoEatIgnoreCrosshair(Type type) {
+      return AutoEatModule.isEating() ? Type.MISS : type;
    }
 }

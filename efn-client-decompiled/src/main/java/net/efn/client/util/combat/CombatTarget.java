@@ -22,15 +22,15 @@ public final class CombatTarget {
    }
 
    public static void install() {
-      PlayerAttackEntityEvent.TYPE.listen(OWNER, Stage.PRE, EventPriority.LOWEST, var0 -> {
-         if (!var0.isCancelled()) {
-            Entity var1 = var0.target;
-            if (var0.target instanceof LivingEntity) {
+      PlayerAttackEntityEvent.TYPE.listen(OWNER, Stage.PRE, EventPriority.LOWEST, playerAttackEntityEvent -> {
+         if (!playerAttackEntityEvent.isCancelled()) {
+            Entity var1 = playerAttackEntityEvent.target;
+            if (playerAttackEntityEvent.target instanceof LivingEntity) {
                LivingEntity var2 = (LivingEntity)var1;
-               MinecraftClient var3 = MinecraftClient.method_1551();
-               if (var3.method_18854() && var2.method_73183() == var3.field_1687) {
+               MinecraftClient var3 = MinecraftClient.getInstance();
+               if (var3.isOnThread() && var2.getEntityWorld() == var3.world) {
                   lastHit = var2;
-                  lastHitAt = Util.method_658();
+                  lastHitAt = Util.getMeasuringTimeMs();
                   return;
                }
 
@@ -38,35 +38,35 @@ public final class CombatTarget {
             }
          }
       });
-      TickEvent.TYPE.listen(OWNER, var0 -> forgetStale());
+      TickEvent.TYPE.listen(OWNER, tickEvent -> forgetStale());
    }
 
    private static void forgetStale() {
       LivingEntity var0 = lastHit;
       if (var0 != null) {
-         if (!var0.method_5805() || var0.method_73183() != MinecraftClient.method_1551().field_1687 || Util.method_658() - lastHitAt > 30000L) {
+         if (!var0.isAlive() || var0.getEntityWorld() != MinecraftClient.getInstance().world || Util.getMeasuringTimeMs() - lastHitAt > 30000L) {
             lastHit = null;
          }
       }
    }
 
-   public static LivingEntity lastHit(long var0) {
+   public static LivingEntity lastHit(long l) {
       LivingEntity var2 = lastHit;
-      if (var2 != null && var2.method_5805() && var2.method_73183() == MinecraftClient.method_1551().field_1687) {
-         return Util.method_658() - lastHitAt > var0 ? null : var2;
+      if (var2 != null && var2.isAlive() && var2.getEntityWorld() == MinecraftClient.getInstance().world) {
+         return Util.getMeasuringTimeMs() - lastHitAt > l ? null : var2;
       } else {
          return null;
       }
    }
 
-   public static LivingEntity current(long var0) {
-      LivingEntity var3 = lastHit(var0);
+   public static LivingEntity current(long l) {
+      LivingEntity var3 = lastHit(l);
       if (var3 != null) {
          return var3;
       } else {
-         Entity var4 = MinecraftClient.method_1551().field_1692;
+         Entity var4 = MinecraftClient.getInstance().targetedEntity;
          LivingEntity var2;
-         return var4 instanceof LivingEntity && (var2 = (LivingEntity)var4).method_5805() ? var2 : null;
+         return var4 instanceof LivingEntity && (var2 = (LivingEntity)var4).isAlive() ? var2 : null;
       }
    }
 }

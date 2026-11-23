@@ -2,7 +2,6 @@ package net.efn.client.module.impl.render;
 
 import imgui.ImDrawList;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
@@ -176,7 +175,7 @@ public final class TrajectoriesModule extends ClientModule implements HudOverlay
    private Item aimItem;
    private long aimSince = -1L;
    private long markerSince = -1L;
-   private final Int2ObjectOpenHashMap<TrajectoriesModule.Track> tracks = new Int2ObjectOpenHashMap();
+   private final Int2ObjectOpenHashMap<TrajectoriesModule.Track> tracks = new Int2ObjectOpenHashMap<>();
    private final ArrayDeque<TrajectoriesModule.Track> spareTracks = new ArrayDeque<>();
    private int sweep;
    private ClientWorld level;
@@ -192,7 +191,7 @@ public final class TrajectoriesModule extends ClientModule implements HudOverlay
    private int plateTint;
    private int hitTint;
    private boolean onTop;
-   private Vec3d camera = Vec3d.field_1353;
+   private Vec3d camera = Vec3d.ZERO;
    private double strokeTotal;
    private double strokeSheen;
    private float strokeAlpha;
@@ -244,10 +243,10 @@ public final class TrajectoriesModule extends ClientModule implements HudOverlay
       this.level = null;
    }
 
-   private void syncLevel(ClientWorld var1) {
-      if (var1 != this.level) {
+   private void syncLevel(ClientWorld clientWorld) {
+      if (clientWorld != this.level) {
          this.reset();
-         this.level = var1;
+         this.level = clientWorld;
       }
    }
 
@@ -265,10 +264,7 @@ public final class TrajectoriesModule extends ClientModule implements HudOverlay
 
    private void dropTracks() {
       if (!this.tracks.isEmpty()) {
-         ObjectIterator var1 = this.tracks.values().iterator();
-
-         while (var1.hasNext()) {
-            TrajectoriesModule.Track var2 = (TrajectoriesModule.Track)var1.next();
+         for (TrajectoriesModule.Track var2 : this.tracks.values()) {
             this.recycle(var2);
          }
 
@@ -276,20 +272,20 @@ public final class TrajectoriesModule extends ClientModule implements HudOverlay
       }
    }
 
-   private void recycle(TrajectoriesModule.Track var1) {
-      var1.shot = null;
-      var1.departed = false;
-      var1.forget();
+   private void recycle(TrajectoriesModule.Track track) {
+      track.shot = null;
+      track.departed = false;
+      track.forget();
       if (this.spareTracks.size() < 24) {
-         this.spareTracks.push(var1);
+         this.spareTracks.push(track);
       }
    }
 
-   private void onTick(TickEvent var1) {
+   private void onTick(TickEvent tickEvent) {
       this.sweep++;
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientWorld var3 = var2.field_1687;
-      ClientPlayerEntity var4 = var2.field_1724;
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientWorld var3 = var2.world;
+      ClientPlayerEntity var4 = var2.player;
       this.syncLevel(var3);
       if (var3 != null && var4 != null && this.inFlight.get()) {
          double var5 = this.range.get() * this.range.get();
@@ -297,39 +293,39 @@ public final class TrajectoriesModule extends ClientModule implements HudOverlay
          boolean var8 = var7 != null && pearlToggle(var7, "others-pearls");
          boolean var9 = this.othersShots.get();
          boolean var10 = this.flightTime.get();
-         Vec3d var11 = var4.method_33571();
+         Vec3d var11 = var4.getEyePos();
          int var12 = 24;
 
-         for (Entity var14 : var3.method_18112()) {
+         for (Entity var14 : var3.getEntities()) {
             ProjectileEntity var19;
-            if (var14 instanceof ProjectileEntity && !(var19 = (ProjectileEntity)var14).method_31481()) {
-               Entity var20 = var19.method_24921();
+            if (var14 instanceof ProjectileEntity && !(var19 = (ProjectileEntity)var14).isRemoved()) {
+               Entity var20 = var19.getOwner();
                boolean var18 = var20 == var4;
                Vec3d var15;
                Ballistics.Body var17;
                if ((var18 || var9)
                   && (var17 = this.bodyOf(var19, var7 != null && (var20 == null || var18 || var8))) != null
-                  && !(var19.method_5858(var4) > var5)
-                  && !((var15 = var19.method_18798()).method_1027() < 1.0E-4)
+                  && !(var19.squaredDistanceTo(var4) > var5)
+                  && !((var15 = var19.getVelocity()).lengthSquared() < 1.0E-4)
                   && !resting(var19)) {
                   if (var12-- == 0) {
                      break;
                   }
 
-                  TrajectoriesModule.Track var22 = (TrajectoriesModule.Track)this.tracks.get(var19.method_5628());
+                  TrajectoriesModule.Track var22 = this.tracks.get(var19.getId());
                   if (var22 == null) {
                      var22 = this.spareTracks.isEmpty() ? new TrajectoriesModule.Track() : this.spareTracks.pop();
-                     this.tracks.put(var19.method_5628(), var22);
+                     this.tracks.put(var19.getId(), var22);
                   }
 
                   var22.shot = var19;
                   var22.seen = this.sweep;
                   var22.flight
-                     .launch(var17, var19.method_73189(), var15)
-                     .bounds(var19.method_17681(), var19.method_17682())
-                     .gravity(var19.method_5740() ? 0.0 : var17.gravity())
-                     .wet(var19.method_5799())
-                     .age(var19.field_6012)
+                     .launch(var17, var19.getEntityPos(), var15)
+                     .bounds(var19.getWidth(), var19.getHeight())
+                     .gravity(var19.hasNoGravity() ? 0.0 : var17.gravity())
+                     .wet(var19.isTouchingWater())
+                     .age(var19.age)
                      .lifetime(200)
                      .ignoring(var20, var19)
                      .leftShooter(var22.departed)
@@ -348,39 +344,39 @@ public final class TrajectoriesModule extends ClientModule implements HudOverlay
       }
    }
 
-   private boolean stale(TrajectoriesModule.Track var1) {
-      if (var1.seen == this.sweep) {
+   private boolean stale(TrajectoriesModule.Track track) {
+      if (track.seen == this.sweep) {
          return false;
       } else {
-         this.recycle(var1);
+         this.recycle(track);
          return true;
       }
    }
 
-   private static boolean resting(ProjectileEntity var0) {
-      double var1 = var0.method_23317() - var0.field_6014;
-      double var3 = var0.method_23318() - var0.field_6036;
-      double var5 = var0.method_23321() - var0.field_5969;
-      return var0.field_6012 > 1 && var1 * var1 + var3 * var3 + var5 * var5 < 1.0E-4;
+   private static boolean resting(ProjectileEntity projectileEntity) {
+      double var1 = projectileEntity.getX() - projectileEntity.lastX;
+      double var3 = projectileEntity.getY() - projectileEntity.lastY;
+      double var5 = projectileEntity.getZ() - projectileEntity.lastZ;
+      return projectileEntity.age > 1 && var1 * var1 + var3 * var3 + var5 * var5 < 1.0E-4;
    }
 
-   private Ballistics.Body bodyOf(ProjectileEntity var1, boolean var2) {
-      if (var1 instanceof TridentEntity var4) {
-         return this.tridents.get() && !var4.method_7441() ? Ballistics.Body.TRIDENT : null;
-      } else if (var1 instanceof PersistentProjectileEntity var3) {
-         return this.bows.get() && !var3.method_7441() ? Ballistics.Body.ARROW : null;
-      } else if (!(var1 instanceof EnderPearlEntity)) {
+   private Ballistics.Body bodyOf(ProjectileEntity projectileEntity, boolean bl) {
+      if (projectileEntity instanceof TridentEntity var4) {
+         return this.tridents.get() && !var4.isNoClip() ? Ballistics.Body.TRIDENT : null;
+      } else if (projectileEntity instanceof PersistentProjectileEntity var3) {
+         return this.bows.get() && !var3.isNoClip() ? Ballistics.Body.ARROW : null;
+      } else if (!(projectileEntity instanceof EnderPearlEntity)) {
          if (!this.throwables.get()) {
             return null;
-         } else if (var1 instanceof PotionEntity) {
+         } else if (projectileEntity instanceof PotionEntity) {
             return Ballistics.Body.FLASK;
-         } else if (var1 instanceof ExperienceBottleEntity) {
+         } else if (projectileEntity instanceof ExperienceBottleEntity) {
             return Ballistics.Body.BOTTLE;
          } else {
-            return !(var1 instanceof SnowballEntity) && !(var1 instanceof EggEntity) ? null : Ballistics.Body.ORB;
+            return !(projectileEntity instanceof SnowballEntity) && !(projectileEntity instanceof EggEntity) ? null : Ballistics.Body.ORB;
          }
       } else {
-         return this.pearls.get() && !var2 ? Ballistics.Body.ORB : null;
+         return this.pearls.get() && !bl ? Ballistics.Body.ORB : null;
       }
    }
 
@@ -389,9 +385,9 @@ public final class TrajectoriesModule extends ClientModule implements HudOverlay
       return var0 != null && var0.isEnabled() ? var0 : null;
    }
 
-   private static boolean pearlToggle(PearlTrajectoryModule var0, String var1) {
-      for (Setting var3 : var0.settings()) {
-         if (var1.equals(var3.id()) && var3 instanceof BooleanSetting var4) {
+   private static boolean pearlToggle(PearlTrajectoryModule pearlTrajectoryModule, String string) {
+      for (Setting var3 : pearlTrajectoryModule.settings()) {
+         if (string.equals(var3.id()) && var3 instanceof BooleanSetting var4) {
             return var4.get();
          }
       }
@@ -399,21 +395,21 @@ public final class TrajectoriesModule extends ClientModule implements HudOverlay
       return true;
    }
 
-   private void onRender(Render3DEvent var1) {
+   private void onRender(Render3DEvent render3DEvent) {
       this.labels.clear();
-      MinecraftClient var5 = MinecraftClient.method_1551();
-      ClientWorld var6 = var5.field_1687;
-      ClientPlayerEntity var7 = var5.field_1724;
+      MinecraftClient var5 = MinecraftClient.getInstance();
+      ClientWorld var6 = var5.world;
+      ClientPlayerEntity var7 = var5.player;
       this.syncLevel(var6);
       if (var6 != null && var7 != null) {
          long var3;
          this.labelsAt = var3 = System.nanoTime();
          float var8 = (float)(var3 - EPOCH) / 1.0E9F;
-         float var9 = var1.partialTick;
+         float var9 = render3DEvent.partialTick;
          this.choosePalette();
          this.onTop = this.throughWalls.get();
-         this.canvas.begin(var5.field_1773.method_19418());
-         this.camera = var5.field_1773.method_19418().method_71156();
+         this.canvas.begin(var5.gameRenderer.getCamera());
+         this.camera = var5.gameRenderer.getCamera().getCameraPos();
          LivingEntity var2 = this.targetBox.get() ? CombatTarget.current(6000L) : null;
          if (this.aimPreview.get()) {
             this.drawAim(var6, var7, var9, var3, var8, var2);
@@ -429,17 +425,14 @@ public final class TrajectoriesModule extends ClientModule implements HudOverlay
       }
    }
 
-   private void drawTracks(ClientPlayerEntity var1, float var2, float var3, LivingEntity var4) {
-      ObjectIterator var5 = this.tracks.values().iterator();
-
-      while (var5.hasNext()) {
-         TrajectoriesModule.Track var6 = (TrajectoriesModule.Track)var5.next();
+   private void drawTracks(ClientPlayerEntity clientPlayerEntity, float f, float g, LivingEntity livingEntity) {
+      for (TrajectoriesModule.Track var6 : this.tracks.values()) {
          ProjectileEntity var7 = var6.shot;
-         if (var7 != null && !var7.method_31481()) {
-            boolean var8 = var7.method_24921() == var1;
+         if (var7 != null && !var7.isRemoved()) {
+            boolean var8 = var7.getOwner() == clientPlayerEntity;
             float var9 = var8 ? 1.0F : 0.7F;
-            this.drawPath(var6.flight, var7.method_30950(var2), 1.7976931348623157E308, var9 * 0.85F, false, false, var8, var3);
-            this.drawImpact(var6.flight, 1.0F, var9, var3, var2, var4);
+            this.drawPath(var6.flight, var7.getLerpedPos(f), 1.7976931348623157E308, var9 * 0.85F, false, false, var8, g);
+            this.drawImpact(var6.flight, 1.0F, var9, g, f, livingEntity);
             this.addLabel(var6);
          }
       }
@@ -448,22 +441,22 @@ public final class TrajectoriesModule extends ClientModule implements HudOverlay
    private void choosePalette() {
       boolean var1 = this.colorMode.is("Manual");
       int var2 = var1 ? this.pathColor.argb() : CosmeticAccent.argb();
-      this.headTint = ColorHelper.method_61319(0.35F, var2, -1);
+      this.headTint = ColorHelper.lerp(0.35F, var2, -1);
       this.tailTint = var2;
       this.haloTint = var2;
       this.markTint = var2;
       this.ringTint = this.headTint;
-      this.sheenTint = ColorHelper.method_61319(0.8F, var2, -1);
-      this.plateTint = ColorHelper.method_61319(0.55F, var2, -1);
-      this.hitTint = var1 ? this.hitColor.argb() : ColorHelper.method_61319(0.5F, var2, -1);
+      this.sheenTint = ColorHelper.lerp(0.8F, var2, -1);
+      this.plateTint = ColorHelper.lerp(0.55F, var2, -1);
+      this.hitTint = var1 ? this.hitColor.argb() : ColorHelper.lerp(0.5F, var2, -1);
    }
 
-   private void drawAim(ClientWorld var1, ClientPlayerEntity var2, float var3, long var4, float var6, LivingEntity var7) {
-      ItemStack var8 = heldLauncher(var2);
+   private void drawAim(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, float f, long l, float g, LivingEntity livingEntity) {
+      ItemStack var8 = heldLauncher(clientPlayerEntity);
       this.volleySize = 0;
       this.volleyGhost = false;
-      if (!var8.method_7960()) {
-         this.loadVolley(var1, var2, var8, var3);
+      if (!var8.isEmpty()) {
+         this.loadVolley(clientWorld, clientPlayerEntity, var8, f);
       }
 
       if (this.volleySize == 0) {
@@ -471,29 +464,29 @@ public final class TrajectoriesModule extends ClientModule implements HudOverlay
             this.forgetAim();
          }
       } else {
-         Item var9 = var8.method_7909();
+         Item var9 = var8.getItem();
          if (var9 != this.aimItem) {
             this.aimItem = var9;
-            this.aimSince = var4;
+            this.aimSince = l;
             this.markerSince = -1L;
          }
 
-         float var10 = easeOutExpo((float)(var4 - this.aimSince) / 1.0E9F / 0.32F);
+         float var10 = easeOutExpo((float)(l - this.aimSince) / 1.0E9F / 0.32F);
          Ballistics.Flight var11 = this.volley[0].flight;
          if (var10 < 1.0F || var11.outcome() == Ballistics.Outcome.OPEN) {
             this.markerSince = -1L;
          } else if (this.markerSince < 0L) {
-            this.markerSince = var4;
+            this.markerSince = l;
          }
 
-         float var12 = this.markerSince < 0L ? 0.0F : settle((float)(var4 - this.markerSince) / 1.0E9F);
+         float var12 = this.markerSince < 0L ? 0.0F : settle((float)(l - this.markerSince) / 1.0E9F);
          float var13 = this.volleyGhost ? 0.38F : 1.0F;
 
          for (int var14 = 0; var14 < this.volleySize; var14++) {
             Ballistics.Flight var15 = this.volley[var14].flight;
-            this.drawPath(var15, null, var15.length() * var10, var13, true, !this.volleyGhost, true, var6);
+            this.drawPath(var15, null, var15.length() * var10, var13, true, !this.volleyGhost, true, g);
             if (var12 > 0.0F) {
-               this.drawImpact(var15, var12, var13, var6, var3, var7);
+               this.drawImpact(var15, var12, var13, g, f, livingEntity);
             }
          }
 
@@ -503,40 +496,40 @@ public final class TrajectoriesModule extends ClientModule implements HudOverlay
       }
    }
 
-   private static ItemStack heldLauncher(ClientPlayerEntity var0) {
-      if (var0.method_6115()) {
-         return var0.method_6030();
+   private static ItemStack heldLauncher(ClientPlayerEntity clientPlayerEntity) {
+      if (clientPlayerEntity.isUsingItem()) {
+         return clientPlayerEntity.getActiveItem();
       } else {
-         ItemStack var1 = var0.method_6047();
-         return launches(var1.method_7909()) ? var1 : var0.method_6079();
+         ItemStack var1 = clientPlayerEntity.getMainHandStack();
+         return launches(var1.getItem()) ? var1 : clientPlayerEntity.getOffHandStack();
       }
    }
 
-   private static boolean launches(Item var0) {
-      return var0 instanceof RangedWeaponItem
-         || var0 instanceof TridentItem
-         || var0 instanceof SnowballItem
-         || var0 instanceof EggItem
-         || var0 instanceof EnderPearlItem
-         || var0 instanceof ThrowablePotionItem
-         || var0 instanceof ExperienceBottleItem;
+   private static boolean launches(Item item) {
+      return item instanceof RangedWeaponItem
+         || item instanceof TridentItem
+         || item instanceof SnowballItem
+         || item instanceof EggItem
+         || item instanceof EnderPearlItem
+         || item instanceof ThrowablePotionItem
+         || item instanceof ExperienceBottleItem;
    }
 
-   private void loadVolley(ClientWorld var1, ClientPlayerEntity var2, ItemStack var3, float var4) {
-      Item var6 = var3.method_7909();
-      boolean var5 = var2.method_6115() && var2.method_6030() == var3;
+   private void loadVolley(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, ItemStack itemStack, float f) {
+      Item var6 = itemStack.getItem();
+      boolean var5 = clientPlayerEntity.isUsingItem() && clientPlayerEntity.getActiveItem() == itemStack;
       if (var6 instanceof BowItem) {
-         if (!this.bows.get() || var2.method_18808(var3).method_7960() || !var5 && !this.ghostArc.get()) {
+         if (!this.bows.get() || clientPlayerEntity.getProjectileType(itemStack).isEmpty() || !var5 && !this.ghostArc.get()) {
             return;
          }
 
-         float var8 = var5 ? bowPull(var2.method_6048() + var4) : 1.0F;
+         float var8 = var5 ? bowPull(clientPlayerEntity.getItemUseTime() + f) : 1.0F;
          this.volleyGhost = !var5 || var8 < 0.1F;
-         this.aimed(var1, var2, var4, Ballistics.Body.ARROW, Math.max(var8, 0.1F) * 3.0F, 0.0F);
+         this.aimed(clientWorld, clientPlayerEntity, f, Ballistics.Body.ARROW, Math.max(var8, 0.1F) * 3.0F, 0.0F);
       } else if (var6 instanceof CrossbowItem) {
          if (this.bows.get()) {
             this.crossbowVolley(
-               var1, var2, var4, (ChargedProjectilesComponent)var3.method_58695(DataComponentTypes.field_49649, ChargedProjectilesComponent.field_49298)
+               clientWorld, clientPlayerEntity, f, itemStack.getOrDefault(DataComponentTypes.CHARGED_PROJECTILES, ChargedProjectilesComponent.DEFAULT)
             );
          }
       } else if (var6 instanceof TridentItem) {
@@ -544,164 +537,164 @@ public final class TrajectoriesModule extends ClientModule implements HudOverlay
             return;
          }
 
-         if (EnchantmentHelper.method_60142(var3, EnchantmentEffectComponentTypes.field_51651)) {
+         if (EnchantmentHelper.hasAnyEnchantmentsWith(itemStack, EnchantmentEffectComponentTypes.TRIDENT_SPIN_ATTACK_STRENGTH)) {
             return;
          }
 
-         this.volleyGhost = !var5 || var2.method_6048() < 10;
-         this.aimed(var1, var2, var4, Ballistics.Body.TRIDENT, 2.5F, 0.0F);
+         this.volleyGhost = !var5 || clientPlayerEntity.getItemUseTime() < 10;
+         this.aimed(clientWorld, clientPlayerEntity, f, Ballistics.Body.TRIDENT, 2.5F, 0.0F);
       } else if (var6 instanceof EnderPearlItem) {
          PearlTrajectoryModule var9 = activePearlModule();
          if (this.pearls.get() && (var9 == null || !pearlToggle(var9, "predict"))) {
-            this.aimed(var1, var2, var4, Ballistics.Body.ORB, EnderPearlItem.field_55033, 0.0F);
+            this.aimed(clientWorld, clientPlayerEntity, f, Ballistics.Body.ORB, EnderPearlItem.POWER, 0.0F);
          }
       } else if (this.throwables.get()) {
-         this.lob(var1, var2, var4, var6);
+         this.lob(clientWorld, clientPlayerEntity, f, var6);
       }
    }
 
-   private void lob(ClientWorld var1, ClientPlayerEntity var2, float var3, Item var4) {
-      if (var4 instanceof SnowballItem) {
-         this.aimed(var1, var2, var3, Ballistics.Body.ORB, SnowballItem.field_55045, 0.0F);
-      } else if (var4 instanceof EggItem) {
-         this.aimed(var1, var2, var3, Ballistics.Body.ORB, 1.5F, 0.0F);
-      } else if (var4 instanceof ThrowablePotionItem) {
-         this.aimed(var1, var2, var3, Ballistics.Body.FLASK, ThrowablePotionItem.field_55046, -20.0F);
-      } else if (var4 instanceof ExperienceBottleItem) {
-         this.aimed(var1, var2, var3, Ballistics.Body.BOTTLE, 0.7F, -20.0F);
+   private void lob(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, float f, Item item) {
+      if (item instanceof SnowballItem) {
+         this.aimed(clientWorld, clientPlayerEntity, f, Ballistics.Body.ORB, SnowballItem.POWER, 0.0F);
+      } else if (item instanceof EggItem) {
+         this.aimed(clientWorld, clientPlayerEntity, f, Ballistics.Body.ORB, 1.5F, 0.0F);
+      } else if (item instanceof ThrowablePotionItem) {
+         this.aimed(clientWorld, clientPlayerEntity, f, Ballistics.Body.FLASK, ThrowablePotionItem.POWER, -20.0F);
+      } else if (item instanceof ExperienceBottleItem) {
+         this.aimed(clientWorld, clientPlayerEntity, f, Ballistics.Body.BOTTLE, 0.7F, -20.0F);
       }
    }
 
-   private static float bowPull(float var0) {
-      float var1 = var0 / 20.0F;
+   private static float bowPull(float f) {
+      float var1 = f / 20.0F;
       return Math.min(1.0F, (var1 * var1 + var1 * 2.0F) / 3.0F);
    }
 
-   private void aimed(ClientWorld var1, ClientPlayerEntity var2, float var3, Ballistics.Body var4, float var5, float var6) {
-      float var7 = var2.method_5695(var3);
+   private void aimed(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, float f, Ballistics.Body body, float g, float h) {
+      float var7 = clientPlayerEntity.getPitch(f);
       double var8 = Math.toRadians(var7);
-      double var10 = Math.toRadians(var2.method_5705(var3));
-      double var12 = Math.toRadians(var7 + var6);
-      Vec3d var14 = new Vec3d(-Math.sin(var10) * Math.cos(var8), -Math.sin(var12), Math.cos(var10) * Math.cos(var8)).method_1029().method_1021(var5);
-      Vec3d var15 = var2.method_60478();
-      Vec3d var16 = var14.method_1031(var15.field_1352, var2.method_24828() ? 0.0 : var15.field_1351, var15.field_1350);
-      this.release(var1, var2, var4, muzzle(var2, var3, 0.1), var16, 240);
+      double var10 = Math.toRadians(clientPlayerEntity.getYaw(f));
+      double var12 = Math.toRadians(var7 + h);
+      Vec3d var14 = new Vec3d(-Math.sin(var10) * Math.cos(var8), -Math.sin(var12), Math.cos(var10) * Math.cos(var8)).normalize().multiply(g);
+      Vec3d var15 = clientPlayerEntity.getMovement();
+      Vec3d var16 = var14.add(var15.x, clientPlayerEntity.isOnGround() ? 0.0 : var15.y, var15.z);
+      this.release(clientWorld, clientPlayerEntity, body, muzzle(clientPlayerEntity, f, 0.1), var16, 240);
    }
 
-   private void crossbowVolley(ClientWorld var1, ClientPlayerEntity var2, float var3, ChargedProjectilesComponent var4) {
-      if (!var4.method_57442()) {
-         List var5 = var4.method_57437();
-         float var6 = var4.method_57438(Items.field_8639) ? 1.6F : 3.15F;
+   private void crossbowVolley(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, float f, ChargedProjectilesComponent chargedProjectilesComponent) {
+      if (!chargedProjectilesComponent.isEmpty()) {
+         List var5 = chargedProjectilesComponent.getProjectiles();
+         float var6 = chargedProjectilesComponent.contains(Items.FIREWORK_ROCKET) ? 1.6F : 3.15F;
          int var7 = var5.size();
          float var8 = var7 > 1 ? 20.0F / (var7 - 1) : 0.0F;
          float var9 = (var7 - 1) % 2 * var8 / 2.0F;
-         Vec3d var10 = var2.method_5828(var3);
-         Vec3d var11 = var2.method_18864(var3);
+         Vec3d var10 = clientPlayerEntity.getRotationVec(f);
+         Vec3d var11 = clientPlayerEntity.getOppositeRotationVector(f);
 
          for (int var12 = 0; var12 < var7; var12++) {
             ItemStack var13 = (ItemStack)var5.get(var12);
-            if (!var13.method_7960()) {
+            if (!var13.isEmpty()) {
                float var14 = var9 + ((var12 & 1) == 1 ? -1.0F : 1.0F) * ((var12 + 1) / 2) * var8;
-               Vec3d var15 = swing(var10, var11, var14).method_1029().method_1021(var6);
-               if (var13.method_31574(Items.field_8639)) {
-                  this.release(var1, var2, Ballistics.Body.ROCKET, muzzle(var2, var3, 0.15), var15, rocketFuse(var13));
+               Vec3d var15 = swing(var10, var11, var14).normalize().multiply(var6);
+               if (var13.isOf(Items.FIREWORK_ROCKET)) {
+                  this.release(clientWorld, clientPlayerEntity, Ballistics.Body.ROCKET, muzzle(clientPlayerEntity, f, 0.15), var15, rocketFuse(var13));
                } else {
-                  this.release(var1, var2, Ballistics.Body.ARROW, muzzle(var2, var3, 0.1), var15, 240);
+                  this.release(clientWorld, clientPlayerEntity, Ballistics.Body.ARROW, muzzle(clientPlayerEntity, f, 0.1), var15, 240);
                }
             }
          }
       }
    }
 
-   private static int rocketFuse(ItemStack var0) {
-      FireworksComponent var1 = (FireworksComponent)var0.method_58694(DataComponentTypes.field_49616);
-      int var2 = 1 + (var1 != null ? var1.comp_2391() : 0);
+   private static int rocketFuse(ItemStack itemStack) {
+      FireworksComponent var1 = itemStack.get(DataComponentTypes.FIREWORKS);
+      int var2 = 1 + (var1 != null ? var1.flightDuration() : 0);
       return 10 * var2 + 6;
    }
 
-   private static Vec3d swing(Vec3d var0, Vec3d var1, double var2) {
-      if (var2 == 0.0) {
-         return var0;
+   private static Vec3d swing(Vec3d vec3d, Vec3d vec3d2, double d) {
+      if (d == 0.0) {
+         return vec3d;
       } else {
-         double var4 = Math.toRadians(var2);
+         double var4 = Math.toRadians(d);
          double var6 = Math.cos(var4);
          double var8 = Math.sin(var4);
-         Vec3d var10 = var1.method_1029();
-         return var0.method_1021(var6)
-            .method_1019(var10.method_1036(var0).method_1021(var8))
-            .method_1019(var10.method_1021(var10.method_1026(var0) * (1.0 - var6)));
+         Vec3d var10 = vec3d2.normalize();
+         return vec3d.multiply(var6).add(var10.crossProduct(vec3d).multiply(var8)).add(var10.multiply(var10.dotProduct(vec3d) * (1.0 - var6)));
       }
    }
 
-   private static Vec3d muzzle(ClientPlayerEntity var0, float var1, double var2) {
-      Vec3d var4 = var0.method_30950(var1);
-      return new Vec3d(var4.field_1352, var4.field_1351 + var0.method_5751() - var2, var4.field_1350);
+   private static Vec3d muzzle(ClientPlayerEntity clientPlayerEntity, float f, double d) {
+      Vec3d var4 = clientPlayerEntity.getLerpedPos(f);
+      return new Vec3d(var4.x, var4.y + clientPlayerEntity.getStandingEyeHeight() - d, var4.z);
    }
 
-   private void release(ClientWorld var1, ClientPlayerEntity var2, Ballistics.Body var3, Vec3d var4, Vec3d var5, int var6) {
+   private void release(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, Ballistics.Body body, Vec3d vec3d, Vec3d vec3d2, int i) {
       if (this.volleySize != 3) {
          TrajectoriesModule.Aim var7;
-         if (!(var7 = this.volley[this.volleySize++]).matches(var3, var4, var5, var6, this.sweep)) {
-            var7.hold(var3, var4, var5, var6, this.sweep);
-            var7.flight.launch(var3, var4, var5).lifetime(var6).ignoring(var2, null).solve(var1);
-            var7.caption(var4, this.flightTime.get());
+         if (!(var7 = this.volley[this.volleySize++]).matches(body, vec3d, vec3d2, i, this.sweep)) {
+            var7.hold(body, vec3d, vec3d2, i, this.sweep);
+            var7.flight.launch(body, vec3d, vec3d2).lifetime(i).ignoring(clientPlayerEntity, null).solve(clientWorld);
+            var7.caption(vec3d, this.flightTime.get());
          }
       }
    }
 
-   private void drawPath(Ballistics.Flight var1, Vec3d var2, double var3, float var5, boolean var6, boolean var7, boolean var8, float var9) {
-      int var18 = var1.size();
-      if (var18 >= 2 && !(var5 < 0.02F)) {
-         double var19 = var1.length();
-         if (var2 != null) {
-            double var21 = var2.field_1352 - var1.x(0);
-            double var23 = var2.field_1351 - var1.y(0);
-            double var25 = var2.field_1350 - var1.z(0);
+   private void drawPath(Ballistics.Flight flight, Vec3d vec3d, double d, float f, boolean bl, boolean bl2, boolean bl3, float g) {
+      int var18 = flight.size();
+      if (var18 >= 2 && !(f < 0.02F)) {
+         double var19 = flight.length();
+         if (vec3d != null) {
+            double var21 = vec3d.x - flight.x(0);
+            double var23 = vec3d.y - flight.y(0);
+            double var25 = vec3d.z - flight.z(0);
             var19 += Math.sqrt(var21 * var21 + var23 * var23 + var25 * var25);
          }
 
          if (!(var19 < 1.0E-4)) {
-            double var64 = Math.min(var3, var19);
+            double var64 = Math.min(d, var19);
             boolean var65 = this.pathStyle.is("Solid");
             boolean var24 = this.pathStyle.is("Dashes");
             double var66 = var65 ? 0.6 : (var24 ? 0.72 : 0.42);
-            double var27 = Math.max(1.0, var19 / (var66 * (var6 ? 200 : 110)));
+            double var27 = Math.max(1.0, var19 / (var66 * (bl ? 200 : 110)));
             double var29 = (var24 ? 0.72 : 0.42) * var27;
             double var31 = 0.44 * var27;
             double var33 = 0.6 * var27;
-            double var35 = !var65 && this.flow.get() ? var9 * 1.3 % var29 : 0.0;
+            double var35 = !var65 && this.flow.get() ? g * 1.3 % var29 : 0.0;
             this.strokeTotal = var19;
-            this.strokeAlpha = var5;
-            this.strokeFade = var6;
-            this.strokeSheen = var7 ? var9 * 9.0 % (var19 + 14.0) - 1.6 : 0.0 / 0.0;
+            this.strokeAlpha = f;
+            this.strokeFade = bl;
+            this.strokeSheen = bl2 ? g * 9.0 % (var19 + 14.0) - 1.6 : 0.0 / 0.0;
             this.strokeWidth = this.thickness.get();
-            boolean var37 = this.strokeHalo = var8 && this.halo.get();
+            boolean var37 = this.strokeHalo = bl3 && this.halo.get();
             double var12;
             double var14;
             double var16;
             byte var38;
-            if (var2 != null) {
-               var16 = var2.field_1352;
-               var14 = var2.field_1351;
-               var12 = var2.field_1350;
+            if (vec3d != null) {
+               var16 = vec3d.x;
+               var14 = vec3d.y;
+               var12 = vec3d.z;
                var38 = 0;
             } else {
-               var16 = var1.x(0);
-               var14 = var1.y(0);
-               var12 = var1.z(0);
+               var16 = flight.x(0);
+               var14 = flight.y(0);
+               var12 = flight.z(0);
                var38 = 1;
             }
 
             double var39 = 0.0;
 
             for (int var41 = var38; var41 < var18 && var39 < var64; var41++) {
-               double var50 = var1.x(var41);
+               double var50 = flight.x(var41);
                double var52 = var50 - var16;
                double var42;
                double var44;
                double var46;
                double var48;
-               double var10 = Math.sqrt(var52 * var52 + (var48 = (var46 = var1.y(var41)) - var14) * var48 + (var44 = (var42 = var1.z(var41)) - var12) * var44);
+               double var10 = Math.sqrt(
+                  var52 * var52 + (var48 = (var46 = flight.y(var41)) - var14) * var48 + (var44 = (var42 = flight.z(var41)) - var12) * var44
+               );
                if (var10 > 1.0E-6) {
                   double var54 = Math.min(var39 + var10, var64);
                   if (var65) {
@@ -733,46 +726,46 @@ public final class TrajectoriesModule extends ClientModule implements HudOverlay
       }
    }
 
-   private double beadLength(double var1, double var3, double var5, double var7, double var9, double var11, double var13) {
-      double var15 = var1 + var7 * var13 - this.camera.field_1352;
-      double var17 = var3 + var9 * var13 - this.camera.field_1351;
-      double var19 = var5 + var11 * var13 - this.camera.field_1350;
-      return MathHelper.method_15350(Math.sqrt(var15 * var15 + var17 * var17 + var19 * var19) * 0.011, 0.035, 0.2);
+   private double beadLength(double d, double e, double f, double g, double h, double i, double j) {
+      double var15 = d + g * j - this.camera.x;
+      double var17 = e + h * j - this.camera.y;
+      double var19 = f + i * j - this.camera.z;
+      return MathHelper.clamp(Math.sqrt(var15 * var15 + var17 * var17 + var19 * var19) * 0.011, 0.035, 0.2);
    }
 
-   private void stroke(double var1, double var3, double var5, double var7, double var9, double var11, double var13, double var15, double var17) {
+   private void stroke(double d, double e, double f, double g, double h, double i, double j, double k, double l) {
       float var22 = this.strokeAlpha;
       if (this.strokeFade) {
-         var22 *= smooth((float)(var17 / 1.4));
+         var22 *= smooth((float)(l / 1.4));
       }
 
       if (!(var22 < 0.02F)) {
-         float var23 = (float)(var17 / this.strokeTotal);
-         int var24 = ColorHelper.method_61319(var23, this.headTint, this.tailTint);
+         float var23 = (float)(l / this.strokeTotal);
+         int var24 = ColorHelper.lerp(var23, this.headTint, this.tailTint);
          double var20;
-         if (!Double.isNaN(this.strokeSheen) && (var20 = 1.0 - Math.abs(var17 - this.strokeSheen) / 1.6) > 0.0) {
-            var24 = ColorHelper.method_61319((float)(var20 * 0.7), var24, this.sheenTint);
+         if (!Double.isNaN(this.strokeSheen) && (var20 = 1.0 - Math.abs(l - this.strokeSheen) / 1.6) > 0.0) {
+            var24 = ColorHelper.lerp((float)(var20 * 0.7), var24, this.sheenTint);
          }
 
-         double var25 = var1 + var7 * var13;
-         double var27 = var3 + var9 * var13;
-         double var29 = var5 + var11 * var13;
-         double var31 = var1 + var7 * var15;
-         double var33 = var3 + var9 * var15;
-         double var35 = var5 + var11 * var15;
+         double var25 = d + g * j;
+         double var27 = e + h * j;
+         double var29 = f + i * j;
+         double var31 = d + g * k;
+         double var33 = e + h * k;
+         double var35 = f + i * k;
          float var19;
          if (this.strokeHalo && (var19 = var22 * 0.22F * this.haloFade(var25, var27, var29)) > 0.0F) {
-            this.canvas.line(var25, var27, var29, var31, var33, var35, ColorHelper.method_75601(this.haloTint, var19), this.strokeWidth * 2.8F);
+            this.canvas.line(var25, var27, var29, var31, var33, var35, ColorHelper.scaleAlpha(this.haloTint, var19), this.strokeWidth * 2.8F);
          }
 
-         this.canvas.line(var25, var27, var29, var31, var33, var35, ColorHelper.method_75601(var24, var22), this.strokeWidth);
+         this.canvas.line(var25, var27, var29, var31, var33, var35, ColorHelper.scaleAlpha(var24, var22), this.strokeWidth);
       }
    }
 
-   private float haloFade(double var1, double var3, double var5) {
-      double var7 = var1 - this.camera.field_1352;
-      double var9 = var3 - this.camera.field_1351;
-      double var11 = var5 - this.camera.field_1350;
+   private float haloFade(double d, double e, double f) {
+      double var7 = d - this.camera.x;
+      double var9 = e - this.camera.y;
+      double var11 = f - this.camera.z;
       double var13 = var7 * var7 + var9 * var9 + var11 * var11;
       if (var13 <= 576.0) {
          return 1.0F;
@@ -781,57 +774,55 @@ public final class TrajectoriesModule extends ClientModule implements HudOverlay
       }
    }
 
-   private void drawImpact(Ballistics.Flight var1, float var2, float var3, float var4, float var5, LivingEntity var6) {
-      switch (var1.outcome()) {
+   private void drawImpact(Ballistics.Flight flight, float f, float g, float h, float i, LivingEntity livingEntity) {
+      switch (flight.outcome()) {
          case ENTITY:
             if (this.targetBox.get()) {
-               this.drawTargetBox(var1.struck(), var3, var4, var5, var6);
+               this.drawTargetBox(flight.struck(), g, h, i, livingEntity);
             }
             break;
          case BLOCK:
-            this.drawMarker(var1, var2, var3, var4);
+            this.drawMarker(flight, f, g, h);
             break;
          case BURST:
-            this.drawBurst(var1.impact(), var2, var3);
+            this.drawBurst(flight.impact(), f, g);
       }
    }
 
-   private void drawMarker(Ballistics.Flight var1, float var2, float var3, float var4) {
-      if (!this.marker.is("None") && !(var2 <= 0.01F)) {
-         Direction var5 = var1.face();
-         Vec3d var6 = new Vec3d(var5.method_10148(), var5.method_10164(), var5.method_10165());
+   private void drawMarker(Ballistics.Flight flight, float f, float g, float h) {
+      if (!this.marker.is("None") && !(f <= 0.01F)) {
+         Direction var5 = flight.face();
+         Vec3d var6 = new Vec3d(var5.getOffsetX(), var5.getOffsetY(), var5.getOffsetZ());
          Vec3d var7 = new Vec3d(0.0, 1.0, 0.0);
-         if (var5.method_10166() == Axis.field_11052) {
-            Vec3d var8 = var1.heading();
-            var7 = var8.field_1352 * var8.field_1352 + var8.field_1350 * var8.field_1350 < 1.0E-8
-               ? new Vec3d(0.0, 0.0, 1.0)
-               : new Vec3d(var8.field_1352, 0.0, var8.field_1350).method_1029();
+         if (var5.getAxis() == Axis.Y) {
+            Vec3d var8 = flight.heading();
+            var7 = var8.x * var8.x + var8.z * var8.z < 1.0E-8 ? new Vec3d(0.0, 0.0, 1.0) : new Vec3d(var8.x, 0.0, var8.z).normalize();
          }
 
-         Vec3d var12 = var7.method_1036(var6).method_1029();
-         Vec3d var9 = var1.impact().method_1019(var6.method_1021(0.025));
-         double var10 = 0.5 * this.markerScale.get() * var2;
-         this.gx = var9.field_1352;
-         this.gy = var9.field_1351;
-         this.gz = var9.field_1350;
-         this.rx = var12.field_1352 * var10;
-         this.ry = var12.field_1351 * var10;
-         this.rz = var12.field_1350 * var10;
-         this.ux = var7.field_1352 * var10;
-         this.uy = var7.field_1351 * var10;
-         this.uz = var7.field_1350 * var10;
+         Vec3d var12 = var7.crossProduct(var6).normalize();
+         Vec3d var9 = flight.impact().add(var6.multiply(0.025));
+         double var10 = 0.5 * this.markerScale.get() * f;
+         this.gx = var9.x;
+         this.gy = var9.y;
+         this.gz = var9.z;
+         this.rx = var12.x * var10;
+         this.ry = var12.y * var10;
+         this.rz = var12.z * var10;
+         this.ux = var7.x * var10;
+         this.uy = var7.y * var10;
+         this.uz = var7.z * var10;
          if (this.marker.is("Ring")) {
-            this.drawSunDisk(var3, var4);
+            this.drawSunDisk(g, h);
          } else {
-            this.drawBolt(var3, var4);
+            this.drawBolt(g, h);
          }
       }
    }
 
-   private void drawBolt(float var1, float var2) {
-      int var3 = ColorHelper.method_75601(this.markTint, var1);
-      this.disc(0.78, ColorHelper.method_75601(this.plateTint, var1 * 0.16F));
-      this.orbit(0.9, var2 * 0.6, ColorHelper.method_75601(this.ringTint, var1 * 0.85F), this.thickness.get() * 0.75F);
+   private void drawBolt(float f, float g) {
+      int var3 = ColorHelper.scaleAlpha(this.markTint, f);
+      this.disc(0.78, ColorHelper.scaleAlpha(this.plateTint, f * 0.16F));
+      this.orbit(0.9, g * 0.6, ColorHelper.scaleAlpha(this.ringTint, f * 0.85F), this.thickness.get() * 0.75F);
       this.facet(this.at(-0.06, 0.02), this.at(0.06, 0.02), this.at(0.15, -0.62), this.at(-0.15, -0.62), var3);
       this.facet(this.at(-0.06, 0.09), this.at(-0.06, -0.03), this.at(-0.37, -0.08), this.at(-0.37, 0.14), var3);
       this.facet(this.at(0.06, 0.09), this.at(0.06, -0.03), this.at(0.37, -0.08), this.at(0.37, 0.14), var3);
@@ -851,12 +842,12 @@ public final class TrajectoriesModule extends ClientModule implements HudOverlay
       }
    }
 
-   private void drawSunDisk(float var1, float var2) {
-      int var3 = ColorHelper.method_75601(this.markTint, var1);
+   private void drawSunDisk(float f, float g) {
+      int var3 = ColorHelper.scaleAlpha(this.markTint, f);
       float var4 = this.thickness.get();
-      this.disc(0.95, ColorHelper.method_75601(this.plateTint, var1 * 0.12F));
+      this.disc(0.95, ColorHelper.scaleAlpha(this.plateTint, f * 0.12F));
       this.disc(0.3, var3);
-      int var5 = ColorHelper.method_75601(this.ringTint, var1);
+      int var5 = ColorHelper.scaleAlpha(this.ringTint, f);
       Vec3d var6 = this.at(0.42, 0.0);
 
       for (int var7 = 1; var7 <= 24; var7++) {
@@ -865,7 +856,7 @@ public final class TrajectoriesModule extends ClientModule implements HudOverlay
          var6 = var8;
       }
 
-      double var18 = var2 * 0.35;
+      double var18 = g * 0.35;
 
       for (int var9 = 0; var9 < 12; var9++) {
          double var10 = var18 + 6.283185307179586 * var9 / 12.0;
@@ -876,30 +867,28 @@ public final class TrajectoriesModule extends ClientModule implements HudOverlay
       }
    }
 
-   private void drawBurst(Vec3d var1, float var2, float var3) {
-      int var4 = ColorHelper.method_75601(this.markTint, var3);
-      double var5 = 0.55 * this.markerScale.get() * var2;
+   private void drawBurst(Vec3d vec3d, float f, float g) {
+      int var4 = ColorHelper.scaleAlpha(this.markTint, g);
+      double var5 = 0.55 * this.markerScale.get() * f;
       float var7 = this.thickness.get();
 
       for (double[] var11 : BURST_RAYS) {
          Vec3d var12 = new Vec3d(var11[0], var11[1], var11[2]);
-         this.line(var1.method_1019(var12.method_1021(var5 * 0.25)), var1.method_1019(var12.method_1021(var5)), var4, var7);
+         this.line(vec3d.add(var12.multiply(var5 * 0.25)), vec3d.add(var12.multiply(var5)), var4, var7);
       }
    }
 
-   private void drawTargetBox(Entity var1, float var2, float var3, float var4, LivingEntity var5) {
-      if (var1 != null && !var1.method_31481()) {
-         Vec3d var6 = var1.method_30950(var4).method_1020(var1.method_73189());
-         Box var7 = var1.method_5829().method_997(var6).method_1014(0.06);
-         if (!var7.method_1006(this.camera)) {
-            boolean var8 = var1 == var5;
-            float var9 = var8 ? 0.5F + 0.5F * MathHelper.method_15374(var3 * 6.5F) : 0.0F;
-            int var10 = ColorHelper.method_75601(var8 ? ColorHelper.method_61319(0.35F * var9, this.hitTint, -1) : this.hitTint, var2);
-            VisibilityConfigurable var11 = GizmoDrawing.method_75541(
-               var7, DrawStyle.method_75539(ColorHelper.method_75601(var10, var8 ? 0.14F + 0.12F * var9 : 0.1F))
-            );
+   private void drawTargetBox(Entity entity, float f, float g, float h, LivingEntity livingEntity) {
+      if (entity != null && !entity.isRemoved()) {
+         Vec3d var6 = entity.getLerpedPos(h).subtract(entity.getEntityPos());
+         Box var7 = entity.getBoundingBox().offset(var6).expand(0.06);
+         if (!var7.contains(this.camera)) {
+            boolean var8 = entity == livingEntity;
+            float var9 = var8 ? 0.5F + 0.5F * MathHelper.sin(g * 6.5F) : 0.0F;
+            int var10 = ColorHelper.scaleAlpha(var8 ? ColorHelper.lerp(0.35F * var9, this.hitTint, -1) : this.hitTint, f);
+            VisibilityConfigurable var11 = GizmoDrawing.box(var7, DrawStyle.filled(ColorHelper.scaleAlpha(var10, var8 ? 0.14F + 0.12F * var9 : 0.1F)));
             if (this.onTop) {
-               var11.method_75533();
+               var11.ignoreOcclusion();
             }
 
             this.brackets(var7, var8 ? 0.34 + 0.06 * var9 : 0.26, var10, this.thickness.get() * (var8 ? 1.2F : 1.0F));
@@ -907,115 +896,83 @@ public final class TrajectoriesModule extends ClientModule implements HudOverlay
       }
    }
 
-   private void brackets(Box var1, double var2, int var4, float var5) {
-      double var6 = (var1.field_1320 - var1.field_1323) * var2;
-      double var8 = (var1.field_1325 - var1.field_1322) * var2;
-      double var10 = (var1.field_1324 - var1.field_1321) * var2;
+   private void brackets(Box box, double d, int i, float f) {
+      double var6 = (box.maxX - box.minX) * d;
+      double var8 = (box.maxY - box.minY) * d;
+      double var10 = (box.maxZ - box.minZ) * d;
 
       for (int var12 = 0; var12 < 8; var12++) {
          boolean var13 = (var12 & 1) != 0;
          boolean var14 = (var12 & 2) != 0;
          boolean var15 = (var12 & 4) != 0;
-         double var16 = var13 ? var1.field_1320 : var1.field_1323;
-         double var18 = var14 ? var1.field_1325 : var1.field_1322;
-         double var20 = var15 ? var1.field_1324 : var1.field_1321;
+         double var16 = var13 ? box.maxX : box.minX;
+         double var18 = var14 ? box.maxY : box.minY;
+         double var20 = var15 ? box.maxZ : box.minZ;
          Vec3d var22 = new Vec3d(var16, var18, var20);
-         this.line(var22, new Vec3d(var13 ? var16 - var6 : var16 + var6, var18, var20), var4, var5);
-         this.line(var22, new Vec3d(var16, var14 ? var18 - var8 : var18 + var8, var20), var4, var5);
-         this.line(var22, new Vec3d(var16, var18, var15 ? var20 - var10 : var20 + var10), var4, var5);
+         this.line(var22, new Vec3d(var13 ? var16 - var6 : var16 + var6, var18, var20), i, f);
+         this.line(var22, new Vec3d(var16, var14 ? var18 - var8 : var18 + var8, var20), i, f);
+         this.line(var22, new Vec3d(var16, var18, var15 ? var20 - var10 : var20 + var10), i, f);
       }
    }
 
-   private void disc(double var1, int var3) {
+   private void disc(double d, int i) {
       Vec3d var4 = this.at(0.0, 0.0);
 
       for (int var5 = 0; var5 < 24; var5++) {
-         this.facet(var4, var4, this.at(var1 * RIM_COS[var5], var1 * RIM_SIN[var5]), this.at(var1 * RIM_COS[var5 + 1], var1 * RIM_SIN[var5 + 1]), var3);
+         this.facet(var4, var4, this.at(d * RIM_COS[var5], d * RIM_SIN[var5]), this.at(d * RIM_COS[var5 + 1], d * RIM_SIN[var5 + 1]), i);
       }
    }
 
-   private void orbit(double var1, double var3, int var5, float var6) {
+   private void orbit(double d, double e, int i, float f) {
       double var7 = 0.6283185307179586;
       double var9 = var7 * 0.55;
 
       for (int var11 = 0; var11 < 10; var11++) {
-         double var12 = var3 + var11 * var7;
-         Vec3d var14 = this.at(var1 * Math.cos(var12), var1 * Math.sin(var12));
+         double var12 = e + var11 * var7;
+         Vec3d var14 = this.at(d * Math.cos(var12), d * Math.sin(var12));
 
          for (int var15 = 1; var15 <= 3; var15++) {
             double var16 = var12 + var9 * var15 / 3.0;
-            Vec3d var18 = this.at(var1 * Math.cos(var16), var1 * Math.sin(var16));
-            this.line(var14, var18, var5, var6);
+            Vec3d var18 = this.at(d * Math.cos(var16), d * Math.sin(var16));
+            this.line(var14, var18, i, f);
             var14 = var18;
          }
       }
    }
 
-   private Vec3d at(double var1, double var3) {
-      return new Vec3d(this.gx + this.rx * var1 + this.ux * var3, this.gy + this.ry * var1 + this.uy * var3, this.gz + this.rz * var1 + this.uz * var3);
+   private Vec3d at(double d, double e) {
+      return new Vec3d(this.gx + this.rx * d + this.ux * e, this.gy + this.ry * d + this.uy * e, this.gz + this.rz * d + this.uz * e);
    }
 
-   private void facet(Vec3d var1, Vec3d var2, Vec3d var3, Vec3d var4, int var5) {
-      double var6 = var3.field_1351 - var1.field_1351;
-      double var8 = var4.field_1350 - var2.field_1350;
-      double var10 = var3.field_1350 - var1.field_1350;
-      double var12 = var4.field_1351 - var2.field_1351;
+   private void facet(Vec3d vec3d, Vec3d vec3d2, Vec3d vec3d3, Vec3d vec3d4, int i) {
+      double var6 = vec3d3.y - vec3d.y;
+      double var8 = vec3d4.z - vec3d2.z;
+      double var10 = vec3d3.z - vec3d.z;
+      double var12 = vec3d4.y - vec3d2.y;
       double var14 = var6 * var8 - var10 * var12;
-      double var16 = var4.field_1352 - var2.field_1352;
-      double var18 = var3.field_1352 - var1.field_1352;
+      double var16 = vec3d4.x - vec3d2.x;
+      double var18 = vec3d3.x - vec3d.x;
       double var20 = var10 * var16 - var18 * var8;
       double var22 = var18 * var12 - var6 * var16;
-      double var24 = var14 * (this.camera.field_1352 - var1.field_1352)
-         + var20 * (this.camera.field_1351 - var1.field_1351)
-         + var22 * (this.camera.field_1350 - var1.field_1350);
+      double var24 = var14 * (this.camera.x - vec3d.x) + var20 * (this.camera.y - vec3d.y) + var22 * (this.camera.z - vec3d.z);
       if (var24 >= 0.0) {
-         this.canvas
-            .quad(
-               var1.field_1352,
-               var1.field_1351,
-               var1.field_1350,
-               var2.field_1352,
-               var2.field_1351,
-               var2.field_1350,
-               var3.field_1352,
-               var3.field_1351,
-               var3.field_1350,
-               var4.field_1352,
-               var4.field_1351,
-               var4.field_1350,
-               var5
-            );
+         this.canvas.quad(vec3d.x, vec3d.y, vec3d.z, vec3d2.x, vec3d2.y, vec3d2.z, vec3d3.x, vec3d3.y, vec3d3.z, vec3d4.x, vec3d4.y, vec3d4.z, i);
       } else {
-         this.canvas
-            .quad(
-               var4.field_1352,
-               var4.field_1351,
-               var4.field_1350,
-               var3.field_1352,
-               var3.field_1351,
-               var3.field_1350,
-               var2.field_1352,
-               var2.field_1351,
-               var2.field_1350,
-               var1.field_1352,
-               var1.field_1351,
-               var1.field_1350,
-               var5
-            );
+         this.canvas.quad(vec3d4.x, vec3d4.y, vec3d4.z, vec3d3.x, vec3d3.y, vec3d3.z, vec3d2.x, vec3d2.y, vec3d2.z, vec3d.x, vec3d.y, vec3d.z, i);
       }
    }
 
-   private void line(Vec3d var1, Vec3d var2, int var3, float var4) {
-      this.canvas.line(var1.field_1352, var1.field_1351, var1.field_1350, var2.field_1352, var2.field_1351, var2.field_1350, var3, var4);
+   private void line(Vec3d vec3d, Vec3d vec3d2, int i, float f) {
+      this.canvas.line(vec3d.x, vec3d.y, vec3d.z, vec3d2.x, vec3d2.y, vec3d2.z, i, f);
    }
 
-   private void addLabel(TrajectoriesModule.Plot var1) {
-      if (this.flightTime.get() && var1.seconds != null) {
-         Ballistics.Flight var2 = var1.flight;
+   private void addLabel(TrajectoriesModule.Plot plot) {
+      if (this.flightTime.get() && plot.seconds != null) {
+         Ballistics.Flight var2 = plot.flight;
          Vec3d var3 = var2.impact();
          Entity var4 = var2.struck();
-         Vec3d var5 = var4 != null ? new Vec3d(var3.field_1352, var4.method_5829().field_1325 + 0.35, var3.field_1350) : var3.method_1031(0.0, 0.55, 0.0);
-         this.labels.add(new TrajectoriesModule.Label(var5, var1.seconds, var1.detail));
+         Vec3d var5 = var4 != null ? new Vec3d(var3.x, var4.getBoundingBox().maxY + 0.35, var3.z) : var3.add(0.0, 0.55, 0.0);
+         this.labels.add(new TrajectoriesModule.Label(var5, plot.seconds, plot.detail));
       }
    }
 
@@ -1025,30 +982,30 @@ public final class TrajectoriesModule extends ClientModule implements HudOverlay
    }
 
    @Override
-   public void renderHudOverlay(ImDrawList var1, float var2, float var3) {
+   public void renderHudOverlay(ImDrawList imDrawList, float f, float g) {
       if (!this.labels.isEmpty() && System.nanoTime() - this.labelsAt <= 250000000L) {
-         MinecraftClient var4 = MinecraftClient.method_1551();
+         MinecraftClient var4 = MinecraftClient.getInstance();
 
          for (TrajectoriesModule.Label var6 : this.labels) {
-            float[] var7 = WorldLabel.project(var4, var6.pos(), var2, var3);
+            float[] var7 = WorldLabel.project(var4, var6.pos(), f, g);
             if (var7 != null) {
-               WorldLabel.drawText(var1, var7[0], var7[1], var6.primary(), var6.secondary(), 1.0F);
+               WorldLabel.drawText(imDrawList, var7[0], var7[1], var6.primary(), var6.secondary(), 1.0F);
             }
          }
       }
    }
 
-   private static float smooth(float var0) {
-      var0 = MathHelper.method_15363(var0, 0.0F, 1.0F);
-      return var0 * var0 * (3.0F - 2.0F * var0);
+   private static float smooth(float f) {
+      f = MathHelper.clamp(f, 0.0F, 1.0F);
+      return f * f * (3.0F - 2.0F * f);
    }
 
-   private static float easeOutExpo(float var0) {
-      return var0 >= 1.0F ? 1.0F : 1.0F - (float)Math.pow(2.0, -10.0 * Math.max(0.0F, var0));
+   private static float easeOutExpo(float f) {
+      return f >= 1.0F ? 1.0F : 1.0F - (float)Math.pow(2.0, -10.0 * Math.max(0.0F, f));
    }
 
-   private static float settle(float var0) {
-      return 1.0F - (float)(Math.exp(-5.5 * var0) * Math.cos(8.5 * var0));
+   private static float settle(float f) {
+      return 1.0F - (float)(Math.exp(-5.5 * f) * Math.cos(8.5 * f));
    }
 
    static {
@@ -1075,29 +1032,29 @@ public final class TrajectoriesModule extends ClientModule implements HudOverlay
       private Aim() {
       }
 
-      boolean matches(Ballistics.Body var1, Vec3d var2, Vec3d var3, int var4, int var5) {
+      boolean matches(Ballistics.Body body, Vec3d vec3d, Vec3d vec3d2, int i, int j) {
          return this.held
-            && this.stamp == var5
-            && this.body == var1
-            && this.life == var4
-            && Math.abs(this.x - var2.field_1352) < 0.001
-            && Math.abs(this.y - var2.field_1351) < 0.001
-            && Math.abs(this.z - var2.field_1350) < 0.001
-            && Math.abs(this.vx - var3.field_1352) < 5.0E-4
-            && Math.abs(this.vy - var3.field_1351) < 5.0E-4
-            && Math.abs(this.vz - var3.field_1350) < 5.0E-4;
+            && this.stamp == j
+            && this.body == body
+            && this.life == i
+            && Math.abs(this.x - vec3d.x) < 0.001
+            && Math.abs(this.y - vec3d.y) < 0.001
+            && Math.abs(this.z - vec3d.z) < 0.001
+            && Math.abs(this.vx - vec3d2.x) < 5.0E-4
+            && Math.abs(this.vy - vec3d2.y) < 5.0E-4
+            && Math.abs(this.vz - vec3d2.z) < 5.0E-4;
       }
 
-      void hold(Ballistics.Body var1, Vec3d var2, Vec3d var3, int var4, int var5) {
-         this.body = var1;
-         this.x = var2.field_1352;
-         this.y = var2.field_1351;
-         this.z = var2.field_1350;
-         this.vx = var3.field_1352;
-         this.vy = var3.field_1351;
-         this.vz = var3.field_1350;
-         this.life = var4;
-         this.stamp = var5;
+      void hold(Ballistics.Body body, Vec3d vec3d, Vec3d vec3d2, int i, int j) {
+         this.body = body;
+         this.x = vec3d.x;
+         this.y = vec3d.y;
+         this.z = vec3d.z;
+         this.vx = vec3d2.x;
+         this.vy = vec3d2.y;
+         this.vz = vec3d2.z;
+         this.life = i;
+         this.stamp = j;
          this.held = true;
       }
 
@@ -1121,15 +1078,15 @@ public final class TrajectoriesModule extends ClientModule implements HudOverlay
       private Plot() {
       }
 
-      void caption(Vec3d var1, boolean var2) {
+      void caption(Vec3d vec3d, boolean bl) {
          this.seconds = null;
          this.detail = null;
-         if (var2 && this.flight.outcome() != Ballistics.Outcome.OPEN && this.flight.size() >= 2) {
+         if (bl && this.flight.outcome() != Ballistics.Outcome.OPEN && this.flight.size() >= 2) {
             Entity var3 = this.flight.struck();
             this.seconds = String.format(Locale.ROOT, "%.2fs", this.flight.ticks() / 20.0F);
             this.detail = var3 != null
-               ? NameProtectModule.protect(var3.method_5477()).getString()
-               : String.format(Locale.ROOT, "%.0fm", var1.method_1022(this.flight.impact()));
+               ? NameProtectModule.protect(var3.getName()).getString()
+               : String.format(Locale.ROOT, "%.0fm", vec3d.distanceTo(this.flight.impact()));
          }
       }
 

@@ -43,11 +43,11 @@ public final class TungTungSahur extends CharacterDesign {
    }
 
    @Override
-   protected void define(Rig var1) {
-      var1.scale(1.0F).outline(-12967406, 0.16F).occlusion(0.3F).firstPersonArms(false);
-      var1.part(Bone.HEAD).pivot(0.0F, 12.5F, 0.0F);
-      Part var2 = var1.extra("upright", Bone.HEAD).motion(Motion.none().hang(1.0F).limit(100.0F));
-      var1.extra("log", var2)
+   protected void define(Rig rig) {
+      rig.scale(1.0F).outline(-12967406, 0.16F).occlusion(0.3F).firstPersonArms(false);
+      rig.part(Bone.HEAD).pivot(0.0F, 12.5F, 0.0F);
+      Part var2 = rig.extra("upright", Bone.HEAD).motion(Motion.none().hang(1.0F).limit(100.0F));
+      rig.extra("log", var2)
          .shape(log())
          .detail(1.5F)
          .resolution(1.2F)
@@ -58,14 +58,14 @@ public final class TungTungSahur extends CharacterDesign {
          .decal(eyes())
          .decal(mouth())
          .decal(rings());
-      Part var3 = var1.part(Bone.RIGHT_ARM).pivot(-5.3F, 22.8F, 0.2F).grip(-7.0F, 11.6F, 0.72F).shape(arm()).joint(-6.57F, 17.1F, 0.14F, 0.6F);
-      var1.part(Bone.LEFT_ARM).mirrorOf(var3);
-      Part var4 = var1.extra("hand_r", Bone.RIGHT_ARM).shape(hand()).resolution(0.6F).detail(0.8F);
-      var1.extra("hand_l", Bone.LEFT_ARM).mirrorOf(var4);
-      Part var5 = var1.part(Bone.RIGHT_LEG).pivot(-2.2F, 12.8F, 0.0F).shape(leg()).swing(0.6F, 35.0F).joint(-2.3F, 6.75F, 0.16F, 0.7F);
-      var1.part(Bone.LEFT_LEG).mirrorOf(var5);
-      Part var6 = var1.extra("foot_r", Bone.RIGHT_LEG).shape(foot()).resolution(0.7F).detail(0.8F);
-      var1.extra("foot_l", Bone.LEFT_LEG).mirrorOf(var6);
+      Part var3 = rig.part(Bone.RIGHT_ARM).pivot(-5.3F, 22.8F, 0.2F).grip(-7.0F, 11.6F, 0.72F).shape(arm()).joint(-6.57F, 17.1F, 0.14F, 0.6F);
+      rig.part(Bone.LEFT_ARM).mirrorOf(var3);
+      Part var4 = rig.extra("hand_r", Bone.RIGHT_ARM).shape(hand()).resolution(0.6F).detail(0.8F);
+      rig.extra("hand_l", Bone.LEFT_ARM).mirrorOf(var4);
+      Part var5 = rig.part(Bone.RIGHT_LEG).pivot(-2.2F, 12.8F, 0.0F).shape(leg()).swing(0.6F, 35.0F).joint(-2.3F, 6.75F, 0.16F, 0.7F);
+      rig.part(Bone.LEFT_LEG).mirrorOf(var5);
+      Part var6 = rig.extra("foot_r", Bone.RIGHT_LEG).shape(foot()).resolution(0.7F).detail(0.8F);
+      rig.extra("foot_l", Bone.LEFT_LEG).mirrorOf(var6);
    }
 
    private static Shape log() {
@@ -88,9 +88,9 @@ public final class TungTungSahur extends CharacterDesign {
       return Shapes.subtract(0.12F, Shapes.subtract(0.35F, var2, var3), Shapes.union(hole(165.0F, 27.5F, 0.32F), hole(-120.0F, 19.5F, 0.24F)));
    }
 
-   private static Shape stub(float var0, float var1) {
-      float var2 = (float)Math.sin(Math.toRadians(var0));
-      float var3 = (float)Math.cos(Math.toRadians(var0));
+   private static Shape stub(float f, float g) {
+      float var2 = (float)Math.sin(Math.toRadians(f));
+      float var3 = (float)Math.cos(Math.toRadians(f));
       float var4 = (float)Math.cos(Math.toRadians(32.0));
       float var5 = (float)Math.sin(Math.toRadians(32.0));
       float var6 = var2 * var4;
@@ -98,57 +98,56 @@ public final class TungTungSahur extends CharacterDesign {
       float var9 = var2 * 3.9F;
       float var10 = var3 * 3.9F;
       float var11 = var9 + var6 * 3.05F;
-      float var12 = var1 + var5 * 3.05F;
+      float var12 = g + var5 * 3.05F;
       float var13 = var10 + var8 * 3.05F;
-      Shape var14 = Shapes.cone(var9, var1, var10, 0.98F, var11 + var6 * 0.4F, var12 + var5 * 0.4F, var13 + var8 * 0.4F, 0.64F)
-         .paint(Paint.wood(-1063542, -4158378, var9, var1, var10, var6, var5, var8, 0.3F));
+      Shape var14 = Shapes.cone(var9, g, var10, 0.98F, var11 + var6 * 0.4F, var12 + var5 * 0.4F, var13 + var8 * 0.4F, 0.64F)
+         .paint(Paint.wood(-1063542, -4158378, var9, g, var10, var6, var5, var8, 0.3F));
       Paint var15 = Paint.radial(-6264264, var11, var12, var13, 0.75F, -1389672);
       return Shapes.subtract(var14, Shapes.plane(var11, var12, var13, -var6, -var5, -var8).paint(var15));
    }
 
-   private static Shape eye(float var0, Paint var1) {
-      float var2 = var0 * 2.14F;
+   private static Shape eye(float f, Paint paint) {
+      float var2 = f * 2.14F;
       float var3 = 28.72F;
       float var4 = var2 / 5.0F;
       float var5 = (float)Math.sqrt(1.0F - var4 * var4);
       float var6 = radius(var4, var3, var5) - 0.5F;
       float var7 = (float)Math.toDegrees(Math.asin(var4));
-      return Shapes.ellipsoid(var4 * var6, var3, var5 * var6, 1.85F, 1.8F, 0.85F).rotate(0.0F, var7, 0.0F, var4 * var6, var3, var5 * var6).paint(var1);
+      return Shapes.ellipsoid(var4 * var6, var3, var5 * var6, 1.85F, 1.8F, 0.85F).rotate(0.0F, var7, 0.0F, var4 * var6, var3, var5 * var6).paint(paint);
    }
 
-   private static Shape knot(float var0, float var1, float var2) {
-      float var3 = (float)Math.sin(Math.toRadians(var0));
-      float var4 = (float)Math.cos(Math.toRadians(var0));
-      float var5 = radius(var3, var1, var4) + 0.28F;
-      float var6 = var5 - var2;
-      return Shapes.ellipsoid(var3 * var6, var1, var4 * var6, var2, var2 * 1.35F, var2)
-         .paint(Paint.radial(-11653867, var3 * var5, var1, var4 * var5, var2 * 1.05F, -4158378));
+   private static Shape knot(float f, float g, float h) {
+      float var3 = (float)Math.sin(Math.toRadians(f));
+      float var4 = (float)Math.cos(Math.toRadians(f));
+      float var5 = radius(var3, g, var4) + 0.28F;
+      float var6 = var5 - h;
+      return Shapes.ellipsoid(var3 * var6, g, var4 * var6, h, h * 1.35F, h).paint(Paint.radial(-11653867, var3 * var5, g, var4 * var5, h * 1.05F, -4158378));
    }
 
-   private static Shape hole(float var0, float var1, float var2) {
-      float var3 = (float)Math.sin(Math.toRadians(var0));
-      float var4 = (float)Math.cos(Math.toRadians(var0));
-      float var5 = radius(var3, var1, var4) + 0.28F;
-      return Shapes.ellipsoid(var3 * var5, var1, var4 * var5, var2, var2 * 1.3F, var2).color(-11653867);
+   private static Shape hole(float f, float g, float h) {
+      float var3 = (float)Math.sin(Math.toRadians(f));
+      float var4 = (float)Math.cos(Math.toRadians(f));
+      float var5 = radius(var3, g, var4) + 0.28F;
+      return Shapes.ellipsoid(var3 * var5, g, var4 * var5, h, h * 1.3F, h).color(-11653867);
    }
 
-   private static float radius(float var0, float var1, float var2) {
-      float var3 = 0.17F * Noise.noise(var0 * 1.1F + 2.3F, var1 * 0.1F, var2 * 1.1F - 1.3F);
-      return 5.0F + var3 - 0.17F * fissure(var0, var1, var2);
+   private static float radius(float f, float g, float h) {
+      float var3 = 0.17F * Noise.noise(f * 1.1F + 2.3F, g * 0.1F, h * 1.1F - 1.3F);
+      return 5.0F + var3 - 0.17F * fissure(f, g, h);
    }
 
-   private static float fissure(float var0, float var1, float var2) {
-      float var3 = Math.abs(Noise.noise(var0 * 3.0F - 5.1F, var1 * 0.08F, var2 * 3.0F + 0.7F));
-      float var4 = smooth(0.3F, 0.62F, var2) * smooth(21.8F, 23.6F, var1);
+   private static float fissure(float f, float g, float h) {
+      float var3 = Math.abs(Noise.noise(f * 3.0F - 5.1F, g * 0.08F, h * 3.0F + 0.7F));
+      float var4 = smooth(0.3F, 0.62F, h) * smooth(21.8F, 23.6F, g);
       return Math.max(0.0F, 1.0F - var3 / 0.28F) * (1.0F - 0.88F * var4);
    }
 
-   private static float trunk(float var0, float var1, float var2) {
-      float var3 = (float)Math.sqrt(var0 * var0 + var2 * var2);
-      float var4 = var3 > 1.0E-4F ? var0 / var3 : 0.0F;
-      float var5 = var3 > 1.0E-4F ? var2 / var3 : 1.0F;
-      float var6 = var3 - radius(var4, var1, var5) + 0.85F;
-      float var7 = Math.abs(var1 - 23.0F) - 11.0F + 0.85F;
+   private static float trunk(float f, float g, float h) {
+      float var3 = (float)Math.sqrt(f * f + h * h);
+      float var4 = var3 > 1.0E-4F ? f / var3 : 0.0F;
+      float var5 = var3 > 1.0E-4F ? h / var3 : 1.0F;
+      float var6 = var3 - radius(var4, g, var5) + 0.85F;
+      float var7 = Math.abs(g - 23.0F) - 11.0F + 0.85F;
       float var8 = Math.max(var6, 0.0F);
       float var9 = Math.max(var7, 0.0F);
       return (float)Math.sqrt(var8 * var8 + var9 * var9) + Math.min(Math.max(var6, var7), 0.0F) - 0.85F;
@@ -208,8 +207,8 @@ public final class TungTungSahur extends CharacterDesign {
       return Shapes.intersect(Shapes.blend(0.22F, var0, var1), Shapes.above(0.0F)).paint(stick(-2.4F, 0.6F, -1.0F, -2.4F, 0.6F, 3.0F));
    }
 
-   private static Paint stick(float var0, float var1, float var2, float var3, float var4, float var5) {
-      return Paint.wood(-3567528, -7053254, var0, var1, var2, var3 - var0, var4 - var1, var5 - var2, 0.35F).grain(0.3F, 0.05F);
+   private static Paint stick(float f, float g, float h, float i, float j, float k) {
+      return Paint.wood(-3567528, -7053254, f, g, h, i - f, j - g, k - h, 0.35F).grain(0.3F, 0.05F);
    }
 
    private static Decal eyes() {
@@ -245,9 +244,9 @@ public final class TungTungSahur extends CharacterDesign {
    private static Decal rings() {
       Canvas var0 = new Canvas(168, 168);
       var0.fill(Shape2D.circle(84.0F, 84.0F, 72.0F), Paint2D.radial(81.0F, 86.0F, 72.0F, -3565470, -1917818, -1521774, -2709138), 4.0F);
-      Shape2D var1 = Shape2D.field((var0x, var1x) -> {
-         float var2 = var0x - 81.0F;
-         float var3 = var1x - 86.0F;
+      Shape2D var1 = Shape2D.field((f, g) -> {
+         float var2 = f - 81.0F;
+         float var3 = g - 86.0F;
          float var4 = (float)Math.sqrt(var2 * var2 + var3 * var3) + 0.001F;
          float var5 = var4 + 2.5F * Noise.noise(var2 / var4 * 1.3F, var3 / var4 * 1.3F, var4 * 0.028F);
          float var6 = var5 / 8.25F;
@@ -261,33 +260,33 @@ public final class TungTungSahur extends CharacterDesign {
       return Decal.top(var0, 0.0F, 34.0F, 0.0F, 9.678F, 9.678F).depth(0.6F, 0.6F).maxAngle(35.0F);
    }
 
-   private static float smooth(float var0, float var1, float var2) {
-      float var3 = Math.max(0.0F, Math.min(1.0F, (var2 - var0) / (var1 - var0)));
+   private static float smooth(float f, float g, float h) {
+      float var3 = Math.max(0.0F, Math.min(1.0F, (h - f) / (g - f)));
       return var3 * var3 * (3.0F - 2.0F * var3);
    }
 
-   private static float[] unit(float var0, float var1, float var2) {
-      float var3 = (float)Math.sqrt(var0 * var0 + var1 * var1 + var2 * var2);
-      return new float[]{var0 / var3, var1 / var3, var2 / var3};
+   private static float[] unit(float f, float g, float h) {
+      float var3 = (float)Math.sqrt(f * f + g * g + h * h);
+      return new float[]{f / var3, g / var3, h / var3};
    }
 
    @Environment(EnvType.CLIENT)
    private static final class Bark extends Paint {
       private final Paint base;
 
-      Bark(Paint var1) {
-         this.base = var1;
+      Bark(Paint paint) {
+         this.base = paint;
       }
 
       @Override
-      public void apply(float var1, float var2, float var3, Sample var4) {
-         this.base.apply(var1, var2, var3, var4);
-         float var5 = (float)Math.sqrt(var1 * var1 + var3 * var3);
+      public void apply(float f, float g, float h, Sample sample) {
+         this.base.apply(f, g, h, sample);
+         float var5 = (float)Math.sqrt(f * f + h * h);
          if (!(var5 < 0.5F)) {
-            float var6 = TungTungSahur.smooth(3.95F, 4.7F, var5) * TungTungSahur.smooth(12.0F, 12.6F, var2) * (1.0F - TungTungSahur.smooth(33.4F, 34.0F, var2));
-            float var7 = TungTungSahur.fissure(var1 / var5, var2, var3 / var5) * var6;
+            float var6 = TungTungSahur.smooth(3.95F, 4.7F, var5) * TungTungSahur.smooth(12.0F, 12.6F, g) * (1.0F - TungTungSahur.smooth(33.4F, 34.0F, g));
+            float var7 = TungTungSahur.fissure(f / var5, g, h / var5) * var6;
             if (var7 > 0.0F) {
-               var4.toward(-9551070, Math.min(1.0F, var7 * 0.62F));
+               sample.toward(-9551070, Math.min(1.0F, var7 * 0.62F));
             }
          }
       }

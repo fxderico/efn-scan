@@ -28,40 +28,40 @@ final class KnifeMaterial {
    final int[] palette;
    final int glow;
 
-   private KnifeMaterial(int var1, int... var2) {
-      this.glow = var1;
-      this.palette = new int[var2.length];
+   private KnifeMaterial(int i, int... is) {
+      this.glow = i;
+      this.palette = new int[is.length];
 
-      for (int var3 = 0; var3 < var2.length; var3++) {
-         this.palette[var3] = 0xFF000000 | var2[var3];
+      for (int var3 = 0; var3 < is.length; var3++) {
+         this.palette[var3] = 0xFF000000 | is[var3];
       }
    }
 
-   static KnifeMaterial of(ItemStack var0) {
-      return named(Registries.field_41178.method_10221(var0.method_7909()).method_12832());
+   static KnifeMaterial of(ItemStack itemStack) {
+      return named(Registries.ITEM.getId(itemStack.getItem()).getPath());
    }
 
-   static KnifeMaterial named(String var0) {
-      if (var0.startsWith("netherite")) {
+   static KnifeMaterial named(String string) {
+      if (string.startsWith("netherite")) {
          return NETHERITE;
-      } else if (var0.startsWith("diamond")) {
+      } else if (string.startsWith("diamond")) {
          return DIAMOND;
-      } else if (var0.startsWith("golden")) {
+      } else if (string.startsWith("golden")) {
          return GOLDEN;
-      } else if (var0.startsWith("copper")) {
+      } else if (string.startsWith("copper")) {
          return COPPER;
-      } else if (var0.startsWith("stone")) {
+      } else if (string.startsWith("stone")) {
          return STONE;
       } else {
-         return var0.startsWith("wooden") ? WOOD : IRON;
+         return string.startsWith("wooden") ? WOOD : IRON;
       }
    }
 
-   static boolean blade(int var0) {
-      return var0 == 0 || var0 == 1 || var0 == 2;
+   static boolean blade(int i) {
+      return i == 0 || i == 1 || i == 2;
    }
 
-   static boolean metallic(int var0) {
-      return var0 == 0 || var0 == 1 || var0 == 2 || var0 == 5 || var0 == 8;
+   static boolean metallic(int i) {
+      return i == 0 || i == 1 || i == 2 || i == 5 || i == 8;
    }
 }

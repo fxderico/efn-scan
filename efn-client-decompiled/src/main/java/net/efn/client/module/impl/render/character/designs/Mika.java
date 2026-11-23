@@ -90,70 +90,70 @@ public final class Mika extends CharacterDesign {
    }
 
    @Override
-   protected void define(Rig var1) {
-      var1.scale(1.0F).outline(-12967400, 0.12F).occlusion(0.3F);
-      body(var1);
-      head(var1);
-      hair(var1);
-      ears(var1);
-      arms(var1);
-      legs(var1);
-      tail(var1);
+   protected void define(Rig rig) {
+      rig.scale(1.0F).outline(-12967400, 0.12F).occlusion(0.3F);
+      body(rig);
+      head(rig);
+      hair(rig);
+      ears(rig);
+      arms(rig);
+      legs(rig);
+      tail(rig);
    }
 
-   private static Shape toHead(Shape var0) {
-      return var0.move(0.0F, -0.4F, 0.0F).scale(1.12F, 0.0F, 24.9F, -0.3F);
+   private static Shape toHead(Shape shape) {
+      return shape.move(0.0F, -0.4F, 0.0F).scale(1.12F, 0.0F, 24.9F, -0.3F);
    }
 
-   private static float wx(float var0) {
-      return var0 * 1.12F;
+   private static float wx(float f) {
+      return f * 1.12F;
    }
 
-   private static float wy(float var0) {
-      return 24.9F + (var0 - 0.4F - 24.9F) * 1.12F;
+   private static float wy(float f) {
+      return 24.9F + (f - 0.4F - 24.9F) * 1.12F;
    }
 
-   private static float wz(float var0) {
-      return -0.3F + (var0 - -0.3F) * 1.12F;
+   private static float wz(float f) {
+      return -0.3F + (f - -0.3F) * 1.12F;
    }
 
-   private static float u(float var0) {
-      return 128.0F + var0 * 55.652176F;
+   private static float u(float f) {
+      return 128.0F + f * 55.652176F;
    }
 
-   private static float v(float var0) {
-      return (29.0F - var0) * 55.652176F;
+   private static float v(float f) {
+      return (29.0F - f) * 55.652176F;
    }
 
-   private static float capZ(float var0, float var1, float var2) {
-      float var3 = var0 / (2.72F + var2);
-      float var4 = (var1 - 28.25F) / (2.8F + var2);
-      return -0.28F + (2.85F + var2) * (float)Math.sqrt(Math.max(0.02F, 1.0F - var3 * var3 - var4 * var4));
+   private static float capZ(float f, float g, float h) {
+      float var3 = f / (2.72F + h);
+      float var4 = (g - 28.25F) / (2.8F + h);
+      return -0.28F + (2.85F + h) * (float)Math.sqrt(Math.max(0.02F, 1.0F - var3 * var3 - var4 * var4));
    }
 
-   private static float[] onCap(float var0, float var1, float var2, float var3) {
-      float var4 = (float)Math.sqrt(var0 * var0 + var1 * var1 + var2 * var2);
+   private static float[] onCap(float f, float g, float h, float i) {
+      float var4 = (float)Math.sqrt(f * f + g * g + h * h);
       float var9;
-      float var5 = (var9 = var0 / var4) / (2.72F + var3);
+      float var5 = (var9 = f / var4) / (2.72F + i);
       float var10;
-      float var6 = (var10 = var1 / var4) / (2.8F + var3);
+      float var6 = (var10 = g / var4) / (2.8F + i);
       float var11;
-      float var7 = (var11 = var2 / var4) / (2.85F + var3);
+      float var7 = (var11 = h / var4) / (2.85F + i);
       float var8 = 1.0F / (float)Math.sqrt(var5 * var5 + var6 * var6 + var7 * var7);
       return new float[]{var9 * var8, 28.25F + var10 * var8, -0.28F + var11 * var8};
    }
 
-   private static Shape crownClump(float[] var0, float var1) {
+   private static Shape crownClump(float[] fs, float f) {
       float var2 = 0.15F;
       float var3 = 0.93F;
       float var4 = -0.35F;
       float[] var5 = new float[16];
       float[] var6 = new float[]{0.0F, 0.38F, 0.72F, 1.0F};
-      float[] var7 = new float[]{0.2F, 0.85F * var1, 0.8F * var1, 0.3F};
+      float[] var7 = new float[]{0.2F, 0.85F * f, 0.8F * f, 0.3F};
       float[] var8 = new float[]{-0.12F, -0.07F, -0.07F, -0.14F};
 
       for (int var9 = 0; var9 < 4; var9++) {
-         float[] var10 = onCap(var2 + (var0[0] - var2) * var6[var9], var3 + (var0[1] - var3) * var6[var9], var4 + (var0[2] - var4) * var6[var9], var8[var9]);
+         float[] var10 = onCap(var2 + (fs[0] - var2) * var6[var9], var3 + (fs[1] - var3) * var6[var9], var4 + (fs[2] - var4) * var6[var9], var8[var9]);
          var5[var9 * 4] = var10[0];
          var5[var9 * 4 + 1] = var10[1];
          var5[var9 * 4 + 2] = var10[2];
@@ -163,24 +163,24 @@ public final class Mika extends CharacterDesign {
       return Shapes.tube(var5).flattenFrom(3.2F, 0.0F, 28.25F, -0.28F);
    }
 
-   private static float surf(float var0, float var1, float var2) {
-      float var3 = var0 / (2.3F + var2);
-      float var4 = (var1 - 27.95F) / (2.3F + var2);
-      return -0.15F + (2.35F + var2) * (float)Math.sqrt(Math.max(0.02F, 1.0F - var3 * var3 - var4 * var4));
+   private static float surf(float f, float g, float h) {
+      float var3 = f / (2.3F + h);
+      float var4 = (g - 27.95F) / (2.3F + h);
+      return -0.15F + (2.35F + h) * (float)Math.sqrt(Math.max(0.02F, 1.0F - var3 * var3 - var4 * var4));
    }
 
-   private static void head(Rig var0) {
+   private static void head(Rig rig) {
       Shape var1 = Shapes.ellipsoid(0.0F, 27.95F, -0.15F, 2.3F, 2.3F, 2.35F);
       Shape var2 = Shapes.ellipsoid(0.0F, 26.72F, 0.35F, 1.93F, 1.3F, 1.7F);
       Shape var3 = Shapes.cone(0.0F, 26.2F, 0.45F, 1.2F, 0.0F, 25.25F, 0.98F, 0.3F);
       Shape var4 = Shapes.union(Shapes.box(0.0F, 29.0F, -1.8F, 3.0F, 2.3F, 1.5F), Shapes.box(0.0F, 30.3F, 0.5F, 3.0F, 1.3F, 3.0F));
       Shape var5 = Shapes.subtract(Shapes.blend(0.7F, var1, var2, var3), var4).color(-9532);
-      var0.part(Bone.HEAD).pivot(0.0F, 24.9F, -0.3F).shape(toHead(var5)).detail(1.5F).flatLight(1.0F).occlusion(0.2F).outline(-5740966, 0.1F).decal(face());
+      rig.part(Bone.HEAD).pivot(0.0F, 24.9F, -0.3F).shape(toHead(var5)).detail(1.5F).flatLight(1.0F).occlusion(0.2F).outline(-5740966, 0.1F).decal(face());
       Paint var6 = Paint.vertical(-9532, 23.7F, -1331558, 24.3F).flatLight(1.0F).occlusion(0.25F);
-      var0.extra("neck", Bone.BODY).shape(Shapes.capsule(0.0F, 23.1F, -0.28F, 0.0F, 25.2F, -0.2F, 0.62F).paint(var6)).outline(-5740966, 0.08F);
+      rig.extra("neck", Bone.BODY).shape(Shapes.capsule(0.0F, 23.1F, -0.28F, 0.0F, 25.2F, -0.2F, 0.62F).paint(var6)).outline(-5740966, 0.08F);
    }
 
-   private static void hair(Rig var0) {
+   private static void hair(Rig rig) {
       Paint var1 = Paint.field(Mika::hairColor);
       Shape var2 = Shapes.ellipsoid(0.0F, 28.25F, -0.28F, 2.72F, 2.8F, 2.85F)
          .intersect(Shapes.plane(0.0F, 27.4F, 1.2F, 0.0F, -0.6F, 1.0F))
@@ -192,7 +192,7 @@ public final class Mika extends CharacterDesign {
       }
 
       Shape var16 = Shapes.blend(0.3F, var2, Shapes.union(var3));
-      Part var5 = var0.extra("hair", Bone.HEAD)
+      Part var5 = rig.extra("hair", Bone.HEAD)
          .shape(toHead(Shapes.union(var16, backLock(180.0F, 24.95F, 1.05F, 0.25F)).paint(var1)))
          .detail(0.9F)
          .resolution(0.95F)
@@ -215,7 +215,7 @@ public final class Mika extends CharacterDesign {
 
       var7.add(topLock(-84.0F, 26.25F));
       var7.add(topLock(-128.0F, 26.5F));
-      Part var17 = var0.extra("hair_r", Bone.HEAD)
+      Part var17 = rig.extra("hair_r", Bone.HEAD)
          .pivot(0.0F, wy(29.8F), wz(-0.4F))
          .shape(toHead(Shapes.union(var7.toArray(new Shape[0])).paint(var1)))
          .detail(1.0F)
@@ -224,7 +224,7 @@ public final class Mika extends CharacterDesign {
          .occlusion(0.35F)
          .outline(-6142180, 0.09F)
          .motion(Motion.hair().idle(1.2F, 0.0F, 1.0F, 0.35F).walk(2.5F, 0.0F, 2.0F, 2.0F).drag(6.0F).hang(0.2F).turn(5.0F, 0.0F).spring(60.0F, 8.0F).bend(1.6F));
-      var0.extra("hair_l", Bone.HEAD).mirrorOf(var17);
+      rig.extra("hair_l", Bone.HEAD).mirrorOf(var17);
       Shape[] var18 = new Shape[FRINGE.length];
 
       for (int var19 = 0; var19 < FRINGE.length; var19++) {
@@ -233,7 +233,7 @@ public final class Mika extends CharacterDesign {
 
       Shape var20 = Shapes.ellipsoid(0.0F, 28.25F, -0.28F, 2.56F, 2.64F, 2.69F).intersect(Shapes.above(29.3F));
       Shape var21 = Shapes.subtract(Shapes.union(var18), var20);
-      Part var12 = var0.extra("fringe", Bone.HEAD)
+      Part var12 = rig.extra("fringe", Bone.HEAD)
          .shape(toHead(var21.paint(Paint.vertical(-15750, 26.9F, -681403, 29.2F))))
          .detail(1.3F)
          .resolution(0.5F)
@@ -241,7 +241,7 @@ public final class Mika extends CharacterDesign {
          .occlusion(0.25F)
          .outline(-6142180, 0.08F);
       shine(var5, var12);
-      clip(var0);
+      clip(rig);
       Strand var13 = Shapes.tube(
             -1.95F,
             29.5F,
@@ -269,7 +269,7 @@ public final class Mika extends CharacterDesign {
             0.05F
          )
          .flatten(2.3F, -0.55F, 0.0F, 0.83F);
-      Part var14 = var0.extra("lock_r", Bone.HEAD)
+      Part var14 = rig.extra("lock_r", Bone.HEAD)
          .pivot(wx(-1.95F), wy(29.4F), wz(0.85F))
          .shape(toHead(pointed(var13, -2.5F, 24.45F, 0.95F, 0.4F, 1.0F, 0.3F).paint(var1)))
          .detail(0.8F)
@@ -278,7 +278,7 @@ public final class Mika extends CharacterDesign {
          .occlusion(0.35F)
          .outline(-6142180, 0.09F)
          .motion(Motion.hair().drag(10.0F).hang(0.35F));
-      var0.extra("lock_l", Bone.HEAD).mirrorOf(var14);
+      rig.extra("lock_l", Bone.HEAD).mirrorOf(var14);
       Strand var15 = Shapes.tube(
             0.05F,
             30.8F,
@@ -306,7 +306,7 @@ public final class Mika extends CharacterDesign {
             0.05F
          )
          .flatten(1.6F, 0.0F, 0.0F, 1.0F);
-      var0.extra("ahoge", Bone.HEAD)
+      rig.extra("ahoge", Bone.HEAD)
          .pivot(wx(0.05F), wy(30.85F), wz(0.1F))
          .shape(toHead(var15.paint(Paint.vertical(-681403, 31.2F, -15750, 32.1F))))
          .resolution(0.5F)
@@ -317,56 +317,56 @@ public final class Mika extends CharacterDesign {
          .motion(Motion.hair().idle(4.0F, 0.0F, 6.0F, 0.5F).walk(8.0F, 0.0F, 8.0F, 2.0F).drag(6.0F).hang(0.3F).spring(70.0F, 5.0F).bend(1.2F));
    }
 
-   private static int hairColor(float var0, float var1, float var2) {
-      int var3 = Colors.mix(-15750, -681403, smooth(25.0F, 27.6F, var1));
-      float var4 = (float)Math.sqrt(var0 * var0 + (var2 + 0.25F) * (var2 + 0.25F));
-      float var5 = (1.0F - smooth(1.9F, 2.55F, var4)) * (1.0F - smooth(26.4F, 27.6F, var1));
+   private static int hairColor(float f, float g, float h) {
+      int var3 = Colors.mix(-15750, -681403, smooth(25.0F, 27.6F, g));
+      float var4 = (float)Math.sqrt(f * f + (h + 0.25F) * (h + 0.25F));
+      float var5 = (1.0F - smooth(1.9F, 2.55F, var4)) * (1.0F - smooth(26.4F, 27.6F, g));
       return Colors.mix(var3, -3647457, var5 * 0.75F);
    }
 
-   private static Shape fringeLock(float[] var0) {
-      float var1 = var0[0] < 0.7F ? 0.52F : (var0[9] > 0.0F ? 0.4F : 0.28F);
+   private static Shape fringeLock(float[] fs) {
+      float var1 = fs[0] < 0.7F ? 0.52F : (fs[9] > 0.0F ? 0.4F : 0.28F);
       Strand var2 = Shapes.strand(
-            var0[0],
+            fs[0],
             0.05F,
-            var0[1],
-            var0[2],
-            capZ(var0[1], var0[2], -0.3F),
-            var0[3],
-            var0[4],
-            capZ(var0[3], var0[4], 0.1F),
-            var0[5],
-            var0[6],
-            surf(var0[5], var0[6], var1),
-            var0[7],
-            var0[8],
-            surf(var0[7], var0[8], 0.12F)
+            fs[1],
+            fs[2],
+            capZ(fs[1], fs[2], -0.3F),
+            fs[3],
+            fs[4],
+            capZ(fs[3], fs[4], 0.1F),
+            fs[5],
+            fs[6],
+            surf(fs[5], fs[6], var1),
+            fs[7],
+            fs[8],
+            surf(fs[7], fs[8], 0.12F)
          )
          .flattenFrom(2.8F, 0.0F, 27.95F, -0.15F);
-      float var3 = var0[5] - var0[7];
-      float var4 = var0[6] - var0[8];
+      float var3 = fs[5] - fs[7];
+      float var4 = fs[6] - fs[8];
       float var5 = (float)Math.sqrt(var3 * var3 + var4 * var4);
-      float var6 = 0.9F * (1.0F + var0[9]);
-      float var7 = 0.9F * (1.0F - var0[9]);
+      float var6 = 0.9F * (1.0F + fs[9]);
+      float var7 = 0.9F * (1.0F - fs[9]);
       float var8 = 0.34F;
       float var10;
       float var11;
       Shape2D var9 = Shape2D.polygon(
-         var0[7],
-         var0[8],
-         var0[7] + (var10 = var3 / var5) * var6 - (var11 = var4 / var5) * var8,
-         var0[8] + var11 * var6 + var10 * var8,
-         var0[7] + var10 * 8.0F - var11 * 5.0F,
-         var0[8] + var11 * 8.0F + var10 * 5.0F,
-         var0[7] + var10 * 8.0F + var11 * 5.0F,
-         var0[8] + var11 * 8.0F - var10 * 5.0F,
-         var0[7] + var10 * var7 + var11 * var8,
-         var0[8] + var11 * var7 - var10 * var8
+         fs[7],
+         fs[8],
+         fs[7] + (var10 = var3 / var5) * var6 - (var11 = var4 / var5) * var8,
+         fs[8] + var11 * var6 + var10 * var8,
+         fs[7] + var10 * 8.0F - var11 * 5.0F,
+         fs[8] + var11 * 8.0F + var10 * 5.0F,
+         fs[7] + var10 * 8.0F + var11 * 5.0F,
+         fs[8] + var11 * 8.0F - var10 * 5.0F,
+         fs[7] + var10 * var7 + var11 * var8,
+         fs[8] + var11 * var7 - var10 * var8
       );
       return var2.intersect(Shapes.extrude(var9, 6.0F, 0.0F));
    }
 
-   private static void clip(Rig var0) {
+   private static void clip(Rig rig) {
       Shape2D var1 = Shape2D.blend(0.08F, Shape2D.ellipse(-0.1F, 0.0F, 0.5F, 0.32F), Shape2D.polygon(0.3F, 0.0F, 0.86F, 0.36F, 0.66F, 0.0F, 0.86F, -0.36F));
       Shape var2 = Shapes.extrude(var1, 0.15F, 0.11F).scale(1.3F).paint(Paint.gradient(-3869978, 0.0F, 0.35F, 0.0F, -8398652, 0.0F, -0.35F, 0.0F));
       float var3 = 1.62F;
@@ -392,10 +392,10 @@ public final class Mika extends CharacterDesign {
             var19, wx(var17.x()), wy(var17.y()), wz(var17.z()), var18.x(), var18.y(), var18.z(), 0.0F, 1.0F, 0.0F, 0.33600003F, 0.33600003F
          )
          .depth(0.25F, 0.25F);
-      var0.extra("clip", Bone.HEAD).shape(toHead(var16)).resolution(0.4F).detail(0.5F).flatLight(0.4F).outline(-12811148, 0.1F).decal(var20);
+      rig.extra("clip", Bone.HEAD).shape(toHead(var16)).resolution(0.4F).detail(0.5F).flatLight(0.4F).outline(-12811148, 0.1F).decal(var20);
    }
 
-   private static void shine(Part var0, Part var1) {
+   private static void shine(Part part, Part part2) {
       Canvas var3 = new Canvas(96, 24);
       var3.fill(Shape2D.union(Shape2D.taper(3.0F, 12.0F, 1.0F, 48.0F, 12.0F, 17.0F), Shape2D.taper(48.0F, 12.0F, 17.0F, 93.0F, 12.0F, 1.0F)), -419442022, 1.5F);
 
@@ -417,26 +417,26 @@ public final class Mika extends CharacterDesign {
             .maxAngle(80.0F)
             .flatLight(0.8F)
             .occlusion(0.0F);
-         var0.decal(var17);
-         var1.decal(var17);
+         part.decal(var17);
+         part2.decal(var17);
       }
    }
 
-   private static Shape pointed(Strand var0, float var1, float var2, float var3, float var4, float var5, float var6) {
+   private static Shape pointed(Strand strand, float f, float g, float h, float i, float j, float k) {
       float var7 = -0.25F;
-      float var8 = (float)Math.toDegrees(Math.atan2(var1, var3 - var7));
-      float var9 = var5 * (1.0F + var6);
-      float var10 = var5 * (1.0F - var6);
-      Shape2D var11 = Shape2D.polygon(-5.0F, var2 + 8.0F, 5.0F, var2 + 8.0F, var4, var2 + var9, 0.0F, var2, -var4, var2 + var10);
-      return var0.intersect(Shapes.extrude(var11, 5.0F, 0.0F).rotate(0.0F, var8, 0.0F, 0.0F, 0.0F, var7));
+      float var8 = (float)Math.toDegrees(Math.atan2(f, h - var7));
+      float var9 = j * (1.0F + k);
+      float var10 = j * (1.0F - k);
+      Shape2D var11 = Shape2D.polygon(-5.0F, g + 8.0F, 5.0F, g + 8.0F, i, g + var9, 0.0F, g, -i, g + var10);
+      return strand.intersect(Shapes.extrude(var11, 5.0F, 0.0F).rotate(0.0F, var8, 0.0F, 0.0F, 0.0F, var7));
    }
 
-   private static Shape backLock(float var0, float var1, float var2, float var3) {
-      double var4 = Math.toRadians(var0);
+   private static Shape backLock(float f, float g, float h, float i) {
+      double var4 = Math.toRadians(f);
       float var6 = (float)Math.sin(var4);
       float var7 = (float)Math.cos(var4);
-      float var8 = Math.max(0.0F, Math.min(1.0F, (Math.abs(var0) - 100.0F) / 70.0F));
-      float[] var9 = new float[]{30.1F, 29.1F, 27.9F, 26.9F, (26.9F + var1) * 0.5F - 0.1F, var1};
+      float var8 = Math.max(0.0F, Math.min(1.0F, (Math.abs(f) - 100.0F) / 70.0F));
+      float[] var9 = new float[]{30.1F, 29.1F, 27.9F, 26.9F, (26.9F + g) * 0.5F - 0.1F, g};
       float[] var10 = new float[]{2.04F, 2.59F, 2.7F, 2.52F, 2.42F, 2.32F};
       float[] var11 = new float[]{2.14F, 2.72F, 2.83F, 2.62F, 2.48F, 2.35F};
       float[] var12 = new float[]{-0.34F, -0.06F, 0.04F, 0.04F, 0.02F, -0.06F - 0.24F * var8};
@@ -447,18 +447,18 @@ public final class Mika extends CharacterDesign {
          var14[var15 * 4] = var6 * (var10[var15] + var12[var15]);
          var14[var15 * 4 + 1] = var9[var15];
          var14[var15 * 4 + 2] = -0.28F + var7 * (var11[var15] + var12[var15]);
-         var14[var15 * 4 + 3] = var13[var15] * (var15 == 5 ? 1.0F : var2);
+         var14[var15 * 4 + 3] = var13[var15] * (var15 == 5 ? 1.0F : h);
       }
 
-      return pointed(Shapes.tube(var14).flattenFrom(2.1F, 0.0F, 27.95F, -0.15F), var14[20], var1, var14[22], 0.62F, 1.25F, var3);
+      return pointed(Shapes.tube(var14).flattenFrom(2.1F, 0.0F, 27.95F, -0.15F), var14[20], g, var14[22], 0.62F, 1.25F, i);
    }
 
-   private static Shape topLock(float var0, float var1) {
-      double var2 = Math.toRadians(var0);
+   private static Shape topLock(float f, float g) {
+      double var2 = Math.toRadians(f);
       float var4 = (float)Math.sin(var2);
       float var5 = (float)Math.cos(var2);
       float[] var6 = new float[]{2.2F, 2.8F, 2.98F, 3.0F};
-      float[] var7 = new float[]{29.4F, 28.2F, 27.2F, var1};
+      float[] var7 = new float[]{29.4F, 28.2F, 27.2F, g};
       float[] var8 = new float[]{0.55F, 0.75F, 0.55F, 0.08F};
       float[] var9 = new float[16];
 
@@ -469,10 +469,10 @@ public final class Mika extends CharacterDesign {
          var9[var10 * 4 + 3] = var8[var10];
       }
 
-      return pointed(Shapes.tube(var9).flattenFrom(2.2F, 0.0F, 27.95F, -0.15F), var9[12], var1, var9[14], 0.6F, 1.15F, 0.2F);
+      return pointed(Shapes.tube(var9).flattenFrom(2.2F, 0.0F, 27.95F, -0.15F), var9[12], g, var9[14], 0.6F, 1.15F, 0.2F);
    }
 
-   private static void ears(Rig var0) {
+   private static void ears(Rig rig) {
       Shape var1 = Shapes.extrude(Shape2D.polygon(-1.1F, 0.0F, 1.1F, 0.0F, 0.08F, 2.55F), 0.64F, 0.32F);
       Shape var2 = Shapes.extrude(Shape2D.polygon(0.6F, -0.3F, -0.62F, -0.3F, -0.15F, 2.7F, 0.2F, 2.7F), 1.3F, 0.2F).rotate(0.0F, 90.0F, 0.0F);
       Shape var3 = Shapes.intersect(var1, var2).paint(Paint.vertical(-681403, 1.45F, -4697060, 2.25F));
@@ -485,7 +485,7 @@ public final class Mika extends CharacterDesign {
          )
          .paint(Paint.of(-5162).flatLight(0.7F));
       Shape var6 = Shapes.union(Shapes.subtract(0.1F, var3, var4), var5).scale(1.18F).rotate(-6.0F, -18.0F, 24.0F).move(-1.6F, 29.75F, -0.15F);
-      Part var7 = var0.extra("ear_r", Bone.HEAD)
+      Part var7 = rig.extra("ear_r", Bone.HEAD)
          .pivot(wx(-1.6F), wy(29.9F), wz(-0.15F))
          .shape(toHead(var6))
          .resolution(0.58F)
@@ -493,14 +493,14 @@ public final class Mika extends CharacterDesign {
          .flatLight(0.4F)
          .outline(-6142180, 0.09F)
          .motion(earMotion(0.0F, -1.0F));
-      var0.extra("ear_l", Bone.HEAD).mirrorOf(var7).motion(earMotion(140.0F, 1.0F));
+      rig.extra("ear_l", Bone.HEAD).mirrorOf(var7).motion(earMotion(140.0F, 1.0F));
    }
 
-   private static Motion earMotion(float var0, float var1) {
-      return Motion.none().idle(2.5F, 0.0F, 5.0F * var1, 0.55F).idlePhase(var0).walk(3.0F, 0.0F, 3.0F * var1, 2.0F).spring(90.0F, 7.0F);
+   private static Motion earMotion(float f, float g) {
+      return Motion.none().idle(2.5F, 0.0F, 5.0F * g, 0.55F).idlePhase(f).walk(3.0F, 0.0F, 3.0F * g, 2.0F).spring(90.0F, 7.0F);
    }
 
-   private static void body(Rig var0) {
+   private static void body(Rig rig) {
       Shape var1 = Shapes.union(
          Shapes.cone(0.0F, 22.6F, -0.2F, 1.02F, -1.95F, 22.2F, -0.2F, 0.9F), Shapes.cone(0.0F, 22.6F, -0.2F, 1.02F, 1.95F, 22.2F, -0.2F, 0.9F)
       );
@@ -514,7 +514,7 @@ public final class Mika extends CharacterDesign {
          )
          .color(-4200487);
       Shape var7 = Shapes.extrude(Shape2D.ellipse(0.0F, 0.0F, 2.42F, 1.8F), 0.4F, 0.3F).rotate(90.0F, 0.0F, 0.0F).move(0.0F, 14.2F, -0.05F).color(-5710645);
-      var0.part(Bone.BODY)
+      rig.part(Bone.BODY)
          .pivot(0.0F, 23.4F, -0.1F)
          .shape(Shapes.union(Shapes.blend(0.25F, var5, var6), var7))
          .resolution(1.15F)
@@ -525,7 +525,7 @@ public final class Mika extends CharacterDesign {
          .decal(pocketDecal())
          .decal(pawDecal())
          .decal(hemRib());
-      var0.extra("collar", Bone.BODY)
+      rig.extra("collar", Bone.BODY)
          .shape(rim().paint(Paint.field(Mika::rimColor)))
          .resolution(0.7F)
          .detail(0.8F)
@@ -537,8 +537,8 @@ public final class Mika extends CharacterDesign {
       );
       Shape var9 = Shapes.ellipsoid(0.0F, 0.0F, 0.0F, 1.55F, 0.35F, 0.85F).rotate(-26.6F, 0.0F, 0.0F).move(0.0F, 22.95F, -1.95F);
       Shape var10 = Shapes.subtract(0.15F, var8.intersect(Shapes.plane(0.0F, 22.7F, -2.2F, 0.0F, 1.0F, -0.5F)), var9).paint(Paint.field(Mika::hoodColor));
-      var0.extra("hood", Bone.BODY).shape(var10).resolution(0.85F).detail(0.6F).occlusion(0.3F).flatLight(0.2F).outline(-10774650, 0.12F);
-      var0.extra("skirt", Bone.BODY)
+      rig.extra("hood", Bone.BODY).shape(var10).resolution(0.85F).detail(0.6F).occlusion(0.3F).flatLight(0.2F).outline(-10774650, 0.12F);
+      rig.extra("skirt", Bone.BODY)
          .pivot(0.0F, 14.6F, 0.0F)
          .shape(skirt())
          .resolution(0.9F)
@@ -550,7 +550,7 @@ public final class Mika extends CharacterDesign {
       Shape var11 = Shapes.tube(-0.32F, 23.5F, 1.45F, 0.13F, -0.38F, 22.6F, 1.75F, 0.13F, -0.44F, 21.3F, 1.95F, 0.13F, -0.48F, 20.1F, 2.0F, 0.12F)
          .color(-264984);
       Shape var12 = Shapes.sphere(-0.48F, 19.6F, 2.05F, 0.45F).paint(Paint.radial(-3920, -0.62F, 19.8F, 2.35F, 0.6F, -867761));
-      Part var13 = var0.extra("cord_r", Bone.BODY)
+      Part var13 = rig.extra("cord_r", Bone.BODY)
          .pivot(-0.32F, 23.5F, 1.45F)
          .shape(Shapes.union(var11, var12))
          .resolution(0.5F)
@@ -567,7 +567,7 @@ public final class Mika extends CharacterDesign {
                .spring(60.0F, 6.0F)
                .bend(0.8F)
          );
-      var0.extra("cord_l", Bone.BODY).mirrorOf(var13);
+      rig.extra("cord_l", Bone.BODY).mirrorOf(var13);
    }
 
    private static Shape rim() {
@@ -601,24 +601,24 @@ public final class Mika extends CharacterDesign {
          .mirrorX();
    }
 
-   private static int hoodie(float var0, float var1, float var2) {
-      float var3 = (float)Math.sqrt(var0 * var0 + (var2 + 0.2F) * (var2 + 0.2F));
-      float var4 = smooth(22.4F, 23.3F, var1) * (1.0F - smooth(1.7F, 2.3F, var3)) * 0.6F;
-      float var5 = (1.0F - smooth(14.6F, 15.3F, var1)) * 0.55F;
+   private static int hoodie(float f, float g, float h) {
+      float var3 = (float)Math.sqrt(f * f + (h + 0.2F) * (h + 0.2F));
+      float var4 = smooth(22.4F, 23.3F, g) * (1.0F - smooth(1.7F, 2.3F, var3)) * 0.6F;
+      float var5 = (1.0F - smooth(14.6F, 15.3F, g)) * 0.55F;
       return Colors.mix(-4200487, -7092297, Math.max(var4, var5));
    }
 
-   private static int rimColor(float var0, float var1, float var2) {
-      float var3 = (float)Math.sqrt(var0 * var0 + (var2 + 0.2F) * (var2 + 0.2F));
-      float var4 = smooth(0.28F, 0.36F, var1 - 24.0F + 0.22F * var2);
+   private static int rimColor(float f, float g, float h) {
+      float var3 = (float)Math.sqrt(f * f + (h + 0.2F) * (h + 0.2F));
+      float var4 = smooth(0.28F, 0.36F, g - 24.0F + 0.22F * h);
       return Colors.mix(-4200487, -744532, Math.max(var4, 1.0F - smooth(1.12F, 1.38F, var3)));
    }
 
-   private static int hoodColor(float var0, float var1, float var2) {
-      float var3 = var0 / 2.2F;
-      float var4 = (var1 - 21.7F) / 2.2F;
-      float var5 = (var2 + 1.85F) / 0.85F;
-      float var6 = (var1 - 22.7F - 0.5F * (var2 + 2.2F)) * 0.894F;
+   private static int hoodColor(float f, float g, float h) {
+      float var3 = f / 2.2F;
+      float var4 = (g - 21.7F) / 2.2F;
+      float var5 = (h + 1.85F) / 0.85F;
+      float var6 = (g - 22.7F - 0.5F * (h + 2.2F)) * 0.894F;
       return var6 > -0.5F && var3 * var3 + var4 * var4 + var5 * var5 < 0.8F ? -744532 : -4200487;
    }
 
@@ -626,33 +626,33 @@ public final class Mika extends CharacterDesign {
       return Shapes.field(Mika::skirtDistance, -3.3F, 11.8F, -2.8F, 3.3F, 14.4F, 2.8F).paint(Paint.field(Mika::skirtColor));
    }
 
-   private static float flare(float var0) {
-      float var1 = Math.max(0.0F, Math.min(1.0F, (14.0F - var0) / 2.1F));
+   private static float flare(float f) {
+      float var1 = Math.max(0.0F, Math.min(1.0F, (14.0F - f) / 2.1F));
       return var1 * (2.0F - var1);
    }
 
-   private static float pleat(float var0, float var1, float var2) {
-      float var3 = 2.2F + 0.75F * var2;
-      float var4 = 1.66F + 0.84F * var2;
-      double var5 = Math.atan2(var0 / var3, var1 / var4) * 16.0 / 6.283185307179586;
+   private static float pleat(float f, float g, float h) {
+      float var3 = 2.2F + 0.75F * h;
+      float var4 = 1.66F + 0.84F * h;
+      double var5 = Math.atan2(f / var3, g / var4) * 16.0 / 6.283185307179586;
       var5 -= Math.floor(var5);
       return (float)Math.abs(2.0 * var5 - 1.0);
    }
 
-   private static float skirtDistance(float var0, float var1, float var2) {
-      float var3 = flare(var1);
+   private static float skirtDistance(float f, float g, float h) {
+      float var3 = flare(g);
       float var4 = 2.2F + 0.75F * var3;
       float var5 = 1.66F + 0.84F * var3;
-      float var6 = var0 / var4;
-      float var7 = var2 / var5;
+      float var6 = f / var4;
+      float var7 = h / var5;
       float var8 = (float)Math.sqrt(var6 * var6 + var7 * var7);
-      float var9 = (var8 - 1.0F) * Math.min(var4, var5) * 0.72F - 0.2F * var3 * (pleat(var0, var2, var3) - 0.5F);
-      return Math.max(var9, Math.max(var1 - 14.3F, 11.9F - var1));
+      float var9 = (var8 - 1.0F) * Math.min(var4, var5) * 0.72F - 0.2F * var3 * (pleat(f, h, var3) - 0.5F);
+      return Math.max(var9, Math.max(g - 14.3F, 11.9F - g));
    }
 
-   private static int skirtColor(float var0, float var1, float var2) {
-      float var3 = flare(var1);
-      return Colors.mix(-14275250, -12892555, 0.45F + 0.55F * (1.0F - var3 + var3 * pleat(var0, var2, var3)));
+   private static int skirtColor(float f, float g, float h) {
+      float var3 = flare(g);
+      return Colors.mix(-14275250, -12892555, 0.45F + 0.55F * (1.0F - var3 + var3 * pleat(f, h, var3)));
    }
 
    private static Decal skirtStripe() {
@@ -661,7 +661,7 @@ public final class Mika extends CharacterDesign {
       return Decal.wrap(var0, 0.0F, 12.35F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 360.0F, 0.16F).radius(2.2F, 3.2F);
    }
 
-   private static void arms(Rig var0) {
+   private static void arms(Rig rig) {
       Shape var1 = Shapes.sphere(-2.72F, 21.95F, -0.15F, 0.95F);
       Shape var2 = Shapes.cone(-2.85F, 21.6F, -0.15F, 0.9F, -3.35F, 18.4F, -0.2F, 0.88F);
       Shape var3 = Shapes.sphere(-3.38F, 18.3F, -0.18F, 0.9F);
@@ -669,7 +669,7 @@ public final class Mika extends CharacterDesign {
       Shape var5 = Shapes.blend(0.4F, var1, var2, var3, var4).paint(Paint.field(Mika::sleeve));
       Shape var6 = Shapes.cylinder(-3.74F, 15.05F, 0.47F, -3.8F, 13.4F, 0.69F, 0.9F, 0.28F).paint(Paint.field(Mika::cuff));
       Shape var7 = Shapes.blend(0.15F, var5, var6);
-      Part var8 = var0.part(Bone.RIGHT_ARM)
+      Part var8 = rig.part(Bone.RIGHT_ARM)
          .pivot(-2.72F, 21.95F, -0.15F)
          .grip(-3.8F, 12.9F, 0.9F)
          .shape(var7)
@@ -681,26 +681,26 @@ public final class Mika extends CharacterDesign {
          .swing(0.65F, 40.0F)
          .joint(-3.38F, 18.3F, -0.18F, 0.7F)
          .decal(cuffRib());
-      var0.part(Bone.LEFT_ARM).mirrorOf(var8);
-      Part var9 = var0.extra("hand_r", Bone.RIGHT_ARM).shape(hand()).resolution(0.4F).detail(2.6F).flatLight(1.0F).occlusion(0.25F).outline(-5740966, 0.08F);
-      var0.extra("hand_l", Bone.LEFT_ARM).mirrorOf(var9);
+      rig.part(Bone.LEFT_ARM).mirrorOf(var8);
+      Part var9 = rig.extra("hand_r", Bone.RIGHT_ARM).shape(hand()).resolution(0.4F).detail(2.6F).flatLight(1.0F).occlusion(0.25F).outline(-5740966, 0.08F);
+      rig.extra("hand_l", Bone.LEFT_ARM).mirrorOf(var9);
    }
 
-   private static int sleeve(float var0, float var1, float var2) {
-      float var3 = Math.max(0.0F, Math.min(1.0F, (21.9F - var1) / 6.9F));
-      float var4 = smooth(0.25F, 0.85F, var0 + 2.8F + 0.94F * var3) * 0.5F;
-      float var5 = (1.0F - smooth(0.2F, 0.55F, Math.abs(var1 - 18.25F))) * smooth(0.2F, 0.7F, var2) * 0.45F;
+   private static int sleeve(float f, float g, float h) {
+      float var3 = Math.max(0.0F, Math.min(1.0F, (21.9F - g) / 6.9F));
+      float var4 = smooth(0.25F, 0.85F, f + 2.8F + 0.94F * var3) * 0.5F;
+      float var5 = (1.0F - smooth(0.2F, 0.55F, Math.abs(g - 18.25F))) * smooth(0.2F, 0.7F, h) * 0.45F;
       return Colors.mix(-4200487, -7092297, Math.max(var4, var5));
    }
 
-   private static int cuff(float var0, float var1, float var2) {
+   private static int cuff(float f, float g, float h) {
       float var3 = -0.06F;
       float var4 = -1.65F;
       float var5 = 0.22F;
       float var6 = (float)Math.sqrt(var3 * var3 + var4 * var4 + var5 * var5);
-      float var7 = var0 + 3.8F;
-      float var8 = var1 - 13.4F;
-      float var9 = var2 - 0.69F;
+      float var7 = f + 3.8F;
+      float var8 = g - 13.4F;
+      float var9 = h - 0.69F;
       float var10 = -(var7 * var3 + var8 * var4 + var9 * var5) / var6;
       float var11 = var7 + var10 * var3 / var6;
       float var12 = var8 + var10 * var4 / var6;
@@ -721,14 +721,14 @@ public final class Mika extends CharacterDesign {
       return Shapes.union(Shapes.union(var1), var3).paint(Paint.of(-9532));
    }
 
-   private static void legs(Rig var0) {
+   private static void legs(Rig rig) {
       Shape var1 = Shapes.sphere(-1.12F, 13.2F, -0.05F, 1.0F);
       Shape var2 = Shapes.cone(-1.18F, 12.8F, 0.0F, 1.13F, -1.1F, 7.9F, 0.1F, 0.88F);
       Shape var3 = Shapes.sphere(-1.08F, 7.45F, 0.12F, 0.82F);
       Shape var4 = Shapes.sphere(-1.07F, 7.5F, 0.48F, 0.5F);
       Strand var5 = Shapes.tube(-1.08F, 7.2F, 0.1F, 0.84F, -1.1F, 5.6F, -0.15F, 0.93F, -1.13F, 3.6F, -0.02F, 0.64F, -1.15F, 2.2F, 0.0F, 0.52F);
       Shape var6 = Shapes.blend(0.45F, var1, var2, var3, var4, var5).paint(Paint.field(Mika::tights));
-      Part var7 = var0.part(Bone.RIGHT_LEG)
+      Part var7 = rig.part(Bone.RIGHT_LEG)
          .pivot(-1.2F, 13.7F, 0.0F)
          .shape(var6)
          .detail(0.85F)
@@ -737,21 +737,21 @@ public final class Mika extends CharacterDesign {
          .occlusion(0.35F)
          .swing(0.55F, 30.0F)
          .joint(-1.08F, 7.45F, 0.12F, 0.8F);
-      var0.part(Bone.LEFT_LEG).mirrorOf(var7);
-      Part var8 = var0.extra("shoe_r", Bone.RIGHT_LEG)
+      rig.part(Bone.LEFT_LEG).mirrorOf(var7);
+      Part var8 = rig.extra("shoe_r", Bone.RIGHT_LEG)
          .shape(sneaker().rotate(0.0F, -7.0F, 0.0F, -1.2F, 0.0F, 0.2F))
          .resolution(0.75F)
          .detail(1.0F)
          .outline(-6659470, 0.12F)
          .decal(laces());
-      var0.extra("shoe_l", Bone.LEFT_LEG).mirrorOf(var8);
+      rig.extra("shoe_l", Bone.LEFT_LEG).mirrorOf(var8);
    }
 
-   private static int tights(float var0, float var1, float var2) {
-      double var3 = Math.atan2(-(var0 + 1.1F), var2 - 0.02F) - 0.35;
-      float var5 = smooth(0.6F, 0.95F, (float)Math.cos(var3)) * smooth(2.4F, 4.5F, var1) * 0.5F;
-      float var6 = (float)Math.sqrt((var1 - 7.5F) * (var1 - 7.5F) + (var0 + 1.07F) * (var0 + 1.07F) * 1.4F);
-      float var7 = (1.0F - smooth(0.3F, 0.8F, var6)) * smooth(0.2F, 0.7F, var2) * 0.55F;
+   private static int tights(float f, float g, float h) {
+      double var3 = Math.atan2(-(f + 1.1F), h - 0.02F) - 0.35;
+      float var5 = smooth(0.6F, 0.95F, (float)Math.cos(var3)) * smooth(2.4F, 4.5F, g) * 0.5F;
+      float var6 = (float)Math.sqrt((g - 7.5F) * (g - 7.5F) + (f + 1.07F) * (f + 1.07F) * 1.4F);
+      float var7 = (1.0F - smooth(0.3F, 0.8F, var6)) * smooth(0.2F, 0.7F, h) * 0.55F;
       return Colors.mix(-12965330, -9808288, Math.max(var5, var7));
    }
 
@@ -769,7 +769,7 @@ public final class Mika extends CharacterDesign {
       return Shapes.union(var0, Shapes.blend(0.12F, var3, var4), var5, var6, var7);
    }
 
-   private static void tail(Rig var0) {
+   private static void tail(Rig rig) {
       float[] var1 = new float[]{
          0.0F,
          13.95F,
@@ -814,7 +814,7 @@ public final class Mika extends CharacterDesign {
          Shapes.strand(0.24F, 0.04F, 2.68F, 21.32F, -3.02F, 2.46F, 21.6F, -2.62F, 2.42F, 21.62F, -2.2F),
          Shapes.strand(0.24F, 0.04F, 2.68F, 21.32F, -3.02F, 2.44F, 21.7F, -2.72F, 2.4F, 22.12F, -2.62F)
       );
-      Part var4 = var0.extra("tail", Bone.BODY)
+      Part var4 = rig.extra("tail", Bone.BODY)
          .pivot(0.0F, 13.95F, -1.45F)
          .shape(Shapes.union(Shapes.tube(var1), var3).paint(Paint.field(var2::tailColor)))
          .detail(1.0F)
@@ -830,8 +830,8 @@ public final class Mika extends CharacterDesign {
       }
    }
 
-   private static float smooth(float var0, float var1, float var2) {
-      float var3 = Math.max(0.0F, Math.min(1.0F, (var2 - var0) / (var1 - var0)));
+   private static float smooth(float f, float g, float h) {
+      float var3 = Math.max(0.0F, Math.min(1.0F, (h - f) / (g - f)));
       return var3 * var3 * (3.0F - 2.0F * var3);
    }
 
@@ -858,30 +858,30 @@ public final class Mika extends CharacterDesign {
       return Decal.front(var0, 0.0F, wy(27.203125F), wz(2.1F), 5.152F, 4.0249996F).depth(1.4F, 1.4F).maxAngle(72.0F).flatLight(1.0F).occlusion(0.3F);
    }
 
-   private static void eye(Canvas var0, float var1, float var2, int var3) {
-      Shape2D var4 = Shape2D.ellipse(var1, var2 + 10.0F, 31.0F, 40.0F).rotate(var3 * 12.0F, var1, var2 + 10.0F);
-      Shape2D var5 = Shape2D.ellipse(var1, var2 + 2.0F, 26.0F, 31.0F).intersect(var4);
-      var0.fill(var5, Paint2D.linear(var1, var2 - 28.0F, var1, var2 + 4.0F, -2571046, -776));
-      Shape2D var6 = Shape2D.ellipse(var1 + var3, var2 + 5.0F, 21.0F, 27.0F);
-      var0.fill(var6.intersect(var5), Paint2D.linear(var1, var2 - 22.0F, var1, var2 + 32.0F, -11920890, -5748206, -1535446, -11414));
-      var0.fill(Shape2D.ellipse(var1 + var3, var2 + 6.0F, 9.0F, 21.0F).intersect(var5), -1711287446, 4.0F);
-      var0.fill(var6.outline(2.5F).intersect(var5), -1338371580);
-      float var7 = var1 + var3;
-      float var8 = var2 + 6.0F;
-      var0.fill(Shape2D.circle(var7 - 42.2F, var8, 46.7F).intersect(Shape2D.circle(var7 + 42.2F, var8, 46.7F)), -14414846);
-      var0.fill(Shape2D.ellipse(var1 - 8.0F, var2 - 8.0F, 7.5F, 9.0F).rotate(-20.0F, var1 - 8.0F, var2 - 8.0F), -1);
-      var0.fill(Shape2D.circle(var1 + 9.0F, var2 + 17.0F, 3.5F), -419430401);
-      var0.fill(Shape2D.curve(var1 - var3 * 28.0F, var2 - 8.0F, var1 - var3 * 2.0F, var2 - 42.0F, var1 + var3 * 30.0F, var2 - 24.0F, 4.0F, 9.5F), -13887470);
-      var0.fill(Shape2D.taper(var1 + var3 * 24.0F, var2 - 24.0F, 7.0F, var1 + var3 * 40.0F, var2 - 36.0F, 1.5F), -13887470);
-      var0.fill(Shape2D.curve(var1 + var3 * 8.0F, var2 + 34.0F, var1 + var3 * 21.0F, var2 + 31.0F, var1 + var3 * 26.0F, var2 + 17.0F, 1.2F, 3.0F), -866506210);
-      var0.fill(Shape2D.curve(var1 - var3 * 17.0F, var2 - 38.0F, var1 + var3 * 2.0F, var2 - 48.0F, var1 + var3 * 24.0F, var2 - 38.0F, 1.5F, 2.2F), 1721786442);
-      var0.fill(Shape2D.curve(var1 - var3 * 16.0F, var2 - 50.0F, var1 + var3 * 2.0F, var2 - 58.0F, var1 + var3 * 22.0F, var2 - 53.0F, 3.0F, 2.0F), -4691398);
-      float var9 = var1 + var3 * 10.0F;
-      float var10 = var2 + 42.0F;
-      var0.fill(Shape2D.ellipse(var9, var10, 20.0F, 9.0F), 1627357068, 9.0F);
+   private static void eye(Canvas canvas, float f, float g, int i) {
+      Shape2D var4 = Shape2D.ellipse(f, g + 10.0F, 31.0F, 40.0F).rotate(i * 12.0F, f, g + 10.0F);
+      Shape2D var5 = Shape2D.ellipse(f, g + 2.0F, 26.0F, 31.0F).intersect(var4);
+      canvas.fill(var5, Paint2D.linear(f, g - 28.0F, f, g + 4.0F, -2571046, -776));
+      Shape2D var6 = Shape2D.ellipse(f + i, g + 5.0F, 21.0F, 27.0F);
+      canvas.fill(var6.intersect(var5), Paint2D.linear(f, g - 22.0F, f, g + 32.0F, -11920890, -5748206, -1535446, -11414));
+      canvas.fill(Shape2D.ellipse(f + i, g + 6.0F, 9.0F, 21.0F).intersect(var5), -1711287446, 4.0F);
+      canvas.fill(var6.outline(2.5F).intersect(var5), -1338371580);
+      float var7 = f + i;
+      float var8 = g + 6.0F;
+      canvas.fill(Shape2D.circle(var7 - 42.2F, var8, 46.7F).intersect(Shape2D.circle(var7 + 42.2F, var8, 46.7F)), -14414846);
+      canvas.fill(Shape2D.ellipse(f - 8.0F, g - 8.0F, 7.5F, 9.0F).rotate(-20.0F, f - 8.0F, g - 8.0F), -1);
+      canvas.fill(Shape2D.circle(f + 9.0F, g + 17.0F, 3.5F), -419430401);
+      canvas.fill(Shape2D.curve(f - i * 28.0F, g - 8.0F, f - i * 2.0F, g - 42.0F, f + i * 30.0F, g - 24.0F, 4.0F, 9.5F), -13887470);
+      canvas.fill(Shape2D.taper(f + i * 24.0F, g - 24.0F, 7.0F, f + i * 40.0F, g - 36.0F, 1.5F), -13887470);
+      canvas.fill(Shape2D.curve(f + i * 8.0F, g + 34.0F, f + i * 21.0F, g + 31.0F, f + i * 26.0F, g + 17.0F, 1.2F, 3.0F), -866506210);
+      canvas.fill(Shape2D.curve(f - i * 17.0F, g - 38.0F, f + i * 2.0F, g - 48.0F, f + i * 24.0F, g - 38.0F, 1.5F, 2.2F), 1721786442);
+      canvas.fill(Shape2D.curve(f - i * 16.0F, g - 50.0F, f + i * 2.0F, g - 58.0F, f + i * 22.0F, g - 53.0F, 3.0F, 2.0F), -4691398);
+      float var9 = f + i * 10.0F;
+      float var10 = g + 42.0F;
+      canvas.fill(Shape2D.ellipse(var9, var10, 20.0F, 9.0F), 1627357068, 9.0F);
 
       for (int var11 = 0; var11 < 3; var11++) {
-         var0.fill(Shape2D.line(var9 - 8.0F + var11 * 7.0F, var10 - 4.0F, var9 - 12.0F + var11 * 7.0F, var10 + 4.0F, 1.6F), 1894277230);
+         canvas.fill(Shape2D.line(var9 - 8.0F + var11 * 7.0F, var10 - 4.0F, var9 - 12.0F + var11 * 7.0F, var10 + 4.0F, 1.6F), 1894277230);
       }
    }
 
@@ -920,11 +920,11 @@ public final class Mika extends CharacterDesign {
       return Decal.front(var0, 1.2F, 20.6F, 1.6F, 1.5F, 1.5F).depth(1.5F, 1.5F).maxAngle(70.0F);
    }
 
-   private static Canvas ribs(int var0, int var1) {
-      Canvas var2 = new Canvas(var1, 16);
-      float var3 = (float)var1 / var0;
+   private static Canvas ribs(int i, int j) {
+      Canvas var2 = new Canvas(j, 16);
+      float var3 = (float)j / i;
 
-      for (int var4 = 0; var4 < var0; var4++) {
+      for (int var4 = 0; var4 < i; var4++) {
          float var5 = var4 * var3 + var3 * 0.5F;
          var2.fill(Shape2D.box(var5, 8.0F, var3 * 0.18F, 8.0F, 0.0F), 1078491756);
       }
@@ -940,13 +940,13 @@ public final class Mika extends CharacterDesign {
       return Decal.wrap(ribs(24, 256), -3.77F, 14.3F, 0.57F, 0.06F, 1.65F, -0.22F, 0.0F, 0.0F, 1.0F, 360.0F, 1.2F).radius(0.6F, 1.4F);
    }
 
-   private static Decal bellDecal(float var0) {
+   private static Decal bellDecal(float f) {
       Canvas var1 = new Canvas(64, 64);
       var1.fill(Shape2D.box(32.0F, 30.0F, 30.0F, 2.0F, 1.0F), -5737444);
       var1.fill(Shape2D.circle(32.0F, 40.0F, 4.5F), -11915254);
       var1.fill(Shape2D.line(32.0F, 40.0F, 32.0F, 60.0F, 3.5F), -11915254);
       var1.fill(Shape2D.ellipse(24.0F, 20.0F, 5.0F, 3.5F), -1426063361);
-      return Decal.front(var1, var0, 19.6F, 2.5F, 1.0F, 1.0F).depth(0.6F, 0.6F).maxAngle(70.0F);
+      return Decal.front(var1, f, 19.6F, 2.5F, 1.0F, 1.0F).depth(0.6F, 0.6F).maxAngle(70.0F);
    }
 
    private static Decal laces() {
@@ -981,8 +981,8 @@ public final class Mika extends CharacterDesign {
       private final float[] len;
       private final int n;
 
-      Curve(float[] var1) {
-         int var2 = var1.length / 4 - 2;
+      Curve(float[] fs) {
+         int var2 = fs.length / 4 - 2;
          byte var3 = 12;
          this.n = var2 * var3 + 1;
          this.xs = new float[this.n];
@@ -995,19 +995,19 @@ public final class Mika extends CharacterDesign {
             int var6 = (var5 - 1) * 4;
             int var7 = var5 * 4;
             int var8 = (var5 + 1) * 4;
-            float var9 = var5 == 1 ? var1[0] : (var1[var6] + var1[var7]) * 0.5F;
-            float var10 = var5 == 1 ? var1[1] : (var1[var6 + 1] + var1[var7 + 1]) * 0.5F;
-            float var11 = var5 == 1 ? var1[2] : (var1[var6 + 2] + var1[var7 + 2]) * 0.5F;
-            float var12 = var5 == var2 ? var1[var8] : (var1[var7] + var1[var8]) * 0.5F;
-            float var13 = var5 == var2 ? var1[var8 + 1] : (var1[var7 + 1] + var1[var8 + 1]) * 0.5F;
-            float var14 = var5 == var2 ? var1[var8 + 2] : (var1[var7 + 2] + var1[var8 + 2]) * 0.5F;
+            float var9 = var5 == 1 ? fs[0] : (fs[var6] + fs[var7]) * 0.5F;
+            float var10 = var5 == 1 ? fs[1] : (fs[var6 + 1] + fs[var7 + 1]) * 0.5F;
+            float var11 = var5 == 1 ? fs[2] : (fs[var6 + 2] + fs[var7 + 2]) * 0.5F;
+            float var12 = var5 == var2 ? fs[var8] : (fs[var7] + fs[var8]) * 0.5F;
+            float var13 = var5 == var2 ? fs[var8 + 1] : (fs[var7 + 1] + fs[var8 + 1]) * 0.5F;
+            float var14 = var5 == var2 ? fs[var8 + 2] : (fs[var7 + 2] + fs[var8 + 2]) * 0.5F;
 
             for (int var15 = 0; var15 < var3 || var5 == var2 && var15 == var3; var15++) {
                float var16 = (float)var15 / var3;
                float var17 = 1.0F - var16;
-               this.xs[var4] = var17 * var17 * var9 + 2.0F * var17 * var16 * var1[var7] + var16 * var16 * var12;
-               this.ys[var4] = var17 * var17 * var10 + 2.0F * var17 * var16 * var1[var7 + 1] + var16 * var16 * var13;
-               this.zs[var4] = var17 * var17 * var11 + 2.0F * var17 * var16 * var1[var7 + 2] + var16 * var16 * var14;
+               this.xs[var4] = var17 * var17 * var9 + 2.0F * var17 * var16 * fs[var7] + var16 * var16 * var12;
+               this.ys[var4] = var17 * var17 * var10 + 2.0F * var17 * var16 * fs[var7 + 1] + var16 * var16 * var13;
+               this.zs[var4] = var17 * var17 * var11 + 2.0F * var17 * var16 * fs[var7 + 2] + var16 * var16 * var14;
                if (var4 > 0) {
                   float var18 = this.xs[var4] - this.xs[var4 - 1];
                   float var19 = this.ys[var4] - this.ys[var4 - 1];
@@ -1020,14 +1020,14 @@ public final class Mika extends CharacterDesign {
          }
       }
 
-      float param(float var1, float var2, float var3) {
+      float param(float f, float g, float h) {
          int var4 = 0;
          float var5 = 3.4028235E38F;
 
          for (int var6 = 0; var6 < this.n; var6++) {
-            float var7 = var1 - this.xs[var6];
-            float var8 = var2 - this.ys[var6];
-            float var9 = var3 - this.zs[var6];
+            float var7 = f - this.xs[var6];
+            float var8 = g - this.ys[var6];
+            float var9 = h - this.zs[var6];
             float var10 = var7 * var7 + var8 * var8 + var9 * var9;
             if (var10 < var5) {
                var5 = var10;
@@ -1038,13 +1038,13 @@ public final class Mika extends CharacterDesign {
          return this.len[var4] / this.len[this.n - 1];
       }
 
-      int tailColor(float var1, float var2, float var3) {
-         float var4 = this.param(var1, var2, var3);
+      int tailColor(float f, float g, float h) {
+         float var4 = this.param(f, g, h);
          return Colors.mix(Colors.mix(-3647457, -681403, Mika.smooth(0.04F, 0.22F, var4)), -3618, Mika.smooth(0.72F, 0.8F, var4));
       }
 
-      Decal chevron(Canvas var1, float var2) {
-         float var4 = var2 * this.len[this.n - 1];
+      Decal chevron(Canvas canvas, float f) {
+         float var4 = f * this.len[this.n - 1];
          int var3 = 1;
 
          while (var3 < this.n - 2 && this.len[var3] < var4) {
@@ -1055,7 +1055,7 @@ public final class Mika extends CharacterDesign {
          float var6 = this.ys[var3 + 1] - this.ys[var3 - 1];
          float var7 = this.zs[var3 + 1] - this.zs[var3 - 1];
          return Decal.wrap(
-               var1,
+               canvas,
                this.xs[var3],
                this.ys[var3],
                this.zs[var3],

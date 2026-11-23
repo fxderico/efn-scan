@@ -22,36 +22,42 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Environment(EnvType.CLIENT)
 @Mixin({PlayerEntityRenderer.class})
 public abstract class MixinCharacterAvatarRenderer<T extends PlayerLikeEntity> extends LivingEntityRenderer<T, PlayerEntityRenderState, PlayerEntityModel> {
-   protected MixinCharacterAvatarRenderer(Context var1, PlayerEntityModel var2, float var3) {
-      super(var1, var2, var3);
+   protected MixinCharacterAvatarRenderer(Context context, PlayerEntityModel playerEntityModel, float f) {
+      super(context, playerEntityModel, f);
    }
 
    @Inject(
       method = {"<init>"},
       at = {@At("TAIL")}
    )
-   private void efn$addCharacterLayer(Context var1, boolean var2, CallbackInfo var3) {
-      this.method_4046(new CharacterLayer(this));
+   private void efn$addCharacterLayer(Context context, boolean bl, CallbackInfo callbackInfo) {
+      this.addFeature(new CharacterLayer(this));
    }
 
    @Inject(
-      method = {"method_62604"},
+      method = {"updateRenderState"},
       at = {@At("TAIL")}
    )
-   private void efn$extractCharacter(PlayerLikeEntity var1, PlayerEntityRenderState var2, float var3, CallbackInfo var4) {
-      CharacterModule.extract(var1, var2);
+   private void efn$extractCharacter(PlayerLikeEntity playerLikeEntity, PlayerEntityRenderState playerEntityRenderState, float f, CallbackInfo callbackInfo) {
+      CharacterModule.extract(playerLikeEntity, playerEntityRenderState);
    }
 
    @Inject(
-      method = {"method_23205"},
+      method = {"renderArm"},
       at = {@At("HEAD")},
       cancellable = true
    )
    private void efn$characterFirstPersonHand(
-      MatrixStack var1, OrderedRenderCommandQueue var2, int var3, Identifier var4, ModelPart var5, boolean var6, CallbackInfo var7
+      MatrixStack matrixStack,
+      OrderedRenderCommandQueue orderedRenderCommandQueue,
+      int i,
+      Identifier identifier,
+      ModelPart modelPart,
+      boolean bl,
+      CallbackInfo callbackInfo
    ) {
-      if (CharacterLayer.firstPersonHand((PlayerEntityModel)this.method_4038(), var1, var2, var3, var5)) {
-         var7.cancel();
+      if (CharacterLayer.firstPersonHand(this.getModel(), matrixStack, orderedRenderCommandQueue, i, modelPart)) {
+         callbackInfo.cancel();
       }
    }
 }

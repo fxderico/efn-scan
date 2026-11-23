@@ -17,12 +17,12 @@ public final class DonutRegionMapData {
    private DonutRegionMapData() {
    }
 
-   public static DonutRegionMapData.RegionInfo regionInfo(int var0) {
-      return REGION_MAP.get(var0);
+   public static DonutRegionMapData.RegionInfo regionInfo(int i) {
+      return REGION_MAP.get(i);
    }
 
-   public static int regionColor(int var0) {
-      return var0 >= 0 && var0 < REGION_TYPE_COLORS.length ? REGION_TYPE_COLORS[var0] : -7106930;
+   public static int regionColor(int i) {
+      return i >= 0 && i < REGION_TYPE_COLORS.length ? REGION_TYPE_COLORS[i] : -7106930;
    }
 
    public static String[] regionTypeNames() {
@@ -33,8 +33,8 @@ public final class DonutRegionMapData {
       return REGION_TYPE_COLORS;
    }
 
-   public static int regionAt(double var0, double var2) {
-      int[] var4 = worldToGrid(var0, var2);
+   public static int regionAt(double d, double e) {
+      int[] var4 = worldToGrid(d, e);
       if (var4[0] >= 0 && var4[0] < 9 && var4[1] >= 0 && var4[1] < 9) {
          DonutRegionMapData.RegionInfo var5 = REGION_MAP.get(var4[1] * 9 + var4[0]);
          return var5 != null ? var5.regionId : -1;
@@ -43,8 +43,8 @@ public final class DonutRegionMapData {
       }
    }
 
-   public static String regionTypeName(double var0, double var2) {
-      int[] var4 = worldToGrid(var0, var2);
+   public static String regionTypeName(double d, double e) {
+      int[] var4 = worldToGrid(d, e);
       if (var4[0] >= 0 && var4[0] < 9 && var4[1] >= 0 && var4[1] < 9) {
          DonutRegionMapData.RegionInfo var5 = REGION_MAP.get(var4[1] * 9 + var4[0]);
          return var5 == null ? "Unknown" : REGION_TYPE_NAMES[var5.regionType];
@@ -53,17 +53,17 @@ public final class DonutRegionMapData {
       }
    }
 
-   public static int[] worldToGrid(double var0, double var2) {
-      return new int[]{(int)((var0 + 225000.0) / 50000.0), (int)((var2 + 225000.0) / 50000.0)};
+   public static int[] worldToGrid(double d, double e) {
+      return new int[]{(int)((d + 225000.0) / 50000.0), (int)((e + 225000.0) / 50000.0)};
    }
 
-   public static double[] worldToCellPosition(double var0, double var2) {
-      return new double[]{positiveModulo(var0 + 225000.0, 50000.0) / 50000.0, positiveModulo(var2 + 225000.0, 50000.0) / 50000.0};
+   public static double[] worldToCellPosition(double d, double e) {
+      return new double[]{positiveModulo(d + 225000.0, 50000.0) / 50000.0, positiveModulo(e + 225000.0, 50000.0) / 50000.0};
    }
 
-   private static double positiveModulo(double var0, double var2) {
-      double var4 = var0 % var2;
-      return var4 < 0.0 ? var4 + var2 : var4;
+   private static double positiveModulo(double d, double e) {
+      double var4 = d % e;
+      return var4 < 0.0 ? var4 + e : var4;
    }
 
    private static Map<Integer, DonutRegionMapData.RegionInfo> buildRegionMap() {
@@ -164,9 +164,9 @@ public final class DonutRegionMapData {
       public final int regionId;
       public final int regionType;
 
-      RegionInfo(int var1, int var2) {
-         this.regionId = var1;
-         this.regionType = var2;
+      RegionInfo(int i, int j) {
+         this.regionId = i;
+         this.regionType = j;
       }
    }
 }

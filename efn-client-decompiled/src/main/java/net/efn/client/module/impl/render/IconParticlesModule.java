@@ -70,7 +70,7 @@ public final class IconParticlesModule extends ClientModule {
    private final GlyphSwarm swarm = new GlyphSwarm(CAPACITY);
    private final GlyphCanvas canvas = new GlyphCanvas();
    private final GlyphTint palette = new GlyphTint();
-   private final Random random = Random.method_43047();
+   private final Random random = Random.create();
    private final Consumer<LivingEntity> popSink = this::burst;
    private ClientWorld boundLevel;
    private long lastFrame;
@@ -110,36 +110,36 @@ public final class IconParticlesModule extends ClientModule {
       this.lastFrame = 0L;
    }
 
-   private boolean bind(ClientWorld var1) {
-      if (var1 == null) {
+   private boolean bind(ClientWorld clientWorld) {
+      if (clientWorld == null) {
          if (this.boundLevel != null) {
             this.reset();
          }
 
          return false;
       } else {
-         if (var1 != this.boundLevel) {
+         if (clientWorld != this.boundLevel) {
             this.swarm.clear();
-            this.boundLevel = var1;
+            this.boundLevel = clientWorld;
          }
 
          return true;
       }
    }
 
-   private void onPacket(PacketReceiveEvent var1) {
+   private void onPacket(PacketReceiveEvent packetReceiveEvent) {
       if (this.pops.get()) {
-         TotemPops.scan(var1.packet, this.popSink);
+         TotemPops.scan(packetReceiveEvent.packet, this.popSink);
       }
    }
 
-   private void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientPlayerEntity var3 = var2.field_1724;
-      if (this.bind(var2.field_1687) && var3 != null) {
+   private void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientPlayerEntity var3 = var2.player;
+      if (this.bind(var2.world) && var3 != null) {
          this.refreshPalette();
          if (this.projectiles.get()) {
-            this.trails(var2.field_1687, var3);
+            this.trails(var2.world, var3);
          }
 
          if (this.footsteps.get()) {
@@ -148,87 +148,71 @@ public final class IconParticlesModule extends ClientModule {
       }
    }
 
-   private void onRender(Render3DEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      if (this.bind(var2.field_1687)) {
+   private void onRender(Render3DEvent render3DEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      if (this.bind(var2.world)) {
          long var3 = System.nanoTime();
          float var5 = this.lastFrame == 0L ? 0.0F : Math.min(0.1F, (float)(var3 - this.lastFrame) / 1.0E9F);
          this.lastFrame = var3;
-         if (var2.method_1493()) {
+         if (var2.isPaused()) {
             var5 = 0.0F;
          }
 
          this.swarm.trim(this.particleLimit());
          this.swarm.step(var5);
          if (this.swarm.count() != 0) {
-            this.canvas.begin(var2.field_1773.method_19418());
+            this.canvas.begin(var2.gameRenderer.getCamera());
             this.swarm.draw(this.canvas, 1.0F, this.halo.get());
             this.canvas.submit(false);
          }
       }
    }
 
-   private void burst(LivingEntity var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      if (this.bind(var2.field_1687) && var1.method_73183() == var2.field_1687) {
-         if (var1 != var2.field_1724 || this.ownPops.get()) {
+   private void burst(LivingEntity livingEntity) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      if (this.bind(var2.world) && livingEntity.getEntityWorld() == var2.world) {
+         if (livingEntity != var2.player || this.ownPops.get()) {
             this.refreshPalette();
-            Box var3 = var1.method_5829();
+            Box var3 = livingEntity.getBoundingBox();
             int var4 = MobilePerformance.particles(this.popBurst.getInt(), 6);
             String var5 = this.popGlyph.get();
 
             for (int var6 = 0; var6 < var4; var6++) {
                byte var7 = pick(var5, var6);
-               double var8 = var3.field_1323 + var3.method_17939() * this.random.method_43058();
-               double var10 = var3.field_1322 + var3.method_17940() * (0.15 + 0.8 * this.random.method_43058());
-               double var12 = var3.field_1321 + var3.method_17941() * this.random.method_43058();
-               float var14 = this.random.method_43057() * 6.2831855F;
-               float var15 = outward(var7) * (0.45F + this.random.method_43057());
-               float var16 = upward(var7) * (0.55F + 0.8F * this.random.method_43057());
-               this.emit(
-                  var7,
-                  var8,
-                  var10,
-                  var12,
-                  MathHelper.method_15362(var14) * var15,
-                  var16,
-                  MathHelper.method_15374(var14) * var15,
-                  1.0F,
-                  1.0F,
-                  this.colorFor(var7, -1)
-               );
+               double var8 = var3.minX + var3.getLengthX() * this.random.nextDouble();
+               double var10 = var3.minY + var3.getLengthY() * (0.15 + 0.8 * this.random.nextDouble());
+               double var12 = var3.minZ + var3.getLengthZ() * this.random.nextDouble();
+               float var14 = this.random.nextFloat() * 6.2831855F;
+               float var15 = outward(var7) * (0.45F + this.random.nextFloat());
+               float var16 = upward(var7) * (0.55F + 0.8F * this.random.nextFloat());
+               this.emit(var7, var8, var10, var12, MathHelper.cos(var14) * var15, var16, MathHelper.sin(var14) * var15, 1.0F, 1.0F, this.colorFor(var7, -1));
             }
          }
       }
    }
 
-   private void trails(ClientWorld var1, ClientPlayerEntity var2) {
+   private void trails(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity) {
       int var3 = MobilePerformance.particles(this.trailDensity.getInt(), 1);
       String var4 = this.trailGlyph.get();
 
-      for (Entity var6 : var1.method_18112()) {
+      for (Entity var6 : clientWorld.getEntities()) {
          int var13 = this.role(var6);
          double var7;
          double var9;
          double var11;
          if (var13 != -1
-            && !(
-               (var11 = var6.method_23317() - var6.field_6014) * var11
-                     + (var9 = var6.method_23318() - var6.field_6036) * var9
-                     + (var7 = var6.method_23321() - var6.field_5969) * var7
-                  < 9.0E-4
-            )
-            && !(var6.method_5858(var2) > 6400.0)) {
-            double var14 = var6.method_17682() * 0.5;
+            && !((var11 = var6.getX() - var6.lastX) * var11 + (var9 = var6.getY() - var6.lastY) * var9 + (var7 = var6.getZ() - var6.lastZ) * var7 < 9.0E-4)
+            && !(var6.squaredDistanceTo(clientPlayerEntity) > 6400.0)) {
+            double var14 = var6.getHeight() * 0.5;
 
             for (int var16 = 0; var16 < var3; var16++) {
-               float var17 = (var16 + this.random.method_43057()) / var3;
-               byte var18 = pick(var4, var6.field_6012 * var3 + var16);
+               float var17 = (var16 + this.random.nextFloat()) / var3;
+               byte var18 = pick(var4, var6.age * var3 + var16);
                this.emit(
                   var18,
-                  var6.field_6014 + var11 * var17 + this.jitter(0.06F),
-                  var6.field_6036 + var9 * var17 + var14 + this.jitter(0.06F),
-                  var6.field_5969 + var7 * var17 + this.jitter(0.06F),
+                  var6.lastX + var11 * var17 + this.jitter(0.06F),
+                  var6.lastY + var9 * var17 + var14 + this.jitter(0.06F),
+                  var6.lastZ + var7 * var17 + this.jitter(0.06F),
                   this.jitter(0.3F),
                   this.jitter(0.3F) + 0.15F,
                   this.jitter(0.3F),
@@ -241,25 +225,25 @@ public final class IconParticlesModule extends ClientModule {
       }
    }
 
-   private void steps(ClientPlayerEntity var1) {
-      if (var1.method_24828() && !var1.method_7325() && !var1.method_5765() && !var1.method_52535()) {
-         double var4 = var1.method_23317() - var1.field_6014;
+   private void steps(ClientPlayerEntity clientPlayerEntity) {
+      if (clientPlayerEntity.isOnGround() && !clientPlayerEntity.isSpectator() && !clientPlayerEntity.hasVehicle() && !clientPlayerEntity.isInFluid()) {
+         double var4 = clientPlayerEntity.getX() - clientPlayerEntity.lastX;
          double var2;
-         double var6 = Math.sqrt(var4 * var4 + (var2 = var1.method_23321() - var1.field_5969) * var2);
+         double var6 = Math.sqrt(var4 * var4 + (var2 = clientPlayerEntity.getZ() - clientPlayerEntity.lastZ) * var2);
          if (!(var6 < 0.07)) {
-            int var8 = MobilePerformance.particles(this.stepDensity.getInt() + (var1.method_5624() ? 1 : 0), 1);
+            int var8 = MobilePerformance.particles(this.stepDensity.getInt() + (clientPlayerEntity.isSprinting() ? 1 : 0), 1);
             String var9 = this.stepGlyph.get();
 
             for (int var10 = 0; var10 < var8; var10++) {
-               byte var11 = pick(var9, var1.field_6012 * var8 + var10);
-               double var12 = 0.2 + 0.3 * this.random.method_43058();
+               byte var11 = pick(var9, clientPlayerEntity.age * var8 + var10);
+               double var12 = 0.2 + 0.3 * this.random.nextDouble();
                this.emit(
                   var11,
-                  var1.method_23317() - var4 / var6 * var12 + this.jitter(0.22F),
-                  var1.method_23318() + 0.04,
-                  var1.method_23321() - var2 / var6 * var12 + this.jitter(0.22F),
+                  clientPlayerEntity.getX() - var4 / var6 * var12 + this.jitter(0.22F),
+                  clientPlayerEntity.getY() + 0.04,
+                  clientPlayerEntity.getZ() - var2 / var6 * var12 + this.jitter(0.22F),
                   (float)(-var4 * 7.0) + this.jitter(0.5F),
-                  0.8F + this.random.method_43057() * 1.1F,
+                  0.8F + this.random.nextFloat() * 1.1F,
                   (float)(-var2 * 7.0) + this.jitter(0.5F),
                   0.7F,
                   0.75F,
@@ -270,12 +254,12 @@ public final class IconParticlesModule extends ClientModule {
       }
    }
 
-   private void emit(byte var1, double var2, double var4, double var6, float var8, float var9, float var10, float var11, float var12, int var13) {
-      float var14 = this.lifetime.get() * var11 * (0.75F + 0.5F * this.random.method_43057());
-      float var15 = 0.085F * this.size.get() * var12 * sizeOf(var1) * (0.8F + 0.4F * this.random.method_43057());
-      float var16 = spinOf(var1) * (this.random.method_43056() ? 1.0F : -1.0F) * (0.5F + this.random.method_43057());
-      float var17 = var1 == 0 ? this.jitter(0.35F) : this.random.method_43057() * 6.2831855F;
-      this.swarm.spawn(var1, var2, var4, var6, var8, var9, var10, var14, var15, var17, var16, this.random.method_43057(), var13, this.particleLimit());
+   private void emit(byte b, double d, double e, double f, float g, float h, float i, float j, float k, int l) {
+      float var14 = this.lifetime.get() * j * (0.75F + 0.5F * this.random.nextFloat());
+      float var15 = 0.085F * this.size.get() * k * sizeOf(b) * (0.8F + 0.4F * this.random.nextFloat());
+      float var16 = spinOf(b) * (this.random.nextBoolean() ? 1.0F : -1.0F) * (0.5F + this.random.nextFloat());
+      float var17 = b == 0 ? this.jitter(0.35F) : this.random.nextFloat() * 6.2831855F;
+      this.swarm.spawn(b, d, e, f, g, h, i, var14, var15, var17, var16, this.random.nextFloat(), l, this.particleLimit());
    }
 
    private int particleLimit() {
@@ -286,58 +270,58 @@ public final class IconParticlesModule extends ClientModule {
       this.palette.resolve(this.colorMode.get(), CosmeticAccent.argb(), this.mainColor.argb(), this.secondColor.argb());
    }
 
-   private int role(Entity var1) {
-      if (var1.method_31481()) {
+   private int role(Entity entity) {
+      if (entity.isRemoved()) {
          return -1;
-      } else if (var1 instanceof EnderPearlEntity) {
+      } else if (entity instanceof EnderPearlEntity) {
          return this.pearls.get() ? 0 : -1;
-      } else if (var1 instanceof TridentEntity) {
+      } else if (entity instanceof TridentEntity) {
          return this.tridents.get() ? 2 : -1;
-      } else if (var1 instanceof PersistentProjectileEntity) {
+      } else if (entity instanceof PersistentProjectileEntity) {
          return this.arrows.get() ? 1 : -1;
       } else {
          return -1;
       }
    }
 
-   private static byte pick(String var0, int var1) {
-      return switch (var0) {
+   private static byte pick(String string, int i) {
+      return switch (string) {
          case "Bolt" -> 0;
          case "Gem" -> 1;
          case "Dust" -> 2;
          case "Spark" -> 3;
-         default -> MIXED_ORDER[Math.floorMod(var1, MIXED_ORDER.length)];
+         default -> MIXED_ORDER[Math.floorMod(i, MIXED_ORDER.length)];
       };
    }
 
-   private int colorFor(byte var1, int var2) {
-      float var3 = this.random.method_43057();
+   private int colorFor(byte b, int i) {
+      float var3 = this.random.nextFloat();
 
-      int var4 = switch (var1) {
+      int var4 = switch (b) {
          case 0 -> var3 < 0.6F ? this.palette.primary() : this.palette.highlight();
          case 1 -> var3 < 0.55F ? this.palette.secondary() : this.palette.companion();
          case 2 -> this.dust(var3);
          default -> GlyphTint.mix(this.palette.highlight(), -1, var3 * 0.35F);
       };
 
-      return switch (var2) {
+      return switch (i) {
          case 0 -> GlyphTint.mix(var4, this.palette.companion(), 0.55F);
          case 2 -> GlyphTint.mix(var4, this.palette.secondary(), 0.45F);
          default -> var4;
       };
    }
 
-   private int dust(float var1) {
+   private int dust(float f) {
       int var2 = this.palette.dust();
-      if (var1 < 0.4F) {
+      if (f < 0.4F) {
          return var2;
       } else {
-         return var1 < 0.75F ? GlyphTint.lift(var2, 0.4F) : GlyphTint.mix(var2, this.palette.secondary(), 0.3F);
+         return f < 0.75F ? GlyphTint.lift(var2, 0.4F) : GlyphTint.mix(var2, this.palette.secondary(), 0.3F);
       }
    }
 
-   private static float sizeOf(byte var0) {
-      return switch (var0) {
+   private static float sizeOf(byte b) {
+      return switch (b) {
          case 0 -> 1.35F;
          case 1 -> 1.15F;
          case 2 -> 0.5F;
@@ -345,8 +329,8 @@ public final class IconParticlesModule extends ClientModule {
       };
    }
 
-   private static float spinOf(byte var0) {
-      return switch (var0) {
+   private static float spinOf(byte b) {
+      return switch (b) {
          case 0 -> 0.5F;
          case 1 -> 1.1F;
          case 2 -> 5.0F;
@@ -354,8 +338,8 @@ public final class IconParticlesModule extends ClientModule {
       };
    }
 
-   private static float outward(byte var0) {
-      return switch (var0) {
+   private static float outward(byte b) {
+      return switch (b) {
          case 0 -> 0.8F;
          case 1 -> 2.1F;
          case 2 -> 1.5F;
@@ -363,8 +347,8 @@ public final class IconParticlesModule extends ClientModule {
       };
    }
 
-   private static float upward(byte var0) {
-      return switch (var0) {
+   private static float upward(byte b) {
+      return switch (b) {
          case 0 -> 1.1F;
          case 1 -> 1.7F;
          case 2 -> 2.6F;
@@ -372,7 +356,7 @@ public final class IconParticlesModule extends ClientModule {
       };
    }
 
-   private float jitter(float var1) {
-      return (this.random.method_43057() * 2.0F - 1.0F) * var1;
+   private float jitter(float f) {
+      return (this.random.nextFloat() * 2.0F - 1.0F) * f;
    }
 }

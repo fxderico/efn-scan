@@ -24,80 +24,80 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin({HandledScreen.class})
 public abstract class MixinNoInvLeakContainerScreen {
    @Shadow
-   protected Slot field_2787;
+   protected Slot focusedSlot;
    @Shadow
-   protected int field_2776;
+   protected int x;
    @Shadow
-   protected int field_2800;
+   protected int y;
 
    public MixinNoInvLeakContainerScreen() {
    }
 
    @Shadow
-   public abstract ScreenHandler method_17577();
+   public abstract ScreenHandler getScreenHandler();
 
    @WrapOperation(
-      method = {"method_2385"},
+      method = {"drawSlot"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_1735;method_7677()Lnet/minecraft/class_1799;"
+         target = "Lnet/minecraft/screen/slot/Slot;getStack()Lnet/minecraft/item/ItemStack;"
       )}
    )
-   private ItemStack efn$noInvLeakSlot(Slot var1, Operation<ItemStack> var2, @Local(argsOnly = true) DrawContext var3) {
-      ItemStack var4 = (ItemStack)var2.call(new Object[]{var1});
-      if (!NoInvLeakModule.ownSlot(var1)) {
+   private ItemStack efn$noInvLeakSlot(Slot slot, Operation<ItemStack> operation, @Local(argsOnly = true) DrawContext drawContext) {
+      ItemStack var4 = (ItemStack)operation.call(slot);
+      if (!NoInvLeakModule.ownSlot(slot)) {
          return var4;
       } else {
-         int var5 = NoInvLeakModule.screenX(var3, var1.field_7873, var1.field_7872, this.field_2776 + var1.field_7873);
-         int var6 = NoInvLeakModule.screenY(var3, var1.field_7873, var1.field_7872, this.field_2800 + var1.field_7872);
-         return NoInvLeakModule.container(var4, var1, var5, var6, var1 == this.field_2787);
+         int var5 = NoInvLeakModule.screenX(drawContext, slot.x, slot.y, this.x + slot.x);
+         int var6 = NoInvLeakModule.screenY(drawContext, slot.x, slot.y, this.y + slot.y);
+         return NoInvLeakModule.container(var4, slot, var5, var6, slot == this.focusedSlot);
       }
    }
 
    @WrapOperation(
-      method = {"method_2385"},
+      method = {"drawSlot"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_1799;method_46651(I)Lnet/minecraft/class_1799;"
+         target = "Lnet/minecraft/item/ItemStack;copyWithCount(I)Lnet/minecraft/item/ItemStack;"
       )}
    )
-   private ItemStack efn$noInvLeakDragPreview(ItemStack var1, int var2, Operation<ItemStack> var3) {
-      return NoInvLeakModule.dragged((ItemStack)var3.call(new Object[]{var1, var2}));
+   private ItemStack efn$noInvLeakDragPreview(ItemStack itemStack, int i, Operation<ItemStack> operation) {
+      return NoInvLeakModule.dragged((ItemStack)operation.call(itemStack, i));
    }
 
    @WrapOperation(
-      method = {"method_2385"},
+      method = {"drawSlot"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_1735;method_7679()Lnet/minecraft/class_2960;"
+         target = "Lnet/minecraft/screen/slot/Slot;getBackgroundSprite()Lnet/minecraft/util/Identifier;"
       )}
    )
-   private Identifier efn$noInvLeakSilhouette(Slot var1, Operation<Identifier> var2) {
-      Identifier var3 = (Identifier)var2.call(new Object[]{var1});
-      return var3 != null && NoInvLeakModule.overlaying() && NoInvLeakModule.ownSlot(var1) && var1.method_7681() ? null : var3;
+   private Identifier efn$noInvLeakSilhouette(Slot slot, Operation<Identifier> operation) {
+      Identifier var3 = (Identifier)operation.call(slot);
+      return var3 != null && NoInvLeakModule.overlaying() && NoInvLeakModule.ownSlot(slot) && slot.hasStack() ? null : var3;
    }
 
    @ModifyVariable(
-      method = {"method_2382"},
+      method = {"drawItem"},
       at = {@At("HEAD")},
       argsOnly = true
    )
-   private ItemStack efn$noInvLeakCarried(ItemStack var1, @Local(argsOnly = true,ordinal = 0) int var2, @Local(argsOnly = true,ordinal = 1) int var3) {
-      return NoInvLeakModule.carried(var1, var2, var3);
+   private ItemStack efn$noInvLeakCarried(ItemStack itemStack, @Local(argsOnly = true,ordinal = 0) int i, @Local(argsOnly = true,ordinal = 1) int j) {
+      return NoInvLeakModule.carried(itemStack, i, j);
    }
 
    @Inject(
-      method = {"method_2380"},
+      method = {"drawMouseoverTooltip"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$noInvLeakTooltip(DrawContext var1, int var2, int var3, CallbackInfo var4) {
-      if (NoInvLeakModule.hidesTooltips() && NoInvLeakModule.ownSlot(this.field_2787)) {
-         if (NoInvLeakModule.overlaying() && this.field_2787.method_7681() && this.method_17577().method_34255().method_7960()) {
-            StreamOverlay.tooltip(this.field_2787.method_7677(), var2, var3);
+   private void efn$noInvLeakTooltip(DrawContext drawContext, int i, int j, CallbackInfo callbackInfo) {
+      if (NoInvLeakModule.hidesTooltips() && NoInvLeakModule.ownSlot(this.focusedSlot)) {
+         if (NoInvLeakModule.overlaying() && this.focusedSlot.hasStack() && this.getScreenHandler().getCursorStack().isEmpty()) {
+            StreamOverlay.tooltip(this.focusedSlot.getStack(), i, j);
          }
 
-         var4.cancel();
+         callbackInfo.cancel();
       }
    }
 }

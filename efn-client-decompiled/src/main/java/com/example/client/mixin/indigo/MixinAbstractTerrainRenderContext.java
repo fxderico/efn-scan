@@ -25,14 +25,14 @@ public abstract class MixinAbstractTerrainRenderContext {
       method = {"bufferQuad"},
       at = {@At("HEAD")}
    )
-   private void efn$xrayBufferQuad(MutableQuadViewImpl var1, CallbackInfo var2) {
+   private void efn$xrayBufferQuad(MutableQuadViewImpl mutableQuadViewImpl, CallbackInfo callbackInfo) {
       if (XrayModule.active != null) {
          float var3 = XrayModule.CURRENT_ALPHA.get()[0];
          if (!(var3 <= 0.0F) && !(var3 >= 1.0F)) {
-            var1.renderLayer(BlockRenderLayer.field_60926);
+            mutableQuadViewImpl.renderLayer(BlockRenderLayer.TRANSLUCENT);
 
             for (int var4 = 0; var4 < 4; var4++) {
-               var1.color(var4, ColorHelper.method_75601(var1.color(var4), var3));
+               mutableQuadViewImpl.color(var4, ColorHelper.scaleAlpha(mutableQuadViewImpl.color(var4), var3));
             }
          }
       }

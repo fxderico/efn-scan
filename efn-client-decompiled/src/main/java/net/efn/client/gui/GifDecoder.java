@@ -22,8 +22,8 @@ final class GifDecoder {
    private final int frameCount;
    private int pos;
 
-   private GifDecoder(byte[] var1) throws IOException {
-      this.data = var1;
+   private GifDecoder(byte[] bs) throws IOException {
+      this.data = bs;
       this.pos = 6;
       this.width = this.u16();
       this.height = this.u16();
@@ -43,9 +43,9 @@ final class GifDecoder {
       }
    }
 
-   static GifDecoder open(byte[] var0) throws IOException {
-      if (var0.length >= 13 && var0[0] == 71 && var0[1] == 73 && var0[2] == 70) {
-         return new GifDecoder(var0);
+   static GifDecoder open(byte[] bs) throws IOException {
+      if (bs.length >= 13 && bs[0] == 71 && bs[1] == 73 && bs[2] == 70) {
+         return new GifDecoder(bs);
       } else {
          throw new IOException("Not a GIF file");
       }
@@ -63,7 +63,7 @@ final class GifDecoder {
       return this.frameCount;
    }
 
-   void decode(int var1, int var2, int var3, GifDecoder.Sink var4) {
+   void decode(int i, int j, int k, GifDecoder.Sink sink) {
       int[] var5 = new int[this.width * this.height];
       int[] var6 = null;
       int var7 = 0;
@@ -77,7 +77,7 @@ final class GifDecoder {
       int var15 = 0;
       this.pos = this.blocksStart;
 
-      while (var15 < var3 && this.pos < this.data.length) {
+      while (var15 < k && this.pos < this.data.length) {
          int var16 = this.u8();
          if (var16 == 33) {
             if (this.u8() == 249) {
@@ -130,8 +130,8 @@ final class GifDecoder {
                this.draw(var5, var27, var28, var23, var9, var18, var19, var20, var21, var24);
             }
 
-            int[] var17 = var1 == this.width && var2 == this.height ? (int[])var5.clone() : downscale(var5, this.width, this.height, var1, var2);
-            if (!var4.accept(new GifDecoder.Frame(var17, var1, var2, delayMs(var8)))) {
+            int[] var17 = i == this.width && j == this.height ? (int[])var5.clone() : downscale(var5, this.width, this.height, i, j);
+            if (!sink.accept(new GifDecoder.Frame(var17, i, j, delayMs(var8)))) {
                return;
             }
 
@@ -148,13 +148,13 @@ final class GifDecoder {
       }
    }
 
-   private static int delayMs(int var0) {
-      return var0 <= 1 ? 100 : var0 * 10;
+   private static int delayMs(int i) {
+      return i <= 1 ? 100 : i * 10;
    }
 
-   private static int lzw(byte[] var0, int var1, byte[] var2) {
-      if (var1 >= 1 && var1 <= 8) {
-         int var3 = 1 << var1;
+   private static int lzw(byte[] bs, int i, byte[] cs) {
+      if (i >= 1 && i <= 8) {
+         int var3 = 1 << i;
          int var4 = var3 + 1;
          short[] var5 = new short[4096];
          byte[] var6 = new byte[4096];
@@ -164,7 +164,7 @@ final class GifDecoder {
             var6[var8] = (byte)var8;
          }
 
-         int var19 = var1 + 1;
+         int var19 = i + 1;
          int var9 = var3 + 2;
          int var10 = -1;
          byte var11 = 0;
@@ -173,13 +173,13 @@ final class GifDecoder {
          int var14 = 0;
          int var15 = 0;
 
-         while (var15 < var2.length) {
+         while (var15 < cs.length) {
             while (var12 < var19) {
-               if (var14 >= var0.length) {
+               if (var14 >= bs.length) {
                   return var15;
                }
 
-               var13 |= (var0[var14++] & 255) << var12;
+               var13 |= (bs[var14++] & 255) << var12;
                var12 += 8;
             }
 
@@ -187,7 +187,7 @@ final class GifDecoder {
             var13 >>>= var19;
             var12 -= var19;
             if (var16 == var3) {
-               var19 = var1 + 1;
+               var19 = i + 1;
                var9 = var3 + 2;
                var10 = -1;
             } else {
@@ -201,7 +201,7 @@ final class GifDecoder {
                   }
 
                   var11 = var6[var16];
-                  var2[var15++] = var11;
+                  cs[var15++] = var11;
                   var10 = var16;
                } else {
                   int var17 = var16;
@@ -232,8 +232,8 @@ final class GifDecoder {
 
                   var10 = var17;
 
-                  while (var18 > 0 && var15 < var2.length) {
-                     var2[var15++] = var7[--var18];
+                  while (var18 > 0 && var15 < cs.length) {
+                     cs[var15++] = var7[--var18];
                   }
                }
             }
@@ -245,26 +245,26 @@ final class GifDecoder {
       }
    }
 
-   static int[] downscale(int[] var0, int var1, int var2, int var3, int var4) {
-      int[] var5 = new int[var3 * var4];
+   static int[] downscale(int[] is, int i, int j, int k, int l) {
+      int[] var5 = new int[k * l];
 
-      for (int var6 = 0; var6 < var4; var6++) {
-         int var7 = (int)((long)var6 * var2 / var4);
-         int var8 = Math.max(var7 + 1, (int)((long)(var6 + 1) * var2 / var4));
+      for (int var6 = 0; var6 < l; var6++) {
+         int var7 = (int)((long)var6 * j / l);
+         int var8 = Math.max(var7 + 1, (int)((long)(var6 + 1) * j / l));
 
-         for (int var9 = 0; var9 < var3; var9++) {
-            int var10 = (int)((long)var9 * var1 / var3);
-            int var11 = Math.max(var10 + 1, (int)((long)(var9 + 1) * var1 / var3));
+         for (int var9 = 0; var9 < k; var9++) {
+            int var10 = (int)((long)var9 * i / k);
+            int var11 = Math.max(var10 + 1, (int)((long)(var9 + 1) * i / k));
             long var12 = 0L;
             long var14 = 0L;
             long var16 = 0L;
             long var18 = 0L;
 
             for (int var20 = var7; var20 < var8; var20++) {
-               int var21 = var20 * var1;
+               int var21 = var20 * i;
 
                for (int var22 = var10; var22 < var11; var22++) {
-                  int var23 = var0[var21 + var22];
+                  int var23 = is[var21 + var22];
                   int var24 = var23 >>> 24;
                   var12 += var24;
                   var14 += (long)(var23 >> 16 & 0xFF) * var24;
@@ -275,7 +275,7 @@ final class GifDecoder {
 
             if (var12 != 0L) {
                int var25 = (var8 - var7) * (var11 - var10);
-               var5[var6 * var3 + var9] = (int)(var12 / var25) << 24 | (int)(var14 / var12) << 16 | (int)(var16 / var12) << 8 | (int)(var18 / var12);
+               var5[var6 * k + var9] = (int)(var12 / var25) << 24 | (int)(var14 / var12) << 16 | (int)(var16 / var12) << 8 | (int)(var18 / var12);
             }
          }
       }
@@ -283,22 +283,22 @@ final class GifDecoder {
       return var5;
    }
 
-   private void draw(int[] var1, byte[] var2, int var3, int[] var4, int var5, int var6, int var7, int var8, int var9, boolean var10) {
-      int[] var11 = rowOrder(var9, var10);
+   private void draw(int[] is, byte[] bs, int i, int[] js, int j, int k, int l, int m, int n, boolean bl) {
+      int[] var11 = rowOrder(n, bl);
       int var12 = 0;
 
-      for (int var13 = 0; var13 < var9 && var12 < var3; var13++) {
-         int var14 = Math.min(var3, var12 + var8);
-         int var15 = var7 + var11[var13];
+      for (int var13 = 0; var13 < n && var12 < i; var13++) {
+         int var14 = Math.min(i, var12 + m);
+         int var15 = l + var11[var13];
          if (var15 >= this.height) {
             var12 = var14;
          } else {
             int var16 = var15 * this.width;
 
-            for (int var17 = var6; var12 < var14; var17++) {
-               int var18 = var2[var12] & 255;
-               if (var18 != var5 && var18 < var4.length && var17 < this.width) {
-                  var1[var16 + var17] = var4[var18];
+            for (int var17 = k; var12 < var14; var17++) {
+               int var18 = bs[var12] & 255;
+               if (var18 != j && var18 < js.length && var17 < this.width) {
+                  is[var16 + var17] = js[var18];
                }
 
                var12++;
@@ -307,12 +307,12 @@ final class GifDecoder {
       }
    }
 
-   private static int[] rowOrder(int var0, boolean var1) {
-      int[] var2 = new int[var0];
-      if (!var1) {
+   private static int[] rowOrder(int i, boolean bl) {
+      int[] var2 = new int[i];
+      if (!bl) {
          int var8 = 0;
 
-         while (var8 < var0) {
+         while (var8 < i) {
             var2[var8] = var8++;
          }
 
@@ -323,7 +323,7 @@ final class GifDecoder {
          int var5 = 0;
 
          for (int var6 = 0; var6 < 4; var6++) {
-            for (int var7 = var3[var6]; var7 < var0; var7 += var4[var6]) {
+            for (int var7 = var3[var6]; var7 < i; var7 += var4[var6]) {
                var2[var5++] = var7;
             }
          }
@@ -332,12 +332,12 @@ final class GifDecoder {
       }
    }
 
-   private void clear(int[] var1, int var2, int var3, int var4, int var5) {
-      int var6 = Math.min(this.width, var2 + var4);
-      int var7 = Math.min(this.height, var3 + var5);
-      if (var2 < var6) {
-         for (int var8 = var3; var8 < var7; var8++) {
-            Arrays.fill(var1, var8 * this.width + var2, var8 * this.width + var6, 0);
+   private void clear(int[] is, int i, int j, int k, int l) {
+      int var6 = Math.min(this.width, i + k);
+      int var7 = Math.min(this.height, j + l);
+      if (i < var6) {
+         for (int var8 = j; var8 < var7; var8++) {
+            Arrays.fill(is, var8 * this.width + i, var8 * this.width + var6, 0);
          }
       }
    }
@@ -371,8 +371,8 @@ final class GifDecoder {
       return var1;
    }
 
-   private int[] palette(int var1) {
-      int[] var2 = new int[2 << (var1 & 7)];
+   private int[] palette(int i) {
+      int[] var2 = new int[2 << (i & 7)];
 
       for (int var3 = 0; var3 < var2.length; var3++) {
          var2[var3] = 0xFF000000 | this.u8() << 16 | this.u8() << 8 | this.u8();
@@ -430,6 +430,6 @@ final class GifDecoder {
 
    @Environment(EnvType.CLIENT)
    interface Sink {
-      boolean accept(GifDecoder.Frame var1);
+      boolean accept(GifDecoder.Frame frame);
    }
 }

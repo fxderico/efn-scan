@@ -25,41 +25,49 @@ import org.spongepowered.asm.mixin.injection.At;
 public abstract class MixinSkinChangeItemInHandRenderer {
    @Shadow
    @Final
-   private MinecraftClient field_4050;
+   private MinecraftClient client;
    @Shadow
    @Final
-   private EntityRenderManager field_4046;
+   private EntityRenderManager entityRenderDispatcher;
 
    public MixinSkinChangeItemInHandRenderer() {
    }
 
    @WrapOperation(
-      method = {"method_3219", "method_3216"},
+      method = {"renderArmHoldingItem", "renderArm"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_1007;method_4220(Lnet/minecraft/class_4587;Lnet/minecraft/class_11659;ILnet/minecraft/class_2960;Z)V"
+         target = "Lnet/minecraft/client/render/entity/PlayerEntityRenderer;renderRightArm(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;ILnet/minecraft/util/Identifier;Z)V"
       ), @At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_1007;method_4221(Lnet/minecraft/class_4587;Lnet/minecraft/class_11659;ILnet/minecraft/class_2960;Z)V"
+         target = "Lnet/minecraft/client/render/entity/PlayerEntityRenderer;renderLeftArm(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;ILnet/minecraft/util/Identifier;Z)V"
       )}
    )
    private void efn$skinChangeArm(
-      PlayerEntityRenderer<?> var1, MatrixStack var2, OrderedRenderCommandQueue var3, int var4, Identifier var5, boolean var6, Operation<Void> var7
+      PlayerEntityRenderer<?> playerEntityRenderer,
+      MatrixStack matrixStack,
+      OrderedRenderCommandQueue orderedRenderCommandQueue,
+      int i,
+      Identifier identifier,
+      boolean bl,
+      Operation<Void> operation
    ) {
       SkinChangeModule var8 = ModuleRegistry.get(SkinChangeModule.class);
-      ClientPlayerEntity var9 = this.field_4050.field_1724;
+      ClientPlayerEntity var9 = this.client.player;
       if (var8 != null && var8.isEnabled() && var9 != null) {
-         SkinTextures var10 = var9.method_52814();
-         SkinTextures var11 = var8.skinFor(var9.method_5628(), var10);
+         SkinTextures var10 = var9.getSkin();
+         SkinTextures var11 = var8.skinFor(var9.getId(), var10);
          if (var11 != var10) {
-            var5 = var11.comp_1626().comp_3627();
-            PlayerEntityRenderer var12 = ((AccessorSkinChangeEntityRenderDispatcher)this.field_4046).efn$skinChangePlayerRenderers().get(var11.comp_1629());
+            identifier = var11.body().texturePath();
+            PlayerEntityRenderer var12 = ((AccessorSkinChangeEntityRenderDispatcher)this.entityRenderDispatcher)
+               .efn$skinChangePlayerRenderers()
+               .get(var11.model());
             if (var12 != null) {
-               var1 = var12;
+               playerEntityRenderer = var12;
             }
          }
       }
 
-      var7.call(new Object[]{var1, var2, var3, var4, var5, var6});
+      operation.call(playerEntityRenderer, matrixStack, orderedRenderCommandQueue, i, identifier, bl);
    }
 }

@@ -50,10 +50,10 @@ public final class AutoClickerModule extends ClientModule {
    private final BooleanSetting onlyWhileHeld = this.addSetting("only-while-held", new BooleanSetting("Only While Held", false));
    private final BooleanSetting breakBlocks = this.addSetting("break-blocks", new BooleanSetting("Break Blocks", true));
    private final AutoClickerModule.Button leftButton = new AutoClickerModule.Button(
-      true, this.left, this.leftMin, this.leftMax, var0 -> var0.field_1690.field_1886
+      true, this.left, this.leftMin, this.leftMax, minecraftClient -> minecraftClient.options.attackKey
    );
    private final AutoClickerModule.Button rightButton = new AutoClickerModule.Button(
-      false, this.right, this.rightMin, this.rightMax, var0 -> var0.field_1690.field_1904
+      false, this.right, this.rightMin, this.rightMax, minecraftClient -> minecraftClient.options.useKey
    );
 
    public AutoClickerModule() {
@@ -73,26 +73,23 @@ public final class AutoClickerModule extends ClientModule {
    }
 
    @Override
-   public void migrateSettings(int var1) {
-      if (var1 < 1) {
+   public void migrateSettings(int i) {
+      if (i < 1) {
          this.onlyWhileHeld.set(false);
       }
    }
 
    @Override
    protected void onDisable() {
-      MinecraftClient var1 = MinecraftClient.method_1551();
+      MinecraftClient var1 = MinecraftClient.getInstance();
       this.leftButton.handBack(var1);
       this.rightButton.handBack(var1);
    }
 
    @EventHandler
-   public void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      boolean var3 = MeleeAttacks.canAct(var2)
-         && var2.method_18506() == null
-         && !CombatMacroLock.heldByOther(this)
-         && !MeleeAttacks.actedThisTick(var2.field_1724);
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      boolean var3 = MeleeAttacks.canAct(var2) && var2.getOverlay() == null && !CombatMacroLock.heldByOther(this) && !MeleeAttacks.actedThisTick(var2.player);
       this.leftButton.tick(var2, var3);
       this.rightButton.tick(var2, var3 && !LootLatch.active());
    }
@@ -101,35 +98,35 @@ public final class AutoClickerModule extends ClientModule {
       return this.left.is("Click") || this.right.is("Click");
    }
 
-   private static boolean aimsAtBlock(MinecraftClient var0) {
-      HitResult var2 = var0.field_1765;
+   private static boolean aimsAtBlock(MinecraftClient minecraftClient) {
+      HitResult var2 = minecraftClient.crosshairTarget;
       BlockHitResult var1;
       return var2 instanceof BlockHitResult
-         && (var1 = (BlockHitResult)var2).method_17783() == Type.field_1332
-         && var0.field_1687 != null
-         && !var0.field_1687.method_8320(var1.method_17777()).method_26215();
+         && (var1 = (BlockHitResult)var2).getType() == Type.BLOCK
+         && minecraftClient.world != null
+         && !minecraftClient.world.getBlockState(var1.getBlockPos()).isAir();
    }
 
-   private static boolean physicallyDown(MinecraftClient var0, KeyBinding var1) {
-      if (var1.method_1415()) {
+   private static boolean physicallyDown(MinecraftClient minecraftClient, KeyBinding keyBinding) {
+      if (keyBinding.isUnbound()) {
          return false;
       } else {
-         Key var2 = KeyBindingHelper.getBoundKeyOf(var1);
-         int var3 = var2.method_1444();
+         Key var2 = KeyBindingHelper.getBoundKeyOf(keyBinding);
+         int var3 = var2.getCode();
          if (var3 < 0) {
             return false;
          } else {
-            return switch (var2.method_1442()) {
-               case field_1672 -> GLFW.glfwGetMouseButton(var0.method_22683().method_4490(), var3) == 1;
-               case field_1668 -> EfnKeyPolling.isKeyDown(var0.method_22683(), var3);
-               default -> var1.method_1434();
+            return switch (var2.getCategory()) {
+               case MOUSE -> GLFW.glfwGetMouseButton(minecraftClient.getWindow().getHandle(), var3) == 1;
+               case KEYSYM -> EfnKeyPolling.isKeyDown(minecraftClient.getWindow(), var3);
+               default -> keyBinding.isPressed();
             };
          }
       }
    }
 
-   private static double clamp(double var0, double var2, double var4) {
-      return Math.max(var2, Math.min(var4, var0));
+   private static double clamp(double d, double e, double f) {
+      return Math.max(e, Math.min(f, d));
    }
 
    @Environment(EnvType.CLIENT)
@@ -148,50 +145,50 @@ public final class AutoClickerModule extends ClientModule {
       private double pace;
       private double repaceAt;
 
-      Button(boolean nullx, ModeSetting nullxx, NumberSetting nullxxx, NumberSetting nullxxxx, Function<MinecraftClient, KeyBinding> nullxxxxx) {
-         this.isLeft = nullx;
-         this.mode = nullxx;
-         this.minCps = nullxxx;
-         this.maxCps = nullxxxx;
-         this.mapping = nullxxxxx;
+      Button(boolean bl, ModeSetting modeSetting, NumberSetting numberSetting, NumberSetting numberSetting2, Function<MinecraftClient, KeyBinding> function) {
+         this.isLeft = bl;
+         this.mode = modeSetting;
+         this.minCps = numberSetting;
+         this.maxCps = numberSetting2;
+         this.mapping = function;
       }
 
-      void tick(MinecraftClient var1, boolean var2) {
-         if (var2 && !this.mode.is("Off")) {
-            KeyBinding var3 = this.mapping.apply(var1);
+      void tick(MinecraftClient minecraftClient, boolean bl) {
+         if (bl && !this.mode.is("Off")) {
+            KeyBinding var3 = this.mapping.apply(minecraftClient);
             if (this.mode.is("Hold")) {
                this.running = false;
                this.driving = true;
-               var3.method_23481(true);
-            } else if (!var3.method_1415()
-               && (!AutoClickerModule.this.onlyWhileHeld.get() || AutoClickerModule.physicallyDown(var1, var3))
-               && (!this.isLeft || !AutoClickerModule.this.breakBlocks.get() || !AutoClickerModule.aimsAtBlock(var1))
-               && (this.isLeft || !var1.field_1724.method_6115())) {
+               var3.setPressed(true);
+            } else if (!var3.isUnbound()
+               && (!AutoClickerModule.this.onlyWhileHeld.get() || AutoClickerModule.physicallyDown(minecraftClient, var3))
+               && (!this.isLeft || !AutoClickerModule.this.breakBlocks.get() || !AutoClickerModule.aimsAtBlock(minecraftClient))
+               && (this.isLeft || !minecraftClient.player.isUsingItem())) {
                if (!this.running) {
                   this.start();
                }
 
                this.clock += 50.0;
                if (this.isLeft) {
-                  var1.field_1771 = 0;
+                  minecraftClient.attackCooldown = 0;
                }
 
                Key var4 = KeyBindingHelper.getBoundKeyOf(var3);
 
                while (this.nextPress <= this.clock) {
-                  KeyBinding.method_1420(var4);
+                  KeyBinding.onKeyPressed(var4);
                   double var5 = this.nextGap();
                   this.releaseAt = this.nextPress + this.holdFor(var5);
                   this.nextPress += var5;
                }
 
                this.driving = true;
-               var3.method_23481(this.clock < this.releaseAt);
+               var3.setPressed(this.clock < this.releaseAt);
             } else {
-               this.handBack(var1);
+               this.handBack(minecraftClient);
             }
          } else {
-            this.handBack(var1);
+            this.handBack(minecraftClient);
          }
       }
 
@@ -231,21 +228,21 @@ public final class AutoClickerModule extends ClientModule {
          }
       }
 
-      private double holdFor(double var1) {
+      private double holdFor(double d) {
          if (AutoClickerModule.this.randomization.get() <= 0.0F) {
-            return var1 * 0.5;
+            return d * 0.5;
          } else {
             double var3 = 55.0 + ThreadLocalRandom.current().nextGaussian() * 18.0;
-            return AutoClickerModule.clamp(var3, 20.0, Math.min(110.0, var1 * 0.7));
+            return AutoClickerModule.clamp(var3, 20.0, Math.min(110.0, d * 0.7));
          }
       }
 
-      void handBack(MinecraftClient var1) {
+      void handBack(MinecraftClient minecraftClient) {
          this.running = false;
          if (this.driving) {
             this.driving = false;
-            KeyBinding var2 = this.mapping.apply(var1);
-            var2.method_23481(var1.field_1755 == null && AutoClickerModule.physicallyDown(var1, var2));
+            KeyBinding var2 = this.mapping.apply(minecraftClient);
+            var2.setPressed(minecraftClient.currentScreen == null && AutoClickerModule.physicallyDown(minecraftClient, var2));
          }
       }
    }

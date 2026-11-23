@@ -29,40 +29,40 @@ final class SnipeTarget {
    private final Predicate<ItemStack> filter;
 
    private SnipeTarget(
-      Item var1,
-      boolean var2,
-      SnipeTarget.Preset var3,
-      String var4,
-      String var5,
-      List<Product.Enchant> var6,
-      boolean var7,
-      long var8,
-      int var10,
-      Predicate<ItemStack> var11
+      Item item,
+      boolean bl,
+      SnipeTarget.Preset preset,
+      String string,
+      String string2,
+      List<Product.Enchant> list,
+      boolean bl2,
+      long l,
+      int i,
+      Predicate<ItemStack> predicate
    ) {
-      this.item = var1;
-      this.shard = var2;
-      this.preset = var3;
-      this.displayName = var4;
-      this.search = var5;
-      this.enchants = var6;
-      this.exactEnchants = var7;
-      this.maxPrice = var8;
-      this.minMinutes = var10;
-      this.filter = var11;
+      this.item = item;
+      this.shard = bl;
+      this.preset = preset;
+      this.displayName = string;
+      this.search = string2;
+      this.enchants = list;
+      this.exactEnchants = bl2;
+      this.maxPrice = l;
+      this.minMinutes = i;
+      this.filter = predicate;
    }
 
-   static SnipeTarget matching(Item var0, String var1, String var2, Predicate<ItemStack> var3, long var4) {
-      return new SnipeTarget(var0, false, null, var1, var2, List.of(), false, var4, 0, var3);
+   static SnipeTarget matching(Item item, String string, String string2, Predicate<ItemStack> predicate, long l) {
+      return new SnipeTarget(item, false, null, string, string2, List.of(), false, l, 0, predicate);
    }
 
-   static SnipeTarget parse(String var0, String var1, boolean var2, long var3, int var5) {
-      List var9 = Product.parseEnchants(var1);
-      SnipeTarget.Preset var10 = SnipeTarget.Preset.of(var0);
+   static SnipeTarget parse(String string, String string2, boolean bl, long l, int i) {
+      List var9 = Product.parseEnchants(string2);
+      SnipeTarget.Preset var10 = SnipeTarget.Preset.of(string);
       if (var10 != null) {
-         return new SnipeTarget(var10.item, true, var10, var10.label, var10.search, var9, var2, var3, var5, null);
+         return new SnipeTarget(var10.item, true, var10, var10.label, var10.search, var9, bl, l, i, null);
       } else {
-         String var8 = var0 == null ? "" : var0.trim().toLowerCase(Locale.ROOT).replace(' ', '_');
+         String var8 = string == null ? "" : string.trim().toLowerCase(Locale.ROOT).replace(' ', '_');
          if (var8.startsWith("minecraft:")) {
             var8 = var8.substring("minecraft:".length());
          }
@@ -72,16 +72,16 @@ final class SnipeTarget {
          if ((var7 = Product.resolveItem((var6 = var8.startsWith("shard_")) ? "netherite_" + var8.substring("shard_".length()) : var8)) == null) {
             return null;
          } else {
-            String var12 = var6 ? "Shard " + capitalize(var8.substring("shard_".length())) : new ItemStack(var7).method_7964().getString();
-            return new SnipeTarget(var7, var6, null, var12, Product.searchText(var7), var9, var2, var3, var6 ? var5 : 0, null);
+            String var12 = var6 ? "Shard " + capitalize(var8.substring("shard_".length())) : new ItemStack(var7).getName().getString();
+            return new SnipeTarget(var7, var6, null, var12, Product.searchText(var7), var9, bl, l, var6 ? i : 0, null);
          }
       }
    }
 
-   private static String capitalize(String var0) {
+   private static String capitalize(String string) {
       StringBuilder var1 = new StringBuilder();
 
-      for (String var5 : var0.split("_")) {
+      for (String var5 : string.split("_")) {
          if (!var5.isEmpty()) {
             if (var1.length() > 0) {
                var1.append(' ');
@@ -94,11 +94,11 @@ final class SnipeTarget {
       return var1.toString();
    }
 
-   boolean sameKind(ItemStack var1) {
+   boolean sameKind(ItemStack itemStack) {
       if (this.filter != null) {
-         return !var1.method_7960() && this.filter.test(var1);
-      } else if (!var1.method_7960() && var1.method_31574(this.item)) {
-         String var2 = ServerText.key(var1.method_7964().getString());
+         return !itemStack.isEmpty() && this.filter.test(itemStack);
+      } else if (!itemStack.isEmpty() && itemStack.isOf(this.item)) {
+         String var2 = ServerText.key(itemStack.getName().getString());
          if (this.preset != null) {
             if (!var2.contains(this.preset.keyword)) {
                return false;
@@ -111,7 +111,7 @@ final class SnipeTarget {
             return false;
          }
 
-         return this.enchants.isEmpty() || Product.enchantsMatch(var1, this.enchants, this.exactEnchants);
+         return this.enchants.isEmpty() || Product.enchantsMatch(itemStack, this.enchants, this.exactEnchants);
       } else {
          return false;
       }
@@ -121,18 +121,20 @@ final class SnipeTarget {
       return this.preset != null || this.shard;
    }
 
-   boolean matches(ItemStack var1) {
-      if (!this.sameKind(var1)) {
+   boolean matches(ItemStack itemStack) {
+      if (!this.sameKind(itemStack)) {
          return false;
       } else {
-         return this.preset != null ? minutesLeft(var1) >= Math.max(0, this.minMinutes) : this.minMinutes <= 0 || minutesLeft(var1) >= this.minMinutes;
+         return this.preset != null
+            ? minutesLeft(itemStack) >= Math.max(0, this.minMinutes)
+            : this.minMinutes <= 0 || minutesLeft(itemStack) >= this.minMinutes;
       }
    }
 
-   static int minutesLeft(ItemStack var0) {
+   static int minutesLeft(ItemStack itemStack) {
       ArrayList var1 = new ArrayList();
 
-      for (String var3 : ServerText.lore(var0)) {
+      for (String var3 : ServerText.lore(itemStack)) {
          var1.add(ServerText.normalize(var3));
       }
 
@@ -178,8 +180,8 @@ final class SnipeTarget {
       }
    }
 
-   private static int duration(String var0) {
-      Matcher var1 = DURATION.matcher(var0);
+   private static int duration(String string) {
+      Matcher var1 = DURATION.matcher(string);
       int var2 = 0;
       boolean var3 = false;
 
@@ -202,21 +204,9 @@ final class SnipeTarget {
       return var3 ? var2 : -1;
    }
 
-   Product product(long var1) {
+   Product product(long l) {
       return new Product(
-         this.item,
-         Registries.field_41178.method_10221(this.item).method_12832(),
-         this.search,
-         this.displayName,
-         var1,
-         this.enchants,
-         false,
-         1,
-         false,
-         1L,
-         1L,
-         0L,
-         this::sameKind
+         this.item, Registries.ITEM.getId(this.item).getPath(), this.search, this.displayName, l, this.enchants, false, 1, false, 1L, 1L, 0L, this::sameKind
       );
    }
 
@@ -241,9 +231,9 @@ final class SnipeTarget {
 
    @Environment(EnvType.CLIENT)
    static enum Preset {
-      SELL_AXE("sell_axe", "Sell Axe", Items.field_22025, "sell axe", "sell", ""),
-      DRILL("drill", "Drill", Items.field_22024, "drill", "drill", ""),
-      SHARD_AXE("shard_axe", "Shard Axe", Items.field_22025, "shard axe", "shard", "sell");
+      SELL_AXE("sell_axe", "Sell Axe", Items.NETHERITE_AXE, "sell axe", "sell", ""),
+      DRILL("drill", "Drill", Items.NETHERITE_PICKAXE, "drill", "drill", ""),
+      SHARD_AXE("shard_axe", "Shard Axe", Items.NETHERITE_AXE, "shard axe", "shard", "sell");
 
       final String value;
       final String label;
@@ -252,17 +242,17 @@ final class SnipeTarget {
       final String keyword;
       final String exclude;
 
-      private Preset(String nullxx, String nullxxx, Item nullxxxx, String nullxxxxx, String nullxxxxxx, String nullxxxxxxx) {
-         this.value = nullxx;
-         this.label = nullxxx;
-         this.item = nullxxxx;
-         this.search = nullxxxxx;
-         this.keyword = nullxxxxxx;
-         this.exclude = nullxxxxxxx;
+      private Preset(String string2, String string3, Item item, String string4, String string5, String string6) {
+         this.value = string2;
+         this.label = string3;
+         this.item = item;
+         this.search = string4;
+         this.keyword = string5;
+         this.exclude = string6;
       }
 
-      static SnipeTarget.Preset of(String var0) {
-         String var1 = var0 == null ? "" : var0.trim().toLowerCase(Locale.ROOT).replace(' ', '_');
+      static SnipeTarget.Preset of(String string) {
+         String var1 = string == null ? "" : string.trim().toLowerCase(Locale.ROOT).replace(' ', '_');
 
          for (SnipeTarget.Preset var5 : values()) {
             if (var5.value.equals(var1)) {
@@ -277,7 +267,7 @@ final class SnipeTarget {
          ArrayList var0 = new ArrayList();
 
          for (SnipeTarget.Preset var4 : values()) {
-            var0.add(new StringSetting.Preset(var4.value, var4.label, Registries.field_41178.method_10221(var4.item).method_12832(), true));
+            var0.add(new StringSetting.Preset(var4.value, var4.label, Registries.ITEM.getId(var4.item).getPath(), true));
          }
 
          return var0;

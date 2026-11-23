@@ -16,10 +16,10 @@ public final class ModuleCodes {
    private ModuleCodes() {
    }
 
-   public static String copy(ClientModule var0) {
+   public static String copy(ClientModule clientModule) {
       JsonObject var1 = new JsonObject();
 
-      for (Setting var3 : var0.settings()) {
+      for (Setting var3 : clientModule.settings()) {
          if (!var3.isPrivate() && !var3.isDefault()) {
             var1.add(var3.id(), var3.compact(var3.serialize()));
          }
@@ -27,22 +27,22 @@ public final class ModuleCodes {
 
       JsonObject var4 = new JsonObject();
       var4.addProperty("format", 2);
-      var4.addProperty("module", var0.id());
-      if (var0.settingsVersion() > 0) {
-         var4.addProperty("settingsVersion", var0.settingsVersion());
+      var4.addProperty("module", clientModule.id());
+      if (clientModule.settingsVersion() > 0) {
+         var4.addProperty("settingsVersion", clientModule.settingsVersion());
       }
 
       var4.add("settings", var1);
       return ProfileCodes.encode(var4, "EfnModule:");
    }
 
-   public static void paste(ClientModule var0, String var1) throws ProfileException {
-      if (!var0.inConfigs()) {
-         throw new ProfileException(var0.name() + " can't be set by configs");
-      } else if (!ProfileCodes.contains(var1, "EfnModule:") && ProfileCodes.contains(var1, "EfnProfile:")) {
+   public static void paste(ClientModule clientModule, String string) throws ProfileException {
+      if (!clientModule.inConfigs()) {
+         throw new ProfileException(clientModule.name() + " can't be set by configs");
+      } else if (!ProfileCodes.contains(string, "EfnModule:") && ProfileCodes.contains(string, "EfnProfile:")) {
          throw new ProfileException("That's a whole profile, paste it in the Config tab");
       } else {
-         JsonObject var3 = ProfileCodes.decode(var1, "EfnModule:", "No module config on the clipboard");
+         JsonObject var3 = ProfileCodes.decode(string, "EfnModule:", "No module config on the clipboard");
          int var4 = 0;
          if (var3.has("format") && var3.get("format").isJsonPrimitive()) {
             try {
@@ -55,13 +55,13 @@ public final class ModuleCodes {
             throw new ProfileException("Made by an old EFN - old configs no longer work");
          } else {
             String var2 = var3.has("module") && var3.get("module").isJsonPrimitive() ? var3.get("module").getAsString() : "";
-            if (!var0.id().equals(var2)) {
+            if (!clientModule.id().equals(var2)) {
                ClientModule var12 = var2.isEmpty() ? null : ModuleRegistry.resolve(var2);
                throw new ProfileException("That config is for " + (var12 != null ? var12.name() : "another module"));
             } else {
                JsonObject var6 = var3.has("settings") && var3.get("settings").isJsonObject() ? var3.getAsJsonObject("settings") : new JsonObject();
 
-               for (Setting var8 : var0.settings()) {
+               for (Setting var8 : clientModule.settings()) {
                   if (!var8.isPrivate()) {
                      JsonElement var9 = var6.get(var8.id());
                      if (var9 != null) {
@@ -72,7 +72,7 @@ public final class ModuleCodes {
                   }
                }
 
-               int var13 = var0.settingsVersion();
+               int var13 = clientModule.settingsVersion();
                int var14 = 0;
                if (var3.has("settingsVersion") && var3.get("settingsVersion").isJsonPrimitive()) {
                   try {
@@ -82,7 +82,7 @@ public final class ModuleCodes {
                }
 
                if (var13 > 0 && var14 < var13) {
-                  var0.migrateSettings(var14);
+                  clientModule.migrateSettings(var14);
                }
             }
          }

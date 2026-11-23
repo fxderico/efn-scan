@@ -5,7 +5,6 @@ import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderPipeline.Builder;
-import com.mojang.blaze3d.pipeline.RenderPipeline.Snippet;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.systems.RenderSystem.ShapeIndexBuffer;
@@ -32,7 +31,7 @@ import org.joml.Vector4f;
 final class SkyMesh {
    static final RenderPipeline GLOW = pipeline("sky_glow", BlendFunction.LIGHTNING);
    static final RenderPipeline PAINT = pipeline("sky_paint", null);
-   private static final int VERTEX_SIZE = VertexFormats.field_1576.getVertexSize();
+   private static final int VERTEX_SIZE = VertexFormats.POSITION_COLOR.getVertexSize();
    private final String label;
    private final RenderPipeline pipeline;
    private final int maxQuads;
@@ -41,21 +40,21 @@ final class SkyMesh {
    private int indexCount;
    private boolean built;
 
-   SkyMesh(String var1, RenderPipeline var2, int var3) {
-      this.label = var1;
-      this.pipeline = var2;
-      this.maxQuads = var3;
+   SkyMesh(String string, RenderPipeline renderPipeline, int i) {
+      this.label = string;
+      this.pipeline = renderPipeline;
+      this.maxQuads = i;
    }
 
-   private static RenderPipeline pipeline(String var0, BlendFunction var1) {
-      Builder var2 = RenderPipeline.builder(new Snippet[]{RenderPipelines.field_60125})
-         .withLocation(Identifier.method_60655("efn", "pipeline/" + var0))
+   private static RenderPipeline pipeline(String string, BlendFunction blendFunction) {
+      Builder var2 = RenderPipeline.builder(RenderPipelines.TRANSFORMS_AND_PROJECTION_SNIPPET)
+         .withLocation(Identifier.of("efn", "pipeline/" + string))
          .withVertexShader("core/position_color")
          .withFragmentShader("core/position_color")
          .withDepthWrite(false)
          .withCull(false)
-         .withVertexFormat(VertexFormats.field_1576, DrawMode.field_27382);
-      return (var1 == null ? var2.withoutBlend() : var2.withBlend(var1)).build();
+         .withVertexFormat(VertexFormats.POSITION_COLOR, DrawMode.QUADS);
+      return (blendFunction == null ? var2.withoutBlend() : var2.withBlend(blendFunction)).build();
    }
 
    BufferBuilder begin() {
@@ -63,47 +62,24 @@ final class SkyMesh {
          this.bytes = new BufferAllocator(this.maxQuads * 4 * VERTEX_SIZE);
       }
 
-      return new BufferBuilder(this.bytes, DrawMode.field_27382, VertexFormats.field_1576);
+      return new BufferBuilder(this.bytes, DrawMode.QUADS, VertexFormats.POSITION_COLOR);
    }
 
-   void upload(BufferBuilder var1) {
+   void upload(BufferBuilder bufferBuilder) {
       this.built = true;
-      BuiltBuffer var2 = var1.method_60794();
 
-      label47: {
-         try {
-            if (var2 == null) {
-               this.indexCount = 0;
-               break label47;
-            }
-
-            if (this.buffer == null) {
-               this.buffer = RenderSystem.getDevice().createBuffer(() -> this.label, 40, this.maxQuads * 4L * VERTEX_SIZE);
-            }
-
-            RenderSystem.getDevice().createCommandEncoder().writeToBuffer(this.buffer.slice(0L, var2.method_60818().remaining()), var2.method_60818());
-            this.indexCount = var2.method_60822().comp_751();
-         } catch (Throwable var6) {
-            if (var2 != null) {
-               try {
-                  var2.close();
-               } catch (Throwable var5) {
-                  var6.addSuppressed(var5);
-               }
-            }
-
-            throw var6;
+      try (BuiltBuffer var2 = bufferBuilder.endNullable()) {
+         if (var2 == null) {
+            this.indexCount = 0;
+            return;
          }
 
-         if (var2 != null) {
-            var2.close();
+         if (this.buffer == null) {
+            this.buffer = RenderSystem.getDevice().createBuffer(() -> this.label, 40, this.maxQuads * 4L * VERTEX_SIZE);
          }
 
-         return;
-      }
-
-      if (var2 != null) {
-         var2.close();
+         RenderSystem.getDevice().createCommandEncoder().writeToBuffer(this.buffer.slice(0L, var2.getBuffer().remaining()), var2.getBuffer());
+         this.indexCount = var2.getDrawParameters().indexCount();
       }
    }
 
@@ -111,41 +87,26 @@ final class SkyMesh {
       return this.built;
    }
 
-   void draw(MatrixStack var1, float var2) {
-      if (this.indexCount != 0 && !(var2 <= 0.002F)) {
-         ShapeIndexBuffer var3 = RenderSystem.getSequentialBuffer(DrawMode.field_27382);
+   void draw(MatrixStack matrixStack, float f) {
+      if (this.indexCount != 0 && !(f <= 0.002F)) {
+         ShapeIndexBuffer var3 = RenderSystem.getSequentialBuffer(DrawMode.QUADS);
          Matrix4fStack var4 = RenderSystem.getModelViewStack();
          var4.pushMatrix();
 
          try {
-            var4.mul(var1.method_23760().method_23761());
-            GpuBufferSlice var5 = RenderSystem.getDynamicUniforms().method_71106(var4, new Vector4f(1.0F, 1.0F, 1.0F, var2), new Vector3f(), new Matrix4f());
-            Framebuffer var6 = MinecraftClient.method_1551().method_1522();
-            RenderPass var7 = RenderSystem.getDevice()
-               .createCommandEncoder()
-               .createRenderPass(() -> this.label, var6.method_71639(), OptionalInt.empty(), var6.method_71640(), OptionalDouble.empty());
+            var4.mul(matrixStack.peek().getPositionMatrix());
+            GpuBufferSlice var5 = RenderSystem.getDynamicUniforms().write(var4, new Vector4f(1.0F, 1.0F, 1.0F, f), new Vector3f(), new Matrix4f());
+            Framebuffer var6 = MinecraftClient.getInstance().getFramebuffer();
 
-            try {
+            try (RenderPass var7 = RenderSystem.getDevice()
+                  .createCommandEncoder()
+                  .createRenderPass(() -> this.label, var6.getColorAttachmentView(), OptionalInt.empty(), var6.getDepthAttachmentView(), OptionalDouble.empty())) {
                var7.setPipeline(this.pipeline);
                RenderSystem.bindDefaultUniforms(var7);
                var7.setUniform("DynamicTransforms", var5);
                var7.setVertexBuffer(0, this.buffer);
-               var7.setIndexBuffer(var3.method_68274(this.indexCount), var3.method_31924());
+               var7.setIndexBuffer(var3.getIndexBuffer(this.indexCount), var3.getIndexType());
                var7.drawIndexed(0, 0, this.indexCount, 1);
-            } catch (Throwable var15) {
-               if (var7 != null) {
-                  try {
-                     var7.close();
-                  } catch (Throwable var14) {
-                     var15.addSuppressed(var14);
-                  }
-               }
-
-               throw var15;
-            }
-
-            if (var7 != null) {
-               var7.close();
             }
          } finally {
             var4.popMatrix();
@@ -168,7 +129,7 @@ final class SkyMesh {
       this.built = false;
    }
 
-   static void vertex(BufferBuilder var0, float var1, float var2, float var3, int var4) {
-      var0.method_22912(var1, var2, var3).method_39415(var4);
+   static void vertex(BufferBuilder bufferBuilder, float f, float g, float h, int i) {
+      bufferBuilder.vertex(f, g, h).color(i);
    }
 }

@@ -30,25 +30,25 @@ final class FileDialogs {
       return open;
    }
 
-   static void openProfile(String var0, Consumer<Path> var1) {
-      show(var1x -> TinyFileDialogs.tinyfd_openFileDialog(var0, startIn(null), filters(var1x), "EFN profile (*.json)", false), var1);
+   static void openProfile(String string, Consumer<Path> consumer) {
+      show(memoryStack -> TinyFileDialogs.tinyfd_openFileDialog(string, startIn(null), filters(memoryStack), "EFN profile (*.json)", false), consumer);
    }
 
-   static void saveProfile(String var0, String var1, Consumer<Path> var2) {
-      show(var2x -> TinyFileDialogs.tinyfd_saveFileDialog(var0, startIn(var1), filters(var2x), "EFN profile (*.json)"), var2);
+   static void saveProfile(String string, String string2, Consumer<Path> consumer) {
+      show(memoryStack -> TinyFileDialogs.tinyfd_saveFileDialog(string, startIn(string2), filters(memoryStack), "EFN profile (*.json)"), consumer);
    }
 
-   private static PointerBuffer filters(MemoryStack var0) {
-      return (PointerBuffer)var0.mallocPointer(1).put(var0.UTF8("*.json")).flip();
+   private static PointerBuffer filters(MemoryStack memoryStack) {
+      return memoryStack.mallocPointer(1).put(memoryStack.UTF8("*.json")).flip();
    }
 
-   private static String startIn(String var0) {
+   private static String startIn(String string) {
       Path var1 = lastFolder;
       if (var1 == null || !Files.isDirectory(var1)) {
          var1 = defaultFolder();
       }
 
-      return var0 == null ? var1 + File.separator : var1.resolve(var0).toString();
+      return string == null ? var1 + File.separator : var1.resolve(string).toString();
    }
 
    private static Path defaultFolder() {
@@ -61,32 +61,14 @@ final class FileDialogs {
       }
    }
 
-   private static void show(Function<MemoryStack, String> var0, Consumer<Path> var1) {
+   private static void show(Function<MemoryStack, String> function, Consumer<Path> consumer) {
       if (!open) {
          open = true;
          Thread var2 = new Thread(() -> {
             String var3 = null;
 
-            try {
-               MemoryStack var4 = MemoryStack.stackPush();
-
-               try {
-                  var3 = (String)var0.apply(var4);
-               } catch (Throwable var15) {
-                  if (var4 != null) {
-                     try {
-                        var4.close();
-                     } catch (Throwable var14) {
-                        var15.addSuppressed(var14);
-                     }
-                  }
-
-                  throw var15;
-               }
-
-               if (var4 != null) {
-                  var4.close();
-               }
+            try (MemoryStack var4 = MemoryStack.stackPush()) {
+               var3 = (String)function.apply(var4);
             } catch (Throwable var16) {
                LOGGER.warn("[EFN] File dialog failed", var16);
             } finally {
@@ -105,7 +87,7 @@ final class FileDialogs {
                   lastFolder = var2x.getParent();
                }
 
-               MinecraftClient.method_1551().execute(() -> var1.accept(var2x));
+               MinecraftClient.getInstance().execute(() -> consumer.accept(var2x));
             }
          }, "EFN file dialog");
          var2.setDaemon(true);

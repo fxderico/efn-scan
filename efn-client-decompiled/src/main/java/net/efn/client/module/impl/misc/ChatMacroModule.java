@@ -69,26 +69,26 @@ public final class ChatMacroModule extends ClientModule {
       this.pendingSlot = -1;
    }
 
-   private void onKey(KeyInputEvent var1) {
-      if (var1.action == 1) {
-         this.onPress(var1.key);
+   private void onKey(KeyInputEvent keyInputEvent) {
+      if (keyInputEvent.action == 1) {
+         this.onPress(keyInputEvent.key);
       }
    }
 
-   private void onMouse(MouseInputEvent var1) {
-      if (var1.action == 1) {
-         this.onPress(1000 + var1.button);
+   private void onMouse(MouseInputEvent mouseInputEvent) {
+      if (mouseInputEvent.action == 1) {
+         this.onPress(1000 + mouseInputEvent.button);
       }
    }
 
-   private void onPress(int var1) {
-      if (ModuleKeybinds.isBindable(var1) && this.pendingSlot == -1) {
-         MinecraftClient var2 = MinecraftClient.method_1551();
-         if (var2.field_1755 == null && var2.field_1724 != null) {
+   private void onPress(int i) {
+      if (ModuleKeybinds.isBindable(i) && this.pendingSlot == -1) {
+         MinecraftClient var2 = MinecraftClient.getInstance();
+         if (var2.currentScreen == null && var2.player != null) {
             int var3 = this.slotCount();
 
             for (int var4 = 0; var4 < var3; var4++) {
-               if (this.keys[var4].value() == var1 && !this.texts[var4].get().isBlank()) {
+               if (this.keys[var4].value() == i && !this.texts[var4].get().isBlank()) {
                   this.pendingSlot = var4;
                   return;
                }
@@ -97,17 +97,17 @@ public final class ChatMacroModule extends ClientModule {
       }
    }
 
-   private void onTick(TickEvent var1) {
+   private void onTick(TickEvent tickEvent) {
       int var2 = this.pendingSlot;
       if (var2 >= 0) {
          this.pendingSlot = -1;
-         MinecraftClient var3 = MinecraftClient.method_1551();
-         ClientPlayNetworkHandler var4 = var3.method_1562();
-         if (var3.field_1724 != null && var4 != null && var3.field_1755 == null) {
+         MinecraftClient var3 = MinecraftClient.getInstance();
+         ClientPlayNetworkHandler var4 = var3.getNetworkHandler();
+         if (var3.player != null && var4 != null && var3.currentScreen == null) {
             String var5 = normalize(this.texts[var2].get());
             if (!var5.isEmpty() && !var5.equals("/")) {
                if (this.pressAction.is("Open in Chat")) {
-                  var3.method_1507(new ChatScreen(var5, false));
+                  var3.setScreen(new ChatScreen(var5, false));
                } else {
                   long var6 = System.nanoTime();
                   long var8 = (long)(this.cooldown.get() * 1.0E9) - (var6 - this.lastSendNanos);
@@ -119,11 +119,11 @@ public final class ChatMacroModule extends ClientModule {
                   } else {
                      this.lastSendNanos = var6;
                      this.sentAny = true;
-                     var3.field_1705.method_1743().method_1803(var5);
+                     var3.inGameHud.getChatHud().addToMessageHistory(var5);
                      if (var5.startsWith("/")) {
-                        var4.method_45730(var5.substring(1));
+                        var4.sendChatCommand(var5.substring(1));
                      } else {
-                        var4.method_45729(var5);
+                        var4.sendChatMessage(var5);
                      }
                   }
                }
@@ -132,9 +132,9 @@ public final class ChatMacroModule extends ClientModule {
       }
    }
 
-   static String normalize(String var0) {
-      String var1 = StringHelper.method_57180(var0);
-      return StringHelper.method_43681(StringUtils.normalizeSpace(var1.trim()));
+   static String normalize(String string) {
+      String var1 = StringHelper.stripInvalidChars(string);
+      return StringHelper.truncateChat(StringUtils.normalizeSpace(var1.trim()));
    }
 
    private int slotCount() {

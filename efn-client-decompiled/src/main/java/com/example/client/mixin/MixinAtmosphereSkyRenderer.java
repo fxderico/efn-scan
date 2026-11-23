@@ -24,33 +24,33 @@ public abstract class MixinAtmosphereSkyRenderer {
    }
 
    @Inject(
-      method = {"method_74926"},
+      method = {"updateRenderState"},
       at = {@At("TAIL")}
    )
-   private void efn$readSky(ClientWorld var1, float var2, Camera var3, SkyRenderState var4, CallbackInfo var5) {
+   private void efn$readSky(ClientWorld clientWorld, float f, Camera camera, SkyRenderState skyRenderState, CallbackInfo callbackInfo) {
       AtmosphereModule var6 = AtmosphereModule.get();
-      if (var6 != null && var4.field_64464 == Skybox.field_64386) {
-         var6.extract(var1, var2, var4);
+      if (var6 != null && skyRenderState.skybox == Skybox.OVERWORLD) {
+         var6.extract(clientWorld, f, skyRenderState);
       }
    }
 
    @Inject(
-      method = {"method_62302"},
+      method = {"renderTopSky"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$dome(int var1, CallbackInfo var2) {
+   private void efn$dome(int i, CallbackInfo callbackInfo) {
       AtmosphereModule var3 = AtmosphereModule.get();
       if (var3 != null && var3.skyDisc()) {
-         var2.cancel();
+         callbackInfo.cancel();
       }
    }
 
    @Inject(
-      method = {"method_62302"},
+      method = {"renderTopSky"},
       at = {@At("TAIL")}
    )
-   private void efn$afterDome(int var1, CallbackInfo var2) {
+   private void efn$afterDome(int i, CallbackInfo callbackInfo) {
       AtmosphereModule var3 = AtmosphereModule.get();
       if (var3 != null) {
          var3.afterSkyDisc();
@@ -58,63 +58,63 @@ public abstract class MixinAtmosphereSkyRenderer {
    }
 
    @Inject(
-      method = {"method_62306"},
+      method = {"renderGlowingSky"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$noSunriseFan(MatrixStack var1, float var2, int var3, CallbackInfo var4) {
+   private void efn$noSunriseFan(MatrixStack matrixStack, float f, int i, CallbackInfo callbackInfo) {
       AtmosphereModule var5 = AtmosphereModule.get();
       if (var5 != null && var5.replacesSunrise()) {
-         var4.cancel();
+         callbackInfo.cancel();
       }
    }
 
    @Inject(
-      method = {"method_62310"},
+      method = {"renderStars"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$stars(float var1, MatrixStack var2, CallbackInfo var3) {
+   private void efn$stars(float f, MatrixStack matrixStack, CallbackInfo callbackInfo) {
       AtmosphereModule var4 = AtmosphereModule.get();
-      if (var4 != null && var4.stars(var2)) {
-         var3.cancel();
+      if (var4 != null && var4.stars(matrixStack)) {
+         callbackInfo.cancel();
       }
    }
 
    @Inject(
-      method = {"method_62307"},
+      method = {"renderCelestialBodies"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_9975;method_62304(Lnet/minecraft/class_12131;FLnet/minecraft/class_4587;)V"
+         target = "Lnet/minecraft/client/render/SkyRendering;renderMoon(Lnet/minecraft/world/MoonPhase;FLnet/minecraft/client/util/math/MatrixStack;)V"
       )}
    )
-   private void efn$beforeMoon(MatrixStack var1, float var2, float var3, float var4, MoonPhase var5, float var6, float var7, CallbackInfo var8) {
+   private void efn$beforeMoon(MatrixStack matrixStack, float f, float g, float h, MoonPhase moonPhase, float i, float j, CallbackInfo callbackInfo) {
       AtmosphereModule var9 = AtmosphereModule.get();
       if (var9 != null) {
-         var9.beforeMoon(var1);
+         var9.beforeMoon(matrixStack);
       }
    }
 
    @Inject(
-      method = {"method_62307"},
+      method = {"renderCelestialBodies"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_9975;method_62304(Lnet/minecraft/class_12131;FLnet/minecraft/class_4587;)V",
+         target = "Lnet/minecraft/client/render/SkyRendering;renderMoon(Lnet/minecraft/world/MoonPhase;FLnet/minecraft/client/util/math/MatrixStack;)V",
          shift = Shift.AFTER
       )}
    )
-   private void efn$afterMoon(MatrixStack var1, float var2, float var3, float var4, MoonPhase var5, float var6, float var7, CallbackInfo var8) {
+   private void efn$afterMoon(MatrixStack matrixStack, float f, float g, float h, MoonPhase moonPhase, float i, float j, CallbackInfo callbackInfo) {
       AtmosphereModule var9 = AtmosphereModule.get();
       if (var9 != null) {
-         var9.afterMoon(var1);
+         var9.afterMoon(matrixStack);
       }
    }
 
    @Inject(
-      method = {"method_62307"},
+      method = {"renderCelestialBodies"},
       at = {@At("TAIL")}
    )
-   private void efn$afterCelestials(MatrixStack var1, float var2, float var3, float var4, MoonPhase var5, float var6, float var7, CallbackInfo var8) {
+   private void efn$afterCelestials(MatrixStack matrixStack, float f, float g, float h, MoonPhase moonPhase, float i, float j, CallbackInfo callbackInfo) {
       AtmosphereModule var9 = AtmosphereModule.get();
       if (var9 != null) {
          var9.afterCelestials();
@@ -124,14 +124,14 @@ public abstract class MixinAtmosphereSkyRenderer {
    }
 
    @Inject(
-      method = {"method_62312"},
+      method = {"renderEndSky"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$endSky(CallbackInfo var1) {
+   private void efn$endSky(CallbackInfo callbackInfo) {
       AtmosphereModule var2 = AtmosphereModule.get();
       if (var2 != null && var2.endSky()) {
-         var1.cancel();
+         callbackInfo.cancel();
       }
    }
 }

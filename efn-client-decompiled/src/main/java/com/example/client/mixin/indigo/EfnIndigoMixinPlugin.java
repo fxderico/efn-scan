@@ -16,28 +16,35 @@ public final class EfnIndigoMixinPlugin implements IMixinConfigPlugin {
    public EfnIndigoMixinPlugin() {
    }
 
-   public void onLoad(String var1) {
+   @Override
+   public void onLoad(String string) {
       this.indigoLoaded = FabricLoader.getInstance().isModLoaded("fabric-renderer-indigo");
    }
 
+   @Override
    public String getRefMapperConfig() {
       return null;
    }
 
-   public boolean shouldApplyMixin(String var1, String var2) {
+   @Override
+   public boolean shouldApplyMixin(String string, String string2) {
       return this.indigoLoaded;
    }
 
-   public void acceptTargets(Set<String> var1, Set<String> var2) {
+   @Override
+   public void acceptTargets(Set<String> set, Set<String> set2) {
    }
 
+   @Override
    public List<String> getMixins() {
       return null;
    }
 
-   public void preApply(String var1, ClassNode var2, String var3, IMixinInfo var4) {
+   @Override
+   public void preApply(String string, ClassNode classNode, String string2, IMixinInfo iMixinInfo) {
    }
 
-   public void postApply(String var1, ClassNode var2, String var3, IMixinInfo var4) {
+   @Override
+   public void postApply(String string, ClassNode classNode, String string2, IMixinInfo iMixinInfo) {
    }
 }

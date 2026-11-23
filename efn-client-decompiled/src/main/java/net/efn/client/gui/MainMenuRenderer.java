@@ -28,23 +28,23 @@ final class MainMenuRenderer {
    private long openedAt = System.nanoTime();
    private boolean failed;
 
-   MainMenuRenderer(Screen var1) {
-      this.context = new MenuContext(var1, () -> this.accounts.open(ConnectionsPanel.Tab.ACCOUNTS), this.credits::open);
+   MainMenuRenderer(Screen screen) {
+      this.context = new MenuContext(screen, () -> this.accounts.open(ConnectionsPanel.Tab.ACCOUNTS), this.credits::open);
    }
 
-   boolean keyPressed(int var1) {
-      return this.popup.keyPressed(var1) || this.credits.keyPressed(var1) || this.accounts.keyPressed(var1);
+   boolean keyPressed(int i) {
+      return this.popup.keyPressed(i) || this.credits.keyPressed(i) || this.accounts.keyPressed(i);
    }
 
    void render() {
-      MinecraftClient var1 = MinecraftClient.method_1551();
+      MinecraftClient var1 = MinecraftClient.getInstance();
       long var2 = System.nanoTime();
-      if (var1.method_18506() != null) {
+      if (var1.getOverlay() != null) {
          this.openedAt = var2;
       }
 
       ImGuiIO var4 = ImGui.getIO();
-      boolean var5 = var1.method_18506() == null;
+      boolean var5 = var1.getOverlay() == null;
       float var6 = (float)(var2 - this.openedAt) / 1.0E9F;
       float var7 = var4.getMousePosX();
       float var8 = var4.getMousePosY();
@@ -73,7 +73,7 @@ final class MainMenuRenderer {
          EfnMenu.render(this.context);
       } catch (RuntimeException var16) {
          if (!this.failed) {
-            LOGGER.error("[EFN] Main menu failed to render", var16);
+            LOGGER.error("[EFN] Main menu failed to render", (Throwable)var16);
          }
 
          this.failed = true;
@@ -89,17 +89,17 @@ final class MainMenuRenderer {
       this.popup.render(ImGui.getForegroundDrawList(), var10, var11, var12, var13, var7, var8, var9);
    }
 
-   private static void drawTooltip(MenuContext var0) {
-      ImDrawList var1 = var0.fg();
-      ImFont var2 = var0.tagFont();
-      String var3 = var0.pendingTooltip();
-      float var4 = var0.textHeight(var2);
-      float var5 = var0.textWidth(var2, var3) + var0.px(18.0F);
-      float var6 = var4 + var0.px(9.0F);
-      float var7 = var0.tooltipX() - var5 * 0.5F;
-      float var8 = var0.tooltipY();
-      var1.addRectFilled(var7, var8, var7 + var5, var8 + var6, MenuContext.col(-16053492, 0.96F), var0.px(3.0F));
-      var1.addRect(var7, var8, var7 + var5, var8 + var6, MenuContext.col(-1, 0.25F), var0.px(3.0F), 0, Math.max(1.0F, var0.scale()));
-      var0.text(var1, var2, var7 + var0.px(9.0F), var8 + var0.px(4.5F), -921103, 1.0F, var3);
+   private static void drawTooltip(MenuContext menuContext) {
+      ImDrawList var1 = menuContext.fg();
+      ImFont var2 = menuContext.tagFont();
+      String var3 = menuContext.pendingTooltip();
+      float var4 = menuContext.textHeight(var2);
+      float var5 = menuContext.textWidth(var2, var3) + menuContext.px(18.0F);
+      float var6 = var4 + menuContext.px(9.0F);
+      float var7 = menuContext.tooltipX() - var5 * 0.5F;
+      float var8 = menuContext.tooltipY();
+      var1.addRectFilled(var7, var8, var7 + var5, var8 + var6, MenuContext.col(-16053492, 0.96F), menuContext.px(3.0F));
+      var1.addRect(var7, var8, var7 + var5, var8 + var6, MenuContext.col(-1, 0.25F), menuContext.px(3.0F), 0, Math.max(1.0F, menuContext.scale()));
+      menuContext.text(var1, var2, var7 + menuContext.px(9.0F), var8 + menuContext.px(4.5F), -921103, 1.0F, var3);
    }
 }

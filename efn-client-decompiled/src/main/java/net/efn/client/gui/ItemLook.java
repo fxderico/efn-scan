@@ -19,40 +19,43 @@ public final class ItemLook extends ItemRenderState {
    public ItemLook() {
    }
 
-   public void method_65605() {
-      super.method_65605();
+   @Override
+   public void clear() {
+      super.clear();
       this.identity.clear();
       this.layers.clear();
    }
 
-   public LayerRenderState method_65601() {
-      LayerRenderState var1 = super.method_65601();
+   @Override
+   public LayerRenderState newLayer() {
+      LayerRenderState var1 = super.newLayer();
       this.layers.add(var1);
       return var1;
    }
 
-   public void method_70946(Object var1) {
-      if (!(var1 instanceof Glint)) {
-         this.identity.add(var1);
+   @Override
+   public void addModelKey(Object modelKey) {
+      if (!(modelKey instanceof Glint)) {
+         this.identity.add(modelKey);
       }
    }
 
-   public boolean resolve(ItemStack var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
+   public boolean resolve(ItemStack itemStack) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
 
       try {
-         var2.method_65386().method_65598(this, var1, ItemDisplayContext.field_4317, var2.field_1687, var2.field_1724, 0);
+         var2.getItemModelManager().clearAndUpdate(this, itemStack, ItemDisplayContext.GUI, var2.world, var2.player, 0);
       } catch (RuntimeException var5) {
-         this.method_65605();
+         this.clear();
          return false;
       }
 
       for (LayerRenderState var4 : this.layers) {
-         var4.method_65615(Glint.field_55341);
+         var4.setGlint(Glint.NONE);
       }
 
       if (this.identity.isEmpty()) {
-         this.identity.add(var1.method_7909());
+         this.identity.add(itemStack.getItem());
       }
 
       return true;

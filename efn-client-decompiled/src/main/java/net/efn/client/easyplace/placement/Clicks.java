@@ -23,14 +23,14 @@ public final class Clicks {
    private Clicks() {
    }
 
-   public static boolean usesClick(World var0, BlockPos var1, boolean var2) {
-      if (var0.method_8321(var1) instanceof NamedScreenHandlerFactory) {
+   public static boolean usesClick(World world, BlockPos blockPos, boolean bl) {
+      if (world.getBlockEntity(blockPos) instanceof NamedScreenHandlerFactory) {
          return true;
-      } else if (!var2) {
+      } else if (!bl) {
          return false;
       } else {
-         Block var3 = var0.method_8320(var1).method_26204();
-         return var0.method_8321(var1) != null
+         Block var3 = world.getBlockState(blockPos).getBlock();
+         return world.getBlockEntity(blockPos) != null
             || var3 instanceof DoorBlock
             || var3 instanceof TrapdoorBlock
             || var3 instanceof FenceGateBlock

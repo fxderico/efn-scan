@@ -80,14 +80,14 @@ final class ItemPickerEditor {
    private static final int LEV_SUBSTITUTE = 8;
    private static final int LEV_DELETE = 8;
    private static final List<ItemPickerEditor.ItemInfo> ITEMS = new ArrayList<>();
-   private static final Reference2ObjectOpenHashMap<Item, ItemPickerEditor.ItemInfo> BY_ITEM = new Reference2ObjectOpenHashMap();
+   private static final Reference2ObjectOpenHashMap<Item, ItemPickerEditor.ItemInfo> BY_ITEM = new Reference2ObjectOpenHashMap<>();
    private static final Map<StringSetting.Preset, ItemStack> PRESET_ICONS = new HashMap<>();
    private static String language;
    private static int namesGeneration;
    private static int[] levPrev = new int[64];
    private static int[] levCur = new int[64];
-   private final Reference2ObjectOpenHashMap<StringListSetting, float[]> inlineScroll = new Reference2ObjectOpenHashMap();
-   private final Reference2ObjectOpenHashMap<StringSetting, ItemPickerEditor.Summary> summaries = new Reference2ObjectOpenHashMap();
+   private final Reference2ObjectOpenHashMap<StringListSetting, float[]> inlineScroll = new Reference2ObjectOpenHashMap<>();
+   private final Reference2ObjectOpenHashMap<StringSetting, ItemPickerEditor.Summary> summaries = new Reference2ObjectOpenHashMap<>();
    private ClientModule pickerModule;
    private StringListSetting listTarget;
    private StringSetting itemTarget;
@@ -120,77 +120,77 @@ final class ItemPickerEditor {
    ItemPickerEditor() {
    }
 
-   float renderList(ClientModule var1, StringListSetting var2, float var3, float var4, float var5) {
+   float renderList(ClientModule clientModule, StringListSetting stringListSetting, float f, float g, float h) {
       beginFrame();
       ImDrawList var6 = ImGui.getWindowDrawList();
       ImFont var7 = ImGuiManager.getInstance().moduleFont();
       ImFont var8 = ImGuiManager.getInstance().smallFont();
       float var9 = ImGui.getWindowPosX();
       float var10 = ImGui.getWindowPosY() - ImGui.getScrollY();
-      List var11 = var2.get();
-      ImGui.setCursorPos(var3, var5 + EfnWidgets.s(10.0F));
-      ImGui.textUnformatted(var2.name());
-      float var12 = var10 + var5 + EfnWidgets.s(10.0F) + ImGui.getTextLineHeight() * 0.5F;
+      List var11 = stringListSetting.get();
+      ImGui.setCursorPos(f, h + EfnWidgets.s(10.0F));
+      ImGui.textUnformatted(stringListSetting.name());
+      float var12 = var10 + h + EfnWidgets.s(10.0F) + ImGui.getTextLineHeight() * 0.5F;
       countPill(var6, var8, ImGui.getItemRectMaxX() + EfnWidgets.s(8.0F), var12, Integer.toString(var11.size()));
-      if (headerChip("##pick_items", "Select", var9 + var3 + var4, var12, var7)) {
-         this.openList(var1, var2);
+      if (headerChip("##pick_items", "Select", var9 + f + g, var12, var7)) {
+         this.openList(clientModule, stringListSetting);
       }
 
-      float var13 = var5 + EfnWidgets.s(40.0F);
+      float var13 = h + EfnWidgets.s(40.0F);
       float var14 = EfnWidgets.s(38.0F);
       int var15 = var11.size();
       float var16 = var15 == 0 ? EfnWidgets.s(44.0F) : Math.min(var15, 8) * var14 + EfnWidgets.s(4.0F) * 2.0F;
-      float var17 = var9 + var3;
+      float var17 = var9 + f;
       float var18 = var10 + var13;
-      var6.addRectFilled(var17, var18, var17 + var4, var18 + var16, EfnWidgets.c(LIST_BG), EfnWidgets.s(10.0F));
+      var6.addRectFilled(var17, var18, var17 + g, var18 + var16, EfnWidgets.c(LIST_BG), EfnWidgets.s(10.0F));
       String var19 = null;
       if (var15 == 0) {
          EfnWidgets.text(var6, var7, var17 + EfnWidgets.s(14.0F), var18 + (var16 - EfnWidgets.lineHeight(var7)) * 0.5F, -4542808, "No items yet");
       } else if (var15 <= 8) {
-         var19 = this.drawEntries(var6, var11, var3, var13 + EfnWidgets.s(4.0F), var4, var14, 0, var15, var7, var8);
+         var19 = this.drawEntries(var6, var11, f, var13 + EfnWidgets.s(4.0F), g, var14, 0, var15, var7, var8);
       } else {
-         ImGui.setCursorPos(var3, var13 + EfnWidgets.s(4.0F));
-         if (ImGui.beginChild("##chosen_items", var4, var16 - EfnWidgets.s(4.0F) * 2.0F, false, 24)) {
+         ImGui.setCursorPos(f, var13 + EfnWidgets.s(4.0F));
+         if (ImGui.beginChild("##chosen_items", g, var16 - EfnWidgets.s(4.0F) * 2.0F, false, 24)) {
             ImGui.setCursorPos(0.0F, 0.0F);
             ImGui.dummy(1.0F, var15 * var14);
             float var20 = ImGui.getScrollY();
             int var21 = Math.max(0, (int)(var20 / var14));
             int var22 = Math.min(var15, (int)Math.ceil((var20 + ImGui.getWindowHeight()) / var14));
-            var19 = this.drawEntries(ImGui.getWindowDrawList(), var11, 0.0F, 0.0F, var4, var14, var21, var22, var7, var8);
-            ClickGuiRenderer.smoothScroll((float[])this.inlineScroll.computeIfAbsent(var2, var0 -> new float[2]), frameDelta());
+            var19 = this.drawEntries(ImGui.getWindowDrawList(), var11, 0.0F, 0.0F, g, var14, var21, var22, var7, var8);
+            ClickGuiRenderer.smoothScroll(this.inlineScroll.computeIfAbsent(stringListSetting, object -> new float[2]), frameDelta());
          }
 
          ImGui.endChild();
       }
 
       if (var19 != null) {
-         var2.removeValue(var19);
+         stringListSetting.removeValue(var19);
       }
 
       return EfnWidgets.s(40.0F) + var16 + EfnWidgets.s(12.0F);
    }
 
-   float renderItem(ClientModule var1, StringSetting var2, float var3, float var4, float var5) {
+   float renderItem(ClientModule clientModule, StringSetting stringSetting, float f, float g, float h) {
       beginFrame();
       ImDrawList var7 = ImGui.getWindowDrawList();
       ImFont var8 = ImGuiManager.getInstance().moduleFont();
       ImFont var9 = ImGuiManager.getInstance().smallFont();
       float var10 = ImGui.getWindowPosX();
       float var11 = ImGui.getWindowPosY() - ImGui.getScrollY();
-      ImGui.setCursorPos(var3, var5 + EfnWidgets.s(10.0F));
-      ImGui.textUnformatted(var2.name());
-      float var12 = var11 + var5 + EfnWidgets.s(10.0F) + ImGui.getTextLineHeight() * 0.5F;
-      boolean var13 = headerChip("##pick_item", "Select", var10 + var3 + var4, var12, var8);
-      float var14 = var5 + EfnWidgets.s(40.0F);
+      ImGui.setCursorPos(f, h + EfnWidgets.s(10.0F));
+      ImGui.textUnformatted(stringSetting.name());
+      float var12 = var11 + h + EfnWidgets.s(10.0F) + ImGui.getTextLineHeight() * 0.5F;
+      boolean var13 = headerChip("##pick_item", "Select", var10 + f + g, var12, var8);
+      float var14 = h + EfnWidgets.s(40.0F);
       float var15 = EfnWidgets.s(38.0F) + EfnWidgets.s(4.0F) * 2.0F;
-      float var16 = var10 + var3;
+      float var16 = var10 + f;
       float var17 = var11 + var14;
       float var18 = var17 + var15 * 0.5F;
       float var19 = EfnWidgets.lineHeight(var8);
       float var20 = EfnWidgets.lineHeight(var9);
-      String var21 = var2.get().trim();
+      String var21 = stringSetting.get().trim();
       float var22 = EfnWidgets.s(22.0F);
-      float var23 = var16 + var4 - EfnWidgets.s(10.0F);
+      float var23 = var16 + g - EfnWidgets.s(10.0F);
       boolean var24 = false;
       boolean var25 = false;
       if (!var21.isEmpty()) {
@@ -199,14 +199,14 @@ final class ItemPickerEditor {
          var25 = ImGui.isItemHovered();
       }
 
-      float var26 = var21.isEmpty() ? var4 : Math.max(1.0F, var4 - var22 - EfnWidgets.s(14.0F));
+      float var26 = var21.isEmpty() ? g : Math.max(1.0F, g - var22 - EfnWidgets.s(14.0F));
       ImGui.setCursorScreenPos(var16, var17);
       if (ImGui.invisibleButton("##item_box", var26, var15)) {
          var13 = true;
       }
 
       var7.addRectFilled(
-         var16, var17, var16 + var4, var17 + var15, EfnWidgets.c(ImGui.isItemHovered() ? EfnWidgets.withAlpha(-13226454, 0.8F) : LIST_BG), EfnWidgets.s(10.0F)
+         var16, var17, var16 + g, var17 + var15, EfnWidgets.c(ImGui.isItemHovered() ? EfnWidgets.withAlpha(-13226454, 0.8F) : LIST_BG), EfnWidgets.s(10.0F)
       );
       if (var21.isEmpty()) {
          EfnWidgets.text(var7, var8, var16 + EfnWidgets.s(14.0F), var18 - var19 * 0.5F, -4542808, "No item selected");
@@ -231,28 +231,28 @@ final class ItemPickerEditor {
       }
 
       if (var24) {
-         var2.set("");
-         if (var2.enchantSetting() != null) {
-            var2.enchantSetting().set("");
+         stringSetting.set("");
+         if (stringSetting.enchantSetting() != null) {
+            stringSetting.enchantSetting().set("");
          }
       } else if (var13) {
-         this.openItem(var1, var2);
+         this.openItem(clientModule, stringSetting);
       }
 
       return EfnWidgets.s(40.0F) + var15 + EfnWidgets.s(12.0F);
    }
 
-   float renderPresets(ClientModule var1, StringSetting var2, float var3, float var4, float var5) {
+   float renderPresets(ClientModule clientModule, StringSetting stringSetting, float f, float g, float h) {
       beginFrame();
       ImDrawList var6 = ImGui.getWindowDrawList();
       ImFont var7 = ImGuiManager.getInstance().moduleFont();
       ImFont var8 = ImGuiManager.getInstance().smallFont();
       float var9 = ImGui.getWindowPosX();
       float var10 = ImGui.getWindowPosY() - ImGui.getScrollY();
-      ImGui.setCursorPos(var3, var5 + EfnWidgets.s(10.0F));
-      ImGui.textUnformatted(var2.name());
-      List var11 = var2.presets();
-      String var12 = var2.get().trim();
+      ImGui.setCursorPos(f, h + EfnWidgets.s(10.0F));
+      ImGui.textUnformatted(stringSetting.name());
+      List var11 = stringSetting.presets();
+      String var12 = stringSetting.get().trim();
       String var13 = var12.toLowerCase(Locale.ROOT).replace(' ', '_');
       StringSetting.Preset var14 = null;
 
@@ -267,14 +267,14 @@ final class ItemPickerEditor {
       float var17 = EfnWidgets.lineHeight(var7);
       float var18 = EfnWidgets.lineHeight(var8);
       float var19 = ItemIcons.pixels(EfnWidgets.s(48.0F));
-      float var20 = (var4 - var39 * (var11.size() - 1)) / var11.size();
+      float var20 = (g - var39 * (var11.size() - 1)) / var11.size();
       float var21 = var19 + EfnWidgets.s(30.0F) + var18;
-      float var22 = var10 + var5 + EfnWidgets.s(40.0F);
+      float var22 = var10 + h + EfnWidgets.s(40.0F);
 
       for (int var23 = 0; var23 < var11.size(); var23++) {
          StringSetting.Preset var24 = (StringSetting.Preset)var11.get(var23);
          boolean var25 = var24 == var14;
-         float var26 = var9 + var3 + var23 * (var20 + var39);
+         float var26 = var9 + f + var23 * (var20 + var39);
          ImGui.setCursorScreenPos(var26, var22);
          ImGui.pushID(var23);
          boolean var27 = ImGui.invisibleButton("##preset", var20, var21);
@@ -290,7 +290,7 @@ final class ItemPickerEditor {
          }
 
          if (var27) {
-            var2.set(var24.value());
+            stringSetting.set(var24.value());
          }
       }
 
@@ -298,16 +298,16 @@ final class ItemPickerEditor {
       Item var41 = var40 ? ItemEnchants.resolve(var12) : null;
       float var42 = var22 + var21 + var39;
       float var43 = EfnWidgets.s(38.0F) + EfnWidgets.s(4.0F) * 2.0F;
-      float var44 = var9 + var3;
+      float var44 = var9 + f;
       float var45 = var42 + var43 * 0.5F;
       ImGui.setCursorScreenPos(var44, var42);
-      boolean var46 = ImGui.invisibleButton("##other_items", var4, var43);
+      boolean var46 = ImGui.invisibleButton("##other_items", g, var43);
       boolean var47 = ImGui.isItemHovered();
-      presetTile(var6, var44, var42, var4, var43, var40, var47, var38);
+      presetTile(var6, var44, var42, g, var43, var40, var47, var38);
       float var31 = ItemIcons.pixels(EfnWidgets.s(32.0F));
       float var32 = var44 + EfnWidgets.s(10.0F);
       float var33 = var32 + var31 + EfnWidgets.s(10.0F);
-      float var34 = var44 + var4 - EfnWidgets.s(14.0F) - var33;
+      float var34 = var44 + g - EfnWidgets.s(14.0F) - var33;
       if (var41 != null) {
          ItemIcons.draw(var6, var41, var32, var45 - var31 * 0.5F, var31, 1.0F);
          drawLabel(var6, var7, var8, var33, var45, var34, info(var41).name, "Other items", -461582, var17, var18);
@@ -334,52 +334,52 @@ final class ItemPickerEditor {
       }
 
       if (var46) {
-         this.openItem(var1, var2);
+         this.openItem(clientModule, stringSetting);
       }
 
       return EfnWidgets.s(40.0F) + var21 + var39 + var43 + EfnWidgets.s(12.0F);
    }
 
-   private static void presetTile(ImDrawList var0, float var1, float var2, float var3, float var4, boolean var5, boolean var6, int var7) {
-      int var8 = var5 ? EfnWidgets.withAlpha(var7, 0.18F) : (var6 ? EfnWidgets.withAlpha(-13226454, 0.8F) : LIST_BG);
-      var0.addRectFilled(var1, var2, var1 + var3, var2 + var4, EfnWidgets.c(var8), EfnWidgets.s(10.0F));
-      if (var5) {
-         var0.addRect(var1, var2, var1 + var3, var2 + var4, EfnWidgets.c(EfnWidgets.withAlpha(var7, 0.9F)), EfnWidgets.s(10.0F), 0, EfnWidgets.s(1.5F));
+   private static void presetTile(ImDrawList imDrawList, float f, float g, float h, float i, boolean bl, boolean bl2, int j) {
+      int var8 = bl ? EfnWidgets.withAlpha(j, 0.18F) : (bl2 ? EfnWidgets.withAlpha(-13226454, 0.8F) : LIST_BG);
+      imDrawList.addRectFilled(f, g, f + h, g + i, EfnWidgets.c(var8), EfnWidgets.s(10.0F));
+      if (bl) {
+         imDrawList.addRect(f, g, f + h, g + i, EfnWidgets.c(EfnWidgets.withAlpha(j, 0.9F)), EfnWidgets.s(10.0F), 0, EfnWidgets.s(1.5F));
       }
    }
 
-   private static ItemStack presetIcon(StringSetting.Preset var0) {
-      ItemStack var1 = PRESET_ICONS.get(var0);
+   private static ItemStack presetIcon(StringSetting.Preset preset) {
+      ItemStack var1 = PRESET_ICONS.get(preset);
       if (var1 != null) {
          return var1;
       } else {
-         Item var2 = ItemEnchants.resolve(var0.icon());
-         var1 = new ItemStack(var2 == null ? Items.field_8077 : var2);
-         if (var0.glint()) {
-            var1.method_57379(DataComponentTypes.field_49641, true);
+         Item var2 = ItemEnchants.resolve(preset.icon());
+         var1 = new ItemStack(var2 == null ? Items.BARRIER : var2);
+         if (preset.glint()) {
+            var1.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
          }
 
-         PRESET_ICONS.put(var0, var1);
+         PRESET_ICONS.put(preset, var1);
          return var1;
       }
    }
 
-   float renderEnchants(ClientModule var1, StringSetting var2, float var3, float var4, float var5) {
+   float renderEnchants(ClientModule clientModule, StringSetting stringSetting, float f, float g, float h) {
       beginFrame();
       ImDrawList var7 = ImGui.getWindowDrawList();
       ImFont var8 = ImGuiManager.getInstance().moduleFont();
       float var9 = ImGui.getWindowPosX();
       float var10 = ImGui.getWindowPosY() - ImGui.getScrollY();
-      ImGui.setCursorPos(var3, var5 + EfnWidgets.s(10.0F));
-      ImGui.textUnformatted(var2.name());
-      float var11 = var10 + var5 + EfnWidgets.s(10.0F) + ImGui.getTextLineHeight() * 0.5F;
-      boolean var12 = headerChip("##edit_enchants", "Edit", var9 + var3 + var4, var11, var8);
-      float var13 = var5 + EfnWidgets.s(40.0F);
+      ImGui.setCursorPos(f, h + EfnWidgets.s(10.0F));
+      ImGui.textUnformatted(stringSetting.name());
+      float var11 = var10 + h + EfnWidgets.s(10.0F) + ImGui.getTextLineHeight() * 0.5F;
+      boolean var12 = headerChip("##edit_enchants", "Edit", var9 + f + g, var11, var8);
+      float var13 = h + EfnWidgets.s(40.0F);
       float var14 = EfnWidgets.s(38.0F) + EfnWidgets.s(4.0F) * 2.0F;
-      float var15 = var9 + var3;
+      float var15 = var9 + f;
       float var16 = var10 + var13;
       ImGui.setCursorScreenPos(var15, var16);
-      if (ImGui.invisibleButton("##enchant_box", var4, var14)) {
+      if (ImGui.invisibleButton("##enchant_box", g, var14)) {
          var12 = true;
       }
 
@@ -387,15 +387,15 @@ final class ItemPickerEditor {
       var7.addRectFilled(
          var15,
          var16,
-         var15 + var4,
+         var15 + g,
          var16 + var14,
          EfnWidgets.c((var6 = ImGui.isItemHovered()) ? EfnWidgets.withAlpha(-13226454, 0.8F) : LIST_BG),
          EfnWidgets.s(10.0F)
       );
-      String var17 = this.summary(var2);
+      String var17 = this.summary(stringSetting);
       float var18 = EfnWidgets.lineHeight(var8);
       float var19 = var15 + EfnWidgets.s(14.0F);
-      float var20 = var4 - EfnWidgets.s(28.0F);
+      float var20 = g - EfnWidgets.s(28.0F);
       if (var17.isEmpty()) {
          EfnWidgets.text(var7, var8, var19, var16 + (var14 - var18) * 0.5F, -4542808, "Any enchantments");
       } else {
@@ -407,7 +407,7 @@ final class ItemPickerEditor {
       }
 
       if (var12) {
-         this.openEnchants(var1, var2);
+         this.openEnchants(clientModule, stringSetting);
       }
 
       return EfnWidgets.s(40.0F) + var14 + EfnWidgets.s(12.0F);
@@ -438,33 +438,33 @@ final class ItemPickerEditor {
       }
    }
 
-   private String drawEntries(ImDrawList var1, List<String> var2, float var3, float var4, float var5, float var6, int var7, int var8, ImFont var9, ImFont var10) {
+   private String drawEntries(ImDrawList imDrawList, List<String> list, float f, float g, float h, float i, int j, int k, ImFont imFont, ImFont imFont2) {
       boolean var11 = ImGui.isWindowHovered();
       float var12 = ItemIcons.pixels(EfnWidgets.s(32.0F));
       float var13 = EfnWidgets.s(22.0F);
-      float var14 = EfnWidgets.lineHeight(var9);
-      float var15 = EfnWidgets.lineHeight(var10);
+      float var14 = EfnWidgets.lineHeight(imFont);
+      float var15 = EfnWidgets.lineHeight(imFont2);
       String var16 = null;
 
-      for (int var17 = var7; var17 < var8; var17++) {
-         String var19 = (String)var2.get(var17);
-         ImGui.setCursorPos(var3, var4 + var17 * var6);
+      for (int var17 = j; var17 < k; var17++) {
+         String var19 = (String)list.get(var17);
+         ImGui.setCursorPos(f, g + var17 * i);
          float var20 = ImGui.getCursorScreenPosX();
          float var21 = ImGui.getCursorScreenPosY();
-         float var22 = var21 + var6 * 0.5F;
-         if (var11 && ImGui.isMouseHoveringRect(var20, var21, var20 + var5, var21 + var6)) {
-            var1.addRectFilled(
+         float var22 = var21 + i * 0.5F;
+         if (var11 && ImGui.isMouseHoveringRect(var20, var21, var20 + h, var21 + i)) {
+            imDrawList.addRectFilled(
                var20 + EfnWidgets.s(4.0F),
                var21 + EfnWidgets.s(1.0F),
-               var20 + var5 - EfnWidgets.s(4.0F),
-               var21 + var6 - EfnWidgets.s(1.0F),
+               var20 + h - EfnWidgets.s(4.0F),
+               var21 + i - EfnWidgets.s(1.0F),
                EfnWidgets.c(318767103),
                EfnWidgets.s(7.0F)
             );
          }
 
          ImGui.pushID(var17);
-         float var23 = var20 + var5 - EfnWidgets.s(10.0F);
+         float var23 = var20 + h - EfnWidgets.s(10.0F);
          ImGui.setCursorScreenPos(var23 - var13, var22 - var13 * 0.5F);
          if (ImGui.invisibleButton("##remove", var13, var13)) {
             var16 = var19;
@@ -472,22 +472,22 @@ final class ItemPickerEditor {
 
          boolean var18;
          if (var18 = ImGui.isItemHovered()) {
-            var1.addCircleFilled(var23 - var13 * 0.5F, var22, var13 * 0.5F, EfnWidgets.c(-12240588), 20);
+            imDrawList.addCircleFilled(var23 - var13 * 0.5F, var22, var13 * 0.5F, EfnWidgets.c(-12240588), 20);
          }
 
-         EfnWidgets.cross(var1, var23 - var13 * 0.5F, var22, EfnWidgets.s(3.5F), var18 ? -10856974 : -4542808);
+         EfnWidgets.cross(imDrawList, var23 - var13 * 0.5F, var22, EfnWidgets.s(3.5F), var18 ? -10856974 : -4542808);
          ImGui.popID();
          var23 -= var13 + EfnWidgets.s(8.0F);
          float var24 = var20 + EfnWidgets.s(8.0F);
          Item var25 = ItemEnchants.resolve(var19);
          if (var25 != null) {
             ItemPickerEditor.ItemInfo var26 = info(var25);
-            ItemIcons.draw(var1, var25, var24, var22 - var12 * 0.5F, var12, 1.0F);
+            ItemIcons.draw(imDrawList, var25, var24, var22 - var12 * 0.5F, var12, 1.0F);
             float var27 = var24 + var12 + EfnWidgets.s(10.0F);
-            drawLabel(var1, var9, var10, var27, var22, var23 - var27, var26.name, var26.stored, -461582, var14, var15);
+            drawLabel(imDrawList, imFont, imFont2, var27, var22, var23 - var27, var26.name, var26.stored, -461582, var14, var15);
          } else {
             float var29 = var24 + EfnWidgets.s(6.0F);
-            drawLabel(var1, var9, var10, var29, var22, var23 - var29, var19, "text match", -2042416, var14, var15);
+            drawLabel(imDrawList, imFont, imFont2, var29, var22, var23 - var29, var19, "text match", -2042416, var14, var15);
          }
       }
 
@@ -495,36 +495,36 @@ final class ItemPickerEditor {
    }
 
    private static void drawLabel(
-      ImDrawList var0, ImFont var1, ImFont var2, float var3, float var4, float var5, String var6, String var7, int var8, float var9, float var10
+      ImDrawList imDrawList, ImFont imFont, ImFont imFont2, float f, float g, float h, String string, String string2, int i, float j, float k
    ) {
-      if (!(var5 <= 0.0F)) {
-         String var11 = EfnWidgets.ellipsize(var1, var6, var5);
-         EfnWidgets.text(var0, var1, var3, var4 - var9 * 0.5F, var8, var11);
-         float var12 = EfnWidgets.textWidth(var1, var11);
-         float var13 = var5 - var12 - EfnWidgets.s(6.0F);
-         if (var7 != null && var13 >= EfnWidgets.s(40.0F)) {
-            EfnWidgets.text(var0, var2, var3 + var12 + EfnWidgets.s(6.0F), var4 - var10 * 0.5F, -4542808, EfnWidgets.ellipsize(var2, var7, var13));
+      if (!(h <= 0.0F)) {
+         String var11 = EfnWidgets.ellipsize(imFont, string, h);
+         EfnWidgets.text(imDrawList, imFont, f, g - j * 0.5F, i, var11);
+         float var12 = EfnWidgets.textWidth(imFont, var11);
+         float var13 = h - var12 - EfnWidgets.s(6.0F);
+         if (string2 != null && var13 >= EfnWidgets.s(40.0F)) {
+            EfnWidgets.text(imDrawList, imFont2, f + var12 + EfnWidgets.s(6.0F), g - k * 0.5F, -4542808, EfnWidgets.ellipsize(imFont2, string2, var13));
          }
       }
    }
 
-   private void openList(ClientModule var1, StringListSetting var2) {
+   private void openList(ClientModule clientModule, StringListSetting stringListSetting) {
       this.closeEnchants();
-      this.listTarget = var2;
+      this.listTarget = stringListSetting;
       this.itemTarget = null;
-      this.startPicker(var1, var2.name());
+      this.startPicker(clientModule, stringListSetting.name());
    }
 
-   private void openItem(ClientModule var1, StringSetting var2) {
+   private void openItem(ClientModule clientModule, StringSetting stringSetting) {
       this.closeEnchants();
-      this.itemTarget = var2;
+      this.itemTarget = stringSetting;
       this.listTarget = null;
-      this.startPicker(var1, var2.name());
+      this.startPicker(clientModule, stringSetting.name());
    }
 
-   private void startPicker(ClientModule var1, String var2) {
-      this.pickerModule = var1;
-      this.pickerSubtitle = var1.name() + " / " + var2;
+   private void startPicker(ClientModule clientModule, String string) {
+      this.pickerModule = clientModule;
+      this.pickerSubtitle = clientModule.name() + " / " + string;
       this.search.set("");
       this.focusSearch = true;
       this.searchActive = false;
@@ -719,71 +719,71 @@ final class ItemPickerEditor {
       }
    }
 
-   private void pickItem(ItemPickerEditor.ItemInfo var1) {
+   private void pickItem(ItemPickerEditor.ItemInfo itemInfo) {
       StringSetting var2 = this.itemTarget;
       ClientModule var3 = this.pickerModule;
       Item var4 = ItemEnchants.resolve(var2.get());
-      var2.set(var1.stored);
+      var2.set(itemInfo.stored);
       this.closePicker();
       StringSetting var5 = var2.enchantSetting();
       if (var5 != null) {
-         if (var4 != var1.item) {
+         if (var4 != itemInfo.item) {
             var5.set("");
          }
 
-         if (var3 != null && ItemEnchants.supports(var1.item)) {
+         if (var3 != null && ItemEnchants.supports(itemInfo.item)) {
             this.openEnchants(var3, var5);
          }
       }
    }
 
-   private static void removeFromList(StringListSetting var0, Item var1) {
-      for (String var3 : var0.get()) {
-         if (ItemEnchants.resolve(var3) == var1) {
-            var0.removeValue(var3);
+   private static void removeFromList(StringListSetting stringListSetting, Item item) {
+      for (String var3 : stringListSetting.get()) {
+         if (ItemEnchants.resolve(var3) == item) {
+            stringListSetting.removeValue(var3);
             return;
          }
       }
    }
 
    private ItemPickerEditor.ItemInfo column(
-      String var1,
-      ItemPickerEditor.ItemInfo[] var2,
-      int var3,
-      boolean var4,
-      Item var5,
-      float var6,
-      float var7,
-      float var8,
-      float var9,
-      float[] var10,
-      String var11,
-      ImFont var12,
-      ImFont var13
+      String string,
+      ItemPickerEditor.ItemInfo[] itemInfos,
+      int i,
+      boolean bl,
+      Item item,
+      float f,
+      float g,
+      float h,
+      float j,
+      float[] fs,
+      String string2,
+      ImFont imFont,
+      ImFont imFont2
    ) {
       ItemPickerEditor.ItemInfo var14 = null;
-      ImGui.setCursorPos(var6, var7);
-      if (ImGui.beginChild(var1, var8, var9, false, 24)) {
+      ImGui.setCursorPos(f, g);
+      if (ImGui.beginChild(string, h, j, false, 24)) {
          float var15 = EfnWidgets.s(42.0F);
-         float var16 = var8 - EfnWidgets.s(6.0F);
+         float var16 = h - EfnWidgets.s(6.0F);
          float var17 = var15 - EfnWidgets.s(2.0F);
          ImGui.setCursorPos(0.0F, 0.0F);
-         ImGui.dummy(1.0F, var3 * var15 + EfnWidgets.s(6.0F));
+         ImGui.dummy(1.0F, i * var15 + EfnWidgets.s(6.0F));
          ImDrawList var18 = ImGui.getWindowDrawList();
-         if (var3 == 0) {
-            EfnWidgets.text(var18, var12, ImGui.getWindowPosX() + EfnWidgets.s(8.0F), ImGui.getWindowPosY() + EfnWidgets.s(12.0F), -4542808, var11);
+         if (i == 0) {
+            EfnWidgets.text(var18, imFont, ImGui.getWindowPosX() + EfnWidgets.s(8.0F), ImGui.getWindowPosY() + EfnWidgets.s(12.0F), -4542808, string2);
          } else {
-            float var19 = EfnWidgets.lineHeight(var12);
-            float var20 = EfnWidgets.lineHeight(var13);
+            float var19 = EfnWidgets.lineHeight(imFont);
+            float var20 = EfnWidgets.lineHeight(imFont2);
             float var21 = ItemIcons.pixels(EfnWidgets.s(32.0F));
             float var22 = EfnWidgets.s(11.0F);
             float var23 = ImGui.getScrollY();
             int var24 = Math.max(0, (int)(var23 / var15));
-            int var25 = Math.min(var3, (int)Math.ceil((var23 + ImGui.getWindowHeight()) / var15));
+            int var25 = Math.min(i, (int)Math.ceil((var23 + ImGui.getWindowHeight()) / var15));
             int var26 = GuiPalette.accent();
 
             for (int var27 = var24; var27 < var25; var27++) {
-               ItemPickerEditor.ItemInfo var29 = var2[var27];
+               ItemPickerEditor.ItemInfo var29 = itemInfos[var27];
                ImGui.setCursorPos(0.0F, var27 * var15);
                float var30 = ImGui.getCursorScreenPosX();
                float var31 = ImGui.getCursorScreenPosY();
@@ -795,7 +795,7 @@ final class ItemPickerEditor {
 
                boolean var33 = ImGui.isItemHovered();
                ImGui.popID();
-               boolean var28 = var5 != null && var29.item == var5;
+               boolean var28 = item != null && var29.item == item;
                if (var28) {
                   var18.addRectFilled(var30, var31, var30 + var16, var31 + var17, EfnWidgets.c(EfnWidgets.withAlpha(var26, 0.18F)), EfnWidgets.s(8.0F));
                } else if (var33) {
@@ -808,8 +808,8 @@ final class ItemPickerEditor {
                float var37 = var35 + var21 + EfnWidgets.s(12.0F);
                drawLabel(
                   var18,
-                  var12,
-                  var13,
+                  imFont,
+                  imFont2,
                   var37,
                   var32,
                   var36 - var22 - EfnWidgets.s(10.0F) - var37,
@@ -823,18 +823,18 @@ final class ItemPickerEditor {
                   var18.addCircleFilled(var36, var32, var22, EfnWidgets.c(var26), 24);
                   EfnWidgets.check(var18, var36, var32, var22 * 0.5F, -1);
                } else {
-                  int var38 = !var33 ? -13226454 : (var4 ? var26 : -10856974);
+                  int var38 = !var33 ? -13226454 : (bl ? var26 : -10856974);
                   int var39 = var33 ? -1 : -4542808;
                   var18.addCircleFilled(var36, var32, var22, EfnWidgets.c(var38), 24);
                   var18.addLine(var36 - var22 * 0.45F, var32, var36 + var22 * 0.45F, var32, EfnWidgets.c(var39), EfnWidgets.s(1.6F));
-                  if (var4) {
+                  if (bl) {
                      var18.addLine(var36, var32 - var22 * 0.45F, var36, var32 + var22 * 0.45F, EfnWidgets.c(var39), EfnWidgets.s(1.6F));
                   }
                }
             }
          }
 
-         ClickGuiRenderer.smoothScroll(var10, frameDelta());
+         ClickGuiRenderer.smoothScroll(fs, frameDelta());
       }
 
       ImGui.endChild();
@@ -909,12 +909,12 @@ final class ItemPickerEditor {
       }
    }
 
-   private void openEnchants(ClientModule var1, StringSetting var2) {
+   private void openEnchants(ClientModule clientModule, StringSetting stringSetting) {
       this.closePicker();
-      this.enchantTarget = var2;
-      this.enchantItem = var2.enchantItem() == null ? null : ItemEnchants.resolve(var2.enchantItem().get());
+      this.enchantTarget = stringSetting;
+      this.enchantItem = stringSetting.enchantItem() == null ? null : ItemEnchants.resolve(stringSetting.enchantItem().get());
       String var3 = this.enchantItem == null ? "No item" : info(this.enchantItem).name;
-      this.enchantSubtitle = var1.name() + " / " + var3;
+      this.enchantSubtitle = clientModule.name() + " / " + var3;
       this.loadEnchantRows();
       this.enchantOpenedAt = System.nanoTime();
       this.enchantJustOpened = true;
@@ -930,7 +930,7 @@ final class ItemPickerEditor {
 
    private void loadEnchantRows() {
       this.enchantRows.clear();
-      boolean var1 = this.enchantsLoaded = MinecraftClient.method_1551().field_1687 != null;
+      boolean var1 = this.enchantsLoaded = MinecraftClient.getInstance().world != null;
       if (this.enchantsLoaded && this.enchantItem != null) {
          Map var2 = ItemEnchants.parse(this.enchantTarget.get());
 
@@ -963,11 +963,11 @@ final class ItemPickerEditor {
       this.enchantTarget.set(String.join(", ", var1));
    }
 
-   private void toggle(ItemPickerEditor.EnchantRow var1) {
-      boolean var2 = var1.on = !var1.on;
-      if (var1.on) {
+   private void toggle(ItemPickerEditor.EnchantRow enchantRow) {
+      boolean var2 = enchantRow.on = !enchantRow.on;
+      if (enchantRow.on) {
          for (ItemPickerEditor.EnchantRow var4 : this.enchantRows) {
-            if (var4 != var1 && var4.on && !Enchantment.method_60033(var1.holder, var4.holder)) {
+            if (var4 != enchantRow && var4.on && !Enchantment.canBeCombined(enchantRow.holder, var4.holder)) {
                var4.on = false;
             }
          }
@@ -1199,12 +1199,12 @@ final class ItemPickerEditor {
       }
    }
 
-   private String summary(StringSetting var1) {
-      ItemPickerEditor.Summary var2 = (ItemPickerEditor.Summary)this.summaries.get(var1);
-      if (var2 != null && var2.revision() == var1.revision() && var2.names() == namesGeneration) {
+   private String summary(StringSetting stringSetting) {
+      ItemPickerEditor.Summary var2 = this.summaries.get(stringSetting);
+      if (var2 != null && var2.revision() == stringSetting.revision() && var2.names() == namesGeneration) {
          return var2.text();
       } else {
-         Map var3 = ItemEnchants.parse(var1.get());
+         Map var3 = ItemEnchants.parse(stringSetting.get());
          ArrayList var4 = new ArrayList();
          List var5 = ItemEnchants.all();
 
@@ -1214,8 +1214,8 @@ final class ItemPickerEditor {
 
             for (RegistryEntry var11 : var5) {
                if (ItemEnchants.key(ItemEnchants.path(var11)).equals(var7.getKey())) {
-                  var8 = ((Enchantment)var11.comp_349()).comp_2686().getString();
-                  var9 = ((Enchantment)var11.comp_349()).method_8183();
+                  var8 = ((Enchantment)var11.value()).description().getString();
+                  var9 = ((Enchantment)var11.value()).getMaxLevel();
                   break;
                }
             }
@@ -1228,28 +1228,28 @@ final class ItemPickerEditor {
          }
 
          String var12 = String.join(", ", var4);
-         this.summaries.put(var1, new ItemPickerEditor.Summary(var1.revision(), namesGeneration, var12));
+         this.summaries.put(stringSetting, new ItemPickerEditor.Summary(stringSetting.revision(), namesGeneration, var12));
          return var12;
       }
    }
 
-   private static boolean headerChip(String var0, String var1, float var2, float var3, ImFont var4) {
-      float var5 = EfnWidgets.textWidth(var4, var1) + EfnWidgets.s(28.0F);
+   private static boolean headerChip(String string, String string2, float f, float g, ImFont imFont) {
+      float var5 = EfnWidgets.textWidth(imFont, string2) + EfnWidgets.s(28.0F);
       float var6 = EfnWidgets.s(28.0F);
-      ImGui.setCursorScreenPos(var2 - var5, var3 - var6 * 0.5F);
-      return EfnWidgets.chipButton(var0, var1, var5, var6, false);
+      ImGui.setCursorScreenPos(f - var5, g - var6 * 0.5F);
+      return EfnWidgets.chipButton(string, string2, var5, var6, false);
    }
 
-   private static boolean chip(String var0, String var1, boolean var2, float var3, float var4, ImFont var5, String var6) {
-      boolean var7 = ClickGuiRenderer.pushFont(var5);
-      float var8 = EfnWidgets.textWidth(var5, var1) + EfnWidgets.s(20.0F);
-      float var9 = EfnWidgets.lineHeight(var5) + EfnWidgets.s(12.0F);
-      ImGui.setCursorPos(var3 - var8, var4 - var9 * 0.5F);
-      ImGui.beginDisabled(var2);
-      boolean var10 = EfnWidgets.chipButton(var0, var1, var8, var9, false);
+   private static boolean chip(String string, String string2, boolean bl, float f, float g, ImFont imFont, String string3) {
+      boolean var7 = ClickGuiRenderer.pushFont(imFont);
+      float var8 = EfnWidgets.textWidth(imFont, string2) + EfnWidgets.s(20.0F);
+      float var9 = EfnWidgets.lineHeight(imFont) + EfnWidgets.s(12.0F);
+      ImGui.setCursorPos(f - var8, g - var9 * 0.5F);
+      ImGui.beginDisabled(bl);
+      boolean var10 = EfnWidgets.chipButton(string, string2, var8, var9, false);
       ImGui.endDisabled();
       if (ImGui.isItemHovered(65536)) {
-         ClickGuiRenderer.showTooltip(var6);
+         ClickGuiRenderer.showTooltip(string3);
       }
 
       if (var7) {
@@ -1259,27 +1259,25 @@ final class ItemPickerEditor {
       return var10;
    }
 
-   private static void columnHeader(ImDrawList var0, ImFont var1, ImFont var2, float var3, float var4, float var5, float var6, String var7, String var8) {
-      float var9 = var4 + var5 * 0.5F;
-      EfnWidgets.text(var0, var1, var3 + EfnWidgets.s(4.0F), var9 - EfnWidgets.lineHeight(var1) * 0.5F, -461582, var7);
-      countPill(var0, var2, var3 + EfnWidgets.s(4.0F) + EfnWidgets.textWidth(var1, var7) + EfnWidgets.s(8.0F), var9, var8);
-      var0.addLine(var3, var4 + var5 + EfnWidgets.s(4.0F), var3 + var6, var4 + var5 + EfnWidgets.s(4.0F), EfnWidgets.c(268435455), 1.0F);
+   private static void columnHeader(ImDrawList imDrawList, ImFont imFont, ImFont imFont2, float f, float g, float h, float i, String string, String string2) {
+      float var9 = g + h * 0.5F;
+      EfnWidgets.text(imDrawList, imFont, f + EfnWidgets.s(4.0F), var9 - EfnWidgets.lineHeight(imFont) * 0.5F, -461582, string);
+      countPill(imDrawList, imFont2, f + EfnWidgets.s(4.0F) + EfnWidgets.textWidth(imFont, string) + EfnWidgets.s(8.0F), var9, string2);
+      imDrawList.addLine(f, g + h + EfnWidgets.s(4.0F), f + i, g + h + EfnWidgets.s(4.0F), EfnWidgets.c(268435455), 1.0F);
    }
 
-   private static void countPill(ImDrawList var0, ImFont var1, float var2, float var3, String var4) {
-      float var5 = EfnWidgets.textWidth(var1, var4) + EfnWidgets.s(14.0F);
-      float var6 = EfnWidgets.lineHeight(var1) + EfnWidgets.s(6.0F);
-      float var7 = var3 - var6 * 0.5F;
-      var0.addRectFilled(var2, var7, var2 + var5, var7 + var6, EfnWidgets.c(-13226454), var6 * 0.5F);
-      EfnWidgets.text(var0, var1, var2 + EfnWidgets.s(7.0F), var7 + EfnWidgets.s(3.0F), -4542808, var4);
+   private static void countPill(ImDrawList imDrawList, ImFont imFont, float f, float g, String string) {
+      float var5 = EfnWidgets.textWidth(imFont, string) + EfnWidgets.s(14.0F);
+      float var6 = EfnWidgets.lineHeight(imFont) + EfnWidgets.s(6.0F);
+      float var7 = g - var6 * 0.5F;
+      imDrawList.addRectFilled(f, var7, f + var5, var7 + var6, EfnWidgets.c(-13226454), var6 * 0.5F);
+      EfnWidgets.text(imDrawList, imFont, f + EfnWidgets.s(7.0F), var7 + EfnWidgets.s(3.0F), -4542808, string);
    }
 
-   private static void shadow(ImDrawList var0, float var1, float var2, float var3, float var4, float var5) {
+   private static void shadow(ImDrawList imDrawList, float f, float g, float h, float i, float j) {
       for (int var6 = 1; var6 <= 6; var6++) {
          float var7 = EfnWidgets.s(2.5F) * var6;
-         var0.addRectFilled(
-            var1 - var7, var2 - var7 + EfnWidgets.s(4.0F), var1 + var3 + var7, var2 + var4 + var7 + EfnWidgets.s(4.0F), EfnWidgets.c(335544320), var5 + var7
-         );
+         imDrawList.addRectFilled(f - var7, g - var7 + EfnWidgets.s(4.0F), f + h + var7, g + i + var7 + EfnWidgets.s(4.0F), EfnWidgets.c(335544320), j + var7);
       }
    }
 
@@ -1287,26 +1285,26 @@ final class ItemPickerEditor {
       refreshNames();
    }
 
-   private static ItemPickerEditor.ItemInfo info(Item var0) {
+   private static ItemPickerEditor.ItemInfo info(Item item) {
       refreshNames();
-      ItemPickerEditor.ItemInfo var1 = (ItemPickerEditor.ItemInfo)BY_ITEM.get(var0);
+      ItemPickerEditor.ItemInfo var1 = BY_ITEM.get(item);
       if (var1 == null) {
-         var1 = new ItemPickerEditor.ItemInfo(var0);
-         var1.name = var0.method_7854().method_7964().getString();
+         var1 = new ItemPickerEditor.ItemInfo(item);
+         var1.name = item.getDefaultStack().getName().getString();
          var1.nameLower = var1.name.toLowerCase(Locale.ROOT);
-         BY_ITEM.put(var0, var1);
+         BY_ITEM.put(item, var1);
       }
 
       return var1;
    }
 
    private static void refreshNames() {
-      String var0 = MinecraftClient.method_1551().method_1526().method_4669();
+      String var0 = MinecraftClient.getInstance().getLanguageManager().getLanguage();
       if (!var0.equals(language) || ITEMS.isEmpty()) {
          language = var0;
          if (ITEMS.isEmpty()) {
-            for (Item var2 : Registries.field_41178) {
-               if (var2 != Items.field_8162) {
+            for (Item var2 : Registries.ITEM) {
+               if (var2 != Items.AIR) {
                   ItemPickerEditor.ItemInfo var3 = new ItemPickerEditor.ItemInfo(var2);
                   ITEMS.add(var3);
                   BY_ITEM.put(var2, var3);
@@ -1315,33 +1313,33 @@ final class ItemPickerEditor {
          }
 
          for (ItemPickerEditor.ItemInfo var5 : ITEMS) {
-            var5.name = var5.item.method_7854().method_7964().getString();
+            var5.name = var5.item.getDefaultStack().getName().getString();
             var5.nameLower = var5.name.toLowerCase(Locale.ROOT);
          }
 
-         ITEMS.sort(Comparator.<ItemPickerEditor.ItemInfo, String>comparing(var0x -> var0x.nameLower).thenComparing(var0x -> var0x.id));
+         ITEMS.sort(Comparator.<ItemPickerEditor.ItemInfo, String>comparing(itemInfo -> itemInfo.nameLower).thenComparing(itemInfo -> itemInfo.id));
          namesGeneration++;
       }
    }
 
-   private static int matchDistance(ItemPickerEditor.ItemInfo var0, String var1, String[] var2) {
-      int var3 = Math.max(wordsFound(var0.nameLower, var2), wordsFound(var0.idLower, var2));
-      int var4 = levenshtein(var1, var0.nameLower);
-      int var5 = levenshtein(var1, var0.idLower);
-      float var6 = Math.max(1.0F - (float)var4 / Math.max(1, var0.nameLower.length()), 1.0F - (float)var5 / Math.max(1, var0.idLower.length()));
+   private static int matchDistance(ItemPickerEditor.ItemInfo itemInfo, String string, String[] strings) {
+      int var3 = Math.max(wordsFound(itemInfo.nameLower, strings), wordsFound(itemInfo.idLower, strings));
+      int var4 = levenshtein(string, itemInfo.nameLower);
+      int var5 = levenshtein(string, itemInfo.idLower);
+      float var6 = Math.max(1.0F - (float)var4 / Math.max(1, itemInfo.nameLower.length()), 1.0F - (float)var5 / Math.max(1, itemInfo.idLower.length()));
       return var3 <= 0 && !(var6 >= 0.5F) ? -1 : Math.min(var4, var5);
    }
 
-   private static int wordsFound(String var0, String[] var1) {
+   private static int wordsFound(String string, String[] strings) {
       int var2 = 0;
 
-      for (String var6 : var1) {
-         if (!var0.contains(var6)) {
+      for (String var6 : strings) {
+         if (!string.contains(var6)) {
             return 0;
          }
 
          if (!var6.isEmpty()) {
-            for (int var7 = var0.indexOf(var6); var7 >= 0; var7 = var0.indexOf(var6, var7 + var6.length())) {
+            for (int var7 = string.indexOf(var6); var7 >= 0; var7 = string.indexOf(var6, var7 + var6.length())) {
                var2++;
             }
          }
@@ -1350,9 +1348,9 @@ final class ItemPickerEditor {
       return var2;
    }
 
-   private static int levenshtein(String var0, String var1) {
-      int var2 = var0.length();
-      int var3 = var1.length();
+   private static int levenshtein(String string, String string2) {
+      int var2 = string.length();
+      int var3 = string2.length();
       if (var2 == 0) {
          return var3 * 1;
       } else if (var3 == 0) {
@@ -1372,10 +1370,10 @@ final class ItemPickerEditor {
 
          for (int var10 = 1; var10 <= var2; var10++) {
             var5[0] = var10 * 8;
-            char var7 = var0.charAt(var10 - 1);
+            char var7 = string.charAt(var10 - 1);
 
             for (int var8 = 1; var8 <= var3; var8++) {
-               int var9 = var4[var8 - 1] + (var7 == var1.charAt(var8 - 1) ? 0 : 8);
+               int var9 = var4[var8 - 1] + (var7 == string2.charAt(var8 - 1) ? 0 : 8);
                var5[var8] = Math.min(Math.min(var4[var8] + 8, var5[var8 - 1] + 1), var9);
             }
 
@@ -1402,12 +1400,12 @@ final class ItemPickerEditor {
       int level;
       boolean on;
 
-      EnchantRow(RegistryEntry<Enchantment> var1) {
-         this.holder = var1;
-         this.path = ItemEnchants.path(var1);
+      EnchantRow(RegistryEntry<Enchantment> registryEntry) {
+         this.holder = registryEntry;
+         this.path = ItemEnchants.path(registryEntry);
          this.key = ItemEnchants.key(this.path);
-         this.name = ((Enchantment)var1.comp_349()).comp_2686().getString();
-         this.level = this.max = Math.max(1, ((Enchantment)var1.comp_349()).method_8183());
+         this.name = ((Enchantment)registryEntry.value()).description().getString();
+         this.level = this.max = Math.max(1, ((Enchantment)registryEntry.value()).getMaxLevel());
       }
    }
 
@@ -1421,12 +1419,12 @@ final class ItemPickerEditor {
       String name;
       String nameLower;
 
-      ItemInfo(Item var1) {
-         this.item = var1;
-         this.rawId = Registries.field_41178.method_10206(var1);
-         Identifier var2 = Registries.field_41178.method_10221(var1);
+      ItemInfo(Item item) {
+         this.item = item;
+         this.rawId = Registries.ITEM.getRawId(item);
+         Identifier var2 = Registries.ITEM.getId(item);
          this.id = var2.toString();
-         this.stored = ItemEnchants.stored(var1);
+         this.stored = ItemEnchants.stored(item);
          this.idLower = this.id.toLowerCase(Locale.ROOT);
       }
    }

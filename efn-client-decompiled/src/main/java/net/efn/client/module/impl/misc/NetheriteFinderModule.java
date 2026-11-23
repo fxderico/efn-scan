@@ -65,22 +65,22 @@ public final class NetheriteFinderModule extends ClientModule implements HudOver
    protected void onDisable() {
       NetheriteChunkTracker.setListener(null);
       NetheriteChunkTracker.setRevealListener(null);
-      this.advancedFinder.reset(MinecraftClient.method_1551());
+      this.advancedFinder.reset(MinecraftClient.getInstance());
       this.visuals.clear();
    }
 
-   private void onRevealed(BlockPos var1) {
-      if (this.advancedFinder.onRevealed(var1)) {
-         this.visuals.burst(var1, this.color.argb());
+   private void onRevealed(BlockPos blockPos) {
+      if (this.advancedFinder.onRevealed(blockPos)) {
+         this.visuals.burst(blockPos, this.color.argb());
       }
    }
 
-   private void onCandidate(NetheriteChunkTracker.Candidate var1) {
+   private void onCandidate(NetheriteChunkTracker.Candidate candidate) {
       if (this.notificationsOn()) {
-         BlockPos var4 = new BlockPos((var1.chunkX() << 4) + 8, (var1.sectionY() << 4) + 8, (var1.chunkZ() << 4) + 8);
+         BlockPos var4 = new BlockPos((candidate.chunkX() << 4) + 8, (candidate.sectionY() << 4) + 8, (candidate.chunkZ() << 4) + 8);
          this.pendingCount++;
-         MinecraftClient var5 = MinecraftClient.method_1551();
-         double var2 = var5.field_1724 != null ? var5.field_1724.method_5649(var4.method_10263(), var4.method_10264(), var4.method_10260()) : 0.0;
+         MinecraftClient var5 = MinecraftClient.getInstance();
+         double var2 = var5.player != null ? var5.player.squaredDistanceTo(var4.getX(), var4.getY(), var4.getZ()) : 0.0;
          if (this.nearestPending == null || var2 < this.nearestPendingDistanceSq) {
             this.nearestPending = var4;
             this.nearestPendingDistanceSq = var2;
@@ -89,9 +89,9 @@ public final class NetheriteFinderModule extends ClientModule implements HudOver
    }
 
    @EventHandler
-   public void onTick(TickEvent var1) {
+   public void onTick(TickEvent tickEvent) {
       this.flushNotifications();
-      MinecraftClient var2 = MinecraftClient.method_1551();
+      MinecraftClient var2 = MinecraftClient.getInstance();
       this.advancedFinder.maintain(var2);
       if (this.advanced.get()) {
          if (!this.advancedFinder.armed()) {
@@ -118,7 +118,7 @@ public final class NetheriteFinderModule extends ClientModule implements HudOver
                      .text(" new hidden-debris chunk" + (this.pendingCount == 1 ? " " : "s "))
                      .good("found")
                      .text(", nearest at ")
-                     .coords(this.nearestPending.method_10263(), this.nearestPending.method_10264(), this.nearestPending.method_10260())
+                     .coords(this.nearestPending.getX(), this.nearestPending.getY(), this.nearestPending.getZ())
                );
                this.clearPending();
                this.lastNotifyAt = var1;
@@ -134,10 +134,10 @@ public final class NetheriteFinderModule extends ClientModule implements HudOver
    }
 
    @EventHandler
-   public void onRender3D(Render3DEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      if (var2.field_1687 != null && var2.field_1724 != null && NetheriteChunkTracker.isNether(var2.field_1687)) {
-         Vec3d var3 = var2.field_1724.method_5836(var1.partialTick);
+   public void onRender3D(Render3DEvent render3DEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      if (var2.world != null && var2.player != null && NetheriteChunkTracker.isNether(var2.world)) {
+         Vec3d var3 = var2.player.getCameraPosVec(render3DEvent.partialTick);
          double var4 = this.range.get();
          ArrayList var6 = new ArrayList();
 
@@ -183,7 +183,7 @@ public final class NetheriteFinderModule extends ClientModule implements HudOver
             this.tracers.get() ? this.tracerCount.getInt() : 0,
             this.showProbes.get()
          );
-         this.visuals.render(var2, var1.partialTick, var3, var6, List.copyOf(this.advancedFinder.revealed()), this.advancedFinder, var18);
+         this.visuals.render(var2, render3DEvent.partialTick, var3, var6, List.copyOf(this.advancedFinder.revealed()), this.advancedFinder, var18);
       } else {
          this.visuals.clear();
       }
@@ -195,14 +195,14 @@ public final class NetheriteFinderModule extends ClientModule implements HudOver
    }
 
    @Override
-   public void renderHudOverlay(ImDrawList var1, float var2, float var3) {
-      this.visuals.overlay(var1, var2, var3);
+   public void renderHudOverlay(ImDrawList imDrawList, float f, float g) {
+      this.visuals.overlay(imDrawList, f, g);
    }
 
-   private static double distanceSq(Box var0, Vec3d var1) {
-      double var2 = Math.max(0.0, Math.max(var0.field_1323 - var1.field_1352, var1.field_1352 - var0.field_1320));
-      double var4 = Math.max(0.0, Math.max(var0.field_1322 - var1.field_1351, var1.field_1351 - var0.field_1325));
-      double var6 = Math.max(0.0, Math.max(var0.field_1321 - var1.field_1350, var1.field_1350 - var0.field_1324));
+   private static double distanceSq(Box box, Vec3d vec3d) {
+      double var2 = Math.max(0.0, Math.max(box.minX - vec3d.x, vec3d.x - box.maxX));
+      double var4 = Math.max(0.0, Math.max(box.minY - vec3d.y, vec3d.y - box.maxY));
+      double var6 = Math.max(0.0, Math.max(box.minZ - vec3d.z, vec3d.z - box.maxZ));
       return var2 * var2 + var4 * var4 + var6 * var6;
    }
 }

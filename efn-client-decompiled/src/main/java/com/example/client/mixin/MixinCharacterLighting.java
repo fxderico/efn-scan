@@ -17,10 +17,10 @@ public abstract class MixinCharacterLighting {
    }
 
    @Inject(
-      method = {"method_71034"},
+      method = {"setShaderLights"},
       at = {@At("HEAD")}
    )
-   private void efn$trackCharacterLighting(Type var1, CallbackInfo var2) {
-      CharacterLighting.setup(var1);
+   private void efn$trackCharacterLighting(Type type, CallbackInfo callbackInfo) {
+      CharacterLighting.setup(type);
    }
 }

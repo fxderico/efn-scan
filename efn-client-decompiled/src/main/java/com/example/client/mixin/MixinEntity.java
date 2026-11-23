@@ -19,44 +19,44 @@ public class MixinEntity {
    }
 
    @Inject(
-      method = {"method_5851"},
+      method = {"isGlowing"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$isCurrentlyGlowing(CallbackInfoReturnable<Boolean> var1) {
+   private void efn$isCurrentlyGlowing(CallbackInfoReturnable<Boolean> callbackInfoReturnable) {
       Entity var2 = (Entity)this;
-      if (var2.method_73183().method_8608()) {
+      if (var2.getEntityWorld().isClient()) {
          if (EspModule.shouldGlow(var2) || ItemEspModule.shouldGlow(var2)) {
-            var1.setReturnValue(true);
+            callbackInfoReturnable.setReturnValue(true);
          }
       }
    }
 
    @Inject(
-      method = {"method_22861"},
+      method = {"getTeamColorValue"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$getTeamColor(CallbackInfoReturnable<Integer> var1) {
+   private void efn$getTeamColor(CallbackInfoReturnable<Integer> callbackInfoReturnable) {
       Entity var2 = (Entity)this;
-      if (var2.method_73183().method_8608()) {
+      if (var2.getEntityWorld().isClient()) {
          if (EspModule.shouldGlow(var2)) {
-            var1.setReturnValue(EspModule.glowColor(var2));
+            callbackInfoReturnable.setReturnValue(EspModule.glowColor(var2));
          } else if (ItemEspModule.shouldGlow(var2)) {
-            var1.setReturnValue(ItemEspModule.glowColor(var2));
+            callbackInfoReturnable.setReturnValue(ItemEspModule.glowColor(var2));
          }
       }
    }
 
    @Inject(
-      method = {"method_5756"},
+      method = {"isInvisibleTo"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$freecamOwnBody(PlayerEntity var1, CallbackInfoReturnable<Boolean> var2) {
+   private void efn$freecamOwnBody(PlayerEntity playerEntity, CallbackInfoReturnable<Boolean> callbackInfoReturnable) {
       FreecamModule var3 = FreecamModule.active;
-      if (var3 != null && var3.drawsSelf((Entity)this, var1)) {
-         var2.setReturnValue(false);
+      if (var3 != null && var3.drawsSelf((Entity)this, playerEntity)) {
+         callbackInfoReturnable.setReturnValue(false);
       }
    }
 }

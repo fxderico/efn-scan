@@ -20,10 +20,10 @@ final class Shuffle {
    private final double slow;
    private int ticks;
 
-   Shuffle(Vec3d var1, Vec3d var2, boolean var3) {
-      this.spot = var1;
-      this.look = var2;
-      this.slow = var3 ? 0.0144 : 0.0025;
+   Shuffle(Vec3d vec3d, Vec3d vec3d2, boolean bl) {
+      this.spot = vec3d;
+      this.look = vec3d2;
+      this.slow = bl ? 0.0144 : 0.0025;
    }
 
    boolean quick() {
@@ -34,43 +34,43 @@ final class Shuffle {
       return this.spot;
    }
 
-   Shuffle.Result tick(MinecraftClient var1) {
-      ClientPlayerEntity var2 = var1.field_1724;
+   Shuffle.Result tick(MinecraftClient minecraftClient) {
+      ClientPlayerEntity var2 = minecraftClient.player;
       if (var2 == null) {
          return Shuffle.Result.FAILED;
       } else {
-         float[] var3 = PlacementUtil.calcRotation(var2.method_33571(), this.look);
-         Aim.turn(var1, var3[0], var3[1], 22.0F);
-         double var4 = this.spot.field_1352 - var2.method_23317();
-         double var6 = this.spot.field_1350 - var2.method_23321();
-         Vec3d var8 = var2.method_18798();
+         float[] var3 = PlacementUtil.calcRotation(var2.getEyePos(), this.look);
+         Aim.turn(minecraftClient, var3[0], var3[1], 22.0F);
+         double var4 = this.spot.x - var2.getX();
+         double var6 = this.spot.z - var2.getZ();
+         Vec3d var8 = var2.getVelocity();
          double var9 = Math.hypot(var4, var6);
-         if (var9 < 0.3 && var8.method_37268() < this.slow) {
-            this.release(var1);
+         if (var9 < 0.3 && var8.horizontalLengthSquared() < this.slow) {
+            this.release(minecraftClient);
             return Shuffle.Result.DONE;
          } else if (++this.ticks > 60) {
-            this.release(var1);
+            this.release(minecraftClient);
             return var9 < 0.45 ? Shuffle.Result.DONE : Shuffle.Result.FAILED;
          } else {
-            double var11 = Math.toRadians(var2.method_36454());
+            double var11 = Math.toRadians(var2.getYaw());
             double var13 = Math.sin(var11);
             double var15 = Math.cos(var11);
-            double var17 = -var13 * var4 + var15 * var6 - 1.2 * (-var13 * var8.field_1352 + var15 * var8.field_1350);
-            double var19 = var15 * var4 + var13 * var6 - 1.2 * (var15 * var8.field_1352 + var13 * var8.field_1350);
-            var1.field_1690.field_1894.method_23481(var17 > 0.12);
-            var1.field_1690.field_1881.method_23481(var17 < -0.12);
-            var1.field_1690.field_1913.method_23481(var19 > 0.12);
-            var1.field_1690.field_1849.method_23481(var19 < -0.12);
+            double var17 = -var13 * var4 + var15 * var6 - 1.2 * (-var13 * var8.x + var15 * var8.z);
+            double var19 = var15 * var4 + var13 * var6 - 1.2 * (var15 * var8.x + var13 * var8.z);
+            minecraftClient.options.forwardKey.setPressed(var17 > 0.12);
+            minecraftClient.options.backKey.setPressed(var17 < -0.12);
+            minecraftClient.options.leftKey.setPressed(var19 > 0.12);
+            minecraftClient.options.rightKey.setPressed(var19 < -0.12);
             return Shuffle.Result.RUNNING;
          }
       }
    }
 
-   void release(MinecraftClient var1) {
-      var1.field_1690.field_1894.method_23481(false);
-      var1.field_1690.field_1881.method_23481(false);
-      var1.field_1690.field_1913.method_23481(false);
-      var1.field_1690.field_1849.method_23481(false);
+   void release(MinecraftClient minecraftClient) {
+      minecraftClient.options.forwardKey.setPressed(false);
+      minecraftClient.options.backKey.setPressed(false);
+      minecraftClient.options.leftKey.setPressed(false);
+      minecraftClient.options.rightKey.setPressed(false);
    }
 
    @Environment(EnvType.CLIENT)

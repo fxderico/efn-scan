@@ -60,7 +60,7 @@ import net.minecraft.world.RaycastContext.ShapeType;
 @Environment(EnvType.CLIENT)
 public final class ElytraAutopilotModule extends ClientModule {
    private static final Predicate<ItemStack> ROCKET = ElytraAutopilotModule::plainRocket;
-   private static final Predicate<ItemStack> XP = var0 -> var0.method_31574(Items.field_8287);
+   private static final Predicate<ItemStack> XP = itemStack -> itemStack.isOf(Items.EXPERIENCE_BOTTLE);
    private static final float URGENT_TURN = 27.0F;
    private static final int ROCKET_GAP = 10;
    private static final double ROCKET_RAY = 10.0;
@@ -90,7 +90,7 @@ public final class ElytraAutopilotModule extends ClientModule {
    private final StringSetting tripLimit = this.addSetting("trip-limit", new StringSetting("Trip Spend Limit", "2m").hint("0 = no limit"));
    private final BooleanSetting disconnect = this.addSetting("disconnect", new BooleanSetting("Disconnect On Arrival", true));
    private final BooleanSetting status = this.addSetting("status", new BooleanSetting("Status Line", true));
-   private final MinecraftClient mc = MinecraftClient.method_1551();
+   private final MinecraftClient mc = MinecraftClient.getInstance();
    private volatile int setbacksReceived;
    private ElytraAutopilotModule.State state = ElytraAutopilotModule.State.PREPARE;
    private ElytraAutopilotModule.Job job = ElytraAutopilotModule.Job.ARRIVE;
@@ -168,13 +168,13 @@ public final class ElytraAutopilotModule extends ClientModule {
 
    @Override
    protected void onEnable() {
-      ClientPlayerEntity var1 = this.mc.field_1724;
-      if (var1 != null && this.mc.field_1687 != null && this.mc.method_1562() != null) {
+      ClientPlayerEntity var1 = this.mc.player;
+      if (var1 != null && this.mc.world != null && this.mc.getNetworkHandler() != null) {
          double[] var2 = parseTarget(this.target.get());
          if (var2 == null) {
             this.say(ModuleChat.body().warn("Set the Target first").text(" (\"x z\", e.g. 12000 -3500)."));
             this.requestDisable();
-         } else if (this.mc.field_1687.method_27983() == World.field_25180) {
+         } else if (this.mc.world.getRegistryKey() == World.NETHER) {
             this.say(ModuleChat.body().warn("The nether roof is no place for this").text("; the overworld and the end only."));
             this.requestDisable();
          } else if (!usable(chest(var1)) && !Hands.has(var1, ElytraAutopilotModule::usable)) {
@@ -186,13 +186,13 @@ public final class ElytraAutopilotModule extends ClientModule {
          } else {
             this.destX = Math.floor(var2[0]) + 0.5;
             this.destZ = Math.floor(var2[1]) + 0.5;
-            this.dimension = this.mc.field_1687.method_27983();
-            this.connection = this.mc.method_1562();
+            this.dimension = this.mc.world.getRegistryKey();
+            this.connection = this.mc.getNetworkHandler();
             this.reset();
-            this.pauseWas = this.mc.field_1690.field_1837;
+            this.pauseWas = this.mc.options.pauseOnLostFocus;
             this.pauseSaved = true;
-            this.mc.field_1690.field_1837 = false;
-            this.lastPos = var1.method_73189();
+            this.mc.options.pauseOnLostFocus = false;
+            this.lastPos = var1.getEntityPos();
             this.startedAt = System.currentTimeMillis();
             this.say(
                ModuleChat.body()
@@ -203,9 +203,12 @@ public final class ElytraAutopilotModule extends ClientModule {
             EasyPlace.LOG
                .info(
                   "[Elytra Autopilot] start at {} to {} {} ({} blocks)",
-                  new Object[]{var1.method_24515().method_23854(), Math.floor(this.destX), Math.floor(this.destZ), Math.round(this.distance(var1))}
+                  var1.getBlockPos().toShortString(),
+                  Math.floor(this.destX),
+                  Math.floor(this.destZ),
+                  Math.round(this.distance(var1))
                );
-            this.on(TickEvent.TYPE, Stage.PRE, var1x -> this.tick());
+            this.on(TickEvent.TYPE, Stage.PRE, tickEvent -> this.tick());
          }
       } else {
          this.say(ModuleChat.body().warn("Join a world first."));
@@ -227,7 +230,7 @@ public final class ElytraAutopilotModule extends ClientModule {
 
       this.eater = null;
       if (this.pauseSaved) {
-         this.mc.field_1690.field_1837 = this.pauseWas;
+         this.mc.options.pauseOnLostFocus = this.pauseWas;
       }
 
       this.pauseSaved = false;
@@ -283,8 +286,8 @@ public final class ElytraAutopilotModule extends ClientModule {
    }
 
    @EventHandler
-   public void onPacketReceive(PacketReceiveNettyEvent var1) {
-      if (var1.packet instanceof PlayerPositionLookS2CPacket) {
+   public void onPacketReceive(PacketReceiveNettyEvent packetReceiveNettyEvent) {
+      if (packetReceiveNettyEvent.packet instanceof PlayerPositionLookS2CPacket) {
          this.setbacksReceived++;
       }
    }
@@ -292,15 +295,15 @@ public final class ElytraAutopilotModule extends ClientModule {
    private void tick() {
       this.tick++;
       this.stateTicks++;
-      ClientPlayerEntity var1 = this.mc.field_1724;
-      ClientWorld var2 = this.mc.field_1687;
-      if (var1 == null || var2 == null || this.mc.field_1761 == null || this.mc.method_1562() != this.connection) {
+      ClientPlayerEntity var1 = this.mc.player;
+      ClientWorld var2 = this.mc.world;
+      if (var1 == null || var2 == null || this.mc.interactionManager == null || this.mc.getNetworkHandler() != this.connection) {
          this.requestDisable();
-      } else if (var2.method_27983() != this.dimension) {
+      } else if (var2.getRegistryKey() != this.dimension) {
          this.say(ModuleChat.body().warn("Left the dimension").text(", the flight is off."));
          this.requestDisable();
-      } else if (var1.method_29504()) {
-         this.say(ModuleChat.body().danger("Died on the way").text(" at ").coords(var1.method_31477(), var1.method_31478(), var1.method_31479()).text("."));
+      } else if (var1.isDead()) {
+         this.say(ModuleChat.body().danger("Died on the way").text(" at ").coords(var1.getBlockX(), var1.getBlockY(), var1.getBlockZ()).text("."));
          this.requestDisable();
       } else {
          this.releaseKeys();
@@ -338,39 +341,39 @@ public final class ElytraAutopilotModule extends ClientModule {
       }
    }
 
-   private void go(ElytraAutopilotModule.State var1) {
-      if (var1 == ElytraAutopilotModule.State.TAKEOFF) {
+   private void go(ElytraAutopilotModule.State state) {
+      if (state == ElytraAutopilotModule.State.TAKEOFF) {
          this.takeoffTries++;
          this.jumps = 0;
          this.escapeYaw = 0.0F / 0.0F;
       }
 
-      if (var1 == ElytraAutopilotModule.State.CRUISE) {
+      if (state == ElytraAutopilotModule.State.CRUISE) {
          this.takeoffTries = 0;
       }
 
-      if (var1 == ElytraAutopilotModule.State.DESCEND || var1 == ElytraAutopilotModule.State.LAND) {
+      if (state == ElytraAutopilotModule.State.DESCEND || state == ElytraAutopilotModule.State.LAND) {
          this.plan = null;
       }
 
-      this.state = var1;
+      this.state = state;
       this.stateTicks = 0;
    }
 
    private void releaseKeys() {
-      this.mc.field_1690.field_1903.method_23481(false);
-      this.mc.field_1690.field_1894.method_23481(false);
-      this.mc.field_1690.field_1904.method_23481(false);
+      this.mc.options.jumpKey.setPressed(false);
+      this.mc.options.forwardKey.setPressed(false);
+      this.mc.options.useKey.setPressed(false);
    }
 
-   private void bookkeeping(ClientPlayerEntity var1) {
-      Vec3d var2 = var1.method_73189();
-      if (this.lastPos != null && var1.method_6128() && var2.method_1022(this.lastPos) < 20.0) {
-         this.flown = this.flown + var2.method_1022(this.lastPos);
+   private void bookkeeping(ClientPlayerEntity clientPlayerEntity) {
+      Vec3d var2 = clientPlayerEntity.getEntityPos();
+      if (this.lastPos != null && clientPlayerEntity.isGliding() && var2.distanceTo(this.lastPos) < 20.0) {
+         this.flown = this.flown + var2.distanceTo(this.lastPos);
       }
 
       this.lastPos = var2;
-      if (!var1.method_5799()) {
+      if (!clientPlayerEntity.isTouchingWater()) {
          this.waterTicks = 0;
       }
 
@@ -378,12 +381,12 @@ public final class ElytraAutopilotModule extends ClientModule {
 
       while (this.seenSetbacks != var3) {
          this.seenSetbacks++;
-         if (var1.method_6128()) {
+         if (clientPlayerEntity.isGliding()) {
             this.recentSetbacks.add(this.tick);
          }
       }
 
-      this.recentSetbacks.removeIf(var1x -> this.tick - var1x > 200);
+      this.recentSetbacks.removeIf(i -> this.tick - i > 200);
       if (this.recentSetbacks.size() >= 3) {
          this.rocketHoldUntil = this.tick + 60;
          this.boostUntil = 0;
@@ -391,36 +394,40 @@ public final class ElytraAutopilotModule extends ClientModule {
          EasyPlace.LOG.info("[Elytra Autopilot] setbacks, rockets held for {} ticks", 60);
       }
 
-      if (this.eatingInFlight && (!var1.method_6128() || !Eater.hungry(var1) && !var1.method_6115())) {
+      if (this.eatingInFlight && (!clientPlayerEntity.isGliding() || !Eater.hungry(clientPlayerEntity) && !clientPlayerEntity.isUsingItem())) {
          this.eatingInFlight = false;
       }
    }
 
-   private boolean emergencyDeploy(ClientPlayerEntity var1) {
-      if (var1.method_6128() || var1.method_24828() || var1.method_5799() || var1.method_6101() || !usable(chest(var1))) {
+   private boolean emergencyDeploy(ClientPlayerEntity clientPlayerEntity) {
+      if (clientPlayerEntity.isGliding()
+         || clientPlayerEntity.isOnGround()
+         || clientPlayerEntity.isTouchingWater()
+         || clientPlayerEntity.isClimbing()
+         || !usable(chest(clientPlayerEntity))) {
          return false;
-      } else if (this.state != ElytraAutopilotModule.State.PREPARE && !(var1.method_18798().field_1351 > -0.5) && !(var1.field_6017 < 3.0)) {
-         this.mc.field_1690.field_1903.method_23481(this.tick % 2 == 0);
-         Aim.turn(this.mc, var1.method_36454(), 8.0F, 27.0F);
+      } else if (this.state != ElytraAutopilotModule.State.PREPARE && !(clientPlayerEntity.getVelocity().y > -0.5) && !(clientPlayerEntity.fallDistance < 3.0)) {
+         this.mc.options.jumpKey.setPressed(this.tick % 2 == 0);
+         Aim.turn(this.mc, clientPlayerEntity.getYaw(), 8.0F, 27.0F);
          return true;
       } else {
          return false;
       }
    }
 
-   private boolean midAirSwap(ClientPlayerEntity var1) {
-      if (var1.method_6128() && this.tick - this.swapTick >= 6) {
-         int var2 = durability(chest(var1));
+   private boolean midAirSwap(ClientPlayerEntity clientPlayerEntity) {
+      if (clientPlayerEntity.isGliding() && this.tick - this.swapTick >= 6) {
+         int var2 = durability(chest(clientPlayerEntity));
          if (var2 >= 0 && var2 <= 6) {
-            PlayerInventory var3 = var1.method_31548();
+            PlayerInventory var3 = clientPlayerEntity.getInventory();
 
             for (int var4 = 0; var4 < 9; var4++) {
-               if (durability(var3.method_5438(var4)) >= 20 && var3.method_5438(var4).method_31574(Items.field_8833)) {
+               if (durability(var3.getStack(var4)) >= 20 && var3.getStack(var4).isOf(Items.ELYTRA)) {
                   this.swapTick = this.tick;
-                  if (var3.method_67532() != var4) {
-                     var3.method_61496(var4);
+                  if (var3.getSelectedSlot() != var4) {
+                     var3.setSelectedSlot(var4);
                   } else {
-                     this.mc.field_1761.method_2919(var1, Hand.field_5808);
+                     this.mc.interactionManager.interactItem(clientPlayerEntity, Hand.MAIN_HAND);
                   }
 
                   return true;
@@ -436,37 +443,37 @@ public final class ElytraAutopilotModule extends ClientModule {
       }
    }
 
-   private void prepare(ClientPlayerEntity var1) {
-      if (var1.method_5799()) {
-         this.swim(var1);
-      } else if (var1.method_6128()) {
+   private void prepare(ClientPlayerEntity clientPlayerEntity) {
+      if (clientPlayerEntity.isTouchingWater()) {
+         this.swim(clientPlayerEntity);
+      } else if (clientPlayerEntity.isGliding()) {
          this.go(ElytraAutopilotModule.State.CLIMB);
-      } else if (var1.method_24828()) {
-         if (this.mc.field_1755 instanceof HandledScreen && this.purchase == null) {
-            var1.method_7346();
+      } else if (clientPlayerEntity.isOnGround()) {
+         if (this.mc.currentScreen instanceof HandledScreen && this.purchase == null) {
+            clientPlayerEntity.closeHandledScreen();
          }
 
-         if (!usable(chest(var1))) {
-            if (!Hands.has(var1, ElytraAutopilotModule::usable)) {
+         if (!usable(chest(clientPlayerEntity))) {
+            if (!Hands.has(clientPlayerEntity, ElytraAutopilotModule::usable)) {
                this.finish(false, "no usable elytra left");
             } else {
-               if (Hands.hold(this.mc, var1, ElytraAutopilotModule::usable) && this.stateTicks % 6 == 3) {
-                  this.mc.field_1761.method_2919(var1, Hand.field_5808);
+               if (Hands.hold(this.mc, clientPlayerEntity, ElytraAutopilotModule::usable) && this.stateTicks % 6 == 3) {
+                  this.mc.interactionManager.interactItem(clientPlayerEntity, Hand.MAIN_HAND);
                }
             }
-         } else if (this.distance(var1) <= 30.0) {
+         } else if (this.distance(clientPlayerEntity) <= 30.0) {
             this.finish(true, null);
          } else if (this.stateTicks >= 4) {
-            ElytraAutopilotModule.Task var2 = this.nextTask(var1);
+            ElytraAutopilotModule.Task var2 = this.nextTask(clientPlayerEntity);
             if (var2 != ElytraAutopilotModule.Task.NONE) {
                this.job = ElytraAutopilotModule.Job.SERVICE;
                this.go(ElytraAutopilotModule.State.SERVICE);
-            } else if (count(var1, ROCKET) == 0) {
+            } else if (count(clientPlayerEntity, ROCKET) == 0) {
                this.finish(false, "out of rockets");
-            } else if (durability(chest(var1)) < 30) {
+            } else if (durability(chest(clientPlayerEntity)) < 30) {
                this.finish(false, "the elytra is nearly broken");
-            } else if (!inHotbar(var1, ROCKET)) {
-               Hands.hold(this.mc, var1, ROCKET);
+            } else if (!inHotbar(clientPlayerEntity, ROCKET)) {
+               Hands.hold(this.mc, clientPlayerEntity, ROCKET);
             } else {
                this.job = ElytraAutopilotModule.Job.ARRIVE;
                this.go(ElytraAutopilotModule.State.TAKEOFF);
@@ -475,54 +482,57 @@ public final class ElytraAutopilotModule extends ClientModule {
       }
    }
 
-   private void takeoff(ClientPlayerEntity var1, ClientWorld var2) {
+   private void takeoff(ClientPlayerEntity clientPlayerEntity, ClientWorld clientWorld) {
       if (this.takeoffTries > 6) {
          this.finish(false, "could not take off here");
-      } else if (var1.method_5799()) {
+      } else if (clientPlayerEntity.isTouchingWater()) {
          this.go(ElytraAutopilotModule.State.PREPARE);
-      } else if (var1.method_6128()) {
+      } else if (clientPlayerEntity.isGliding()) {
          this.go(ElytraAutopilotModule.State.CLIMB);
-      } else if (!inHotbar(var1, ROCKET)) {
+      } else if (!inHotbar(clientPlayerEntity, ROCKET)) {
          this.go(ElytraAutopilotModule.State.PREPARE);
       } else {
-         Hands.hold(this.mc, var1, ROCKET);
-         if (var1.method_24828()) {
+         Hands.hold(this.mc, clientPlayerEntity, ROCKET);
+         if (clientPlayerEntity.isOnGround()) {
             if (Float.isNaN(this.escapeYaw)) {
-               float var4 = this.escapeYaw = openSky(var1, var2) ? var1.method_36454() : escapeHeading(var1, var2);
+               float var4 = this.escapeYaw = openSky(clientPlayerEntity, clientWorld)
+                  ? clientPlayerEntity.getYaw()
+                  : escapeHeading(clientPlayerEntity, clientWorld);
             }
 
             if (!Float.isNaN(this.escapeYaw) && this.escapeYaw != -1.0F / 0.0F) {
-               boolean var8 = openSky(var1, var2);
-               float var5 = var8 ? var1.method_36454() : this.escapeYaw;
+               boolean var8 = openSky(clientPlayerEntity, clientWorld);
+               float var5 = var8 ? clientPlayerEntity.getYaw() : this.escapeYaw;
                float var6 = var8 ? -88.0F : -35.0F;
                Aim.turn(this.mc, var5, var6, 22.0F);
-               boolean var3 = Math.abs(MathHelper.method_15393(var1.method_36454() - var5)) < 10.0F && Math.abs(var1.method_36455() - var6) < 10.0F;
+               boolean var3 = Math.abs(MathHelper.wrapDegrees(clientPlayerEntity.getYaw() - var5)) < 10.0F
+                  && Math.abs(clientPlayerEntity.getPitch() - var6) < 10.0F;
                if (var3 && this.tick - this.jumpTick >= 14) {
                   if (++this.jumps > 5) {
                      this.finish(false, "could not get the elytra open");
                      return;
                   }
 
-                  this.mc.field_1690.field_1903.method_23481(true);
+                  this.mc.options.jumpKey.setPressed(true);
                   this.jumpTick = this.tick;
                }
             } else {
                this.finish(false, "no open sky to take off into");
             }
          } else {
-            Aim.turn(this.mc, var1.method_36454(), var1.method_36455() < -60.0F ? var1.method_36455() : -85.0F, 22.0F);
-            if (var1.method_18798().field_1351 < 0.12 && this.tick - this.jumpTick >= 2) {
-               this.mc.field_1690.field_1903.method_23481(this.tick % 2 == 0);
+            Aim.turn(this.mc, clientPlayerEntity.getYaw(), clientPlayerEntity.getPitch() < -60.0F ? clientPlayerEntity.getPitch() : -85.0F, 22.0F);
+            if (clientPlayerEntity.getVelocity().y < 0.12 && this.tick - this.jumpTick >= 2) {
+               this.mc.options.jumpKey.setPressed(this.tick % 2 == 0);
             }
          }
       }
    }
 
-   private static boolean openSky(ClientPlayerEntity var0, ClientWorld var1) {
-      Box var2 = var0.method_5829().method_1011(0.02);
+   private static boolean openSky(ClientPlayerEntity clientPlayerEntity, ClientWorld clientWorld) {
+      Box var2 = clientPlayerEntity.getBoundingBox().contract(0.02);
 
       for (int var3 = 1; var3 <= 16; var3++) {
-         if (!var1.method_8587(var0, var2.method_989(0.0, var3, 0.0))) {
+         if (!clientWorld.isSpaceEmpty(clientPlayerEntity, var2.offset(0.0, var3, 0.0))) {
             return false;
          }
       }
@@ -530,28 +540,25 @@ public final class ElytraAutopilotModule extends ClientModule {
       return true;
    }
 
-   private static float escapeHeading(ClientPlayerEntity var0, ClientWorld var1) {
-      if (!var1.method_8587(var0, var0.method_5829().method_1011(0.02).method_989(0.0, 2.2, 0.0))) {
+   private static float escapeHeading(ClientPlayerEntity clientPlayerEntity, ClientWorld clientWorld) {
+      if (!clientWorld.isSpaceEmpty(clientPlayerEntity, clientPlayerEntity.getBoundingBox().contract(0.02).offset(0.0, 2.2, 0.0))) {
          return -1.0F / 0.0F;
       } else {
          for (float var6 : new float[]{0.0F, 45.0F, -45.0F, 90.0F, -90.0F, 135.0F, -135.0F, 180.0F}) {
-            float var7 = var0.method_36454() + var6;
-            Vec3d var8 = Vec3d.method_1030(-32.0F, var7);
-            Vec3d var9 = Vec3d.method_1030(0.0F, var7 + 90.0F).method_1021(0.35);
-            Vec3d var10 = var0.method_73189();
+            float var7 = clientPlayerEntity.getYaw() + var6;
+            Vec3d var8 = Vec3d.fromPolar(-32.0F, var7);
+            Vec3d var9 = Vec3d.fromPolar(0.0F, var7 + 90.0F).multiply(0.35);
+            Vec3d var10 = clientPlayerEntity.getEntityPos();
             Vec3d[] var11 = new Vec3d[]{
-               var10.method_1031(0.0, 1.2, 0.0),
-               var10.method_1031(0.0, 1.8, 0.0),
-               var10.method_1031(0.0, 1.2, 0.0).method_1019(var9),
-               var10.method_1031(0.0, 1.2, 0.0).method_1020(var9)
+               var10.add(0.0, 1.2, 0.0), var10.add(0.0, 1.8, 0.0), var10.add(0.0, 1.2, 0.0).add(var9), var10.add(0.0, 1.2, 0.0).subtract(var9)
             };
             boolean var12 = true;
 
             for (Vec3d var16 : var11) {
-               BlockHitResult var17 = var1.method_17742(
-                  new RaycastContext(var16, var16.method_1019(var8.method_1021(22.0)), ShapeType.field_17558, FluidHandling.field_1348, var0)
+               BlockHitResult var17 = clientWorld.raycast(
+                  new RaycastContext(var16, var16.add(var8.multiply(22.0)), ShapeType.COLLIDER, FluidHandling.NONE, clientPlayerEntity)
                );
-               if (var17.method_17783() != Type.field_1333) {
+               if (var17.getType() != Type.MISS) {
                   var12 = false;
                   break;
                }
@@ -566,24 +573,24 @@ public final class ElytraAutopilotModule extends ClientModule {
       }
    }
 
-   private void swim(ClientPlayerEntity var1) {
+   private void swim(ClientPlayerEntity clientPlayerEntity) {
       if (++this.waterTicks > 1200) {
          this.finish(false, "stuck in water");
       } else {
-         this.mc.field_1690.field_1903.method_23481(true);
-         BlockPos var2 = this.shore(var1);
+         this.mc.options.jumpKey.setPressed(true);
+         BlockPos var2 = this.shore(clientPlayerEntity);
          if (var2 != null) {
-            float var3 = ElytraFlight.bearing(var1.method_23317(), var1.method_23321(), var2.method_10263() + 0.5, var2.method_10260() + 0.5);
+            float var3 = ElytraFlight.bearing(clientPlayerEntity.getX(), clientPlayerEntity.getZ(), var2.getX() + 0.5, var2.getZ() + 0.5);
             Aim.turn(this.mc, var3, 0.0F, 22.0F);
-            this.mc.field_1690.field_1894.method_23481(Math.abs(MathHelper.method_15393(var1.method_36454() - var3)) < 30.0F);
+            this.mc.options.forwardKey.setPressed(Math.abs(MathHelper.wrapDegrees(clientPlayerEntity.getYaw() - var3)) < 30.0F);
          }
       }
    }
 
-   private BlockPos shore(ClientPlayerEntity var1) {
-      ClientWorld var2 = this.mc.field_1687;
-      int var3 = var1.method_31477();
-      int var4 = var1.method_31479();
+   private BlockPos shore(ClientPlayerEntity clientPlayerEntity) {
+      ClientWorld var2 = this.mc.world;
+      int var3 = clientPlayerEntity.getBlockX();
+      int var4 = clientPlayerEntity.getBlockZ();
 
       for (int var5 = 1; var5 <= 32; var5++) {
          for (int var6 = -var5; var6 <= var5; var6++) {
@@ -593,7 +600,7 @@ public final class ElytraAutopilotModule extends ClientModule {
                   && ElytraFlight.goodFloor(
                      var2,
                      new BlockPos(
-                        var3 + var6, (var8 = var2.method_8624(net.minecraft.world.Heightmap.Type.field_13197, var3 + var6, var4 + var7)) - 1, var4 + var7
+                        var3 + var6, (var8 = var2.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING, var3 + var6, var4 + var7)) - 1, var4 + var7
                      )
                   )) {
                   return new BlockPos(var3 + var6, var8, var4 + var7);
@@ -605,91 +612,101 @@ public final class ElytraAutopilotModule extends ClientModule {
       return null;
    }
 
-   private boolean flying(ClientPlayerEntity var1) {
-      if (var1.method_6128()) {
+   private boolean flying(ClientPlayerEntity clientPlayerEntity) {
+      if (clientPlayerEntity.isGliding()) {
          return true;
       } else {
-         if (var1.method_5799()) {
+         if (clientPlayerEntity.isTouchingWater()) {
             this.go(ElytraAutopilotModule.State.PREPARE);
-         } else if (var1.method_24828()) {
+         } else if (clientPlayerEntity.isOnGround()) {
             if (this.state != ElytraAutopilotModule.State.DESCEND && this.state != ElytraAutopilotModule.State.LAND) {
                this.go(ElytraAutopilotModule.State.PREPARE);
             } else {
-               this.touchdown(var1);
+               this.touchdown(clientPlayerEntity);
             }
          } else {
-            this.mc.field_1690.field_1903.method_23481(this.tick % 2 == 0);
+            this.mc.options.jumpKey.setPressed(this.tick % 2 == 0);
          }
 
          return false;
       }
    }
 
-   private void climb(ClientPlayerEntity var1, ClientWorld var2) {
-      if (this.flying(var1)) {
-         double var3 = this.distance(var1);
-         double var5 = this.cruiseAltitude(var2, var3);
-         if (!this.supplyCheck(var1, var3)) {
-            if (!(var1.method_23318() >= var5 - 15.0) && this.stateTicks <= 600) {
-               ElytraFlight.Terrain var7 = this.terrain(var2);
-               if (clearAround(var1, var7)) {
-                  Aim.turn(this.mc, var1.method_36454(), -85.0F, 22.0F);
-                  if (var1.method_36455() < -60.0F && !this.boosting() && this.rocketReady(var1)) {
-                     this.fire(var1);
+   private void climb(ClientPlayerEntity clientPlayerEntity, ClientWorld clientWorld) {
+      if (this.flying(clientPlayerEntity)) {
+         double var3 = this.distance(clientPlayerEntity);
+         double var5 = this.cruiseAltitude(clientWorld, var3);
+         if (!this.supplyCheck(clientPlayerEntity, var3)) {
+            if (!(clientPlayerEntity.getY() >= var5 - 15.0) && this.stateTicks <= 600) {
+               ElytraFlight.Terrain var7 = this.terrain(clientWorld);
+               if (clearAround(clientPlayerEntity, var7)) {
+                  Aim.turn(this.mc, clientPlayerEntity.getYaw(), -85.0F, 22.0F);
+                  if (clientPlayerEntity.getPitch() < -60.0F && !this.boosting() && this.rocketReady(clientPlayerEntity)) {
+                     this.fire(clientPlayerEntity);
                   }
-               } else if (var7.surface(var1.method_23317(), var1.method_23321()) > var1.method_23318() + 1.5 && this.stateTicks < 200) {
-                  float var8 = !Float.isNaN(this.escapeYaw) && this.escapeYaw != -1.0F / 0.0F ? this.escapeYaw : var1.method_36454();
+               } else if (var7.surface(clientPlayerEntity.getX(), clientPlayerEntity.getZ()) > clientPlayerEntity.getY() + 1.5 && this.stateTicks < 200) {
+                  float var8 = !Float.isNaN(this.escapeYaw) && this.escapeYaw != -1.0F / 0.0F ? this.escapeYaw : clientPlayerEntity.getYaw();
                   Aim.turn(this.mc, var8, -32.0F, 27.0F);
-                  if (Math.abs(var1.method_36455() + 32.0F) < 12.0F && !this.boosting() && this.rocketReady(var1)) {
-                     this.fire(var1);
+                  if (Math.abs(clientPlayerEntity.getPitch() + 32.0F) < 12.0F && !this.boosting() && this.rocketReady(clientPlayerEntity)) {
+                     this.fire(clientPlayerEntity);
                   }
                } else {
                   this.steer(
-                     var1,
+                     clientPlayerEntity,
                      var7,
-                     new ElytraFlight.Goal(this.destX, this.destZ, var5, 14.0, false, this.rocketsAllowed(var1, var2, var5), rocketCost(var1), 9.0, floor(var2)),
+                     new ElytraFlight.Goal(
+                        this.destX,
+                        this.destZ,
+                        var5,
+                        14.0,
+                        false,
+                        this.rocketsAllowed(clientPlayerEntity, clientWorld, var5),
+                        rocketCost(clientPlayerEntity),
+                        9.0,
+                        floor(clientWorld)
+                     ),
                      false
                   );
                }
             } else {
-               this.go(var3 <= this.descentStart(var2, var1) ? ElytraAutopilotModule.State.DESCEND : ElytraAutopilotModule.State.CRUISE);
+               this.go(var3 <= this.descentStart(clientWorld, clientPlayerEntity) ? ElytraAutopilotModule.State.DESCEND : ElytraAutopilotModule.State.CRUISE);
             }
          }
       }
    }
 
-   private void cruise(ClientPlayerEntity var1, ClientWorld var2) {
-      if (this.flying(var1)) {
-         double var3 = this.distance(var1);
-         if (!this.supplyCheck(var1, var3)) {
+   private void cruise(ClientPlayerEntity clientPlayerEntity, ClientWorld clientWorld) {
+      if (this.flying(clientPlayerEntity)) {
+         double var3 = this.distance(clientPlayerEntity);
+         if (!this.supplyCheck(clientPlayerEntity, var3)) {
             if (!this.progressStalled(var3)) {
-               if (var3 <= this.descentStart(var2, var1)) {
+               if (var3 <= this.descentStart(clientWorld, clientPlayerEntity)) {
                   this.job = ElytraAutopilotModule.Job.ARRIVE;
                   this.go(ElytraAutopilotModule.State.DESCEND);
                } else {
-                  double var5 = this.cruiseAltitude(var2, var3);
-                  ElytraFlight.Terrain var7 = this.terrain(var2);
-                  if (this.eatInFlight(var1)) {
-                     this.glideOn(var1, var7, var5, false);
+                  double var5 = this.cruiseAltitude(clientWorld, var3);
+                  ElytraFlight.Terrain var7 = this.terrain(clientWorld);
+                  if (this.eatInFlight(clientPlayerEntity)) {
+                     this.glideOn(clientPlayerEntity, var7, var5, false);
                   } else {
-                     boolean var8 = this.rocketsAllowed(var1, var2, var5);
-                     double var9 = this.terrainAhead(var1, var7, var3) + 14.0 + 4.0;
+                     boolean var8 = this.rocketsAllowed(clientPlayerEntity, clientWorld, var5);
+                     double var9 = this.terrainAhead(clientPlayerEntity, var7, var3) + 14.0 + 4.0;
                      double var11 = Math.max(var9, var5 - 45.0 + this.bandJitter);
                      double var13 = Math.max(var5 + 15.0 + this.bandJitter, var11 + 10.0);
-                     if (!this.climbing && var1.method_23318() < var11 && (var8 || this.boosting())) {
+                     if (!this.climbing && clientPlayerEntity.getY() < var11 && (var8 || this.boosting())) {
                         this.climbing = true;
                      }
 
-                     if (this.climbing && var1.method_23318() >= var13 - 8.0) {
+                     if (this.climbing && clientPlayerEntity.getY() >= var13 - 8.0) {
                         this.climbing = false;
                         this.newJitter();
                      }
 
-                     if (this.climbing && !var8 && !this.boosting() && var1.method_18798().field_1351 < 0.05 && var1.method_36455() < -37.0F) {
+                     if (this.climbing && !var8 && !this.boosting() && clientPlayerEntity.getVelocity().y < 0.05 && clientPlayerEntity.getPitch() < -37.0F) {
                         this.climbing = false;
                      }
 
-                     this.glideOn(var1, var7, var5, var8);
+                     this.glideOn(clientPlayerEntity, var7, var5, var8);
                   }
                }
             }
@@ -697,66 +714,71 @@ public final class ElytraAutopilotModule extends ClientModule {
       }
    }
 
-   private void glideOn(ClientPlayerEntity var1, ElytraFlight.Terrain var2, double var3, boolean var5) {
-      float var7 = ElytraFlight.bearing(var1.method_23317(), var1.method_23321(), this.destX, this.destZ);
-      double var8 = var1.method_18798().method_37267();
+   private void glideOn(ClientPlayerEntity clientPlayerEntity, ElytraFlight.Terrain terrain, double d, boolean bl) {
+      float var7 = ElytraFlight.bearing(clientPlayerEntity.getX(), clientPlayerEntity.getZ(), this.destX, this.destZ);
+      double var8 = clientPlayerEntity.getVelocity().horizontalLength();
       boolean var10 = false;
       float var6;
       if (this.climbing) {
          var6 = -47.0F;
-         var10 = var5 && !this.boosting() && var1.method_18798().field_1351 < 0.45;
+         var10 = bl && !this.boosting() && clientPlayerEntity.getVelocity().y < 0.45;
       } else {
          var6 = (var8 < 1.0 ? 14.0F : (var8 < 1.4 ? 7.0F : 2.0F)) + this.glideJitter;
       }
 
-      ElytraFlight.Goal var11 = new ElytraFlight.Goal(this.destX, this.destZ, var3, 14.0, false, var5, rocketCost(var1), 9.0, floor(this.mc.field_1687));
-      ElytraFlight.Glide var12 = ElytraFlight.Glide.of(var1, this.boostLeft());
-      if (ElytraFlight.clear(var12, var11, var2, var7, var6, var10, 22.0F)) {
+      ElytraFlight.Goal var11 = new ElytraFlight.Goal(this.destX, this.destZ, d, 14.0, false, bl, rocketCost(clientPlayerEntity), 9.0, floor(this.mc.world));
+      ElytraFlight.Glide var12 = ElytraFlight.Glide.of(clientPlayerEntity, this.boostLeft());
+      if (ElytraFlight.clear(var12, var11, terrain, var7, var6, var10, 22.0F)) {
          this.plan = null;
          Aim.turn(this.mc, var7, var6, 22.0F);
-         if (var10 && this.rocketReady(var1) && aimedAt(var1, var7, var6)) {
-            this.fire(var1);
+         if (var10 && this.rocketReady(clientPlayerEntity) && aimedAt(clientPlayerEntity, var7, var6)) {
+            this.fire(clientPlayerEntity);
          }
       } else {
-         this.steer(var1, var2, var11, false);
+         this.steer(clientPlayerEntity, terrain, var11, false);
       }
    }
 
-   private void steer(ClientPlayerEntity var1, ElytraFlight.Terrain var2, ElytraFlight.Goal var3, boolean var4) {
+   private void steer(ClientPlayerEntity clientPlayerEntity, ElytraFlight.Terrain terrain, ElytraFlight.Goal goal, boolean bl) {
       if (this.plan == null || this.tick - this.planTick >= 2) {
-         this.plan = ElytraFlight.search(ElytraFlight.Glide.of(var1, this.boostLeft()), var3, var2, this.boosting(), 22.0F);
+         this.plan = ElytraFlight.search(ElytraFlight.Glide.of(clientPlayerEntity, this.boostLeft()), goal, terrain, this.boosting(), 22.0F);
          this.planTick = this.tick;
       }
 
-      float var5 = !var4 && this.plan.safe() ? 22.0F : 27.0F;
+      float var5 = !bl && this.plan.safe() ? 22.0F : 27.0F;
       Aim.turn(this.mc, this.plan.yaw(), this.plan.pitch(), var5);
-      if (this.plan.rocket() && !this.boosting() && this.rocketReady(var1) && aimedAt(var1, this.plan.yaw(), this.plan.pitch())) {
-         this.fire(var1);
+      if (this.plan.rocket() && !this.boosting() && this.rocketReady(clientPlayerEntity) && aimedAt(clientPlayerEntity, this.plan.yaw(), this.plan.pitch())) {
+         this.fire(clientPlayerEntity);
       }
    }
 
-   private static boolean aimedAt(ClientPlayerEntity var0, float var1, float var2) {
-      return Math.abs(var0.method_36455() - var2) < 20.0F && Math.abs(MathHelper.method_15393(var0.method_36454() - var1)) < 30.0F;
+   private static boolean aimedAt(ClientPlayerEntity clientPlayerEntity, float f, float g) {
+      return Math.abs(clientPlayerEntity.getPitch() - g) < 20.0F && Math.abs(MathHelper.wrapDegrees(clientPlayerEntity.getYaw() - f)) < 30.0F;
    }
 
-   private void descend(ClientPlayerEntity var1, ClientWorld var2) {
-      if (this.flying(var1)) {
-         double var3 = this.distance(var1);
-         if (this.job != ElytraAutopilotModule.Job.ARRIVE || !this.supplyCheck(var1, var3)) {
-            boolean var5 = this.job != ElytraAutopilotModule.Job.ARRIVE && (this.critical(var1) || this.job == ElytraAutopilotModule.Job.STOP);
-            ElytraFlight.Terrain var6 = this.terrain(var2);
+   private void descend(ClientPlayerEntity clientPlayerEntity, ClientWorld clientWorld) {
+      if (this.flying(clientPlayerEntity)) {
+         double var3 = this.distance(clientPlayerEntity);
+         if (this.job != ElytraAutopilotModule.Job.ARRIVE || !this.supplyCheck(clientPlayerEntity, var3)) {
+            boolean var5 = this.job != ElytraAutopilotModule.Job.ARRIVE && (this.critical(clientPlayerEntity) || this.job == ElytraAutopilotModule.Job.STOP);
+            ElytraFlight.Terrain var6 = this.terrain(clientWorld);
             if (this.spot == null && this.tick >= this.nextSpotSearch) {
-               this.findSpot(var1, var6, var5);
+               this.findSpot(clientPlayerEntity, var6, var5);
             }
 
             if (this.spot == null && this.job != ElytraAutopilotModule.Job.ARRIVE) {
-               this.glideOn(var1, var6, this.cruiseAltitude(var2, var3), this.rocketsAllowed(var1, var2, this.cruiseAltitude(var2, var3)));
+               this.glideOn(
+                  clientPlayerEntity,
+                  var6,
+                  this.cruiseAltitude(clientWorld, var3),
+                  this.rocketsAllowed(clientPlayerEntity, clientWorld, this.cruiseAltitude(clientWorld, var3))
+               );
             } else {
-               double var7 = this.spot != null ? this.spot.method_10263() + 0.5 : this.destX;
-               double var9 = this.spot != null ? this.spot.method_10260() + 0.5 : this.destZ;
-               double var11 = this.spot != null ? this.spot.method_10264() : surfaceAt(var2, this.destX, this.destZ);
-               double var13 = Math.hypot(var1.method_23317() - var7, var1.method_23321() - var9);
-               double var15 = var1.method_23318() - var11;
+               double var7 = this.spot != null ? this.spot.getX() + 0.5 : this.destX;
+               double var9 = this.spot != null ? this.spot.getZ() + 0.5 : this.destZ;
+               double var11 = this.spot != null ? this.spot.getY() : surfaceAt(clientWorld, this.destX, this.destZ);
+               double var13 = Math.hypot(clientPlayerEntity.getX() - var7, clientPlayerEntity.getZ() - var9);
+               double var15 = clientPlayerEntity.getY() - var11;
                if (this.spot != null) {
                   if (var15 < this.bestDrop - 3.0) {
                      this.bestDrop = var15;
@@ -773,7 +795,7 @@ public final class ElytraAutopilotModule extends ClientModule {
                }
 
                double var17 = var11 + 14.0 + Math.max(0.0, var13 - 45.0) * 0.095;
-               double var19 = var1.method_23318() - var17;
+               double var19 = clientPlayerEntity.getY() - var17;
                if (!this.spiralling && var13 < 170.0 && var15 > 32.0 && (var19 > 22.0 || var13 < 60.0)) {
                   this.spiralling = true;
                }
@@ -784,45 +806,50 @@ public final class ElytraAutopilotModule extends ClientModule {
 
                double var21 = Math.max(3.0, Math.min(14.0, (var13 - 45.0) * 0.25 + 4.0));
                if (this.spiralling) {
-                  float var25 = ElytraFlight.bearing(var7, var9, var1.method_23317(), var1.method_23321()) + 90.0F + 55.0F;
-                  Vec3d var24 = Vec3d.method_1030(0.0F, var25).method_1021(42.0);
+                  float var25 = ElytraFlight.bearing(var7, var9, clientPlayerEntity.getX(), clientPlayerEntity.getZ()) + 90.0F + 55.0F;
+                  Vec3d var24 = Vec3d.fromPolar(0.0F, var25).multiply(42.0);
                   this.steer(
-                     var1,
+                     clientPlayerEntity,
                      var6,
                      new ElytraFlight.Goal(
-                        var7 + var24.field_1352,
-                        var9 + var24.field_1350,
+                        var7 + var24.x,
+                        var9 + var24.z,
                         var11 + 14.0,
                         Math.max(10.0, var21),
                         true,
                         false,
-                        rocketCost(var1),
+                        rocketCost(clientPlayerEntity),
                         var19 > 40.0 ? 3.0 : 1.9,
-                        floor(var2)
+                        floor(clientWorld)
                      ),
                      false
                   );
                } else {
-                  boolean var23 = this.rocketsAllowed(var1, var2, var17) && var15 < 10.0;
-                  this.steer(var1, var6, new ElytraFlight.Goal(var7, var9, var17, var21, true, var23, rocketCost(var1), 1.45, floor(var2)), var5);
+                  boolean var23 = this.rocketsAllowed(clientPlayerEntity, clientWorld, var17) && var15 < 10.0;
+                  this.steer(
+                     clientPlayerEntity,
+                     var6,
+                     new ElytraFlight.Goal(var7, var9, var17, var21, true, var23, rocketCost(clientPlayerEntity), 1.45, floor(clientWorld)),
+                     var5
+                  );
                }
             }
          }
       }
    }
 
-   private void findSpot(ClientPlayerEntity var1, ElytraFlight.Terrain var2, boolean var3) {
-      this.nextSpotSearch = this.tick + (var3 ? 10 : 20);
+   private void findSpot(ClientPlayerEntity clientPlayerEntity, ElytraFlight.Terrain terrain, boolean bl) {
+      this.nextSpotSearch = this.tick + (bl ? 10 : 20);
       int var6;
       int var7;
       int var8;
       if (this.job == ElytraAutopilotModule.Job.ARRIVE) {
-         if (!var2.known(MathHelper.method_15357(this.destX), MathHelper.method_15357(this.destZ))) {
+         if (!terrain.known(MathHelper.floor(this.destX), MathHelper.floor(this.destZ))) {
             return;
          }
 
-         var8 = MathHelper.method_15357(this.destX);
-         var7 = MathHelper.method_15357(this.destZ);
+         var8 = MathHelper.floor(this.destX);
+         var7 = MathHelper.floor(this.destZ);
          this.spotSearches++;
          var6 = this.spotSearches > 12 ? 300 : (this.spotSearches > 4 ? 160 : 96);
          if (this.spotSearches > 40) {
@@ -830,56 +857,56 @@ public final class ElytraAutopilotModule extends ClientModule {
             return;
          }
       } else {
-         Vec3d var9 = Vec3d.method_1030(0.0F, var1.method_36454()).method_1021(var3 ? 30.0 : 110.0);
-         var8 = MathHelper.method_15357(var1.method_23317() + var9.field_1352);
-         var7 = MathHelper.method_15357(var1.method_23321() + var9.field_1350);
-         var6 = var3 ? 120 : 150;
+         Vec3d var9 = Vec3d.fromPolar(0.0F, clientPlayerEntity.getYaw()).multiply(bl ? 30.0 : 110.0);
+         var8 = MathHelper.floor(clientPlayerEntity.getX() + var9.x);
+         var7 = MathHelper.floor(clientPlayerEntity.getZ() + var9.z);
+         var6 = bl ? 120 : 150;
       }
 
       Predicate var4;
       BlockPos var5;
-      if ((var5 = ElytraFlight.landingSpot(var2, var8, var7, var6, true, var4 = var1x -> {
-         for (BlockPos var3x : this.banned) {
-            if (var3x.method_19455(var1x) < 30 + Math.abs(var3x.method_10264() - var1x.method_10264())) {
+      if ((var5 = ElytraFlight.landingSpot(terrain, var8, var7, var6, true, var4 = blockPos -> {
+         for (BlockPos var3 : this.banned) {
+            if (var3.getManhattanDistance(blockPos) < 30 + Math.abs(var3.getY() - blockPos.getY())) {
                return true;
             }
          }
 
          return false;
       })) == null) {
-         var5 = ElytraFlight.landingSpot(var2, var8, var7, var6, false, var4);
+         var5 = ElytraFlight.landingSpot(terrain, var8, var7, var6, false, var4);
       }
 
       if (var5 != null) {
          this.spot = var5;
          this.bestDrop = 1.7976931348623157E308;
          this.dropTick = this.tick;
-         EasyPlace.LOG.info("[Elytra Autopilot] landing spot {}", var5.method_23854());
+         EasyPlace.LOG.info("[Elytra Autopilot] landing spot {}", var5.toShortString());
       }
    }
 
-   private void ban(BlockPos var1) {
-      this.banned.add(var1);
+   private void ban(BlockPos blockPos) {
+      this.banned.add(blockPos);
       this.spot = null;
       this.goArounds = 0;
       this.nextSpotSearch = this.tick;
    }
 
-   private void land(ClientPlayerEntity var1, ClientWorld var2) {
-      if (!var1.method_6128()) {
-         if (var1.method_24828() || var1.method_5799()) {
-            this.touchdown(var1);
-         } else if (var1.method_18798().field_1351 < -0.3) {
-            this.mc.field_1690.field_1903.method_23481(this.tick % 2 == 0);
+   private void land(ClientPlayerEntity clientPlayerEntity, ClientWorld clientWorld) {
+      if (!clientPlayerEntity.isGliding()) {
+         if (clientPlayerEntity.isOnGround() || clientPlayerEntity.isTouchingWater()) {
+            this.touchdown(clientPlayerEntity);
+         } else if (clientPlayerEntity.getVelocity().y < -0.3) {
+            this.mc.options.jumpKey.setPressed(this.tick % 2 == 0);
          }
       } else if (this.spot == null) {
          this.go(ElytraAutopilotModule.State.DESCEND);
       } else {
-         double var3 = Math.hypot(var1.method_23317() - (this.spot.method_10263() + 0.5), var1.method_23321() - (this.spot.method_10260() + 0.5));
-         double var5 = var1.method_23318() - this.spot.method_10264();
+         double var3 = Math.hypot(clientPlayerEntity.getX() - (this.spot.getX() + 0.5), clientPlayerEntity.getZ() - (this.spot.getZ() + 0.5));
+         double var5 = clientPlayerEntity.getY() - this.spot.getY();
          if (!(var5 < -4.0) && this.stateTicks <= 700 && !(var3 > 90.0)) {
             if (this.plan == null || this.tick - this.planTick >= 2) {
-               this.plan = ElytraFlight.touchdown(ElytraFlight.Glide.of(var1, this.boostLeft()), this.spot, this.terrain(var2), 27.0F);
+               this.plan = ElytraFlight.touchdown(ElytraFlight.Glide.of(clientPlayerEntity, this.boostLeft()), this.spot, this.terrain(clientWorld), 27.0F);
                this.planTick = this.tick;
             }
 
@@ -895,12 +922,12 @@ public final class ElytraAutopilotModule extends ClientModule {
       }
    }
 
-   private void touchdown(ClientPlayerEntity var1) {
+   private void touchdown(ClientPlayerEntity clientPlayerEntity) {
       this.plan = null;
       this.spiralling = false;
       switch (this.job) {
          case ARRIVE:
-            if (this.distance(var1) <= 72.0) {
+            if (this.distance(clientPlayerEntity) <= 72.0) {
                this.finish(true, null);
             } else {
                if (this.spot != null) {
@@ -921,21 +948,21 @@ public final class ElytraAutopilotModule extends ClientModule {
       }
    }
 
-   private boolean supplyCheck(ClientPlayerEntity var1, double var2) {
+   private boolean supplyCheck(ClientPlayerEntity clientPlayerEntity, double d) {
       if (this.tick % 20 == 0 && this.job == ElytraAutopilotModule.Job.ARRIVE) {
-         ItemStack var5 = chest(var1);
+         ItemStack var5 = chest(clientPlayerEntity);
          int var6 = durability(var5);
-         int var7 = level(var5, Enchantments.field_9119);
-         int var8 = count(var1, ROCKET);
-         double var9 = var2 / 27.0 + 50.0;
+         int var7 = level(var5, Enchantments.UNBREAKING);
+         int var8 = count(clientPlayerEntity, ROCKET);
+         double var9 = d / 27.0 + 50.0;
          double var11 = var9 / (1 + var7) * 1.35 + 25.0;
-         double var13 = var2 / 1000.0 * 2.6 + 5.0;
+         double var13 = d / 1000.0 * 2.6 + 5.0;
          boolean var4 = (var6 < 0 || var6 > var11) && var8 > var13;
-         if (var4 && !this.critical(var1)) {
+         if (var4 && !this.critical(clientPlayerEntity)) {
             return false;
          } else {
-            boolean var16 = this.canMend(var1);
-            boolean var17 = spare(var1) >= 0;
+            boolean var16 = this.canMend(clientPlayerEntity);
+            boolean var17 = spare(clientPlayerEntity) >= 0;
             boolean var18 = var6 >= 0 && var6 <= mendThreshold(var5);
             ElytraAutopilotModule.Job var19 = null;
             String var20 = null;
@@ -943,7 +970,7 @@ public final class ElytraAutopilotModule extends ClientModule {
                if (var18 && var6 <= 40) {
                   var19 = ElytraAutopilotModule.Job.STOP;
                   var20 = "the elytra is worn out";
-               } else if (var8 <= 20 && this.canBuy(Items.field_8639)) {
+               } else if (var8 <= 20 && this.canBuy(Items.FIREWORK_ROCKET)) {
                   var19 = ElytraAutopilotModule.Job.SERVICE;
                   var20 = "to buy rockets";
                } else if (var8 <= 6) {
@@ -974,23 +1001,23 @@ public final class ElytraAutopilotModule extends ClientModule {
       }
    }
 
-   private boolean critical(ClientPlayerEntity var1) {
-      ItemStack var2 = chest(var1);
+   private boolean critical(ClientPlayerEntity clientPlayerEntity) {
+      ItemStack var2 = chest(clientPlayerEntity);
       int var3 = durability(var2);
-      int var4 = level(var2, Enchantments.field_9119) >= 1 ? 40 : 60;
-      return var3 >= 0 && var3 <= var4 || count(var1, ROCKET) <= 3;
+      int var4 = level(var2, Enchantments.UNBREAKING) >= 1 ? 40 : 60;
+      return var3 >= 0 && var3 <= var4 || count(clientPlayerEntity, ROCKET) <= 3;
    }
 
-   private boolean progressStalled(double var1) {
-      if (var1 < this.bestDistance - 60.0) {
-         this.bestDistance = var1;
+   private boolean progressStalled(double d) {
+      if (d < this.bestDistance - 60.0) {
+         this.bestDistance = d;
          this.progressTick = this.tick;
          return false;
       } else if (this.tick - this.progressTick < 900) {
          return false;
       } else {
          this.progressTick = this.tick;
-         this.bestDistance = var1;
+         this.bestDistance = d;
          if (++this.stalls >= 6) {
             this.job = ElytraAutopilotModule.Job.STOP;
             this.stopReason = "no progress";
@@ -1005,15 +1032,15 @@ public final class ElytraAutopilotModule extends ClientModule {
       }
    }
 
-   private boolean eatInFlight(ClientPlayerEntity var1) {
-      if (this.eatingInFlight || Eater.hungry(var1) && !this.climbing && !this.boosting() && !(var1.method_23318() < 70.0)) {
-         int var2 = hotbarSlot(var1, Eater::edible);
+   private boolean eatInFlight(ClientPlayerEntity clientPlayerEntity) {
+      if (this.eatingInFlight || Eater.hungry(clientPlayerEntity) && !this.climbing && !this.boosting() && !(clientPlayerEntity.getY() < 70.0)) {
+         int var2 = hotbarSlot(clientPlayerEntity, Eater::edible);
          if (var2 < 0) {
             this.eatingInFlight = false;
             return false;
          } else {
-            var1.method_31548().method_61496(var2);
-            this.mc.field_1690.field_1904.method_23481(true);
+            clientPlayerEntity.getInventory().setSelectedSlot(var2);
+            this.mc.options.useKey.setPressed(true);
             if (!this.eatingInFlight) {
                this.eatLockUntil = this.tick + 45;
             }
@@ -1026,23 +1053,26 @@ public final class ElytraAutopilotModule extends ClientModule {
       }
    }
 
-   private void service(ClientPlayerEntity var1, ClientWorld var2) {
-      if (var1.method_5799()) {
-         this.swim(var1);
-      } else if (var1.method_6128()) {
+   private void service(ClientPlayerEntity clientPlayerEntity, ClientWorld clientWorld) {
+      if (clientPlayerEntity.isTouchingWater()) {
+         this.swim(clientPlayerEntity);
+      } else if (clientPlayerEntity.isGliding()) {
          this.go(ElytraAutopilotModule.State.LAND);
-      } else if (var1.method_24828()) {
-         if (!this.danger(var1, var2)) {
+      } else if (clientPlayerEntity.isOnGround()) {
+         if (!this.danger(clientPlayerEntity, clientWorld)) {
             if (this.task == ElytraAutopilotModule.Task.NONE) {
-               this.task = this.nextTask(var1);
+               this.task = this.nextTask(clientPlayerEntity);
                this.taskTicks = 0;
                if (this.task == ElytraAutopilotModule.Task.NONE) {
-                  if (count(var1, ROCKET) == 0) {
+                  if (count(clientPlayerEntity, ROCKET) == 0) {
                      this.finish(false, "out of rockets");
                      return;
                   }
 
-                  this.say(ModuleChat.body().text("Pit stop done: " + count(var1, ROCKET) + " rockets, elytra " + durability(chest(var1)) + "."));
+                  this.say(
+                     ModuleChat.body()
+                        .text("Pit stop done: " + count(clientPlayerEntity, ROCKET) + " rockets, elytra " + durability(chest(clientPlayerEntity)) + ".")
+                  );
                   this.job = ElytraAutopilotModule.Job.ARRIVE;
                   this.go(ElytraAutopilotModule.State.PREPARE);
                   return;
@@ -1054,25 +1084,25 @@ public final class ElytraAutopilotModule extends ClientModule {
             this.taskTicks++;
             switch (this.task) {
                case EAT:
-                  this.eat(var1);
+                  this.eat(clientPlayerEntity);
                   break;
                case SWAP:
-                  this.swapElytra(var1);
+                  this.swapElytra(clientPlayerEntity);
                   break;
                case MEND:
-                  this.mendElytra(var1);
+                  this.mendElytra(clientPlayerEntity);
                   break;
                case BUY_ROCKETS:
                case BUY_XP:
-                  this.buy(var1);
+                  this.buy(clientPlayerEntity);
                   break;
                default:
                   this.task = ElytraAutopilotModule.Task.NONE;
             }
          } else {
             this.stopTask();
-            if (count(var1, ROCKET) >= 2 && durability(chest(var1)) >= 30) {
-               this.banned.add(var1.method_24515());
+            if (count(clientPlayerEntity, ROCKET) >= 2 && durability(chest(clientPlayerEntity)) >= 30) {
+               this.banned.add(clientPlayerEntity.getBlockPos());
                this.say(ModuleChat.body().warn("Trouble at the pit stop").text(", taking off again."));
                this.job = ElytraAutopilotModule.Job.ARRIVE;
                this.go(ElytraAutopilotModule.State.TAKEOFF);
@@ -1083,35 +1113,41 @@ public final class ElytraAutopilotModule extends ClientModule {
       }
    }
 
-   private ElytraAutopilotModule.Task nextTask(ClientPlayerEntity var1) {
-      ItemStack var3 = chest(var1);
+   private ElytraAutopilotModule.Task nextTask(ClientPlayerEntity clientPlayerEntity) {
+      ItemStack var3 = chest(clientPlayerEntity);
       int var4 = durability(var3);
       boolean var5 = var4 >= 0 && var4 <= mendThreshold(var3);
-      boolean var2 = this.mend.get() && mends(var3) && this.mendFailures < 3 && var4 >= 0 && var4 < var3.method_7936() * 0.97;
-      if (!this.doneTasks.contains(ElytraAutopilotModule.Task.EAT) && Eater.hungry(var1) && Eater.hasFood(var1)) {
+      boolean var2 = this.mend.get() && mends(var3) && this.mendFailures < 3 && var4 >= 0 && var4 < var3.getMaxDamage() * 0.97;
+      if (!this.doneTasks.contains(ElytraAutopilotModule.Task.EAT) && Eater.hungry(clientPlayerEntity) && Eater.hasFood(clientPlayerEntity)) {
          return ElytraAutopilotModule.Task.EAT;
-      } else if (!this.doneTasks.contains(ElytraAutopilotModule.Task.SWAP) && var5 && (!var2 || count(var1, XP) == 0) && spare(var1) >= 0) {
+      } else if (!this.doneTasks.contains(ElytraAutopilotModule.Task.SWAP)
+         && var5
+         && (!var2 || count(clientPlayerEntity, XP) == 0)
+         && spare(clientPlayerEntity) >= 0) {
          return ElytraAutopilotModule.Task.SWAP;
       } else {
-         int var7 = count(var1, ROCKET);
-         if (this.distance(var1) < 1500.0 && var7 >= 4) {
-            return !this.doneTasks.contains(ElytraAutopilotModule.Task.MEND) && var5 && var2 && count(var1, XP) > 0
+         int var7 = count(clientPlayerEntity, ROCKET);
+         if (this.distance(clientPlayerEntity) < 1500.0 && var7 >= 4) {
+            return !this.doneTasks.contains(ElytraAutopilotModule.Task.MEND) && var5 && var2 && count(clientPlayerEntity, XP) > 0
                ? ElytraAutopilotModule.Task.MEND
                : ElytraAutopilotModule.Task.NONE;
-         } else if (!this.doneTasks.contains(ElytraAutopilotModule.Task.BUY_XP) && var2 && count(var1, XP) == 0 && this.canBuy(Items.field_8287)) {
+         } else if (!this.doneTasks.contains(ElytraAutopilotModule.Task.BUY_XP)
+            && var2
+            && count(clientPlayerEntity, XP) == 0
+            && this.canBuy(Items.EXPERIENCE_BOTTLE)) {
             return ElytraAutopilotModule.Task.BUY_XP;
-         } else if (!this.doneTasks.contains(ElytraAutopilotModule.Task.MEND) && var2 && count(var1, XP) > 0) {
+         } else if (!this.doneTasks.contains(ElytraAutopilotModule.Task.MEND) && var2 && count(clientPlayerEntity, XP) > 0) {
             return ElytraAutopilotModule.Task.MEND;
-         } else if (!this.doneTasks.contains(ElytraAutopilotModule.Task.BUY_ROCKETS) && var7 < this.rocketStacks.getInt() * 32 && this.canBuy(Items.field_8639)
-            )
-          {
+         } else if (!this.doneTasks.contains(ElytraAutopilotModule.Task.BUY_ROCKETS)
+            && var7 < this.rocketStacks.getInt() * 32
+            && this.canBuy(Items.FIREWORK_ROCKET)) {
             return ElytraAutopilotModule.Task.BUY_ROCKETS;
          } else {
             return !this.doneTasks.contains(ElytraAutopilotModule.Task.BUY_XP)
                   && this.mend.get()
                   && mends(var3)
-                  && count(var1, XP) < this.xpStacks.getInt() * 32
-                  && this.canBuy(Items.field_8287)
+                  && count(clientPlayerEntity, XP) < this.xpStacks.getInt() * 32
+                  && this.canBuy(Items.EXPERIENCE_BOTTLE)
                ? ElytraAutopilotModule.Task.BUY_XP
                : ElytraAutopilotModule.Task.NONE;
          }
@@ -1132,12 +1168,12 @@ public final class ElytraAutopilotModule extends ClientModule {
 
       this.eater = null;
       this.task = ElytraAutopilotModule.Task.NONE;
-      if (this.mc.field_1755 instanceof HandledScreen && this.mc.field_1724 != null) {
-         this.mc.field_1724.method_7346();
+      if (this.mc.currentScreen instanceof HandledScreen && this.mc.player != null) {
+         this.mc.player.closeHandledScreen();
       }
    }
 
-   private void eat(ClientPlayerEntity var1) {
+   private void eat(ClientPlayerEntity clientPlayerEntity) {
       if (this.eater == null) {
          this.eater = new Eater();
       }
@@ -1149,18 +1185,18 @@ public final class ElytraAutopilotModule extends ClientModule {
       }
    }
 
-   private void swapElytra(ClientPlayerEntity var1) {
-      int var2 = durability(chest(var1));
-      int var3 = spare(var1);
+   private void swapElytra(ClientPlayerEntity clientPlayerEntity) {
+      int var2 = durability(chest(clientPlayerEntity));
+      int var3 = spare(clientPlayerEntity);
       if (var3 >= 0 && this.taskTicks <= 120) {
-         int var4 = durability(var1.method_31548().method_5438(var3));
-         Predicate var5 = var1x -> var1x.method_31574(Items.field_8833) && durability(var1x) == var4;
-         if (Hands.hold(this.mc, var1, var5) && this.taskTicks % 6 == 3) {
-            this.mc.field_1761.method_2919(var1, Hand.field_5808);
+         int var4 = durability(clientPlayerEntity.getInventory().getStack(var3));
+         Predicate var5 = itemStack -> itemStack.isOf(Items.ELYTRA) && durability(itemStack) == var4;
+         if (Hands.hold(this.mc, clientPlayerEntity, var5) && this.taskTicks % 6 == 3) {
+            this.mc.interactionManager.interactItem(clientPlayerEntity, Hand.MAIN_HAND);
          }
 
-         if (durability(chest(var1)) > var2) {
-            this.say(ModuleChat.body().good("Put on the spare elytra").text(" (" + durability(chest(var1)) + " left)."));
+         if (durability(chest(clientPlayerEntity)) > var2) {
+            this.say(ModuleChat.body().good("Put on the spare elytra").text(" (" + durability(chest(clientPlayerEntity)) + " left)."));
             this.task = ElytraAutopilotModule.Task.NONE;
          }
       } else {
@@ -1168,15 +1204,15 @@ public final class ElytraAutopilotModule extends ClientModule {
       }
    }
 
-   private void mendElytra(ClientPlayerEntity var1) {
-      ItemStack var2 = chest(var1);
+   private void mendElytra(ClientPlayerEntity clientPlayerEntity) {
+      ItemStack var2 = chest(clientPlayerEntity);
       int var3 = durability(var2);
       if (this.taskTicks == 1) {
          this.mendBest = var3;
          this.mendGainTick = this.tick;
       }
 
-      if (var3 < var2.method_7936() && var3 >= 0) {
+      if (var3 < var2.getMaxDamage() && var3 >= 0) {
          if (var3 > this.mendBest) {
             this.mendBest = var3;
             this.mendGainTick = this.tick;
@@ -1186,17 +1222,17 @@ public final class ElytraAutopilotModule extends ClientModule {
             this.mendFailures++;
             this.say(ModuleChat.body().warn("The XP is not reaching the elytra").text(" (other Mending gear may be taking it)."));
             this.task = ElytraAutopilotModule.Task.NONE;
-         } else if (count(var1, XP) == 0) {
-            ElytraAutopilotModule.Task var4 = this.task = this.canBuy(Items.field_8287) && !this.doneTasks.contains(ElytraAutopilotModule.Task.BUY_XP)
+         } else if (count(clientPlayerEntity, XP) == 0) {
+            ElytraAutopilotModule.Task var4 = this.task = this.canBuy(Items.EXPERIENCE_BOTTLE) && !this.doneTasks.contains(ElytraAutopilotModule.Task.BUY_XP)
                ? ElytraAutopilotModule.Task.BUY_XP
                : ElytraAutopilotModule.Task.NONE;
             if (this.task == ElytraAutopilotModule.Task.BUY_XP) {
                this.doneTasks.add(ElytraAutopilotModule.Task.BUY_XP);
                this.taskTicks = 0;
             }
-         } else if (Hands.hold(this.mc, var1, XP)) {
-            Aim.turn(this.mc, var1.method_36454(), 86.0F, 22.0F);
-            this.mc.field_1690.field_1904.method_23481(var1.method_36455() > 70.0F);
+         } else if (Hands.hold(this.mc, clientPlayerEntity, XP)) {
+            Aim.turn(this.mc, clientPlayerEntity.getYaw(), 86.0F, 22.0F);
+            this.mc.options.useKey.setPressed(clientPlayerEntity.getPitch() > 70.0F);
          }
       } else {
          if (var3 >= 0) {
@@ -1208,23 +1244,23 @@ public final class ElytraAutopilotModule extends ClientModule {
       }
    }
 
-   private void buy(ClientPlayerEntity var1) {
+   private void buy(ClientPlayerEntity clientPlayerEntity) {
       if (this.verifyUntil > 0) {
-         this.verifyPurchase(var1);
+         this.verifyPurchase(clientPlayerEntity);
       } else if (this.purchase != null) {
-         Aim.turn(this.mc, var1.method_36454(), 40.0F, 22.0F);
+         Aim.turn(this.mc, clientPlayerEntity.getYaw(), 40.0F, 22.0F);
          this.followPurchase();
       } else {
          boolean var2 = this.task == ElytraAutopilotModule.Task.BUY_ROCKETS;
-         Item var3 = var2 ? Items.field_8639 : Items.field_8287;
+         Item var3 = var2 ? Items.FIREWORK_ROCKET : Items.EXPERIENCE_BOTTLE;
          Predicate var4 = var2 ? ElytraAutopilotModule::buyableRocket : XP;
-         int var5 = (var2 ? this.rocketStacks.getInt() : this.xpStacks.getInt()) * 64 - count(var1, var4);
+         int var5 = (var2 ? this.rocketStacks.getInt() : this.xpStacks.getInt()) * 64 - count(clientPlayerEntity, var4);
          long var6 = AhPurchase.parseMoney(var2 ? this.rocketPrice.get() : this.xpPrice.get());
-         if (var5 > 0 && var6 > 0L && this.canBuy(var3) && freeSlots(var1) != 0) {
+         if (var5 > 0 && var6 > 0L && this.canBuy(var3) && freeSlots(clientPlayerEntity) != 0) {
             double var8 = var6 / 64.0;
-            Predicate var10 = var3x -> var4.test(var3x) && AhPurchase.unitPrice(var3x) <= var8;
+            Predicate var10 = itemStack -> var4.test(itemStack) && AhPurchase.unitPrice(itemStack) <= var8;
             this.purchaseItem = var3;
-            this.purchaseBefore = count(var1, var4);
+            this.purchaseBefore = count(clientPlayerEntity, var4);
             long var11 = AhPurchase.parseMoney(this.tripLimit.get());
             long var13 = var11 <= 0L ? 0L : Math.max(1L, var11 - this.spent);
             this.say(ModuleChat.body().text("Buying " + var5 + (var2 ? " rockets" : " XP bottles") + " on the AH."));
@@ -1249,7 +1285,7 @@ public final class ElytraAutopilotModule extends ClientModule {
          if (var1 != AhPurchase.Status.DONE) {
             this.buyFails.merge(this.purchaseItem, 1, Integer::sum);
             this.nextBuy.put(this.purchaseItem, this.tick + 6000);
-            this.say(ModuleChat.body().warn("Could not buy " + (this.purchaseItem == Items.field_8639 ? "rockets" : "XP bottles")).text(", flying on."));
+            this.say(ModuleChat.body().warn("Could not buy " + (this.purchaseItem == Items.FIREWORK_ROCKET ? "rockets" : "XP bottles")).text(", flying on."));
             this.purchaseItem = null;
             this.task = ElytraAutopilotModule.Task.NONE;
          } else {
@@ -1258,13 +1294,13 @@ public final class ElytraAutopilotModule extends ClientModule {
       }
    }
 
-   private void verifyPurchase(ClientPlayerEntity var1) {
-      Predicate var2 = this.purchaseItem == Items.field_8639 ? ElytraAutopilotModule::buyableRocket : XP;
-      int var3 = count(var1, var2) - this.purchaseBefore;
+   private void verifyPurchase(ClientPlayerEntity clientPlayerEntity) {
+      Predicate var2 = this.purchaseItem == Items.FIREWORK_ROCKET ? ElytraAutopilotModule::buyableRocket : XP;
+      int var3 = count(clientPlayerEntity, var2) - this.purchaseBefore;
       if (var3 > 0 || this.tick >= this.verifyUntil) {
          if (var3 > 0) {
-            this.say(ModuleChat.body().good("Bought " + var3 + (this.purchaseItem == Items.field_8639 ? " rockets" : " XP bottles")).text("."));
-            EasyPlace.LOG.info("[Elytra Autopilot] bought {} {} (verified), {} spent this trip", new Object[]{var3, this.purchaseItem, this.spent});
+            this.say(ModuleChat.body().good("Bought " + var3 + (this.purchaseItem == Items.FIREWORK_ROCKET ? " rockets" : " XP bottles")).text("."));
+            EasyPlace.LOG.info("[Elytra Autopilot] bought {} {} (verified), {} spent this trip", var3, this.purchaseItem, this.spent);
          } else {
             this.say(ModuleChat.body().warn("The AH sold it but nothing showed up").text(", trying again later."));
             this.nextBuy.put(this.purchaseItem, this.tick + 6000);
@@ -1276,9 +1312,9 @@ public final class ElytraAutopilotModule extends ClientModule {
       }
    }
 
-   private boolean canBuy(Item var1) {
-      boolean var2 = var1 == Items.field_8639 ? this.buyRockets.get() : this.buyXp.get();
-      if (var2 && this.tick >= this.nextBuy.getOrDefault(var1, 0) && this.buyFails.getOrDefault(var1, 0) < 6) {
+   private boolean canBuy(Item item) {
+      boolean var2 = item == Items.FIREWORK_ROCKET ? this.buyRockets.get() : this.buyXp.get();
+      if (var2 && this.tick >= this.nextBuy.getOrDefault(item, 0) && this.buyFails.getOrDefault(item, 0) < 6) {
          long var4 = AhPurchase.parseMoney(this.tripLimit.get());
          return var4 <= 0L || this.spent < var4;
       } else {
@@ -1286,14 +1322,14 @@ public final class ElytraAutopilotModule extends ClientModule {
       }
    }
 
-   private boolean danger(ClientPlayerEntity var1, ClientWorld var2) {
-      if (var1.field_6235 > 0 && var1.method_6032() < 14.0F) {
+   private boolean danger(ClientPlayerEntity clientPlayerEntity, ClientWorld clientWorld) {
+      if (clientPlayerEntity.hurtTime > 0 && clientPlayerEntity.getHealth() < 14.0F) {
          return true;
       } else {
-         Box var3 = var1.method_5829().method_1009(4.5, 2.0, 4.5);
+         Box var3 = clientPlayerEntity.getBoundingBox().expand(4.5, 2.0, 4.5);
 
-         for (LivingEntity var5 : var2.method_18467(LivingEntity.class, var3)) {
-            if (var5 instanceof Monster && var5.method_5805() && var1.method_6057(var5)) {
+         for (LivingEntity var5 : clientWorld.getNonSpectatingEntities(LivingEntity.class, var3)) {
+            if (var5 instanceof Monster && var5.isAlive() && clientPlayerEntity.canSee(var5)) {
                return true;
             }
          }
@@ -1302,41 +1338,43 @@ public final class ElytraAutopilotModule extends ClientModule {
       }
    }
 
-   private boolean rocketReady(ClientPlayerEntity var1) {
-      if (this.tick - this.lastRocket < 10 || this.tick < this.eatLockUntil || this.tick < this.rocketHoldUntil || var1.method_6115()) {
+   private boolean rocketReady(ClientPlayerEntity clientPlayerEntity) {
+      if (this.tick - this.lastRocket < 10 || this.tick < this.eatLockUntil || this.tick < this.rocketHoldUntil || clientPlayerEntity.isUsingItem()) {
          return false;
       } else {
-         return this.mc.field_1755 != null ? false : hotbarSlot(var1, ROCKET) >= 0 || ROCKET.test(var1.method_6079());
+         return this.mc.currentScreen != null ? false : hotbarSlot(clientPlayerEntity, ROCKET) >= 0 || ROCKET.test(clientPlayerEntity.getOffHandStack());
       }
    }
 
-   private void fire(ClientPlayerEntity var1) {
-      if (var1.method_6128()) {
-         Vec3d var3 = var1.method_33571();
+   private void fire(ClientPlayerEntity clientPlayerEntity) {
+      if (clientPlayerEntity.isGliding()) {
+         Vec3d var3 = clientPlayerEntity.getEyePos();
          BlockHitResult var4 = this.mc
-            .field_1687
-            .method_17742(
-               new RaycastContext(var3, var3.method_1019(var1.method_5720().method_1021(10.0)), ShapeType.field_17558, FluidHandling.field_1347, var1)
+            .world
+            .raycast(
+               new RaycastContext(
+                  var3, var3.add(clientPlayerEntity.getRotationVector().multiply(10.0)), ShapeType.COLLIDER, FluidHandling.ANY, clientPlayerEntity
+               )
             );
-         if (var4.method_17783() == Type.field_1333) {
+         if (var4.getType() == Type.MISS) {
             Hand var2;
-            if (ROCKET.test(var1.method_6047())) {
-               var2 = Hand.field_5808;
+            if (ROCKET.test(clientPlayerEntity.getMainHandStack())) {
+               var2 = Hand.MAIN_HAND;
             } else {
-               if (!ROCKET.test(var1.method_6079())) {
-                  int var5 = hotbarSlot(var1, ROCKET);
+               if (!ROCKET.test(clientPlayerEntity.getOffHandStack())) {
+                  int var5 = hotbarSlot(clientPlayerEntity, ROCKET);
                   if (var5 >= 0) {
-                     var1.method_31548().method_61496(var5);
+                     clientPlayerEntity.getInventory().setSelectedSlot(var5);
                   }
 
                   return;
                }
 
-               var2 = Hand.field_5810;
+               var2 = Hand.OFF_HAND;
             }
 
-            if (this.mc.field_1761.method_2919(var1, var2).method_23665()) {
-               var1.method_6104(var2);
+            if (this.mc.interactionManager.interactItem(clientPlayerEntity, var2).isAccepted()) {
+               clientPlayerEntity.swingHand(var2);
                this.lastRocket = this.tick;
                this.boostUntil = this.tick + 45;
                this.rocketsUsed++;
@@ -1353,66 +1391,66 @@ public final class ElytraAutopilotModule extends ClientModule {
       return Math.max(0, this.boostUntil - this.tick);
    }
 
-   private boolean rocketsAllowed(ClientPlayerEntity var1, ClientWorld var2, double var3) {
-      if (this.tick >= this.rocketHoldUntil && this.tick >= this.eatLockUntil && count(var1, ROCKET) != 0) {
-         Vec3d var5 = var1.method_18798();
-         Vec3d var6 = var5.method_37267() > 0.2 ? new Vec3d(var5.field_1352, 0.0, var5.field_1350).method_1029() : Vec3d.method_1030(0.0F, var1.method_36454());
-         Vec3d var7 = var1.method_73189().method_1019(var6.method_1021(110.0));
-         return var2.method_2935().method_12123(MathHelper.method_15357(var7.field_1352) >> 4, MathHelper.method_15357(var7.field_1350) >> 4)
-            || var1.method_23318() < var3 - 50.0;
+   private boolean rocketsAllowed(ClientPlayerEntity clientPlayerEntity, ClientWorld clientWorld, double d) {
+      if (this.tick >= this.rocketHoldUntil && this.tick >= this.eatLockUntil && count(clientPlayerEntity, ROCKET) != 0) {
+         Vec3d var5 = clientPlayerEntity.getVelocity();
+         Vec3d var6 = var5.horizontalLength() > 0.2 ? new Vec3d(var5.x, 0.0, var5.z).normalize() : Vec3d.fromPolar(0.0F, clientPlayerEntity.getYaw());
+         Vec3d var7 = clientPlayerEntity.getEntityPos().add(var6.multiply(110.0));
+         return clientWorld.getChunkManager().isChunkLoaded(MathHelper.floor(var7.x) >> 4, MathHelper.floor(var7.z) >> 4)
+            || clientPlayerEntity.getY() < d - 50.0;
       } else {
          return false;
       }
    }
 
-   private static double rocketCost(ClientPlayerEntity var0) {
-      int var1 = count(var0, ROCKET);
+   private static double rocketCost(ClientPlayerEntity clientPlayerEntity) {
+      int var1 = count(clientPlayerEntity, ROCKET);
       return var1 < 12 ? 140.0 : (var1 < 32 ? 95.0 : 70.0);
    }
 
-   private ElytraFlight.Terrain terrain(ClientWorld var1) {
-      return new ElytraFlight.Terrain(var1, (var1.method_27983() == World.field_25181 ? 185.0 : 262.0) - 14.0);
+   private ElytraFlight.Terrain terrain(ClientWorld clientWorld) {
+      return new ElytraFlight.Terrain(clientWorld, (clientWorld.getRegistryKey() == World.END ? 185.0 : 262.0) - 14.0);
    }
 
-   private static double floor(ClientWorld var0) {
-      return var0.method_27983() == World.field_25181 ? 35.0 : var0.method_31607();
+   private static double floor(ClientWorld clientWorld) {
+      return clientWorld.getRegistryKey() == World.END ? 35.0 : clientWorld.getBottomY();
    }
 
-   private static double surfaceAt(ClientWorld var0, double var1, double var3) {
-      int var5 = MathHelper.method_15357(var1);
-      int var6 = MathHelper.method_15357(var3);
-      if (!var0.method_2935().method_12123(var5 >> 4, var6 >> 4)) {
-         return var0.method_27983() == World.field_25181 ? 60.0 : 68.0;
+   private static double surfaceAt(ClientWorld clientWorld, double d, double e) {
+      int var5 = MathHelper.floor(d);
+      int var6 = MathHelper.floor(e);
+      if (!clientWorld.getChunkManager().isChunkLoaded(var5 >> 4, var6 >> 4)) {
+         return clientWorld.getRegistryKey() == World.END ? 60.0 : 68.0;
       } else {
-         return var0.method_8624(net.minecraft.world.Heightmap.Type.field_13197, var5, var6);
+         return clientWorld.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING, var5, var6);
       }
    }
 
-   private double cruiseAltitude(ClientWorld var1, double var2) {
-      double var4 = surfaceAt(var1, this.destX, this.destZ);
-      double var6 = var1.method_27983() == World.field_25181 ? 150.0 : 140.0;
-      double var8 = var4 + 14.0 + Math.max(0.0, var2 - 45.0) * 0.095 + 30.0;
+   private double cruiseAltitude(ClientWorld clientWorld, double d) {
+      double var4 = surfaceAt(clientWorld, this.destX, this.destZ);
+      double var6 = clientWorld.getRegistryKey() == World.END ? 150.0 : 140.0;
+      double var8 = var4 + 14.0 + Math.max(0.0, d - 45.0) * 0.095 + 30.0;
       return Math.max(var6, Math.min(this.altitude.get() + this.altitudeBump, var8));
    }
 
-   private double descentStart(ClientWorld var1, ClientPlayerEntity var2) {
-      double var3 = surfaceAt(var1, this.destX, this.destZ);
-      return 45.0 + Math.max(0.0, var2.method_23318() - var3 - 14.0) / 0.095 + 60.0;
+   private double descentStart(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity) {
+      double var3 = surfaceAt(clientWorld, this.destX, this.destZ);
+      return 45.0 + Math.max(0.0, clientPlayerEntity.getY() - var3 - 14.0) / 0.095 + 60.0;
    }
 
-   private double terrainAhead(ClientPlayerEntity var1, ElytraFlight.Terrain var2, double var3) {
-      float var5 = ElytraFlight.bearing(var1.method_23317(), var1.method_23321(), this.destX, this.destZ);
-      Vec3d var6 = Vec3d.method_1030(0.0F, var5);
-      Vec3d var7 = Vec3d.method_1030(0.0F, var5 + 90.0F);
-      double var8 = Math.min(320.0, var3 + 24.0);
+   private double terrainAhead(ClientPlayerEntity clientPlayerEntity, ElytraFlight.Terrain terrain, double d) {
+      float var5 = ElytraFlight.bearing(clientPlayerEntity.getX(), clientPlayerEntity.getZ(), this.destX, this.destZ);
+      Vec3d var6 = Vec3d.fromPolar(0.0F, var5);
+      Vec3d var7 = Vec3d.fromPolar(0.0F, var5 + 90.0F);
+      double var8 = Math.min(320.0, d + 24.0);
       double var10 = 0.0;
 
       for (double var12 = 0.0; var12 <= var8; var12 += 4.0) {
          for (byte var14 = -8; var14 <= 8; var14 += 8) {
-            double var15 = var1.method_23317() + var6.field_1352 * var12 + var7.field_1352 * var14;
-            double var17 = var1.method_23321() + var6.field_1350 * var12 + var7.field_1350 * var14;
-            if (var2.known(MathHelper.method_15357(var15), MathHelper.method_15357(var17)) || !(var12 > 200.0)) {
-               var10 = Math.max(var10, var2.surface(var15, var17));
+            double var15 = clientPlayerEntity.getX() + var6.x * var12 + var7.x * var14;
+            double var17 = clientPlayerEntity.getZ() + var6.z * var12 + var7.z * var14;
+            if (terrain.known(MathHelper.floor(var15), MathHelper.floor(var17)) || !(var12 > 200.0)) {
+               var10 = Math.max(var10, terrain.surface(var15, var17));
             }
          }
       }
@@ -1420,10 +1458,10 @@ public final class ElytraAutopilotModule extends ClientModule {
       return var10;
    }
 
-   private static boolean clearAround(ClientPlayerEntity var0, ElytraFlight.Terrain var1) {
+   private static boolean clearAround(ClientPlayerEntity clientPlayerEntity, ElytraFlight.Terrain terrain) {
       for (int var2 = -1; var2 <= 1; var2++) {
          for (int var3 = -1; var3 <= 1; var3++) {
-            if (var1.surface(var0.method_23317() + var2, var0.method_23321() + var3) > var0.method_23318()) {
+            if (terrain.surface(clientPlayerEntity.getX() + var2, clientPlayerEntity.getZ() + var3) > clientPlayerEntity.getY()) {
                return false;
             }
          }
@@ -1438,39 +1476,39 @@ public final class ElytraAutopilotModule extends ClientModule {
       this.glideJitter = (float)var1.nextDouble(-1.0, 1.0);
    }
 
-   private static boolean plainRocket(ItemStack var0) {
-      if (!var0.method_31574(Items.field_8639)) {
+   private static boolean plainRocket(ItemStack itemStack) {
+      if (!itemStack.isOf(Items.FIREWORK_ROCKET)) {
          return false;
       } else {
-         FireworksComponent var1 = (FireworksComponent)var0.method_58694(DataComponentTypes.field_49616);
-         return var1 == null || var1.comp_2392().isEmpty();
+         FireworksComponent var1 = itemStack.get(DataComponentTypes.FIREWORKS);
+         return var1 == null || var1.explosions().isEmpty();
       }
    }
 
-   private static boolean buyableRocket(ItemStack var0) {
-      FireworksComponent var1 = (FireworksComponent)var0.method_58694(DataComponentTypes.field_49616);
-      return plainRocket(var0) && var1 != null && var1.comp_2391() == 3;
+   private static boolean buyableRocket(ItemStack itemStack) {
+      FireworksComponent var1 = itemStack.get(DataComponentTypes.FIREWORKS);
+      return plainRocket(itemStack) && var1 != null && var1.flightDuration() == 3;
    }
 
-   private static ItemStack chest(ClientPlayerEntity var0) {
-      return var0.method_6118(EquipmentSlot.field_6174);
+   private static ItemStack chest(ClientPlayerEntity clientPlayerEntity) {
+      return clientPlayerEntity.getEquippedStack(EquipmentSlot.CHEST);
    }
 
-   private static int durability(ItemStack var0) {
-      return var0.method_31574(Items.field_8833) ? var0.method_7936() - var0.method_7919() : -1;
+   private static int durability(ItemStack itemStack) {
+      return itemStack.isOf(Items.ELYTRA) ? itemStack.getMaxDamage() - itemStack.getDamage() : -1;
    }
 
-   private static boolean usable(ItemStack var0) {
-      return durability(var0) > 1;
+   private static boolean usable(ItemStack itemStack) {
+      return durability(itemStack) > 1;
    }
 
-   private static boolean mends(ItemStack var0) {
-      return level(var0, Enchantments.field_9101) > 0;
+   private static boolean mends(ItemStack itemStack) {
+      return level(itemStack, Enchantments.MENDING) > 0;
    }
 
-   private static int level(ItemStack var0, RegistryKey<Enchantment> var1) {
-      for (Entry var3 : var0.method_58657().method_57539()) {
-         if (((RegistryEntry)var3.getKey()).method_40225(var1)) {
+   private static int level(ItemStack itemStack, RegistryKey<Enchantment> registryKey) {
+      for (Entry var3 : itemStack.getEnchantments().getEnchantmentEntries()) {
+         if (((RegistryEntry)var3.getKey()).matchesKey(registryKey)) {
             return var3.getIntValue();
          }
       }
@@ -1478,9 +1516,9 @@ public final class ElytraAutopilotModule extends ClientModule {
       return 0;
    }
 
-   private static int mendThreshold(ItemStack var0) {
-      int var1 = level(var0, Enchantments.field_9119);
-      int var2 = var0.method_7936();
+   private static int mendThreshold(ItemStack itemStack) {
+      int var1 = level(itemStack, Enchantments.UNBREAKING);
+      int var2 = itemStack.getMaxDamage();
       if (var1 >= 3) {
          return Math.max(50, (int)(var2 * 0.15));
       } else {
@@ -1488,19 +1526,19 @@ public final class ElytraAutopilotModule extends ClientModule {
       }
    }
 
-   private boolean canMend(ClientPlayerEntity var1) {
-      ItemStack var2 = chest(var1);
-      return this.mend.get() && mends(var2) && this.mendFailures < 3 && (count(var1, XP) > 0 || this.canBuy(Items.field_8287));
+   private boolean canMend(ClientPlayerEntity clientPlayerEntity) {
+      ItemStack var2 = chest(clientPlayerEntity);
+      return this.mend.get() && mends(var2) && this.mendFailures < 3 && (count(clientPlayerEntity, XP) > 0 || this.canBuy(Items.EXPERIENCE_BOTTLE));
    }
 
-   private static int spare(ClientPlayerEntity var0) {
-      int var1 = Math.max(0, durability(chest(var0)));
-      PlayerInventory var2 = var0.method_31548();
+   private static int spare(ClientPlayerEntity clientPlayerEntity) {
+      int var1 = Math.max(0, durability(chest(clientPlayerEntity)));
+      PlayerInventory var2 = clientPlayerEntity.getInventory();
       int var3 = -1;
       int var4 = var1 + 40;
 
       for (int var5 = 0; var5 < 36; var5++) {
-         int var6 = durability(var2.method_5438(var5));
+         int var6 = durability(var2.getStack(var5));
          if (var6 > var4) {
             var3 = var5;
             var4 = var6;
@@ -1510,27 +1548,27 @@ public final class ElytraAutopilotModule extends ClientModule {
       return var3;
    }
 
-   private static int count(ClientPlayerEntity var0, Predicate<ItemStack> var1) {
-      int var2 = var1.test(var0.method_6079()) ? var0.method_6079().method_7947() : 0;
-      PlayerInventory var3 = var0.method_31548();
+   private static int count(ClientPlayerEntity clientPlayerEntity, Predicate<ItemStack> predicate) {
+      int var2 = predicate.test(clientPlayerEntity.getOffHandStack()) ? clientPlayerEntity.getOffHandStack().getCount() : 0;
+      PlayerInventory var3 = clientPlayerEntity.getInventory();
 
       for (int var4 = 0; var4 < 36; var4++) {
-         ItemStack var5 = var3.method_5438(var4);
-         if (var1.test(var5)) {
-            var2 += var5.method_7947();
+         ItemStack var5 = var3.getStack(var4);
+         if (predicate.test(var5)) {
+            var2 += var5.getCount();
          }
       }
 
       return var2;
    }
 
-   private static int hotbarSlot(ClientPlayerEntity var0, Predicate<ItemStack> var1) {
-      PlayerInventory var2 = var0.method_31548();
-      if (var1.test(var2.method_5438(var2.method_67532()))) {
-         return var2.method_67532();
+   private static int hotbarSlot(ClientPlayerEntity clientPlayerEntity, Predicate<ItemStack> predicate) {
+      PlayerInventory var2 = clientPlayerEntity.getInventory();
+      if (predicate.test(var2.getStack(var2.getSelectedSlot()))) {
+         return var2.getSelectedSlot();
       } else {
          for (int var3 = 0; var3 < 9; var3++) {
-            if (var1.test(var2.method_5438(var3))) {
+            if (predicate.test(var2.getStack(var3))) {
                return var3;
             }
          }
@@ -1539,16 +1577,16 @@ public final class ElytraAutopilotModule extends ClientModule {
       }
    }
 
-   private static boolean inHotbar(ClientPlayerEntity var0, Predicate<ItemStack> var1) {
-      return hotbarSlot(var0, var1) >= 0 || var1.test(var0.method_6079());
+   private static boolean inHotbar(ClientPlayerEntity clientPlayerEntity, Predicate<ItemStack> predicate) {
+      return hotbarSlot(clientPlayerEntity, predicate) >= 0 || predicate.test(clientPlayerEntity.getOffHandStack());
    }
 
-   private static int freeSlots(ClientPlayerEntity var0) {
+   private static int freeSlots(ClientPlayerEntity clientPlayerEntity) {
       int var1 = 0;
-      PlayerInventory var2 = var0.method_31548();
+      PlayerInventory var2 = clientPlayerEntity.getInventory();
 
       for (int var3 = 0; var3 < 36; var3++) {
-         if (var2.method_5438(var3).method_7960()) {
+         if (var2.getStack(var3).isEmpty()) {
             var1++;
          }
       }
@@ -1556,18 +1594,18 @@ public final class ElytraAutopilotModule extends ClientModule {
       return var1;
    }
 
-   private void finish(boolean var1, String var2) {
-      ClientPlayerEntity var3 = this.mc.field_1724;
-      if (!var1 && var3 != null && var3.method_6128() && this.job != ElytraAutopilotModule.Job.STOP) {
+   private void finish(boolean bl, String string) {
+      ClientPlayerEntity var3 = this.mc.player;
+      if (!bl && var3 != null && var3.isGliding() && this.job != ElytraAutopilotModule.Job.STOP) {
          this.job = ElytraAutopilotModule.Job.STOP;
-         this.stopReason = var2;
+         this.stopReason = string;
          this.spot = null;
          this.spotSearches = 0;
-         this.say(ModuleChat.body().warn("Landing to stop").text(" (" + var2 + ")."));
+         this.say(ModuleChat.body().warn("Landing to stop").text(" (" + string + ")."));
          this.go(ElytraAutopilotModule.State.DESCEND);
       } else {
          long var4 = (System.currentTimeMillis() - this.startedAt) / 60000L;
-         String var6 = (var1 ? "Arrived" : "Stopped: " + var2)
+         String var6 = (bl ? "Arrived" : "Stopped: " + string)
             + " after "
             + Math.round(this.flown)
             + " blocks in "
@@ -1578,7 +1616,7 @@ public final class ElytraAutopilotModule extends ClientModule {
             + (this.pitStops > 0 ? ", " + this.pitStops + " pit stops" : "")
             + (this.spent > 0L ? ", $" + AhPurchase.money(this.spent) + " spent" : "")
             + ".";
-         if (var1) {
+         if (bl) {
             this.say(ModuleChat.body().good(var6));
          } else {
             this.say(ModuleChat.body().warn(var6));
@@ -1586,15 +1624,15 @@ public final class ElytraAutopilotModule extends ClientModule {
 
          EasyPlace.LOG.info("[Elytra Autopilot] {}", var6);
          this.requestDisable();
-         if (this.disconnect.get() && this.mc.method_1562() != null && !this.mc.method_47392()) {
+         if (this.disconnect.get() && this.mc.getNetworkHandler() != null && !this.mc.isConnectedToLocalServer()) {
             AutoReconnectModule.holdOff();
-            this.mc.method_1562().method_48296().method_10747(Text.method_43470("[Elytra Autopilot] " + var6));
+            this.mc.getNetworkHandler().getConnection().disconnect(Text.literal("[Elytra Autopilot] " + var6));
          }
       }
    }
 
-   private void showStatus(ClientPlayerEntity var1) {
-      double var2 = this.distance(var1);
+   private void showStatus(ClientPlayerEntity clientPlayerEntity) {
+      double var2 = this.distance(clientPlayerEntity);
       long var4 = Math.round(var2 / 27.0);
 
       String var6 = switch (this.state) {
@@ -1616,27 +1654,27 @@ public final class ElytraAutopilotModule extends ClientModule {
                   Math.round(var2),
                   var4 / 60L,
                   var4 % 60L,
-                  count(var1, ROCKET),
-                  Math.max(0, durability(chest(var1))),
+                  count(clientPlayerEntity, ROCKET),
+                  Math.max(0, durability(chest(clientPlayerEntity))),
                   var6
                )
             )
       );
    }
 
-   private double distance(ClientPlayerEntity var1) {
-      return Math.hypot(var1.method_23317() - this.destX, var1.method_23321() - this.destZ);
+   private double distance(ClientPlayerEntity clientPlayerEntity) {
+      return Math.hypot(clientPlayerEntity.getX() - this.destX, clientPlayerEntity.getZ() - this.destZ);
    }
 
-   private void say(ModuleChat.Body var1) {
-      ModuleChat.send(this, var1);
+   private void say(ModuleChat.Body body) {
+      ModuleChat.send(this, body);
    }
 
-   static double[] parseTarget(String var0) {
-      if (var0 == null) {
+   static double[] parseTarget(String string) {
+      if (string == null) {
          return null;
       } else {
-         String var2 = var0.toLowerCase(Locale.ROOT).replaceAll("[xyz]\\s*[:=]", " ").replaceAll("[,;/|()\\[\\]]", " ").trim();
+         String var2 = string.toLowerCase(Locale.ROOT).replaceAll("[xyz]\\s*[:=]", " ").replaceAll("[,;/|()\\[\\]]", " ").trim();
          if (var2.isEmpty()) {
             return null;
          } else {

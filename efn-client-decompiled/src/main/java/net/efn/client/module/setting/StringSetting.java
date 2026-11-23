@@ -16,13 +16,13 @@ public final class StringSetting extends Setting {
    private StringSetting enchantItem;
    private StringSetting enchantSetting;
 
-   public StringSetting(String var1, String var2) {
-      super(var1);
-      this.imString = new ImString(var2, 512);
+   public StringSetting(String string, String string2) {
+      super(string);
+      this.imString = new ImString(string2, 512);
    }
 
-   public StringSetting hint(String var1) {
-      this.hint = var1;
+   public StringSetting hint(String string) {
+      this.hint = string;
       return this;
    }
 
@@ -39,8 +39,8 @@ public final class StringSetting extends Setting {
       return this.itemPicker;
    }
 
-   public StringSetting presets(List<StringSetting.Preset> var1) {
-      this.presets = List.copyOf(var1);
+   public StringSetting presets(List<StringSetting.Preset> list) {
+      this.presets = List.copyOf(list);
       return this;
    }
 
@@ -48,9 +48,9 @@ public final class StringSetting extends Setting {
       return this.presets;
    }
 
-   public StringSetting enchantsFor(StringSetting var1) {
-      this.enchantItem = var1;
-      var1.enchantSetting = this;
+   public StringSetting enchantsFor(StringSetting stringSetting) {
+      this.enchantItem = stringSetting;
+      stringSetting.enchantSetting = this;
       return this;
    }
 
@@ -66,9 +66,9 @@ public final class StringSetting extends Setting {
       return this.imString.get();
    }
 
-   public void set(String var1) {
-      if (!this.imString.get().equals(var1)) {
-         this.imString.set(var1);
+   public void set(String string) {
+      if (!this.imString.get().equals(string)) {
+         this.imString.set(string);
          this.notifyChanged();
       }
    }
@@ -87,10 +87,10 @@ public final class StringSetting extends Setting {
    }
 
    @Override
-   protected void deserializeValue(JsonElement var1) {
-      if (var1 != null && var1.isJsonPrimitive()) {
+   protected void deserializeValue(JsonElement jsonElement) {
+      if (jsonElement != null && jsonElement.isJsonPrimitive()) {
          try {
-            this.imString.set(var1.getAsString());
+            this.imString.set(jsonElement.getAsString());
          } catch (RuntimeException var3) {
          }
       }

@@ -22,24 +22,24 @@ public abstract class MixinMovementCorrectionKeyboardInput {
    }
 
    @Inject(
-      method = {"method_3129"},
+      method = {"tick"},
       at = {@At("TAIL")}
    )
-   private void efn$shapeInput(CallbackInfo var1) {
+   private void efn$shapeInput(CallbackInfo callbackInfo) {
       Input var2 = (Input)this;
-      ClientPlayerEntity var3 = MinecraftClient.method_1551().field_1724;
-      if (var3 != null && var3.field_3913 == var2) {
-         PlayerInput var4 = var2.field_54155;
+      ClientPlayerEntity var3 = MinecraftClient.getInstance().player;
+      if (var3 != null && var3.input == var2) {
+         PlayerInput var4 = var2.playerInput;
          PlayerInput var5 = InputControl.shape(var3, ServerRotation.correctInput(var4));
          if (var5 != var4) {
-            var2.field_54155 = var5;
+            var2.playerInput = var5;
             ((AccessorMovementClientInput)var2)
-               .efn$setMoveVector(new Vec2f(impulse(var5.comp_3161(), var5.comp_3162()), impulse(var5.comp_3159(), var5.comp_3160())).method_35581());
+               .efn$setMoveVector(new Vec2f(impulse(var5.left(), var5.right()), impulse(var5.forward(), var5.backward())).normalize());
          }
       }
    }
 
-   private static float impulse(boolean var0, boolean var1) {
-      return var0 == var1 ? 0.0F : (var0 ? 1.0F : -1.0F);
+   private static float impulse(boolean bl, boolean bl2) {
+      return bl == bl2 ? 0.0F : (bl ? 1.0F : -1.0F);
    }
 }

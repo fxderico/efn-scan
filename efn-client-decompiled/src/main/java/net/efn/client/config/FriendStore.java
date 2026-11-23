@@ -42,13 +42,13 @@ public final class FriendStore {
       return INSTANCE;
    }
 
-   public static boolean isValidName(String var0) {
-      return var0 != null && VALID_NAME.matcher(var0).matches();
+   public static boolean isValidName(String string) {
+      return string != null && VALID_NAME.matcher(string).matches();
    }
 
-   public synchronized boolean isFriend(String var1) {
+   public synchronized boolean isFriend(String string) {
       this.ensureLoaded();
-      return var1 != null && this.friends.containsKey(var1.toLowerCase(Locale.ROOT));
+      return string != null && this.friends.containsKey(string.toLowerCase(Locale.ROOT));
    }
 
    public synchronized List<String> all() {
@@ -56,9 +56,9 @@ public final class FriendStore {
       return List.copyOf(this.friends.values());
    }
 
-   public synchronized boolean add(String var1) {
+   public synchronized boolean add(String string) {
       this.ensureLoaded();
-      String var2 = var1 == null ? "" : var1.trim();
+      String var2 = string == null ? "" : string.trim();
       if (!isValidName(var2)) {
          return false;
       } else if (this.friends.putIfAbsent(var2.toLowerCase(Locale.ROOT), var2) != null) {
@@ -69,9 +69,9 @@ public final class FriendStore {
       }
    }
 
-   public synchronized boolean remove(String var1) {
+   public synchronized boolean remove(String string) {
       this.ensureLoaded();
-      if (var1 != null && this.friends.remove(var1.toLowerCase(Locale.ROOT)) != null) {
+      if (string != null && this.friends.remove(string.toLowerCase(Locale.ROOT)) != null) {
          this.save();
          return true;
       } else {
@@ -79,11 +79,11 @@ public final class FriendStore {
       }
    }
 
-   public synchronized void replaceAll(Collection<String> var1) {
+   public synchronized void replaceAll(Collection<String> collection) {
       this.ensureLoaded();
       this.friends.clear();
 
-      for (String var3 : var1) {
+      for (String var3 : collection) {
          String var4 = var3 == null ? "" : var3.trim();
          if (isValidName(var4)) {
             this.friends.putIfAbsent(var4.toLowerCase(Locale.ROOT), var4);
@@ -121,7 +121,7 @@ public final class FriendStore {
                   }
                }
             } catch (RuntimeException | IOException var11) {
-               LOGGER.warn("[EFN] Failed to load friend list; preserving the file", var11);
+               LOGGER.warn("[EFN] Failed to load friend list; preserving the file", (Throwable)var11);
                this.friends.clear();
                this.readOnly = true;
             }
@@ -147,7 +147,7 @@ public final class FriendStore {
             Path var13 = var12.resolveSibling(var12.getFileName().toString() + ".tmp");
 
             try (BufferedWriter var5 = Files.newBufferedWriter(var13)) {
-               GSON.toJson(var1, var5);
+               GSON.toJson((JsonElement)var1, var5);
             }
 
             try {
@@ -156,7 +156,7 @@ public final class FriendStore {
                Files.move(var13, var12, StandardCopyOption.REPLACE_EXISTING);
             }
          } catch (IOException var11) {
-            LOGGER.warn("[EFN] Failed to save friend list", var11);
+            LOGGER.warn("[EFN] Failed to save friend list", (Throwable)var11);
          }
       }
    }

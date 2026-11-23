@@ -19,19 +19,19 @@ public abstract class MixinPinkWaterBiome {
    }
 
    @ModifyReturnValue(
-      method = {"method_8687"},
+      method = {"getWaterColor"},
       at = {@At("RETURN")}
    )
-   private int efn$pinkWater(int var1) {
+   private int efn$pinkWater(int i) {
       if (!PinkWater.shows()) {
-         return var1;
+         return i;
       } else {
          byte var2 = this.efn$cave;
          if (var2 == 0 && (var2 = PinkWater.caveBiome((Biome)this)) != 0) {
             this.efn$cave = var2;
          }
 
-         return PinkWater.water(var1, var2 == 2);
+         return PinkWater.water(i, var2 == 2);
       }
    }
 }

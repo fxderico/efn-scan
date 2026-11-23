@@ -10,29 +10,29 @@ public final class InventoryManager {
    private final MinecraftClient mc;
    private final ServerRangeInventorySource serverRange;
 
-   public InventoryManager(MinecraftClient var1) {
-      this.mc = var1;
-      this.serverRange = new ServerRangeInventorySource(var1);
+   public InventoryManager(MinecraftClient minecraftClient) {
+      this.mc = minecraftClient;
+      this.serverRange = new ServerRangeInventorySource(minecraftClient);
    }
 
-   public InventoryPickResult prepare(InventoryPickSourceMode var1, Item var2, long var3, boolean var5) {
-      return switch (var1) {
-         case SERVER_RANGE -> this.serverRange.prepare(var2, var3, var5);
-         case HOTBAR_ONLY -> this.hotbarOnly(var2);
+   public InventoryPickResult prepare(InventoryPickSourceMode inventoryPickSourceMode, Item item, long l, boolean bl) {
+      return switch (inventoryPickSourceMode) {
+         case SERVER_RANGE -> this.serverRange.prepare(item, l, bl);
+         case HOTBAR_ONLY -> this.hotbarOnly(item);
       };
    }
 
-   private InventoryPickResult hotbarOnly(Item var1) {
-      if (this.mc.field_1724 == null) {
-         return InventoryPickResult.missing(var1);
+   private InventoryPickResult hotbarOnly(Item item) {
+      if (this.mc.player == null) {
+         return InventoryPickResult.missing(item);
       } else {
          for (int var2 = 0; var2 < 9; var2++) {
-            if (this.mc.field_1724.method_31548().method_5438(var2).method_7909() == var1) {
-               return InventoryPickResult.ready(var1, null, var2);
+            if (this.mc.player.getInventory().getStack(var2).getItem() == item) {
+               return InventoryPickResult.ready(item, null, var2);
             }
          }
 
-         return InventoryPickResult.missing(var1);
+         return InventoryPickResult.missing(item);
       }
    }
 

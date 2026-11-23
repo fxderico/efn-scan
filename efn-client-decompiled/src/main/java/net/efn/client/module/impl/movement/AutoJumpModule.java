@@ -27,26 +27,26 @@ public final class AutoJumpModule extends ClientModule {
       this.on(TickEvent.TYPE, Stage.PRE, this::onPreTick);
    }
 
-   private void onPreTick(TickEvent var1) {
-      ClientPlayerEntity var2 = MinecraftClient.method_1551().field_1724;
+   private void onPreTick(TickEvent tickEvent) {
+      ClientPlayerEntity var2 = MinecraftClient.getInstance().player;
       if (var2 != null) {
-         if (var2.method_24828() && !var2.method_5715() && this.shouldJump(var2)) {
+         if (var2.isOnGround() && !var2.isSneaking() && this.shouldJump(var2)) {
             if (this.mode.is("Jump")) {
-               var2.method_6043();
+               var2.jump();
             } else {
-               Vec3d var3 = var2.method_18798();
-               var2.method_18800(var3.field_1352, this.velocityHeight.get(), var3.field_1350);
+               Vec3d var3 = var2.getVelocity();
+               var2.setVelocity(var3.x, this.velocityHeight.get(), var3.z);
             }
          }
       }
    }
 
-   private boolean shouldJump(ClientPlayerEntity var1) {
-      boolean var2 = var1.field_6250 != 0.0F || var1.field_6212 != 0.0F;
+   private boolean shouldJump(ClientPlayerEntity clientPlayerEntity) {
+      boolean var2 = clientPlayerEntity.forwardSpeed != 0.0F || clientPlayerEntity.sidewaysSpeed != 0.0F;
       String var3 = this.jumpIf.get();
 
       return switch (var3) {
-         case "Sprinting" -> var1.method_5624() && var2;
+         case "Sprinting" -> clientPlayerEntity.isSprinting() && var2;
          case "Walking" -> var2;
          default -> true;
       };

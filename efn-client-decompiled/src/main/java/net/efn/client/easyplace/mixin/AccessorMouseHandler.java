@@ -9,9 +9,9 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Environment(EnvType.CLIENT)
 @Mixin({Mouse.class})
 public interface AccessorMouseHandler {
-   @Accessor("field_1789")
-   void easyplace$setAccumulatedDX(double var1);
+   @Accessor("cursorDeltaX")
+   void easyplace$setAccumulatedDX(double d);
 
-   @Accessor("field_1787")
-   void easyplace$setAccumulatedDY(double var1);
+   @Accessor("cursorDeltaY")
+   void easyplace$setAccumulatedDY(double d);
 }

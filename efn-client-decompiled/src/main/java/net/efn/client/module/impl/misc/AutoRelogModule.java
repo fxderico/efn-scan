@@ -40,7 +40,7 @@ public final class AutoRelogModule extends ClientModule {
    @Override
    protected void onEnable() {
       this.forget();
-      this.on(TickEvent.TYPE, var1 -> this.onTick());
+      this.on(TickEvent.TYPE, tickEvent -> this.onTick());
    }
 
    @Override
@@ -57,13 +57,13 @@ public final class AutoRelogModule extends ClientModule {
    }
 
    private void onTick() {
-      MinecraftClient var2 = MinecraftClient.method_1551();
+      MinecraftClient var2 = MinecraftClient.getInstance();
       if (this.rejoin != null) {
          this.waitToRejoin(var2);
       } else {
-         ClientPlayerEntity var3 = var2.field_1724;
-         ClientWorld var4 = var2.field_1687;
-         if (var3 != null && var4 != null && !(var2.field_1755 instanceof LevelLoadingScreen)) {
+         ClientPlayerEntity var3 = var2.player;
+         ClientWorld var4 = var2.world;
+         if (var3 != null && var4 != null && !(var2.currentScreen instanceof LevelLoadingScreen)) {
             if (var4 != this.seenLevel || var3 != this.seenPlayer) {
                this.seenLevel = var4;
                this.seenPlayer = var3;
@@ -73,7 +73,7 @@ public final class AutoRelogModule extends ClientModule {
             if (!LevelUtil.isOverworld(var4)) {
                this.aboveTicks = 0;
             } else {
-               double var5 = var3.method_23318();
+               double var5 = var3.getY();
                float var1;
                if (var5 >= (var1 = this.yLevel.get()) + 4.0F) {
                   if (this.aboveTicks < 40) {
@@ -93,32 +93,32 @@ public final class AutoRelogModule extends ClientModule {
       }
    }
 
-   private void relog(MinecraftClient var1, double var2) {
-      ServerInfo var4 = var1.method_1542() ? null : var1.method_1558();
-      if (var4 != null && !var4.method_52811()) {
-         LOGGER.info("[EFN] Auto Relog: reached Y {}, relogging", (int)Math.floor(var2));
+   private void relog(MinecraftClient minecraftClient, double d) {
+      ServerInfo var4 = minecraftClient.isInSingleplayer() ? null : minecraftClient.getCurrentServerEntry();
+      if (var4 != null && !var4.isRealm()) {
+         LOGGER.info("[EFN] Auto Relog: reached Y {}, relogging", (int)Math.floor(d));
          this.rejoin = var4;
          this.disconnected = false;
          this.rejoinTicks = Math.round(this.delay.get() * 20.0F);
-         var1.method_63588(() -> {
-            if (this.rejoin == var4 && var1.field_1687 != null) {
-               var1.method_73360(ClientWorld.field_61021);
+         minecraftClient.send(() -> {
+            if (this.rejoin == var4 && minecraftClient.world != null) {
+               minecraftClient.disconnect(ClientWorld.QUITTING_MULTIPLAYER_TEXT);
                this.disconnected = true;
             }
          });
       }
    }
 
-   private void waitToRejoin(MinecraftClient var1) {
+   private void waitToRejoin(MinecraftClient minecraftClient) {
       if (this.disconnected) {
-         if (var1.field_1687 == null && var1.field_1755 instanceof MultiplayerScreen) {
+         if (minecraftClient.world == null && minecraftClient.currentScreen instanceof MultiplayerScreen) {
             if (--this.rejoinTicks <= 0) {
                ServerInfo var2 = this.rejoin;
-               Screen var3 = var1.field_1755;
+               Screen var3 = minecraftClient.currentScreen;
                this.rejoin = null;
-               var1.method_63588(() -> {
-                  if (var1.field_1755 == var3 && var1.field_1687 == null) {
-                     ConnectScreen.method_36877(var3, var1, ServerAddress.method_2950(var2.field_3761), var2, false, null);
+               minecraftClient.send(() -> {
+                  if (minecraftClient.currentScreen == var3 && minecraftClient.world == null) {
+                     ConnectScreen.connect(var3, minecraftClient, ServerAddress.parse(var2.address), var2, false, null);
                   }
                });
             }

@@ -17,15 +17,15 @@ public abstract class MixinMotionBlurGameRenderer {
    }
 
    @Inject(
-      method = {"method_3192"},
+      method = {"render"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_758;method_71108()V"
+         target = "Lnet/minecraft/client/render/fog/FogRenderer;rotate()V"
       )}
    )
-   private void efn$motionBlur(RenderTickCounter var1, boolean var2, CallbackInfo var3) {
+   private void efn$motionBlur(RenderTickCounter renderTickCounter, boolean bl, CallbackInfo callbackInfo) {
       if (MotionBlurModule.active != null) {
-         MotionBlurModule.afterWorld(var2);
+         MotionBlurModule.afterWorld(bl);
       }
    }
 }

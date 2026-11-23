@@ -71,9 +71,9 @@ public final class AutoSellModule extends ClientModule {
 
    @Override
    protected void onDisable() {
-      ClientPlayerEntity var1 = MinecraftClient.method_1551().field_1724;
+      ClientPlayerEntity var1 = MinecraftClient.getInstance().player;
       if (var1 != null && this.ours(var1)) {
-         var1.method_7346();
+         var1.closeHandledScreen();
       }
 
       this.menuId = -1;
@@ -83,14 +83,16 @@ public final class AutoSellModule extends ClientModule {
    }
 
    @EventHandler
-   public void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientPlayerEntity var3 = var2.field_1724;
-      if (var3 != null && var2.method_1562() != null && var2.field_1761 != null && !var3.method_29504()) {
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientPlayerEntity var3 = var2.player;
+      if (var3 != null && var2.getNetworkHandler() != null && var2.interactionManager != null && !var3.isDead()) {
          long var4 = System.currentTimeMillis();
          if (this.menuId < 0 && this.openingUntil > 0L) {
-            if (var3.field_7512 != var3.field_7498 && var2.field_1755 instanceof HandledScreen && containerSlots(var3.field_7512) > 53) {
-               this.menuId = var3.field_7512.field_7763;
+            if (var3.currentScreenHandler != var3.playerScreenHandler
+               && var2.currentScreen instanceof HandledScreen
+               && containerSlots(var3.currentScreenHandler) > 53) {
+               this.menuId = var3.currentScreenHandler.syncId;
                this.openingUntil = 0L;
                this.nextPollAt = var4 + 150L;
                this.warnedNoOpen = false;
@@ -104,14 +106,14 @@ public final class AutoSellModule extends ClientModule {
             }
          } else if (!this.ours(var3)) {
             this.menuId = -1;
-            if (var2.field_1755 == null && var4 - this.lastCommandAt >= 4000L) {
-               var3.field_3944.method_45730("sell");
+            if (var2.currentScreen == null && var4 - this.lastCommandAt >= 4000L) {
+               var3.networkHandler.sendChatCommand("sell");
                this.lastCommandAt = var4;
                this.openingUntil = var4 + 10000L;
             }
          } else if (var4 >= this.nextPollAt) {
             this.nextPollAt = var4 + 350L;
-            ScreenHandler var6 = var3.field_7512;
+            ScreenHandler var6 = var3.currentScreenHandler;
             if (this.confirmedCount > 0) {
                int var7 = this.confirmedCount - countWaiting(var6);
                this.confirmedCount = 0;
@@ -125,7 +127,7 @@ public final class AutoSellModule extends ClientModule {
                this.confirmPending = false;
                if (waiting(var6) && var4 - this.lastConfirmAt >= 900L && this.sameAfterConfirm < 3) {
                   int var11 = countWaiting(var6);
-                  var2.field_1761.method_2906(var6.field_7763, 53, 0, SlotActionType.field_7790, var3);
+                  var2.interactionManager.clickSlot(var6.syncId, 53, 0, SlotActionType.PICKUP, var3);
                   this.lastConfirmAt = var4;
                   this.lastFingerprint = fingerprint(var6);
                   this.confirmedCount = var11;
@@ -134,12 +136,12 @@ public final class AutoSellModule extends ClientModule {
             } else {
                int var10 = 0;
 
-               for (Slot var9 : var6.field_7761) {
-                  if (var9.field_7871 instanceof PlayerInventory
-                     && var9.method_7681()
-                     && var9.method_34266() < 36
-                     && !SellRoutine.neverSell(var9.method_7677(), this.neverSell.get())) {
-                     var2.field_1761.method_2906(var6.field_7763, var9.field_7874, 0, SlotActionType.field_7794, var3);
+               for (Slot var9 : var6.slots) {
+                  if (var9.inventory instanceof PlayerInventory
+                     && var9.hasStack()
+                     && var9.getIndex() < 36
+                     && !SellRoutine.neverSell(var9.getStack(), this.neverSell.get())) {
+                     var2.interactionManager.clickSlot(var6.syncId, var9.id, 0, SlotActionType.QUICK_MOVE, var3);
                      var10++;
                   }
                }
@@ -162,31 +164,33 @@ public final class AutoSellModule extends ClientModule {
       }
    }
 
-   private boolean ours(ClientPlayerEntity var1) {
-      return this.menuId >= 0 && var1.field_7512 != var1.field_7498 && var1.field_7512.field_7763 == this.menuId;
+   private boolean ours(ClientPlayerEntity clientPlayerEntity) {
+      return this.menuId >= 0
+         && clientPlayerEntity.currentScreenHandler != clientPlayerEntity.playerScreenHandler
+         && clientPlayerEntity.currentScreenHandler.syncId == this.menuId;
    }
 
-   private static boolean waiting(ScreenHandler var0) {
-      return countWaiting(var0) > 0;
+   private static boolean waiting(ScreenHandler screenHandler) {
+      return countWaiting(screenHandler) > 0;
    }
 
-   private static int countWaiting(ScreenHandler var0) {
+   private static int countWaiting(ScreenHandler screenHandler) {
       int var1 = 0;
 
-      for (Slot var3 : var0.field_7761) {
-         if (!(var3.field_7871 instanceof PlayerInventory) && var3.field_7874 != 53 && var3.method_7681()) {
-            var1 += var3.method_7677().method_7947();
+      for (Slot var3 : screenHandler.slots) {
+         if (!(var3.inventory instanceof PlayerInventory) && var3.id != 53 && var3.hasStack()) {
+            var1 += var3.getStack().getCount();
          }
       }
 
       return var1;
    }
 
-   private static int containerSlots(ScreenHandler var0) {
+   private static int containerSlots(ScreenHandler screenHandler) {
       int var1 = 0;
 
-      for (Slot var3 : var0.field_7761) {
-         if (!(var3.field_7871 instanceof PlayerInventory)) {
+      for (Slot var3 : screenHandler.slots) {
+         if (!(var3.inventory instanceof PlayerInventory)) {
             var1++;
          }
       }
@@ -194,17 +198,17 @@ public final class AutoSellModule extends ClientModule {
       return var1;
    }
 
-   private static String fingerprint(ScreenHandler var0) {
+   private static String fingerprint(ScreenHandler screenHandler) {
       StringBuilder var1 = new StringBuilder();
 
-      for (Slot var3 : var0.field_7761) {
-         if (var3.field_7871 instanceof PlayerInventory) {
+      for (Slot var3 : screenHandler.slots) {
+         if (var3.inventory instanceof PlayerInventory) {
             break;
          }
 
-         ItemStack var4 = var3.method_7677();
-         if (!var4.method_7960()) {
-            var1.append(var3.field_7874).append(':').append(var4.method_7909()).append('x').append(var4.method_7947()).append(';');
+         ItemStack var4 = var3.getStack();
+         if (!var4.isEmpty()) {
+            var1.append(var3.id).append(':').append(var4.getItem()).append('x').append(var4.getCount()).append(';');
          }
       }
 

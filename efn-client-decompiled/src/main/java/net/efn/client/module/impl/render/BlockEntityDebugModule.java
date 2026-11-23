@@ -54,22 +54,22 @@ public final class BlockEntityDebugModule extends ClientModule {
    private final BooleanSetting sShowNbt = this.addSetting("show-nbt", new BooleanSetting("Show NBT", true));
    private final BooleanSetting sHints = this.addSetting("hidden-hints", new BooleanSetting("Hidden Block Hints", true));
    private final BooleanSetting sLightLeaks = this.addSetting("light-leaks", new BooleanSetting("Light Leaks", true));
-   private final EspStyle style = new EspStyle((var1, var2) -> (S)this.addSetting(var1, var2), "Boxes", 0.8F, 256.0F);
+   private final EspStyle style = new EspStyle((string, setting) -> (S)this.addSetting(string, setting), "Boxes", 0.8F, 256.0F);
    private final BooleanSetting sTracers = this.addSetting("tracers", new BooleanSetting("Tracers", true));
    private final BooleanSetting sCustomTracerColor = this.addSetting("custom-tracer-color", new BooleanSetting("Custom Tracer Color", false));
    private final ColorSetting sTracerColor = this.addSetting("tracer-color", new ColorSetting("Tracer Color", -1));
    private final BlockColorListSetting sBlockColors = this.addSetting(BlockColorListSetting.createForBlockEntityDebug());
    private final BlockLayer layer = new BlockLayer(new BlockLayer.Palette() {
       @Override
-      public int color(Object var1) {
-         return BlockEntityDebugModule.this.sBlockColors.colorArgb((Block)var1);
+      public int color(Object object) {
+         return BlockEntityDebugModule.this.sBlockColors.colorArgb((Block)object);
       }
 
       @Override
-      public int tracerColor(Object var1) {
-         return BlockEntityDebugModule.this.tracerColorOf((Block)var1);
+      public int tracerColor(Object object) {
+         return BlockEntityDebugModule.this.tracerColorOf((Block)object);
       }
-   }, () -> MinecraftClient.method_1551().field_1687 == null ? null : MinecraftClient.method_1551().field_1687.method_27983());
+   }, () -> MinecraftClient.getInstance().world == null ? null : MinecraftClient.getInstance().world.getRegistryKey());
    private final LongOpenHashSet spawners = new LongOpenHashSet();
    private final LightLeakScanner lightScanner = new LightLeakScanner();
    private int ticks;
@@ -101,7 +101,7 @@ public final class BlockEntityDebugModule extends ClientModule {
    }
 
    @Override
-   public void migrateSettings(int var1) {
+   public void migrateSettings(int i) {
       this.style.shape.set("Boxes");
       this.style.boxSize.set(1.0F);
       this.style.fillAlpha.set(0.8F);
@@ -116,8 +116,8 @@ public final class BlockEntityDebugModule extends ClientModule {
       }
    }
 
-   private int tracerColorOf(Block var1) {
-      int var2 = this.sBlockColors.isEnabled(var1) ? this.sBlockColors.tracerColorArgb(var1) : this.sBlockColors.colorArgb(var1);
+   private int tracerColorOf(Block block) {
+      int var2 = this.sBlockColors.isEnabled(block) ? this.sBlockColors.tracerColorArgb(block) : this.sBlockColors.colorArgb(block);
       if (var2 == 0) {
          return 0;
       } else {
@@ -148,9 +148,9 @@ public final class BlockEntityDebugModule extends ClientModule {
 
    private void restartLightScan() {
       this.lightScanner.clear();
-      MinecraftClient var1 = MinecraftClient.method_1551();
-      if (this.isEnabled() && this.lightLeaksOn() && var1.field_1687 != null && var1.field_1724 != null) {
-         this.lightScanner.queueLoaded(var1.field_1687, var1.field_1724.method_24515(), var1.field_1690.method_38521());
+      MinecraftClient var1 = MinecraftClient.getInstance();
+      if (this.isEnabled() && this.lightLeaksOn() && var1.world != null && var1.player != null) {
+         this.lightScanner.queueLoaded(var1.world, var1.player.getBlockPos(), var1.options.getClampedViewDistance());
       }
    }
 
@@ -175,17 +175,17 @@ public final class BlockEntityDebugModule extends ClientModule {
    }
 
    @EventHandler
-   public void onPacketApplied(PacketAppliedEvent var1) {
+   public void onPacketApplied(PacketAppliedEvent packetAppliedEvent) {
       if (this.lightLeaksOn()) {
-         this.lightScanner.onPacketApplied(var1.packet);
+         this.lightScanner.onPacketApplied(packetAppliedEvent.packet);
       }
    }
 
    @EventHandler
-   public void onTick(TickEvent var1) {
-      MinecraftClient var3 = MinecraftClient.method_1551();
-      if (this.lightLeaksOn() && var3.field_1687 != null) {
-         this.lightScanner.tick(var3.field_1687);
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var3 = MinecraftClient.getInstance();
+      if (this.lightLeaksOn() && var3.world != null) {
+         this.lightScanner.tick(var3.world);
       }
 
       if (++this.ticks % 1200 == 0) {
@@ -234,17 +234,17 @@ public final class BlockEntityDebugModule extends ClientModule {
       }
    }
 
-   private boolean accept(BlockPos var1, BlockEntityLeakTracker.Entry var2) {
-      if (var2.real() || this.sHints.get() && (var2.source() != BlockEntityLeakTracker.Source.LIGHT || this.sLightLeaks.get())) {
-         Block var3 = var2.block();
-         if (!this.passesDetection(var1)) {
+   private boolean accept(BlockPos blockPos, BlockEntityLeakTracker.Entry entry) {
+      if (entry.real() || this.sHints.get() && (entry.source() != BlockEntityLeakTracker.Source.LIGHT || this.sLightLeaks.get())) {
+         Block var3 = entry.block();
+         if (!this.passesDetection(blockPos)) {
             return false;
-         } else if (this.sBlockFilter.get() && var3 != Blocks.field_10124 && !this.sBlockColors.isEnabled(var3)) {
+         } else if (this.sBlockFilter.get() && var3 != Blocks.AIR && !this.sBlockColors.isEnabled(var3)) {
             return false;
          } else {
-            this.layer.put(var1.method_10063(), var3);
-            if (var3 == Blocks.field_10260) {
-               this.spawners.add(var1.method_10063());
+            this.layer.put(blockPos.asLong(), var3);
+            if (var3 == Blocks.SPAWNER) {
+               this.spawners.add(blockPos.asLong());
             }
 
             return true;
@@ -254,89 +254,84 @@ public final class BlockEntityDebugModule extends ClientModule {
       }
    }
 
-   private void announce(BlockPos var1, BlockEntityLeakTracker.Entry var2) {
-      NbtCompound var4 = var2.tag();
-      ModuleChat.Body var5 = ModuleChat.body().name(var2.block() == Blocks.field_10124 ? "Hidden block" : var2.block().method_9518().getString());
-      if (!var2.real()) {
-         var5.text(" (from " + var2.source().name().toLowerCase() + ")");
+   private void announce(BlockPos blockPos, BlockEntityLeakTracker.Entry entry) {
+      NbtCompound var4 = entry.tag();
+      ModuleChat.Body var5 = ModuleChat.body().name(entry.block() == Blocks.AIR ? "Hidden block" : entry.block().getName().getString());
+      if (!entry.real()) {
+         var5.text(" (from " + entry.source().name().toLowerCase() + ")");
       }
 
       String var3 = var4 == null
          ? null
-         : var4.method_10562("SpawnData").flatMap(var0 -> var0.method_10562("entity")).flatMap(var0 -> var0.method_10558("id")).orElse(null);
+         : var4.getCompound("SpawnData")
+            .flatMap(nbtCompound -> nbtCompound.getCompound("entity"))
+            .flatMap(nbtCompound -> nbtCompound.getString("id"))
+            .orElse(null);
       if (var3 != null) {
          var5.text(" (").value(var3.replace("minecraft:", "")).text(")");
       }
 
-      var5.text(" at ").coords(var1.method_10263(), var1.method_10264(), var1.method_10260());
+      var5.text(" at ").coords(blockPos.getX(), blockPos.getY(), blockPos.getZ());
       if (this.sShowNbt.get() && var4 != null) {
          String var7 = var4.toString();
          if (var7.length() > 200) {
             var7 = var7.substring(0, 200) + "...";
          }
 
-         Text var8 = NbtHelper.method_32270(var4);
-         var5.append(Text.method_43470(" " + var7).method_27694(var1x -> var1x.method_10949(new ShowText(var8))));
+         Text var8 = NbtHelper.toPrettyPrintedText(var4);
+         var5.append(Text.literal(" " + var7).styled(style -> style.withHoverEvent(new ShowText(var8))));
       }
 
       ModuleChat.send(this, var5);
    }
 
-   private boolean passesDetection(BlockPos var1) {
+   private boolean passesDetection(BlockPos blockPos) {
       String var2 = this.sDetection.get();
 
       return switch (var2) {
-         case "Below Zero" -> var1.method_10264() < 0;
-         case "Below -20" -> var1.method_10264() < -20;
-         case "Below -30" -> var1.method_10264() < -30;
+         case "Below Zero" -> blockPos.getY() < 0;
+         case "Below -20" -> blockPos.getY() < -20;
+         case "Below -30" -> blockPos.getY() < -30;
          default -> true;
       };
    }
 
    @EventHandler
-   public void onPacketReceiveNetty(PacketReceiveNettyEvent var1) {
-      if (var1.packet instanceof BlockUpdateS2CPacket var3) {
-         if (BlockEntityLeakTracker.containsReal(var3.method_11309())) {
-            BlockState var4 = var3.method_11308();
-            if (var4.method_26215() || var4.method_27852(Blocks.field_10340) || var4.method_27852(Blocks.field_28888)) {
-               var1.setCancelled(true);
+   public void onPacketReceiveNetty(PacketReceiveNettyEvent packetReceiveNettyEvent) {
+      if (packetReceiveNettyEvent.packet instanceof BlockUpdateS2CPacket var3) {
+         if (BlockEntityLeakTracker.containsReal(var3.getPos())) {
+            BlockState var4 = var3.getState();
+            if (var4.isAir() || var4.isOf(Blocks.STONE) || var4.isOf(Blocks.DEEPSLATE)) {
+               packetReceiveNettyEvent.setCancelled(true);
             }
          }
       }
    }
 
    @EventHandler
-   public void onRender3D(Render3DEvent var1) {
-      this.layer.render(var1, this.style);
+   public void onRender3D(Render3DEvent render3DEvent) {
+      this.layer.render(render3DEvent, this.style);
       if (this.sTracers.get()) {
          this.layer.renderTracers(this.style);
       }
 
       if (!this.spawners.isEmpty()) {
-         MinecraftClient var2 = MinecraftClient.method_1551();
-         if (var2.field_1724 != null) {
-            Vec3d var3 = var2.field_1724.method_5836(var1.partialTick);
+         MinecraftClient var2 = MinecraftClient.getInstance();
+         if (var2.player != null) {
+            Vec3d var3 = var2.player.getCameraPosVec(render3DEvent.partialTick);
             double var4 = (double)this.style.range.get() * this.style.range.get();
-            int var6 = this.sBlockColors.colorArgb(Blocks.field_10260);
-            DrawStyle var7 = DrawStyle.method_75536(var6, this.style.lineWidth.get());
+            int var6 = this.sBlockColors.colorArgb(Blocks.SPAWNER);
+            DrawStyle var7 = DrawStyle.stroked(var6, this.style.lineWidth.get());
             LongIterator var8 = this.spawners.iterator();
 
             while (var8.hasNext()) {
                long var9 = var8.next();
-               BlockPos var11 = BlockPos.method_10092(var9);
-               if (!(var3.method_1028(var11.method_10263() + 0.5, var11.method_10264() + 1.0, var11.method_10260() + 0.5) > var4)) {
-                  GizmoDrawing.method_75541(
-                        new Box(
-                           var11.method_10263() + 0.3,
-                           var11.method_10264() + 1.0,
-                           var11.method_10260() + 0.3,
-                           var11.method_10263() + 0.7,
-                           var11.method_10264() + 257.0,
-                           var11.method_10260() + 0.7
-                        ),
-                        var7
+               BlockPos var11 = BlockPos.fromLong(var9);
+               if (!(var3.squaredDistanceTo(var11.getX() + 0.5, var11.getY() + 1.0, var11.getZ() + 0.5) > var4)) {
+                  GizmoDrawing.box(
+                        new Box(var11.getX() + 0.3, var11.getY() + 1.0, var11.getZ() + 0.3, var11.getX() + 0.7, var11.getY() + 257.0, var11.getZ() + 0.7), var7
                      )
-                     .method_75533();
+                     .ignoreOcclusion();
                }
             }
          }

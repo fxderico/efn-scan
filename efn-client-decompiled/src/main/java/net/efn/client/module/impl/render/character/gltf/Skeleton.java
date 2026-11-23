@@ -37,14 +37,14 @@ final class Skeleton {
    private final String[] core;
    private final int[] named;
 
-   private Skeleton(PosedMesh var1) {
-      this.mesh = var1;
-      int var2 = var1.file.nodes();
+   private Skeleton(PosedMesh posedMesh) {
+      this.mesh = posedMesh;
+      int var2 = posedMesh.file.nodes();
       this.core = new String[var2];
       this.named = new int[var2];
 
       for (int var3 = 0; var3 < var2; var3++) {
-         List var4 = words(var1.file.nodeName(var3));
+         List var4 = words(posedMesh.file.nodeName(var3));
          this.named[var3] = -1;
          StringBuilder var5 = new StringBuilder();
 
@@ -62,23 +62,21 @@ final class Skeleton {
       }
    }
 
-   static Skeleton find(PosedMesh var0, Map<String, String> var1) throws IOException {
-      Skeleton var2 = new Skeleton(var0);
-      if (var1.isEmpty()) {
+   static Skeleton find(PosedMesh posedMesh, Map<String, String> map) throws IOException {
+      Skeleton var2 = new Skeleton(posedMesh);
+      if (map.isEmpty()) {
          var2.facesBack = var2.facingBack();
-         var2.head = var2.shallowest(var1x -> var2.core[var1x].startsWith("head"));
+         var2.head = var2.shallowest(i -> var2.core[i].startsWith("head"));
 
          for (int var12 = 0; var12 < 2; var12++) {
             int var6 = var12;
             int var5;
-            int var7 = var5 = var2.shallowest(var2x -> var2.side(var2x) == var6 && var2.is(var2x, FOREARM));
+            int var7 = var5 = var2.shallowest(j -> var2.side(j) == var6 && var2.is(j, FOREARM));
             int var8 = var2.shallowest(
-               var4x -> var2.side(var4x) == var6
-                  && (var2.is(var4x, UPPER_ARM) || var2.core[var4x].equals("arm"))
-                  && (var5 < 0 || var0.under(var5, var4x) && var4x != var5)
+               k -> var2.side(k) == var6 && (var2.is(k, UPPER_ARM) || var2.core[k].equals("arm")) && (var5 < 0 || posedMesh.under(var5, k) && k != var5)
             );
             if (var8 < 0 && var7 >= 0) {
-               var8 = var0.parent[var7];
+               var8 = posedMesh.parent[var7];
             }
 
             if (var7 < 0 && var8 >= 0) {
@@ -88,23 +86,21 @@ final class Skeleton {
             var2.upperArm[var6] = var8;
             var2.forearm[var6] = var7;
             if (var7 >= 0) {
-               int var10 = var2.shallowest(var3x -> var3x != var7 && var0.under(var3x, var7) && var2.is(var3x, HAND));
+               int var10 = var2.shallowest(j -> j != var7 && posedMesh.under(j, var7) && var2.is(j, HAND));
                var2.hand[var6] = var10 >= 0 ? var10 : var2.mainChild(var7);
             }
 
             int var13;
-            int var9 = var13 = var2.shallowest(var2x -> var2.side(var2x) == var6 && var2.is(var2x, SHIN));
+            int var9 = var13 = var2.shallowest(j -> var2.side(j) == var6 && var2.is(j, SHIN));
             int var14 = var2.shallowest(
-               var4x -> var2.side(var4x) == var6
-                  && (var2.is(var4x, THIGH) || var2.core[var4x].equals("leg"))
-                  && (var13 < 0 || var0.under(var13, var4x) && var4x != var13)
+               k -> var2.side(k) == var6 && (var2.is(k, THIGH) || var2.core[k].equals("leg")) && (var13 < 0 || posedMesh.under(var13, k) && k != var13)
             );
-            if (var9 < 0 && var14 >= 0 && (var9 = var2.shallowest(var3x -> var3x != var14 && var0.under(var3x, var14) && var2.core[var3x].equals("leg"))) < 0) {
+            if (var9 < 0 && var14 >= 0 && (var9 = var2.shallowest(j -> j != var14 && posedMesh.under(j, var14) && var2.core[j].equals("leg"))) < 0) {
                var9 = var2.mainChild(var14);
             }
 
             if (var14 < 0 && var9 >= 0) {
-               var14 = var0.parent[var9];
+               var14 = posedMesh.parent[var9];
             }
 
             var2.thigh[var6] = var14;
@@ -113,25 +109,25 @@ final class Skeleton {
 
          return var2;
       } else {
-         var2.head = var2.named(var1, "head");
+         var2.head = var2.named(map, "head");
 
          for (int var3 = 0; var3 < 2; var3++) {
             String var4 = var3 == 0 ? "right " : "left ";
-            var2.upperArm[var3] = var2.named(var1, var4 + "arm");
-            var2.forearm[var3] = var2.named(var1, var4 + "elbow");
-            var2.hand[var3] = var2.named(var1, var4 + "hand");
-            var2.thigh[var3] = var2.named(var1, var4 + "leg");
-            var2.shin[var3] = var2.named(var1, var4 + "knee");
+            var2.upperArm[var3] = var2.named(map, var4 + "arm");
+            var2.forearm[var3] = var2.named(map, var4 + "elbow");
+            var2.hand[var3] = var2.named(map, var4 + "hand");
+            var2.thigh[var3] = var2.named(map, var4 + "leg");
+            var2.shin[var3] = var2.named(map, var4 + "knee");
          }
 
-         var2.facesBack = var2.upperArm[1] >= 0 && var2.upperArm[0] >= 0 && var0.world(var2.upperArm[1])[0] < var0.world(var2.upperArm[0])[0];
+         var2.facesBack = var2.upperArm[1] >= 0 && var2.upperArm[0] >= 0 && posedMesh.world(var2.upperArm[1])[0] < posedMesh.world(var2.upperArm[0])[0];
          return var2;
       }
    }
 
-   private boolean is(int var1, List<String> var2) {
-      for (String var4 : var2) {
-         if (this.core[var1].contains(var4)) {
+   private boolean is(int i, List<String> list) {
+      for (String var4 : list) {
+         if (this.core[i].contains(var4)) {
             return true;
          }
       }
@@ -139,8 +135,8 @@ final class Skeleton {
       return false;
    }
 
-   private int named(Map<String, String> var1, String var2) throws IOException {
-      String var3 = (String)var1.get(var2);
+   private int named(Map<String, String> map, String string) throws IOException {
+      String var3 = (String)map.get(string);
       if (var3 == null) {
          return -1;
       } else {
@@ -162,8 +158,8 @@ final class Skeleton {
       }
    }
 
-   private static List<String> words(String var0) {
-      String var1 = var0.replaceAll("_\\d+$", "")
+   private static List<String> words(String string) {
+      String var1 = string.replaceAll("_\\d+$", "")
          .replaceAll("([a-z])([A-Z])", "$1 $2")
          .toLowerCase(Locale.ROOT)
          .replace("\u624b\u9996", " wrist ")
@@ -188,11 +184,11 @@ final class Skeleton {
    }
 
    private boolean facingBack() {
-      int var1 = this.shallowest(var1x -> this.named[var1x] == 1 && this.is(var1x, HAND));
-      int var2 = this.shallowest(var1x -> this.named[var1x] == 0 && this.is(var1x, HAND));
+      int var1 = this.shallowest(i -> this.named[i] == 1 && this.is(i, HAND));
+      int var2 = this.shallowest(i -> this.named[i] == 0 && this.is(i, HAND));
       if (var1 < 0 || var2 < 0) {
-         var1 = this.shallowest(var1x -> this.named[var1x] == 1 && this.is(var1x, SHIN));
-         var2 = this.shallowest(var1x -> this.named[var1x] == 0 && this.is(var1x, SHIN));
+         var1 = this.shallowest(i -> this.named[i] == 1 && this.is(i, SHIN));
+         var2 = this.shallowest(i -> this.named[i] == 0 && this.is(i, SHIN));
       }
 
       if (var1 >= 0 && var2 >= 0) {
@@ -221,20 +217,20 @@ final class Skeleton {
       }
    }
 
-   private int side(int var1) {
-      if (this.named[var1] >= 0) {
-         return this.named[var1];
+   private int side(int i) {
+      if (this.named[i] >= 0) {
+         return this.named[i];
       } else {
-         return this.mesh.world(var1)[0] < 0.0F != this.facesBack ? 0 : 1;
+         return this.mesh.world(i)[0] < 0.0F != this.facesBack ? 0 : 1;
       }
    }
 
-   private int shallowest(IntPredicate var1) {
+   private int shallowest(IntPredicate intPredicate) {
       int var2 = -1;
       int var3 = 2147483647;
 
       for (int var5 : this.mesh.joints) {
-         if (var1.test(var5)) {
+         if (intPredicate.test(var5)) {
             int var7 = this.mesh.parent[var5];
 
             int var6;
@@ -252,11 +248,11 @@ final class Skeleton {
       return var2;
    }
 
-   private int mainChild(int var1) {
+   private int mainChild(int i) {
       int var2 = -1;
       int var3 = -1;
 
-      for (JsonElement var5 : GltfFile.array(this.mesh.file.node(var1), "children")) {
+      for (JsonElement var5 : GltfFile.array(this.mesh.file.node(i), "children")) {
          int var6 = var5.getAsInt();
          int var7 = 0;
 
@@ -336,7 +332,7 @@ final class Skeleton {
       return var1.toString();
    }
 
-   private void line(StringBuilder var1, String var2, int var3) {
-      var1.append(String.format(Locale.ROOT, "%-11s %s%n", var2, var3 < 0 ? "-" : this.mesh.file.nodeName(var3)));
+   private void line(StringBuilder stringBuilder, String string, int i) {
+      stringBuilder.append(String.format(Locale.ROOT, "%-11s %s%n", string, i < 0 ? "-" : this.mesh.file.nodeName(i)));
    }
 }

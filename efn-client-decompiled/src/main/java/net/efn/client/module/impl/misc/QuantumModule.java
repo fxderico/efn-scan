@@ -45,45 +45,45 @@ public final class QuantumModule extends ClientModule {
    private static final int CYAN = 65535;
    private static final int SOURCE_FILL_ALPHA = 40;
    private static final Set<Block> IGNORED_NEW_BLOCKS = Set.of(
-      Blocks.field_10036,
-      Blocks.field_10110,
-      Blocks.field_10418,
-      Blocks.field_29219,
-      Blocks.field_10212,
-      Blocks.field_29027,
-      Blocks.field_27120,
-      Blocks.field_29221,
-      Blocks.field_10571,
-      Blocks.field_29026,
-      Blocks.field_10080,
-      Blocks.field_29030,
-      Blocks.field_10013,
-      Blocks.field_29220,
-      Blocks.field_10090,
-      Blocks.field_29028,
-      Blocks.field_10442,
-      Blocks.field_29029,
-      Blocks.field_10503,
-      Blocks.field_10098,
-      Blocks.field_10539,
-      Blocks.field_10335,
-      Blocks.field_10035,
-      Blocks.field_54714,
-      Blocks.field_42731,
-      Blocks.field_28673,
-      Blocks.field_28674,
-      Blocks.field_9989,
-      Blocks.field_33509,
-      Blocks.field_10340,
-      Blocks.field_10282,
-      Blocks.field_10450,
-      Blocks.field_10377,
-      Blocks.field_10523,
-      Blocks.field_10524,
-      Blocks.field_10091,
-      Blocks.field_10228
+      Blocks.FIRE,
+      Blocks.FROSTED_ICE,
+      Blocks.COAL_ORE,
+      Blocks.DEEPSLATE_COAL_ORE,
+      Blocks.IRON_ORE,
+      Blocks.DEEPSLATE_IRON_ORE,
+      Blocks.COPPER_ORE,
+      Blocks.DEEPSLATE_COPPER_ORE,
+      Blocks.GOLD_ORE,
+      Blocks.DEEPSLATE_GOLD_ORE,
+      Blocks.REDSTONE_ORE,
+      Blocks.DEEPSLATE_REDSTONE_ORE,
+      Blocks.EMERALD_ORE,
+      Blocks.DEEPSLATE_EMERALD_ORE,
+      Blocks.LAPIS_ORE,
+      Blocks.DEEPSLATE_LAPIS_ORE,
+      Blocks.DIAMOND_ORE,
+      Blocks.DEEPSLATE_DIAMOND_ORE,
+      Blocks.OAK_LEAVES,
+      Blocks.ACACIA_LEAVES,
+      Blocks.BIRCH_LEAVES,
+      Blocks.JUNGLE_LEAVES,
+      Blocks.DARK_OAK_LEAVES,
+      Blocks.PALE_OAK_LEAVES,
+      Blocks.CHERRY_LEAVES,
+      Blocks.AZALEA_LEAVES,
+      Blocks.FLOWERING_AZALEA_LEAVES,
+      Blocks.MOSSY_COBBLESTONE,
+      Blocks.RAW_COPPER_BLOCK,
+      Blocks.STONE,
+      Blocks.OBSERVER,
+      Blocks.REPEATER,
+      Blocks.COMPARATOR,
+      Blocks.REDSTONE_TORCH,
+      Blocks.REDSTONE_LAMP,
+      Blocks.REDSTONE_WIRE,
+      Blocks.DROPPER
    );
-   private static final Set<Block> IGNORED_OLD_BLOCKS = Set.of(Blocks.field_27159, Blocks.field_10340, Blocks.field_10110);
+   private static final Set<Block> IGNORED_OLD_BLOCKS = Set.of(Blocks.AMETHYST_BLOCK, Blocks.STONE, Blocks.FROSTED_ICE);
    private final BooleanSetting renderChunks = this.addSetting("render-chunks", new BooleanSetting("Render Chunks", true));
    private final BooleanSetting clearOnToggle = this.addSetting("clear-chunks-on-toggle", new BooleanSetting("Clear On Toggle", true));
    private final BooleanSetting highlightSources = this.addSetting("render-flagged-chunk", new BooleanSetting("Highlight Source Chunks", true));
@@ -93,7 +93,7 @@ public final class QuantumModule extends ClientModule {
    private final BooleanSetting render = this.addSetting("render", new BooleanSetting("Debug Render", true));
    private final ColorSetting fillColor = this.addSetting("side-color", new ColorSetting("Debug Fill Color", 687810600));
    private final ColorSetting lineColor = this.addSetting("line-color", new ColorSetting("Debug Line Color", -55256));
-   private final ChunkSnapshotStore snapshots = new ChunkSnapshotStore(Blocks.field_10124.method_9564());
+   private final ChunkSnapshotStore snapshots = new ChunkSnapshotStore(Blocks.AIR.getDefaultState());
    private final Set<ChunkPos> justSent = new HashSet<>();
    private final List<BlockPos> changedBlocks = new ArrayList<>();
    private final Set<ChunkPos> flaggedChunks = new HashSet<>();
@@ -137,16 +137,16 @@ public final class QuantumModule extends ClientModule {
       this.lastPos = null;
    }
 
-   private void ensureSession(ClientWorld var1) {
+   private void ensureSession(ClientWorld clientWorld) {
       this.ensureConnection();
-      if (var1 != this.sessionLevel) {
-         this.sessionLevel = var1;
+      if (clientWorld != this.sessionLevel) {
+         this.sessionLevel = clientWorld;
          this.resetSession();
       }
    }
 
    private void ensureConnection() {
-      ClientPlayNetworkHandler var1 = MinecraftClient.method_1551().method_1562();
+      ClientPlayNetworkHandler var1 = MinecraftClient.getInstance().getNetworkHandler();
       if (var1 != this.connection) {
          this.connection = var1;
          this.flaggedChunks.clear();
@@ -157,26 +157,26 @@ public final class QuantumModule extends ClientModule {
    @EventHandler(
       stage = Stage.POST
    )
-   public void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      if (var2.field_1724 != null && var2.field_1687 != null) {
-         this.ensureSession(var2.field_1687);
-         if (LevelUtil.isOverworld(var2.field_1687)) {
-            ChunkPos var3 = var2.field_1724.method_31476();
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      if (var2.player != null && var2.world != null) {
+         this.ensureSession(var2.world);
+         if (LevelUtil.isOverworld(var2.world)) {
+            ChunkPos var3 = var2.player.getChunkPos();
             if (this.lastPos != null && !this.lastPos.equals(var3)) {
                Set var4 = chunksInRange(var3);
 
                for (ChunkPos var6 : var4) {
                   if (!this.previousRange.contains(var6)) {
-                     this.snapshots.store(var6.field_9181, var6.field_9180, extractSections(var2.field_1687.method_8497(var6.field_9181, var6.field_9180)));
+                     this.snapshots.store(var6.x, var6.z, extractSections(var2.world.getChunk(var6.x, var6.z)));
                   }
                }
 
-               this.justSent.removeIf(var1x -> !var4.contains(var1x));
+               this.justSent.removeIf(chunkPos -> !var4.contains(chunkPos));
                HashSet var8 = new HashSet();
 
                for (ChunkPos var7 : var4) {
-                  var8.add(ChunkSnapshotStore.chunkKey(var7.field_9181, var7.field_9180));
+                  var8.add(ChunkSnapshotStore.chunkKey(var7.x, var7.z));
                }
 
                this.snapshots.retain(var8::contains);
@@ -189,21 +189,21 @@ public final class QuantumModule extends ClientModule {
    }
 
    @EventHandler
-   public void onPacketApplied(PacketAppliedEvent var1) {
-      if (var1.packet instanceof ChunkDataS2CPacket var3) {
-         MinecraftClient var4 = MinecraftClient.method_1551();
-         ClientWorld var5 = var4.field_1687;
-         if (var4.field_1724 != null && var5 != null) {
+   public void onPacketApplied(PacketAppliedEvent packetAppliedEvent) {
+      if (packetAppliedEvent.packet instanceof ChunkDataS2CPacket var3) {
+         MinecraftClient var4 = MinecraftClient.getInstance();
+         ClientWorld var5 = var4.world;
+         if (var4.player != null && var5 != null) {
             this.ensureSession(var5);
             if (LevelUtil.isOverworld(var5)) {
-               ChunkPos var6 = new ChunkPos(var3.method_11523(), var3.method_11524());
-               if (chunksInRange(var4.field_1724.method_31476()).contains(var6)) {
-                  if (LevelUtil.isLoaded(var5, var6.field_9181, var6.field_9180)) {
-                     PalettedContainer[] var7 = extractSections(var5.method_8497(var6.field_9181, var6.field_9180));
+               ChunkPos var6 = new ChunkPos(var3.getChunkX(), var3.getChunkZ());
+               if (chunksInRange(var4.player.getChunkPos()).contains(var6)) {
+                  if (LevelUtil.isLoaded(var5, var6.x, var6.z)) {
+                     PalettedContainer[] var7 = extractSections(var5.getChunk(var6.x, var6.z));
 
-                     for (ChunkSnapshotStore.BlockChange var10 : this.snapshots.compare(var6.field_9181, var6.field_9180, var7, var5.method_32891())) {
-                        Block var11 = var10.newState().method_26204();
-                        Block var12 = var10.oldState().method_26204();
+                     for (ChunkSnapshotStore.BlockChange var10 : this.snapshots.compare(var6.x, var6.z, var7, var5.getBottomSectionCoord())) {
+                        Block var11 = var10.newState().getBlock();
+                        Block var12 = var10.oldState().getBlock();
                         if (!IGNORED_NEW_BLOCKS.contains(var11) && !IGNORED_OLD_BLOCKS.contains(var12)) {
                            this.onActivity(var6, var10, var11, var12);
                            break;
@@ -211,7 +211,7 @@ public final class QuantumModule extends ClientModule {
                      }
 
                      this.justSent.add(var6);
-                     this.snapshots.store(var6.field_9181, var6.field_9180, var7);
+                     this.snapshots.store(var6.x, var6.z, var7);
                   }
                }
             }
@@ -220,43 +220,34 @@ public final class QuantumModule extends ClientModule {
    }
 
    @EventHandler
-   public void onBlockUpdate(BlockUpdateEvent var1) {
-      ClientWorld var2 = MinecraftClient.method_1551().field_1687;
+   public void onBlockUpdate(BlockUpdateEvent blockUpdateEvent) {
+      ClientWorld var2 = MinecraftClient.getInstance().world;
       if (var2 != null && LevelUtil.isOverworld(var2)) {
-         BlockPos var3 = var1.pos;
-         int var4 = (var3.method_10264() >> 4) - var2.method_32891();
-         this.snapshots
-            .update(
-               var3.method_10263() >> 4,
-               var3.method_10260() >> 4,
-               var4,
-               var3.method_10263() & 15,
-               var3.method_10264() & 15,
-               var3.method_10260() & 15,
-               var1.newState
-            );
+         BlockPos var3 = blockUpdateEvent.pos;
+         int var4 = (var3.getY() >> 4) - var2.getBottomSectionCoord();
+         this.snapshots.update(var3.getX() >> 4, var3.getZ() >> 4, var4, var3.getX() & 15, var3.getY() & 15, var3.getZ() & 15, blockUpdateEvent.newState);
       }
    }
 
-   private void onActivity(ChunkPos var1, ChunkSnapshotStore.BlockChange var2, Block var3, Block var4) {
-      ModuleChat.Body var5 = ModuleChat.body().text("Activity ").good("detected").text(" in chunk ").value(var1.field_9181 + ", " + var1.field_9180);
+   private void onActivity(ChunkPos chunkPos, ChunkSnapshotStore.BlockChange blockChange, Block block, Block block2) {
+      ModuleChat.Body var5 = ModuleChat.body().text("Activity ").good("detected").text(" in chunk ").value(chunkPos.x + ", " + chunkPos.z);
       if (this.advancedDebug.get()) {
-         var5.text(": ").name(var4.method_9518().getString()).text(" changed to ").name(var3.method_9518().getString());
+         var5.text(": ").name(block2.getName().getString()).text(" changed to ").name(block.getName().getString());
       }
 
       ModuleChat.send(this, var5);
-      this.changedBlocks.add(new BlockPos(var2.worldX(), var2.worldY(), var2.worldZ()));
-      this.flagArea(var1);
+      this.changedBlocks.add(new BlockPos(blockChange.worldX(), blockChange.worldY(), blockChange.worldZ()));
+      this.flagArea(chunkPos);
    }
 
-   private void flagArea(ChunkPos var1) {
+   private void flagArea(ChunkPos chunkPos) {
       this.ensureConnection();
-      this.sourceChunks.add(var1);
+      this.sourceChunks.add(chunkPos);
       ArrayList var2 = new ArrayList();
 
       for (int var3 = -9; var3 <= 9; var3++) {
          for (int var4 = -9; var4 <= 9; var4++) {
-            var2.add(new ChunkPos(var1.field_9181 + var3, var1.field_9180 + var4));
+            var2.add(new ChunkPos(chunkPos.x + var3, chunkPos.z + var4));
          }
       }
 
@@ -277,26 +268,26 @@ public final class QuantumModule extends ClientModule {
    }
 
    @EventHandler
-   public void onRender3D(Render3DEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      if (var2.field_1724 != null && var2.field_1687 != null && LevelUtil.isOverworld(var2.field_1687)) {
+   public void onRender3D(Render3DEvent render3DEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      if (var2.player != null && var2.world != null && LevelUtil.isOverworld(var2.world)) {
          this.ensureConnection();
          if (this.renderChunks.get()) {
             this.renderFlaggedChunks();
          }
 
          if (this.render.get() && this.advancedDebug.get()) {
-            DrawStyle var3 = DrawStyle.method_75537(this.lineColor.argb(), 1.5F, this.fillColor.argb());
+            DrawStyle var3 = DrawStyle.filledAndStroked(this.lineColor.argb(), 1.5F, this.fillColor.argb());
 
             for (BlockPos var5 : this.changedBlocks) {
-               GizmoDrawing.method_75541(new Box(var5), var3).method_75533();
+               GizmoDrawing.box(new Box(var5), var3).ignoreOcclusion();
             }
 
-            DrawStyle var7 = DrawStyle.method_75537(-16711936, 1.5F, 671153920);
+            DrawStyle var7 = DrawStyle.filledAndStroked(-16711936, 1.5F, 671153920);
 
-            for (ChunkPos var6 : chunksInRange(var2.field_1724.method_31476())) {
+            for (ChunkPos var6 : chunksInRange(var2.player.getChunkPos())) {
                if (this.justSent.contains(var6)) {
-                  GizmoDrawing.method_75541(marker(var6), var7).method_75533();
+                  GizmoDrawing.box(marker(var6), var7).ignoreOcclusion();
                }
             }
          }
@@ -304,31 +295,31 @@ public final class QuantumModule extends ClientModule {
    }
 
    private void renderFlaggedChunks() {
-      DrawStyle var1 = DrawStyle.method_75537(this.chunkLine.argb(), 1.5F, this.chunkFill.argb());
+      DrawStyle var1 = DrawStyle.filledAndStroked(this.chunkLine.argb(), 1.5F, this.chunkFill.argb());
       boolean var2 = this.highlightSources.get();
 
       for (ChunkPos var4 : this.flaggedChunks) {
          if (!var2 || !this.sourceChunks.contains(var4)) {
-            GizmoDrawing.method_75541(marker(var4), var1).method_75533();
+            GizmoDrawing.box(marker(var4), var1).ignoreOcclusion();
          }
       }
 
       if (var2) {
-         DrawStyle var6 = DrawStyle.method_75537(-16711681, 1.5F, 671154175);
+         DrawStyle var6 = DrawStyle.filledAndStroked(-16711681, 1.5F, 671154175);
 
          for (ChunkPos var5 : this.sourceChunks) {
-            GizmoDrawing.method_75541(marker(var5), var6).method_75533();
+            GizmoDrawing.box(marker(var5), var6).ignoreOcclusion();
          }
       }
    }
 
-   private static Box marker(ChunkPos var0) {
-      double var1 = var0.field_9181 * 16.0;
-      double var3 = var0.field_9180 * 16.0;
+   private static Box marker(ChunkPos chunkPos) {
+      double var1 = chunkPos.x * 16.0;
+      double var3 = chunkPos.z * 16.0;
       return new Box(var1, 63.0, var3, var1 + 16.0, 63.0, var3 + 16.0);
    }
 
-   static Set<ChunkPos> chunksInRange(ChunkPos var0) {
+   static Set<ChunkPos> chunksInRange(ChunkPos chunkPos) {
       LinkedHashSet var1 = new LinkedHashSet();
 
       for (int var2 = -8; var2 <= 8; var2++) {
@@ -336,21 +327,21 @@ public final class QuantumModule extends ClientModule {
          int var4 = 8 - var3;
 
          for (int var5 = -var4; var5 <= var4; var5++) {
-            var1.add(new ChunkPos(var0.field_9181 + var5, var0.field_9180 + var2));
+            var1.add(new ChunkPos(chunkPos.x + var5, chunkPos.z + var2));
          }
       }
 
       return var1;
    }
 
-   private static PalettedContainer<BlockState>[] extractSections(WorldChunk var0) {
-      ChunkSection[] var1 = var0.method_12006();
+   private static PalettedContainer<BlockState>[] extractSections(WorldChunk worldChunk) {
+      ChunkSection[] var1 = worldChunk.getSectionArray();
       PalettedContainer[] var2 = new PalettedContainer[var1.length];
 
       for (int var3 = 6; var3 <= 23 && var3 < var1.length; var3++) {
          ChunkSection var4 = var1[var3];
-         if (var4 != null && !var4.method_38292()) {
-            var2[var3] = var4.method_12265().method_39957();
+         if (var4 != null && !var4.isEmpty()) {
+            var2[var3] = var4.getBlockStateContainer().copy();
          }
       }
 

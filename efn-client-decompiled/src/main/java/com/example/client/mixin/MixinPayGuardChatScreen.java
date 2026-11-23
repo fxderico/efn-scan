@@ -16,19 +16,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin({ChatScreen.class})
 public abstract class MixinPayGuardChatScreen {
    @Shadow
-   protected TextFieldWidget field_2382;
+   protected TextFieldWidget chatField;
 
    public MixinPayGuardChatScreen() {
    }
 
    @Inject(
-      method = {"method_25404"},
+      method = {"keyPressed"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_408;method_44056(Ljava/lang/String;Z)V"
+         target = "Lnet/minecraft/client/gui/screen/ChatScreen;sendMessage(Ljava/lang/String;Z)V"
       )}
    )
-   private void efn$allowTypedPay(KeyInput var1, CallbackInfoReturnable<Boolean> var2) {
-      PayGuard.allowTyped(this.field_2382.method_1882());
+   private void efn$allowTypedPay(KeyInput keyInput, CallbackInfoReturnable<Boolean> callbackInfoReturnable) {
+      PayGuard.allowTyped(this.chatField.getText());
    }
 }

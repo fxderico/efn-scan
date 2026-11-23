@@ -36,8 +36,8 @@ public final class Accounts {
    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
    private static final int CONFIG_VERSION = 1;
    private static final Pattern VALID_NAME = Pattern.compile("[A-Za-z0-9_]{1,16}");
-   private final ExecutorService worker = Executors.newSingleThreadExecutor(var0 -> {
-      Thread var1 = new Thread(var0, "EFN Accounts");
+   private final ExecutorService worker = Executors.newSingleThreadExecutor(runnable -> {
+      Thread var1 = new Thread(runnable, "EFN Accounts");
       var1.setDaemon(true);
       return var1;
    });
@@ -64,7 +64,7 @@ public final class Accounts {
    }
 
    public Account active() {
-      String var1 = MinecraftClient.method_1551().method_1548().method_44717().toString();
+      String var1 = MinecraftClient.getInstance().getSession().getUuidOrNull().toString();
       List var2 = this.list();
       String var3 = this.activeId;
 
@@ -83,15 +83,15 @@ public final class Accounts {
       return null;
    }
 
-   public CompletableFuture<Account> addCracked(String var1) {
-      String var2 = var1 == null ? "" : var1.trim();
+   public CompletableFuture<Account> addCracked(String string) {
+      String var2 = string == null ? "" : string.trim();
       return !VALID_NAME.matcher(var2).matches()
          ? this.failed("A cracked name is 1-16 letters, digits or underscores")
          : this.signIn(AccountType.CRACKED, null, "Logging in as " + var2 + "...", () -> offline(var2));
    }
 
-   public CompletableFuture<Account> addSession(String var1) {
-      String var2 = var1 == null ? "" : var1.trim();
+   public CompletableFuture<Account> addSession(String string) {
+      String var2 = string == null ? "" : string.trim();
       return var2.isEmpty()
          ? this.failed("Paste an access token first")
          : this.signIn(AccountType.SESSION, null, "Checking the session token...", () -> SessionLogin.signIn(var2));
@@ -108,8 +108,8 @@ public final class Accounts {
       }
    }
 
-   public CompletableFuture<Void> login(Account var1) {
-      Account var2 = this.find(var1);
+   public CompletableFuture<Void> login(Account account) {
+      Account var2 = this.find(account);
       if (var2 == null) {
          return this.failed("That account is no longer saved");
       } else {
@@ -120,12 +120,12 @@ public final class Accounts {
                case SESSION -> SessionLogin.signIn(var2.secret());
                case MICROSOFT -> MicrosoftLogin.minecraft(MicrosoftLogin.refresh(var2.secret()));
             };
-         }).thenAccept(var0 -> {});
+         }).thenAccept(accountx -> {});
       }
    }
 
-   public synchronized void remove(Account var1) {
-      int var2 = this.indexOf(var1);
+   public synchronized void remove(Account account) {
+      int var2 = this.indexOf(account);
       if (var2 >= 0) {
          this.accounts.remove(var2);
          this.publish();
@@ -141,8 +141,8 @@ public final class Accounts {
       return this.status;
    }
 
-   private static Credentials offline(String var0) {
-      return new Credentials(var0, Uuids.method_43344(var0), "", "");
+   private static Credentials offline(String string) {
+      return new Credentials(string, Uuids.getOfflinePlayerUuid(string), "", "");
    }
 
    private Credentials microsoftBrowserSignIn() throws InterruptedException {
@@ -156,7 +156,7 @@ public final class Accounts {
             + " at "
             + var1.verificationUri().replaceFirst("^https?://", "")
             + ")";
-         Util.method_668().method_670(var1.directUri());
+         Util.getOperatingSystem().open(var1.directUri());
          MicrosoftLogin.MsaToken var2 = MicrosoftLogin.awaitApproval(var1);
          this.status = "Signing in to Xbox Live...";
          Credentials var3 = MicrosoftLogin.minecraft(var2);
@@ -168,7 +168,7 @@ public final class Accounts {
       return var4;
    }
 
-   private CompletableFuture<Account> signIn(AccountType var1, String var2, String var3, Accounts.SignIn var4) {
+   private CompletableFuture<Account> signIn(AccountType accountType, String string, String string2, Accounts.SignIn signIn) {
       synchronized (this) {
          if (this.busy) {
             return CompletableFuture.failedFuture(new AccountException("Another account action is still running"));
@@ -182,90 +182,92 @@ public final class Accounts {
       }
 
       this.ensureLoaded();
-      this.status = var3;
+      this.status = string2;
       CompletableFuture var6 = new CompletableFuture();
       this.worker.execute(() -> {
          Thread.interrupted();
 
          try {
-            Credentials var5 = var4.run();
-            GameSession.Prepared var6x = this.session.prepare(var1, var5);
-            MinecraftClient.method_1551().execute(() -> this.finish(var1, var2, var5, var6x, var6));
+            Credentials var5 = signIn.run();
+            GameSession.Prepared var6x = this.session.prepare(accountType, var5);
+            MinecraftClient.getInstance().execute(() -> this.finish(accountType, string, var5, var6x, var6));
          } catch (InterruptedException var7) {
-            this.settleLater(var6, null, new AccountException(var1 == AccountType.MICROSOFT ? "Microsoft sign-in cancelled" : "Login cancelled"));
+            this.settleLater(var6, null, new AccountException(accountType == AccountType.MICROSOFT ? "Microsoft sign-in cancelled" : "Login cancelled"));
          } catch (AccountException var8) {
-            LOGGER.warn("[EFN] {} login failed: {}", var1.label(), var8.getMessage());
+            LOGGER.warn("[EFN] {} login failed: {}", accountType.label(), var8.getMessage());
             this.settleLater(var6, null, var8);
          } catch (RuntimeException var9) {
-            LOGGER.warn("[EFN] {} login failed", var1.label(), var9);
+            LOGGER.warn("[EFN] {} login failed", accountType.label(), var9);
             this.settleLater(var6, null, new AccountException("Login failed: " + var9.getMessage(), var9));
          }
       });
       return var6;
    }
 
-   private void finish(AccountType var1, String var2, Credentials var3, GameSession.Prepared var4, CompletableFuture<Account> var5) {
+   private void finish(
+      AccountType accountType, String string, Credentials credentials, GameSession.Prepared prepared, CompletableFuture<Account> completableFuture
+   ) {
       Account var6;
       synchronized (this) {
-         var6 = this.remember(var1, var2, var3);
+         var6 = this.remember(accountType, string, credentials);
       }
 
       if (inGame()) {
-         this.settle(var5, null, new AccountException("Joined a world before the switch finished - leave it and log in again"));
+         this.settle(completableFuture, null, new AccountException("Joined a world before the switch finished - leave it and log in again"));
       } else {
          try {
-            this.session.apply(var4);
+            this.session.apply(prepared);
          } catch (RuntimeException var10) {
             LOGGER.error("[EFN] Switching the session to {} failed", var6, var10);
-            this.settle(var5, null, new AccountException("Couldn't switch the game to " + var3.name() + ": " + var10.getMessage(), var10));
+            this.settle(completableFuture, null, new AccountException("Couldn't switch the game to " + credentials.name() + ": " + var10.getMessage(), var10));
             return;
          }
 
          this.activeId = var6.id();
          LOGGER.info("[EFN] Switched session to {}", var6);
-         this.status = "Logged in as " + var3.name();
-         this.settle(var5, var6, null);
+         this.status = "Logged in as " + credentials.name();
+         this.settle(completableFuture, var6, null);
       }
    }
 
-   private void settleLater(CompletableFuture<Account> var1, Account var2, AccountException var3) {
-      MinecraftClient.method_1551().execute(() -> this.settle(var1, var2, var3));
+   private void settleLater(CompletableFuture<Account> completableFuture, Account account, AccountException accountException) {
+      MinecraftClient.getInstance().execute(() -> this.settle(completableFuture, account, accountException));
    }
 
-   private void settle(CompletableFuture<Account> var1, Account var2, AccountException var3) {
-      if (var3 != null) {
-         this.status = var3.getMessage();
+   private void settle(CompletableFuture<Account> completableFuture, Account account, AccountException accountException) {
+      if (accountException != null) {
+         this.status = accountException.getMessage();
       }
 
       this.busy = false;
-      if (var3 != null) {
-         var1.completeExceptionally(var3);
+      if (accountException != null) {
+         completableFuture.completeExceptionally(accountException);
       } else {
-         var1.complete(var2);
+         completableFuture.complete(account);
       }
    }
 
-   private Account remember(AccountType var1, String var2, Credentials var3) {
-      String var5 = var3.uuid().toString();
+   private Account remember(AccountType accountType, String string, Credentials credentials) {
+      String var5 = credentials.uuid().toString();
       int var6 = -1;
 
       for (int var7 = 0; var7 < this.accounts.size(); var7++) {
          Account var8 = this.accounts.get(var7);
-         boolean var9 = var2 != null
-            ? var8.id().equals(var2)
-            : var8.type() == var1 && (var1 == AccountType.CRACKED ? var8.name().equalsIgnoreCase(var3.name()) : var8.uuid().equals(var5));
+         boolean var9 = string != null
+            ? var8.id().equals(string)
+            : var8.type() == accountType && (accountType == AccountType.CRACKED ? var8.name().equalsIgnoreCase(credentials.name()) : var8.uuid().equals(var5));
          if (var9) {
             var6 = var7;
             break;
          }
       }
 
-      if (var6 < 0 && var2 != null) {
-         return new Account(var2, var1, var3.name(), var5, var3.secret());
+      if (var6 < 0 && string != null) {
+         return new Account(string, accountType, credentials.name(), var5, credentials.secret());
       } else {
          Account var4 = var6 >= 0
-            ? this.accounts.get(var6).withLogin(var3.name(), var5, var3.secret())
-            : new Account(UUID.randomUUID().toString(), var1, var3.name(), var5, var3.secret());
+            ? this.accounts.get(var6).withLogin(credentials.name(), var5, credentials.secret())
+            : new Account(UUID.randomUUID().toString(), accountType, credentials.name(), var5, credentials.secret());
          if (var6 >= 0) {
             this.accounts.set(var6, var4);
          } else {
@@ -279,27 +281,27 @@ public final class Accounts {
    }
 
    private static boolean inGame() {
-      MinecraftClient var0 = MinecraftClient.method_1551();
-      return var0.field_1687 != null || var0.method_1562() != null;
+      MinecraftClient var0 = MinecraftClient.getInstance();
+      return var0.world != null || var0.getNetworkHandler() != null;
    }
 
-   private <T> CompletableFuture<T> failed(String var1) {
-      this.status = var1;
-      return CompletableFuture.failedFuture(new AccountException(var1));
+   private <T> CompletableFuture<T> failed(String string) {
+      this.status = string;
+      return CompletableFuture.failedFuture(new AccountException(string));
    }
 
-   private synchronized Account find(Account var1) {
-      int var2 = this.indexOf(var1);
+   private synchronized Account find(Account account) {
+      int var2 = this.indexOf(account);
       return var2 < 0 ? null : this.accounts.get(var2);
    }
 
-   private int indexOf(Account var1) {
+   private int indexOf(Account account) {
       this.ensureLoaded();
-      if (var1 == null) {
+      if (account == null) {
          return -1;
       } else {
          for (int var2 = 0; var2 < this.accounts.size(); var2++) {
-            if (this.accounts.get(var2).id().equals(var1.id())) {
+            if (this.accounts.get(var2).id().equals(account.id())) {
                return var2;
             }
          }
@@ -354,7 +356,7 @@ public final class Accounts {
                   return;
                }
             } catch (RuntimeException | IOException var11) {
-               LOGGER.warn("[EFN] Failed to load the account list; preserving the file", var11);
+               LOGGER.warn("[EFN] Failed to load the account list; preserving the file", (Throwable)var11);
                this.accounts.clear();
                this.readOnly = true;
             }
@@ -364,8 +366,8 @@ public final class Accounts {
       }
    }
 
-   private static Account read(JsonObject var0) {
-      String var1 = AuthHttp.text(var0, "type");
+   private static Account read(JsonObject jsonObject) {
+      String var1 = AuthHttp.text(jsonObject, "type");
       AccountType var2 = null;
 
       for (AccountType var6 : AccountType.values()) {
@@ -377,17 +379,17 @@ public final class Accounts {
       if (var2 == null) {
          return null;
       } else {
-         String var7 = AuthHttp.text(var0, "id");
-         String var8 = AuthHttp.text(var0, "name");
-         String var9 = AuthHttp.text(var0, "uuid");
-         String var10 = AuthHttp.text(var0, "token");
+         String var7 = AuthHttp.text(jsonObject, "id");
+         String var8 = AuthHttp.text(jsonObject, "name");
+         String var9 = AuthHttp.text(jsonObject, "uuid");
+         String var10 = AuthHttp.text(jsonObject, "token");
          if (var8 == null) {
             var8 = "";
          }
 
          if (var2 == AccountType.CRACKED ? VALID_NAME.matcher(var8).matches() : var10 != null && !var10.isEmpty()) {
             if (var2 == AccountType.CRACKED) {
-               var9 = Uuids.method_43344(var8).toString();
+               var9 = Uuids.getOfflinePlayerUuid(var8).toString();
             }
 
             return new Account(
@@ -426,7 +428,7 @@ public final class Accounts {
             Path var13 = var12.resolveSibling(var12.getFileName().toString() + ".tmp");
 
             try (BufferedWriter var14 = Files.newBufferedWriter(var13)) {
-               GSON.toJson(var1, var14);
+               GSON.toJson((JsonElement)var1, var14);
             }
 
             try {
@@ -435,7 +437,7 @@ public final class Accounts {
                Files.move(var13, var12, StandardCopyOption.REPLACE_EXISTING);
             }
          } catch (IOException var11) {
-            LOGGER.warn("[EFN] Failed to save the account list", var11);
+            LOGGER.warn("[EFN] Failed to save the account list", (Throwable)var11);
          }
       }
    }

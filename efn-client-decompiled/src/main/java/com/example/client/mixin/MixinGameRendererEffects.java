@@ -21,36 +21,36 @@ public abstract class MixinGameRendererEffects {
    }
 
    @ModifyExpressionValue(
-      method = {"method_3172"},
+      method = {"renderHand"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_5498;method_31034()Z"
+         target = "Lnet/minecraft/client/option/Perspective;isFirstPerson()Z"
       )}
    )
-   private boolean efn$freecamHands(boolean var1) {
+   private boolean efn$freecamHands(boolean bl) {
       FreecamModule var2 = FreecamModule.active;
-      return var2 != null && var2.keepHands() || var1;
+      return var2 != null && var2.keepHands() || bl;
    }
 
    @Inject(
-      method = {"method_3189"},
+      method = {"showFloatingItem"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$cancelTotemAnimation(ItemStack var1, CallbackInfo var2) {
+   private void efn$cancelTotemAnimation(ItemStack itemStack, CallbackInfo callbackInfo) {
       if (NoRenderModule.hideTotemAnimation()) {
-         var2.cancel();
+         callbackInfo.cancel();
       }
    }
 
    @WrapOperation(
-      method = {"method_3188"},
+      method = {"renderWorld"},
       at = {@At(
          value = "INVOKE",
          target = "Ljava/lang/Math;max(FF)F"
       )}
    )
-   private float efn$cancelNauseaWobble(float var1, float var2, Operation<Float> var3) {
-      return NoRenderModule.hideNauseaPortal() ? 0.0F : (Float)var3.call(new Object[]{var1, var2});
+   private float efn$cancelNauseaWobble(float f, float g, Operation<Float> operation) {
+      return NoRenderModule.hideNauseaPortal() ? 0.0F : (Float)operation.call(f, g);
    }
 }

@@ -70,7 +70,7 @@ public final class LyricsService implements AutoCloseable {
    private final Object lock = new Object();
    private final Map<String, LyricsService.Memo> memory = new LinkedHashMap<String, LyricsService.Memo>(128, 0.75F, true) {
       @Override
-      protected boolean removeEldestEntry(Entry<String, LyricsService.Memo> var1) {
+      protected boolean removeEldestEntry(Entry<String, LyricsService.Memo> entry) {
          return this.size() > 64;
       }
    };
@@ -97,10 +97,10 @@ public final class LyricsService implements AutoCloseable {
       this.worker.allowCoreThreadTimeOut(true);
    }
 
-   public Lyrics lookup(LyricsQuery var1) {
-      if (var1 != null && var1.searchable()) {
+   public Lyrics lookup(LyricsQuery lyricsQuery) {
+      if (lyricsQuery != null && lyricsQuery.searchable()) {
          String var2;
-         this.wanted = var2 = this.keyOf(var1);
+         this.wanted = var2 = this.keyOf(lyricsQuery);
          long var3 = System.currentTimeMillis();
          Object var5 = this.lock;
          synchronized (var5) {
@@ -110,7 +110,7 @@ public final class LyricsService implements AutoCloseable {
             } else {
                if (!this.closed && this.pending.add(var2)) {
                   try {
-                     this.worker.execute(() -> this.resolve(var2, var1));
+                     this.worker.execute(() -> this.resolve(var2, lyricsQuery));
                   } catch (RejectedExecutionException var10) {
                      this.pending.remove(var2);
                   }
@@ -128,9 +128,9 @@ public final class LyricsService implements AutoCloseable {
       }
    }
 
-   public void setOnline(boolean var1) {
-      if (this.online != var1) {
-         this.online = var1;
+   public void setOnline(boolean bl) {
+      if (this.online != bl) {
+         this.online = bl;
          Object var2 = this.lock;
          synchronized (var2) {
             this.mode++;
@@ -159,37 +159,37 @@ public final class LyricsService implements AutoCloseable {
       }
    }
 
-   private void resolve(String var1, LyricsQuery var2) {
+   private void resolve(String string, LyricsQuery lyricsQuery) {
       LyricsDiskCache.Entry var3 = null;
       int var4 = this.mode;
 
       try {
-         if (this.closed || !var1.equals(this.wanted)) {
+         if (this.closed || !string.equals(this.wanted)) {
             return;
          }
 
-         var3 = this.disk == null ? null : this.disk.read(var1);
+         var3 = this.disk == null ? null : this.disk.read(string);
          if (var3 != null) {
             long var6 = var3.fetchedAt() + (var3.found() ? FOUND_TTL_MS : NOT_FOUND_TTL_MS);
             if (System.currentTimeMillis() < var6) {
-               this.remember(var1, Lyrics.of(var3.track()), var6);
+               this.remember(string, Lyrics.of(var3.track()), var6);
                return;
             }
          }
 
          if (this.online) {
-            LyricsService.Found var43 = this.fetch(var2);
+            LyricsService.Found var43 = this.fetch(lyricsQuery);
             long var44 = System.currentTimeMillis();
             Lyrics var9 = Lyrics.of(var43.track());
             if (!var43.complete()) {
-               this.remember(var1, var9, this.retryAt());
+               this.remember(string, var9, this.retryAt());
                return;
             }
 
             LrclibTrack var10 = var9.status() == Lyrics.Status.NOT_FOUND ? null : var43.track();
-            this.remember(var1, var9, var44 + (var10 == null ? NOT_FOUND_TTL_MS : FOUND_TTL_MS));
+            this.remember(string, var9, var44 + (var10 == null ? NOT_FOUND_TTL_MS : FOUND_TTL_MS));
             if (this.disk != null && !this.closed) {
-               this.disk.write(var1, var10, var44);
+               this.disk.write(string, var10, var44);
                if (++this.writesSincePrune >= 25) {
                   this.writesSincePrune = 0;
                   this.disk.prune();
@@ -204,40 +204,40 @@ public final class LyricsService implements AutoCloseable {
          Object var7 = this.lock;
          synchronized (var7) {
             if (this.mode == var4) {
-               this.memory.put(var1, new LyricsService.Memo(var42, System.currentTimeMillis() + 60000L));
+               this.memory.put(string, new LyricsService.Memo(var42, System.currentTimeMillis() + 60000L));
             }
          }
       } catch (InterruptedException var38) {
          Thread.currentThread().interrupt();
          return;
       } catch (IOException var39) {
-         LOGGER.debug("[EFN] Lyrics lookup for \"{}\" failed: {}", var2.title(), var39.toString());
-         this.remember(var1, var3 != null ? Lyrics.of(var3.track()) : Lyrics.UNAVAILABLE, this.retryAt());
+         LOGGER.debug("[EFN] Lyrics lookup for \"{}\" failed: {}", lyricsQuery.title(), var39.toString());
+         this.remember(string, var3 != null ? Lyrics.of(var3.track()) : Lyrics.UNAVAILABLE, this.retryAt());
          return;
       } catch (RuntimeException var40) {
-         LOGGER.debug("[EFN] Lyrics lookup for \"" + var2.title() + "\" failed", var40);
-         this.remember(var1, Lyrics.UNAVAILABLE, this.retryAt());
+         LOGGER.debug("[EFN] Lyrics lookup for \"" + lyricsQuery.title() + "\" failed", (Throwable)var40);
+         this.remember(string, Lyrics.UNAVAILABLE, this.retryAt());
          return;
       } finally {
          Object var19 = this.lock;
          synchronized (var19) {
-            this.pending.remove(var1);
+            this.pending.remove(string);
          }
       }
    }
 
-   private LyricsService.Found fetch(LyricsQuery var1) throws IOException, InterruptedException {
-      LrclibTrack var2 = this.get(var1, true);
-      if (var2 == null && !var1.album().isEmpty()) {
-         var2 = this.get(var1, false);
+   private LyricsService.Found fetch(LyricsQuery lyricsQuery) throws IOException, InterruptedException {
+      LrclibTrack var2 = this.get(lyricsQuery, true);
+      if (var2 == null && !lyricsQuery.album().isEmpty()) {
+         var2 = this.get(lyricsQuery, false);
       }
 
       if (var2 == null || !var2.hasSynced() && (!var2.instrumental() || var2.hasPlain())) {
          LrclibTrack var3 = var2 != null && var2.usable() ? var2 : null;
 
          try {
-            for (String[] var5 : LyricsMatcher.searchTerms(var1)) {
-               LrclibTrack var6 = LyricsMatcher.best(this.search(var5[0], var5[1]), var1);
+            for (String[] var5 : LyricsMatcher.searchTerms(lyricsQuery)) {
+               LrclibTrack var6 = LyricsMatcher.best(this.search(var5[0], var5[1]), lyricsQuery);
                if (var6 != null) {
                   if (var6.hasSynced()) {
                      return new LyricsService.Found(var6, true);
@@ -262,18 +262,18 @@ public final class LyricsService implements AutoCloseable {
       }
    }
 
-   private LrclibTrack get(LyricsQuery var1, boolean var2) throws IOException, InterruptedException {
+   private LrclibTrack get(LyricsQuery lyricsQuery, boolean bl) throws IOException, InterruptedException {
       LyricsService.Response var3 = this.send(
          withQuery(
             "api/get",
             "track_name",
-            var1.title(),
+            lyricsQuery.title(),
             "artist_name",
-            var1.artist(),
+            lyricsQuery.artist(),
             "album_name",
-            var2 ? var1.album() : "",
+            bl ? lyricsQuery.album() : "",
             "duration",
-            var1.hasDuration() ? Integer.toString(var1.durationSeconds()) : ""
+            lyricsQuery.hasDuration() ? Integer.toString(lyricsQuery.durationSeconds()) : ""
          )
       );
       if (var3.status() == 404) {
@@ -285,8 +285,8 @@ public final class LyricsService implements AutoCloseable {
       }
    }
 
-   private List<LrclibTrack> search(String var1, String var2) throws IOException, InterruptedException {
-      LyricsService.Response var3 = this.send(withQuery("api/search", "track_name", var1, "artist_name", var2));
+   private List<LrclibTrack> search(String string, String string2) throws IOException, InterruptedException {
+      LyricsService.Response var3 = this.send(withQuery("api/search", "track_name", string, "artist_name", string2));
       if (var3.status() == 404) {
          return List.of();
       } else if (var3.status() != 200) {
@@ -296,8 +296,8 @@ public final class LyricsService implements AutoCloseable {
       }
    }
 
-   private LyricsService.Response send(String var1) throws IOException, InterruptedException {
-      URI var2 = LRCLIB.resolve(var1);
+   private LyricsService.Response send(String string) throws IOException, InterruptedException {
+      URI var2 = LRCLIB.resolve(string);
       int var3 = 1;
 
       while (true) {
@@ -326,8 +326,8 @@ public final class LyricsService implements AutoCloseable {
       }
    }
 
-   private HttpResponse<byte[]> exchange(HttpRequest var1) throws IOException, InterruptedException {
-      CompletableFuture var2 = this.http().sendAsync(var1, var0 -> new LyricsService.CappedBody(4194304));
+   private HttpResponse<byte[]> exchange(HttpRequest httpRequest) throws IOException, InterruptedException {
+      CompletableFuture var2 = this.http().sendAsync(httpRequest, responseInfo -> new LyricsService.CappedBody(4194304));
 
       try {
          return (HttpResponse<byte[]>)var2.get(REQUEST_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
@@ -381,10 +381,10 @@ public final class LyricsService implements AutoCloseable {
       }
    }
 
-   private void remember(String var1, Lyrics var2, long var3) {
+   private void remember(String string, Lyrics lyrics, long l) {
       Object var5 = this.lock;
       synchronized (var5) {
-         this.memory.put(var1, new LyricsService.Memo(var2, var3));
+         this.memory.put(string, new LyricsService.Memo(lyrics, l));
       }
    }
 
@@ -392,25 +392,25 @@ public final class LyricsService implements AutoCloseable {
       return Math.max(System.currentTimeMillis() + 60000L, this.busyUntil);
    }
 
-   private String keyOf(LyricsQuery var1) {
+   private String keyOf(LyricsQuery lyricsQuery) {
       LyricsService.KeyMemo var2 = this.lastKey;
-      if (var2 != null && var2.query().equals(var1)) {
+      if (var2 != null && var2.query().equals(lyricsQuery)) {
          return var2.key();
       } else {
-         String var3 = var1.cacheKey();
-         this.lastKey = new LyricsService.KeyMemo(var1, var3);
+         String var3 = lyricsQuery.cacheKey();
+         this.lastKey = new LyricsService.KeyMemo(lyricsQuery, var3);
          return var3;
       }
    }
 
-   private static String withQuery(String var0, String... var1) {
-      StringBuilder var2 = new StringBuilder(var0);
+   private static String withQuery(String string, String... strings) {
+      StringBuilder var2 = new StringBuilder(string);
       byte var3 = 63;
 
-      for (byte var4 = 0; var4 + 1 < var1.length; var4 += 2) {
-         String var5 = var1[var4 + 1];
+      for (byte var4 = 0; var4 + 1 < strings.length; var4 += 2) {
+         String var5 = strings[var4 + 1];
          if (var5 != null && !var5.isEmpty()) {
-            var2.append((char)var3).append(var1[var4]).append('=').append(URLEncoder.encode(var5, StandardCharsets.UTF_8));
+            var2.append((char)var3).append(strings[var4]).append('=').append(URLEncoder.encode(var5, StandardCharsets.UTF_8));
             var3 = 38;
          }
       }
@@ -418,17 +418,17 @@ public final class LyricsService implements AutoCloseable {
       return var2.toString();
    }
 
-   private static JsonElement json(String var0) throws IOException {
+   private static JsonElement json(String string) throws IOException {
       try {
-         return LrclibTrack.parse(var0);
+         return LrclibTrack.parse(string);
       } catch (JsonParseException var2) {
          throw new IOException("LRCLIB sent malformed JSON", var2);
       }
    }
 
-   static long retryAfterMillis(String var0) {
-      if (var0 != null && !var0.isBlank()) {
-         String var3 = var0.strip();
+   static long retryAfterMillis(String string) {
+      if (string != null && !string.isBlank()) {
+         String var3 = string.strip();
 
          long var1;
          try {
@@ -447,9 +447,9 @@ public final class LyricsService implements AutoCloseable {
       }
    }
 
-   private static ThreadFactory daemonThreads(String var0) {
-      return var1 -> {
-         Thread var2 = new Thread(var1, var0);
+   private static ThreadFactory daemonThreads(String string) {
+      return runnable -> {
+         Thread var2 = new Thread(runnable, string);
          var2.setDaemon(true);
          return var2;
       };
@@ -466,7 +466,10 @@ public final class LyricsService implements AutoCloseable {
    static String defaultUserAgent() {
       String var0;
       try {
-         var0 = FabricLoader.getInstance().getModContainer("efn").map(var0x -> var0x.getMetadata().getVersion().getFriendlyString()).orElse("dev");
+         var0 = FabricLoader.getInstance()
+            .getModContainer("efn")
+            .map(modContainer -> modContainer.getMetadata().getVersion().getFriendlyString())
+            .orElse("dev");
       } catch (RuntimeException | LinkageError var2) {
          var0 = "dev";
       }
@@ -481,8 +484,8 @@ public final class LyricsService implements AutoCloseable {
 
    @Environment(EnvType.CLIENT)
    private static final class BusyException extends IOException {
-      BusyException(String var1) {
-         super(var1);
+      BusyException(String string) {
+         super(string);
       }
    }
 
@@ -493,8 +496,8 @@ public final class LyricsService implements AutoCloseable {
       private final int limit;
       private Subscription subscription;
 
-      CappedBody(int var1) {
-         this.limit = var1;
+      CappedBody(int i) {
+         this.limit = i;
       }
 
       @Override
@@ -503,14 +506,14 @@ public final class LyricsService implements AutoCloseable {
       }
 
       @Override
-      public void onSubscribe(Subscription var1) {
-         this.subscription = var1;
-         var1.request(9223372036854775807L);
+      public void onSubscribe(Subscription subscription) {
+         this.subscription = subscription;
+         subscription.request(9223372036854775807L);
       }
 
-      public void onNext(List<ByteBuffer> var1) {
+      public void onNext(List<ByteBuffer> list) {
          if (!this.result.isDone()) {
-            for (ByteBuffer var3 : var1) {
+            for (ByteBuffer var3 : list) {
                if (this.bytes.size() + var3.remaining() > this.limit) {
                   this.subscription.cancel();
                   this.result.completeExceptionally(new IOException("LRCLIB response too large"));
@@ -525,8 +528,8 @@ public final class LyricsService implements AutoCloseable {
       }
 
       @Override
-      public void onError(Throwable var1) {
-         this.result.completeExceptionally(var1);
+      public void onError(Throwable throwable) {
+         this.result.completeExceptionally(throwable);
       }
 
       @Override

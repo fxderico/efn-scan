@@ -19,13 +19,13 @@ public enum Bone {
    final float gripY;
    final float gripZ;
 
-   private Bone(float nullxx, float nullxxx, float nullxxxx, float nullxxxxx, float nullxxxxxx, float nullxxxxxxx) {
-      this.pivotX = nullxx;
-      this.pivotY = nullxxx;
-      this.pivotZ = nullxxxx;
-      this.gripX = nullxxxxx;
-      this.gripY = nullxxxxxx;
-      this.gripZ = nullxxxxxxx;
+   private Bone(float f, float g, float h, float j, float k, float l) {
+      this.pivotX = f;
+      this.pivotY = g;
+      this.pivotZ = h;
+      this.gripX = j;
+      this.gripY = k;
+      this.gripZ = l;
    }
 
    public boolean arm() {

@@ -34,50 +34,56 @@ public final class GoliathPickerScreen extends Screen {
    private boolean dragAdds;
    private DonutGoliaths.Goliath dragLast;
 
-   public GoliathPickerScreen(Set<DonutGoliaths.Goliath> var1, Consumer<Set<DonutGoliaths.Goliath>> var2) {
-      super(Text.method_43470("Goliath RTP"));
-      this.picked = new LinkedHashSet<>(var1);
-      this.onPick = var2;
+   public GoliathPickerScreen(Set<DonutGoliaths.Goliath> set, Consumer<Set<DonutGoliaths.Goliath>> consumer) {
+      super(Text.literal("Goliath RTP"));
+      this.picked = new LinkedHashSet<>(set);
+      this.onPick = consumer;
    }
 
-   protected void method_25426() {
-      super.method_25426();
+   @Override
+   protected void init() {
+      super.init();
       ImGuiManager.getInstance().activate(this::draw);
    }
 
-   public void method_25432() {
-      super.method_25432();
+   @Override
+   public void removed() {
+      super.removed();
       ImGuiManager.getInstance().deactivate();
       this.onPick.accept(this.confirmed ? Set.copyOf(this.picked) : null);
    }
 
-   public void method_25420(DrawContext var1, int var2, int var3, float var4) {
+   @Override
+   public void renderBackground(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
       if (ThemeStore.get().menuBlur.get()) {
-         super.method_25420(var1, var2, var3, var4);
+         super.renderBackground(context, mouseX, mouseY, deltaTicks);
       }
    }
 
-   public void method_25394(DrawContext var1, int var2, int var3, float var4) {
-      ImGuiManager.getInstance().requestCursor(var1);
+   @Override
+   public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+      ImGuiManager.getInstance().requestCursor(context);
    }
 
-   public boolean method_25404(KeyInput var1) {
-      if (var1.comp_4795() != 257 && var1.comp_4795() != 335) {
-         return super.method_25404(var1);
+   @Override
+   public boolean keyPressed(KeyInput input) {
+      if (input.key() != 257 && input.key() != 335) {
+         return super.keyPressed(input);
       } else {
          this.confirm();
          return true;
       }
    }
 
-   public boolean method_25421() {
+   @Override
+   public boolean shouldPause() {
       return false;
    }
 
    private void confirm() {
       if (!this.picked.isEmpty()) {
          this.confirmed = true;
-         this.field_22787.execute(() -> this.method_25419());
+         this.client.execute(() -> this.close());
       }
    }
 
@@ -144,26 +150,26 @@ public final class GoliathPickerScreen extends Screen {
       ImGui.popStyleColor();
    }
 
-   private static void drawHeader(ImDrawList var0, float var1, float var2, float var3, float var4, float var5, boolean var6) {
-      float var7 = Math.min(var4, var5 + EfnWidgets.s(2.0F));
-      int var8 = EfnWidgets.c(EfnWidgets.withAlpha(251658239, 1.0F - var7 / (2.0F * var4)));
-      int var9 = EfnWidgets.c(EfnWidgets.withAlpha(251658239, 1.0F - var7 / var4));
+   private static void drawHeader(ImDrawList imDrawList, float f, float g, float h, float i, float j, boolean bl) {
+      float var7 = Math.min(i, j + EfnWidgets.s(2.0F));
+      int var8 = EfnWidgets.c(EfnWidgets.withAlpha(251658239, 1.0F - var7 / (2.0F * i)));
+      int var9 = EfnWidgets.c(EfnWidgets.withAlpha(251658239, 1.0F - var7 / i));
       int var10 = EfnWidgets.c(16777215);
-      var0.addRectFilled(var1, var2, var1 + var3, var2 + var7, var8, var5, 48);
-      var0.addRectFilledMultiColor(var1, var2 + var7, var1 + var3, var2 + var4, var9, var9, var10, var10);
+      imDrawList.addRectFilled(f, g, f + h, g + var7, var8, j, 48);
+      imDrawList.addRectFilledMultiColor(f, g + var7, f + h, g + i, var9, var9, var10, var10);
       ImFont var11 = ImGuiManager.getInstance().categoryFont();
       float var12 = EfnWidgets.s(7.0F);
-      float var13 = var1 + EfnWidgets.s(14.0F) + var12;
-      float var14 = var2 + var4 * 0.5F;
-      EfnWidgets.grid(var0, var13, var14, var12, -4542808);
-      EfnWidgets.text(var0, var11, var13 + var12 + EfnWidgets.s(9.0F), var2 + (var4 - EfnWidgets.lineHeight(var11)) * 0.5F, -461582, "Goliath RTP", var6);
+      float var13 = f + EfnWidgets.s(14.0F) + var12;
+      float var14 = g + i * 0.5F;
+      EfnWidgets.grid(imDrawList, var13, var14, var12, -4542808);
+      EfnWidgets.text(imDrawList, var11, var13 + var12 + EfnWidgets.s(9.0F), g + (i - EfnWidgets.lineHeight(var11)) * 0.5F, -461582, "Goliath RTP", bl);
    }
 
-   private DonutGoliaths.Goliath drawMap(ImDrawList var1, float var2) {
+   private DonutGoliaths.Goliath drawMap(ImDrawList imDrawList, float f) {
       float var6 = ImGui.getCursorScreenPosX();
       float var7 = ImGui.getCursorScreenPosY();
-      ImGui.invisibleButton("##goliath_map", var2, var2);
-      float var8 = var2 / 36.0F;
+      ImGui.invisibleButton("##goliath_map", f, f);
+      float var8 = f / 36.0F;
       DonutGoliaths.Goliath var9 = ImGui.isItemHovered() ? goliathAt(ImGui.getMousePosX() - var6, ImGui.getMousePosY() - var7, var8) : null;
       boolean var5 = var9 != null && var9.region() != 2;
       if (ImGui.isItemClicked(0) && var5) {
@@ -201,11 +207,11 @@ public final class GoliathPickerScreen extends Screen {
             DonutGoliaths.Goliath var19 = new DonutGoliaths.Goliath(var3, var17);
             boolean var18 = !var15 && (this.picked.contains(var19) || var19.equals(var9));
             float var21 = var15 ? 0.3F : (var18 ? 1.0F : (var13 ? 0.45F : 0.85F));
-            RegionMapRenderer.tile(var1, var6, var7, var8, var16[var17], HudChrome.scaleAlpha(var14, var21), var12);
+            RegionMapRenderer.tile(imDrawList, var6, var7, var8, var16[var17], HudChrome.scaleAlpha(var14, var21), var12);
          }
       }
 
-      RegionMapRenderer.drawDividers(var1, var6, var7, var8, 1.0F, var11);
+      RegionMapRenderer.drawDividers(imDrawList, var6, var7, var8, 1.0F, var11);
 
       for (int var24 = 0; var24 < DonutGoliaths.CELLS.length; var24++) {
          boolean var25 = var24 == 2;
@@ -220,40 +226,40 @@ public final class GoliathPickerScreen extends Screen {
             DonutGoliaths.Goliath var22 = new DonutGoliaths.Goliath(var24, var28);
             float var23 = EfnWidgets.s(0.75F);
             if (this.picked.contains(var22)) {
-               var1.addRect(var31 + var23, var33 + var23, var20 - var23, var35 - var23, -1, 0.0F, 0, EfnWidgets.s(1.5F));
+               imDrawList.addRect(var31 + var23, var33 + var23, var20 - var23, var35 - var23, -1, 0.0F, 0, EfnWidgets.s(1.5F));
             } else if (!var25 && var22.equals(var9)) {
-               var1.addRect(var31 + var23, var33 + var23, var20 - var23, var35 - var23, -1711276033, 0.0F, 0, EfnWidgets.s(1.0F));
+               imDrawList.addRect(var31 + var23, var33 + var23, var20 - var23, var35 - var23, -1711276033, 0.0F, 0, EfnWidgets.s(1.0F));
             }
 
-            RegionMapRenderer.drawCenteredTileText(var1, var28 + 1, var31, var33, var20 - var31, var35 - var33, 1.0F, var25 ? 0.5F : 1.0F, var11);
+            RegionMapRenderer.drawCenteredTileText(imDrawList, var28 + 1, var31, var33, var20 - var31, var35 - var33, 1.0F, var25 ? 0.5F : 1.0F, var11);
          }
       }
 
-      if (this.field_22787.field_1724 != null && this.field_22787.field_1687 != null && this.field_22787.field_1687.method_27983() != World.field_25181) {
-         double var26 = this.field_22787.field_1687.method_27983() == World.field_25180 ? 8.0 : 1.0;
+      if (this.client.player != null && this.client.world != null && this.client.world.getRegistryKey() != World.END) {
+         double var26 = this.client.world.getRegistryKey() == World.NETHER ? 8.0 : 1.0;
          double var29 = 450000.0;
-         double var32 = (this.field_22787.field_1724.method_23317() * var26 + 225000.0) / var29;
-         double var34 = (this.field_22787.field_1724.method_23321() * var26 + 225000.0) / var29;
+         double var32 = (this.client.player.getX() * var26 + 225000.0) / var29;
+         double var34 = (this.client.player.getZ() * var26 + 225000.0) / var29;
          if (var32 >= 0.0 && var32 < 1.0 && var34 >= 0.0 && var34 < 1.0) {
-            float var36 = var6 + (float)(var32 * var2);
-            float var37 = var7 + (float)(var34 * var2);
-            var1.addCircleFilled(var36, var37, EfnWidgets.s(3.0F), -13487361);
-            var1.addCircle(var36, var37, EfnWidgets.s(3.0F), -1728053248, 16, EfnWidgets.s(1.0F));
+            float var36 = var6 + (float)(var32 * f);
+            float var37 = var7 + (float)(var34 * f);
+            imDrawList.addCircleFilled(var36, var37, EfnWidgets.s(3.0F), -13487361);
+            imDrawList.addCircle(var36, var37, EfnWidgets.s(3.0F), -1728053248, 16, EfnWidgets.s(1.0F));
          }
       }
 
       return var9;
    }
 
-   private void toggle(DonutGoliaths.Goliath var1) {
+   private void toggle(DonutGoliaths.Goliath goliath) {
       if (this.dragAdds) {
-         this.picked.add(var1);
+         this.picked.add(goliath);
       } else {
-         this.picked.remove(var1);
+         this.picked.remove(goliath);
       }
    }
 
-   private static DonutGoliaths.Goliath goliathAt(float var0, float var1, float var2) {
-      return !(var0 < 0.0F) && !(var1 < 0.0F) ? DonutGoliaths.at(var0 / var2 * 12500.0F - 225000.0F, var1 / var2 * 12500.0F - 225000.0F) : null;
+   private static DonutGoliaths.Goliath goliathAt(float f, float g, float h) {
+      return !(f < 0.0F) && !(g < 0.0F) ? DonutGoliaths.at(f / h * 12500.0F - 225000.0F, g / h * 12500.0F - 225000.0F) : null;
    }
 }

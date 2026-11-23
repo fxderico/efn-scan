@@ -16,13 +16,13 @@ public abstract class MixinNameProtectBossHealthOverlay {
    }
 
    @ModifyExpressionValue(
-      method = {"method_1796"},
+      method = {"render"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_345;method_5414()Lnet/minecraft/class_2561;"
+         target = "Lnet/minecraft/client/gui/hud/ClientBossBar;getName()Lnet/minecraft/text/Text;"
       )}
    )
-   private Text efn$nameProtectBossName(Text var1) {
-      return NameProtectModule.protect(var1);
+   private Text efn$nameProtectBossName(Text text) {
+      return NameProtectModule.protect(text);
    }
 }

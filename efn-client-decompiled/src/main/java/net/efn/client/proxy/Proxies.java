@@ -66,35 +66,35 @@ public final class Proxies {
       return null;
    }
 
-   public synchronized void setEnabled(Proxy var1, boolean var2) {
+   public synchronized void setEnabled(Proxy proxy, boolean bl) {
       this.ensureLoaded();
-      if (this.proxies.contains(var1)) {
-         if (var2) {
-            if (!var1.isValid()) {
+      if (this.proxies.contains(proxy)) {
+         if (bl) {
+            if (!proxy.isValid()) {
                return;
             }
 
             for (Proxy var4 : this.proxies) {
-               var4.enabled = var4 == var1;
+               var4.enabled = var4 == proxy;
             }
          } else {
-            var1.enabled = false;
+            proxy.enabled = false;
          }
 
          this.save();
       }
    }
 
-   public synchronized void remove(Proxy var1) {
+   public synchronized void remove(Proxy proxy) {
       this.ensureLoaded();
-      if (this.proxies.remove(var1)) {
+      if (this.proxies.remove(proxy)) {
          this.save();
       }
    }
 
-   public synchronized void removeAll(Collection<Proxy> var1) {
+   public synchronized void removeAll(Collection<Proxy> collection) {
       this.ensureLoaded();
-      if (this.proxies.removeAll(Set.copyOf(var1))) {
+      if (this.proxies.removeAll(Set.copyOf(collection))) {
          this.save();
       }
    }
@@ -104,9 +104,9 @@ public final class Proxies {
       this.save();
    }
 
-   public synchronized int importText(String var1) {
+   public synchronized int importText(String string) {
       this.ensureLoaded();
-      if (var1 != null && !var1.isBlank()) {
+      if (string != null && !string.isBlank()) {
          HashSet var2 = new HashSet();
 
          for (Proxy var4 : this.proxies) {
@@ -115,7 +115,7 @@ public final class Proxies {
 
          ArrayList var9 = new ArrayList();
 
-         for (String var7 : var1.split("\\R")) {
+         for (String var7 : string.split("\\R")) {
             Proxy var8 = parseLine(var7);
             if (var8 != null && var2.add(key(var8))) {
                var9.add(var8);
@@ -154,12 +154,12 @@ public final class Proxies {
       }
    }
 
-   private static String key(Proxy var0) {
-      return var0.displayAddress().toLowerCase(Locale.ROOT);
+   private static String key(Proxy proxy) {
+      return proxy.displayAddress().toLowerCase(Locale.ROOT);
    }
 
-   static Proxy parseLine(String var0) {
-      String var4 = var0 == null ? "" : var0.strip();
+   static Proxy parseLine(String string) {
+      String var4 = string == null ? "" : string.strip();
       if (!var4.isEmpty() && !var4.startsWith("#")) {
          ProxyType var6 = ProxyType.SOCKS5;
          int var7 = var4.indexOf("://");
@@ -234,26 +234,26 @@ public final class Proxies {
       }
    }
 
-   private static int parsePort(String var0) {
-      if (!var0.isEmpty() && var0.length() <= 5) {
-         for (int var1 = 0; var1 < var0.length(); var1++) {
-            if (var0.charAt(var1) < '0' || var0.charAt(var1) > '9') {
+   private static int parsePort(String string) {
+      if (!string.isEmpty() && string.length() <= 5) {
+         for (int var1 = 0; var1 < string.length(); var1++) {
+            if (string.charAt(var1) < '0' || string.charAt(var1) > '9') {
                return -1;
             }
          }
 
-         int var2 = Integer.parseInt(var0);
+         int var2 = Integer.parseInt(string);
          return var2 >= 1 && var2 <= 65535 ? var2 : -1;
       } else {
          return -1;
       }
    }
 
-   private static String normalizeHost(String var0) {
-      if (IPV4.matcher(var0).matches()) {
+   private static String normalizeHost(String string) {
+      if (IPV4.matcher(string).matches()) {
          StringBuilder var1 = new StringBuilder();
 
-         for (String var5 : var0.split("\\.")) {
+         for (String var5 : string.split("\\.")) {
             int var6 = Integer.parseInt(var5);
             if (var6 > 255) {
                return null;
@@ -267,10 +267,10 @@ public final class Proxies {
          }
 
          return var1.toString();
-      } else if (var0.indexOf(58) >= 0) {
-         return InetAddresses.isInetAddress(var0) ? var0 : null;
+      } else if (string.indexOf(58) >= 0) {
+         return InetAddresses.isInetAddress(string) ? string : null;
       } else {
-         return HOST_NAME.matcher(var0).matches() ? var0 : null;
+         return HOST_NAME.matcher(string).matches() ? string : null;
       }
    }
 
@@ -302,7 +302,7 @@ public final class Proxies {
                   }
                }
             } catch (RuntimeException | IOException var13) {
-               LOGGER.warn("[EFN] Failed to load the proxy list; starting empty", var13);
+               LOGGER.warn("[EFN] Failed to load the proxy list; starting empty", (Throwable)var13);
                var2.clear();
                this.setAside(var1);
             }
@@ -314,28 +314,28 @@ public final class Proxies {
       }
    }
 
-   private void setAside(Path var1) {
+   private void setAside(Path path) {
       try {
-         Files.move(var1, var1.resolveSibling(var1.getFileName() + ".corrupt"), StandardCopyOption.REPLACE_EXISTING);
+         Files.move(path, path.resolveSibling(path.getFileName() + ".corrupt"), StandardCopyOption.REPLACE_EXISTING);
       } catch (IOException var3) {
-         LOGGER.warn("[EFN] Couldn't move the broken proxy list aside; not saving proxies this session", var3);
+         LOGGER.warn("[EFN] Couldn't move the broken proxy list aside; not saving proxies this session", (Throwable)var3);
          this.readOnly = true;
       }
    }
 
-   private static Proxy readEntry(JsonObject var0) {
+   private static Proxy readEntry(JsonObject jsonObject) {
       Proxy var3 = new Proxy();
-      var3.name = string(var0, "name");
-      ProxyType var4 = ProxyType.parse(string(var0, "type"));
+      var3.name = string(jsonObject, "name");
+      ProxyType var4 = ProxyType.parse(string(jsonObject, "type"));
       var3.type = var4 == null ? ProxyType.SOCKS5 : var4;
-      var3.address = string(var0, "address");
-      var3.port = integer(var0, "port");
-      var3.username = string(var0, "username");
-      var3.password = string(var0, "password");
-      JsonElement var5 = var0.get("enabled");
+      var3.address = string(jsonObject, "address");
+      var3.port = integer(jsonObject, "port");
+      var3.username = string(jsonObject, "username");
+      var3.password = string(jsonObject, "password");
+      JsonElement var5 = jsonObject.get("enabled");
       JsonPrimitive var2;
       var3.enabled = var5 instanceof JsonPrimitive && (var2 = (JsonPrimitive)var5).isBoolean() && var2.getAsBoolean();
-      var5 = var0.get("ping");
+      var5 = jsonObject.get("ping");
       JsonPrimitive var1;
       if (var5 instanceof JsonPrimitive && (var1 = (JsonPrimitive)var5).isNumber()) {
          var3.ping = Math.max(-1, var1.getAsInt());
@@ -344,9 +344,9 @@ public final class Proxies {
       return var3;
    }
 
-   private static String string(JsonObject var0, String var1) {
+   private static String string(JsonObject jsonObject, String string) {
       String var2;
-      if (var0.get(var1) instanceof JsonPrimitive var4) {
+      if (jsonObject.get(string) instanceof JsonPrimitive var4) {
          var2 = var4.getAsString();
       } else {
          var2 = "";
@@ -355,8 +355,8 @@ public final class Proxies {
       return var2;
    }
 
-   private static int integer(JsonObject var0, String var1) {
-      JsonElement var3 = var0.get(var1);
+   private static int integer(JsonObject jsonObject, String string) {
+      JsonElement var3 = jsonObject.get(string);
       JsonPrimitive var2;
       return var3 instanceof JsonPrimitive && (var2 = (JsonPrimitive)var3).isNumber() ? var2.getAsInt() : 0;
    }
@@ -397,7 +397,7 @@ public final class Proxies {
             Path var13 = var12.resolveSibling(var12.getFileName().toString() + ".tmp");
 
             try (BufferedWriter var14 = Files.newBufferedWriter(var13)) {
-               GSON.toJson(var1, var14);
+               GSON.toJson((JsonElement)var1, var14);
             }
 
             try {
@@ -406,7 +406,7 @@ public final class Proxies {
                Files.move(var13, var12, StandardCopyOption.REPLACE_EXISTING);
             }
          } catch (IOException var11) {
-            LOGGER.warn("[EFN] Failed to save the proxy list", var11);
+            LOGGER.warn("[EFN] Failed to save the proxy list", (Throwable)var11);
          }
       }
    }

@@ -67,11 +67,11 @@ final class MacSpotify extends ScriptedPlayer {
    }
 
    @Override
-   protected boolean send(ScriptedPlayer.Command var1) throws IOException, InterruptedException {
+   protected boolean send(ScriptedPlayer.Command command) throws IOException, InterruptedException {
       if (!appRunning()) {
          return false;
       } else {
-         String var2 = switch (var1) {
+         String var2 = switch (command) {
             case PLAY_PAUSE -> "playpause";
             case NEXT -> "next track";
             case PREVIOUS -> "previous track";
@@ -82,15 +82,15 @@ final class MacSpotify extends ScriptedPlayer {
    }
 
    private static boolean appRunning() {
-      return ProcessHandle.allProcesses().anyMatch(var0 -> {
-         Optional var1 = var0.info().command();
+      return ProcessHandle.allProcesses().anyMatch(processHandle -> {
+         Optional var1 = processHandle.info().command();
          return var1.isPresent() && ((String)var1.get()).endsWith("/Contents/MacOS/Spotify");
       });
    }
 
-   private static double number(String var0) {
+   private static double number(String string) {
       try {
-         return Double.parseDouble(var0.strip().replace(',', '.'));
+         return Double.parseDouble(string.strip().replace(',', '.'));
       } catch (NumberFormatException var2) {
          return 0.0;
       }

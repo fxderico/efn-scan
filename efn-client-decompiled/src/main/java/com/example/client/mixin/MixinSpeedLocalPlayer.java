@@ -18,12 +18,12 @@ public abstract class MixinSpeedLocalPlayer {
    }
 
    @ModifyVariable(
-      method = {"method_5784"},
+      method = {"move"},
       at = {@At("HEAD")},
       argsOnly = true
    )
-   private Vec3d efn$speedMove(Vec3d var1, @Local(argsOnly = true) MovementType var2) {
+   private Vec3d efn$speedMove(Vec3d vec3d, @Local(argsOnly = true) MovementType movementType) {
       SpeedModule var3 = SpeedModule.active;
-      return var3 != null && var2 == MovementType.field_6308 ? var3.onSelfMove((ClientPlayerEntity)this, var1) : var1;
+      return var3 != null && movementType == MovementType.SELF ? var3.onSelfMove((ClientPlayerEntity)this, vec3d) : vec3d;
    }
 }

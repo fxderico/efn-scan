@@ -21,15 +21,18 @@ public abstract class MixinProxyConnection {
    }
 
    @WrapOperation(
-      method = {"method_52271"},
+      method = {"connect"},
       at = {@At(
          value = "INVOKE",
          target = "Lio/netty/bootstrap/Bootstrap;handler(Lio/netty/channel/ChannelHandler;)Lio/netty/bootstrap/AbstractBootstrap;"
       )}
    )
    private static AbstractBootstrap<?, ?> efn$routeThroughProxy(
-      Bootstrap var0, ChannelHandler var1, Operation<AbstractBootstrap<?, ?>> var2, @Local(argsOnly = true) InetSocketAddress var3
+      Bootstrap bootstrap,
+      ChannelHandler channelHandler,
+      Operation<AbstractBootstrap<?, ?>> operation,
+      @Local(argsOnly = true) InetSocketAddress inetSocketAddress
    ) {
-      return (AbstractBootstrap<?, ?>)var2.call(new Object[]{var0, ProxyRouting.route(var3, var1)});
+      return (AbstractBootstrap<?, ?>)operation.call(bootstrap, ProxyRouting.route(inetSocketAddress, channelHandler));
    }
 }

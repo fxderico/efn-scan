@@ -101,7 +101,7 @@ public final class ShaderEspModule extends ClientModule {
       if (RenderSystem.isOnRenderThread()) {
          ShaderEspPass.release();
       } else {
-         MinecraftClient.method_1551().execute(ShaderEspModule::releaseIfOff);
+         MinecraftClient.getInstance().execute(ShaderEspModule::releaseIfOff);
       }
    }
 
@@ -111,28 +111,28 @@ public final class ShaderEspModule extends ClientModule {
       }
    }
 
-   public static void afterLevel(Camera var0, Matrix4f var1, Matrix4f var2) {
+   public static void afterLevel(Camera camera, Matrix4f matrix4f, Matrix4f matrix4f2) {
       ShaderEspModule var3 = active;
       if (var3 != null) {
-         var3.present(var0, var1, var2);
+         var3.present(camera, matrix4f, matrix4f2);
       }
    }
 
-   public static void extracted(Entity var0, EntityRenderState var1) {
+   public static void extracted(Entity entity, EntityRenderState entityRenderState) {
       if (active != null) {
-         ShaderEspPass.keep(var0, var1, Render3DEvent.frame());
+         ShaderEspPass.keep(entity, entityRenderState, Render3DEvent.frame());
       }
    }
 
-   private void onRender3D(Render3DEvent var1) {
-      this.pick(var1.frustum);
+   private void onRender3D(Render3DEvent render3DEvent) {
+      this.pick(render3DEvent.frustum);
       this.pickedFrame = Render3DEvent.frame();
       if (this.count > 0 && ShaderOverlay.shaderPackInUse()) {
-         this.sketch(var1.partialTick);
+         this.sketch(render3DEvent.partialTick);
       }
    }
 
-   private void present(Camera var1, Matrix4f var2, Matrix4f var3) {
+   private void present(Camera camera, Matrix4f matrix4f, Matrix4f matrix4f2) {
       int var4 = this.count;
 
       try {
@@ -140,9 +140,9 @@ public final class ShaderEspModule extends ClientModule {
             return;
          }
 
-         if (ShaderEspPass.paint(var1, var2, var3, this.picked, this.tints, var4, this.pickedFrame)) {
+         if (ShaderEspPass.paint(camera, matrix4f, matrix4f2, this.picked, this.tints, var4, this.pickedFrame)) {
             long var5 = System.nanoTime();
-            float var7 = Math.max(1.0F, MinecraftClient.method_1551().method_1522().field_1481 / 1080.0F);
+            float var7 = Math.max(1.0F, MinecraftClient.getInstance().getFramebuffer().textureHeight / 1080.0F);
             float var8 = (float)(var5 % 5200000000L / 5.2E9);
             ShaderEspPass.compose(
                this.stroke.get() * var7,
@@ -166,83 +166,83 @@ public final class ShaderEspModule extends ClientModule {
    }
 
    private int sheenTint() {
-      return this.manual() ? this.sheenColor.argb() | 0xFF000000 : ColorHelper.method_61319(0.6F, CosmeticAccent.argb(), -1);
+      return this.manual() ? this.sheenColor.argb() | 0xFF000000 : ColorHelper.lerp(0.6F, CosmeticAccent.argb(), -1);
    }
 
-   private float auraStrength(long var1) {
+   private float auraStrength(long l) {
       float var3 = this.aura.get() / 100.0F;
       if (!this.breathe.get()) {
          return var3;
       } else {
-         double var4 = var1 % 2600000000L / 2.6E9;
+         double var4 = l % 2600000000L / 2.6E9;
          float var6 = (float)(0.5 - 0.5 * Math.cos(var4 * 3.141592653589793 * 2.0));
          var6 = var6 * var6 * (3.0F - 2.0F * var6);
          return var3 * (0.45F + 0.55F * var6);
       }
    }
 
-   private void pick(Frustum var1) {
+   private void pick(Frustum frustum) {
       this.forget();
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientWorld var3 = var2.field_1687;
-      ClientPlayerEntity var4 = var2.field_1724;
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientWorld var3 = var2.world;
+      ClientPlayerEntity var4 = var2.player;
       if (var3 != null && var4 != null) {
-         Camera var5 = var2.field_1773.method_19418();
-         Vec3d var6 = var5.method_71156();
-         Entity var7 = var5.method_19333() ? null : var2.method_1560();
+         Camera var5 = var2.gameRenderer.getCamera();
+         Vec3d var6 = var5.getCameraPos();
+         Entity var7 = var5.isThirdPerson() ? null : var2.getCameraEntity();
          double var8 = (double)this.distance.get() * this.distance.get();
          int var10 = Math.max(1, Math.min(96, this.limit.getInt()));
          LivingEntity var11 = this.markTarget.get() ? CombatTarget.current(3500L) : null;
          boolean var12 = !this.manual();
          int var13 = var12 ? CosmeticAccent.argb() : 0;
 
-         for (Entity var15 : var3.method_18112()) {
+         for (Entity var15 : var3.getEntities()) {
             double var16;
             int var18;
             if (var15 != var4
                && var15 != var7
-               && !var15.method_31481()
+               && !var15.isRemoved()
                && (var18 = this.tintOf(var15, var11, var12, var13)) != 0
-               && !((var16 = var15.method_5707(var6)) > var8)
-               && (var1 == null || var1.method_23093(var15.method_5829().method_1014(0.75)))) {
+               && !((var16 = var15.squaredDistanceTo(var6)) > var8)
+               && (frustum == null || frustum.isVisible(var15.getBoundingBox().expand(0.75)))) {
                this.admit(var15, var18, var16, var10);
             }
          }
       }
    }
 
-   private int tintOf(Entity var1, LivingEntity var2, boolean var3, int var4) {
+   private int tintOf(Entity entity, LivingEntity livingEntity, boolean bl, int i) {
       LivingEntity var6;
-      if (var1 instanceof LivingEntity && (var6 = (LivingEntity)var1).method_29504()) {
+      if (entity instanceof LivingEntity && (var6 = (LivingEntity)entity).isDead()) {
          return 0;
       } else {
          boolean var7 = false;
          ColorSetting var5;
-         if (var1 instanceof PlayerEntity var8) {
-            if (!this.players.get() || var8.method_7325()) {
+         if (entity instanceof PlayerEntity var8) {
+            if (!this.players.get() || var8.isSpectator()) {
                return 0;
             }
 
-            var7 = FriendStore.getInstance().isFriend(var8.method_7334().name());
+            var7 = FriendStore.getInstance().isFriend(var8.getGameProfile().name());
             var5 = this.playerColor;
-         } else if (var1 instanceof EndCrystalEntity) {
+         } else if (entity instanceof EndCrystalEntity) {
             if (!this.crystals.get()) {
                return 0;
             }
 
             var5 = this.crystalColor;
-         } else if (var1 instanceof ItemEntity) {
+         } else if (entity instanceof ItemEntity) {
             if (!this.items.get()) {
                return 0;
             }
 
             var5 = this.itemColor;
          } else {
-            if (var1 instanceof Monster) {
+            if (entity instanceof Monster) {
                return 0;
             }
 
-            if (!(var1 instanceof MobEntity)) {
+            if (!(entity instanceof MobEntity)) {
                return 0;
             }
 
@@ -253,19 +253,19 @@ public final class ShaderEspModule extends ClientModule {
             var5 = this.passiveColor;
          }
 
-         if (var2 != null && var1 == var2) {
-            return var3 ? ColorHelper.method_61319(0.8F, var4, -1) : this.targetColor.argb() | 0xFF000000;
+         if (livingEntity != null && entity == livingEntity) {
+            return bl ? ColorHelper.lerp(0.8F, i, -1) : this.targetColor.argb() | 0xFF000000;
          } else if (var7) {
-            return var3 ? ColorHelper.method_61319(0.45F, var4, -1) : this.friendColor.argb() | 0xFF000000;
+            return bl ? ColorHelper.lerp(0.45F, i, -1) : this.friendColor.argb() | 0xFF000000;
          } else {
-            return var3 ? var4 : var5.argb() | 0xFF000000;
+            return bl ? i : var5.argb() | 0xFF000000;
          }
       }
    }
 
-   private void admit(Entity var1, int var2, double var3, int var5) {
+   private void admit(Entity entity, int i, double d, int j) {
       int var6 = this.count;
-      if (this.count < var5) {
+      if (this.count < j) {
          this.count++;
       } else {
          var6 = 0;
@@ -276,25 +276,25 @@ public final class ShaderEspModule extends ClientModule {
             }
          }
 
-         if (this.spans[var6] <= var3) {
+         if (this.spans[var6] <= d) {
             return;
          }
       }
 
-      this.picked[var6] = var1;
-      this.tints[var6] = var2;
-      this.spans[var6] = var3;
+      this.picked[var6] = entity;
+      this.tints[var6] = i;
+      this.spans[var6] = d;
    }
 
-   private void sketch(float var1) {
+   private void sketch(float f) {
       float var2 = Math.max(1.0F, this.stroke.get());
 
       for (int var3 = 0; var3 < this.count; var3++) {
          Entity var4 = this.picked[var3];
-         Vec3d var5 = var4.method_73189();
-         Vec3d var6 = var4.method_30950(var1);
-         Box var7 = var4.method_5829().method_989(var6.field_1352 - var5.field_1352, var6.field_1351 - var5.field_1351, var6.field_1350 - var5.field_1350);
-         GizmoDrawing.method_75541(var7, DrawStyle.method_75536(this.tints[var3], var2)).method_75533();
+         Vec3d var5 = var4.getEntityPos();
+         Vec3d var6 = var4.getLerpedPos(f);
+         Box var7 = var4.getBoundingBox().offset(var6.x - var5.x, var6.y - var5.y, var6.z - var5.z);
+         GizmoDrawing.box(var7, DrawStyle.stroked(this.tints[var3], var2)).ignoreOcclusion();
       }
    }
 

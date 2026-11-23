@@ -26,8 +26,8 @@ import net.minecraft.world.dimension.DimensionTypes;
 @Environment(EnvType.CLIENT)
 public final class NetheriteChunkTracker {
    static final int MAXIMUM_CANDIDATES = 512;
-   private static final int ANCIENT_STATE_ID = Block.method_9507(Blocks.field_22109.method_9564());
-   private static final RegistryKey<World> DONUT_NETHER = RegistryKey.method_29179(RegistryKeys.field_41223, Identifier.method_60655("worlds", "smp_nether"));
+   private static final int ANCIENT_STATE_ID = Block.getRawIdFromState(Blocks.ANCIENT_DEBRIS.getDefaultState());
+   private static final RegistryKey<World> DONUT_NETHER = RegistryKey.of(RegistryKeys.WORLD, Identifier.of("worlds", "smp_nether"));
    private static final Set<NetheriteChunkTracker.Candidate> CANDIDATES = new LinkedHashSet<>();
    private static WeakReference<ClientWorld> lastLevel = new WeakReference<>(null);
    private static RegistryKey<World> lastDimension;
@@ -37,72 +37,74 @@ public final class NetheriteChunkTracker {
    private NetheriteChunkTracker() {
    }
 
-   public static void onPacketApplied(Packet<?> var0) {
-      ClientWorld var1 = MinecraftClient.method_1551().field_1687;
+   public static void onPacketApplied(Packet<?> packet) {
+      ClientWorld var1 = MinecraftClient.getInstance().world;
       if (var1 != null && isNether(var1)) {
-         if (var0 instanceof ChunkDataS2CPacket var2) {
+         if (packet instanceof ChunkDataS2CPacket var2) {
             trackLevel(var1);
 
-            for (int var4 : HiddenDebrisScanner.findHiddenSections(var2.method_38598(), var1.method_32890(), var1.method_32891(), ANCIENT_STATE_ID)) {
-               add(new NetheriteChunkTracker.Candidate(var2.method_11523(), var2.method_11524(), var4));
+            for (int var4 : HiddenDebrisScanner.findHiddenSections(
+               var2.getChunkData(), var1.countVerticalSections(), var1.getBottomSectionCoord(), ANCIENT_STATE_ID
+            )) {
+               add(new NetheriteChunkTracker.Candidate(var2.getChunkX(), var2.getChunkZ(), var4));
             }
-         } else if (var0 instanceof BlockUpdateS2CPacket var5) {
-            onBlockUpdate(var5.method_11309(), var5.method_11308());
-         } else if (var0 instanceof ChunkDeltaUpdateS2CPacket var6) {
-            var6.method_30621(NetheriteChunkTracker::onBlockUpdate);
+         } else if (packet instanceof BlockUpdateS2CPacket var5) {
+            onBlockUpdate(var5.getPos(), var5.getState());
+         } else if (packet instanceof ChunkDeltaUpdateS2CPacket var6) {
+            var6.visitUpdates(NetheriteChunkTracker::onBlockUpdate);
          }
       }
    }
 
-   private static void onBlockUpdate(BlockPos var0, BlockState var1) {
-      if (Block.method_9507(var1) == ANCIENT_STATE_ID) {
+   private static void onBlockUpdate(BlockPos blockPos, BlockState blockState) {
+      if (Block.getRawIdFromState(blockState) == ANCIENT_STATE_ID) {
          if (revealListener != null) {
-            revealListener.onRevealed(var0.method_10062());
+            revealListener.onRevealed(blockPos.toImmutable());
          }
 
-         CANDIDATES.remove(new NetheriteChunkTracker.Candidate(var0.method_10263() >> 4, var0.method_10260() >> 4, var0.method_10264() >> 4));
+         CANDIDATES.remove(new NetheriteChunkTracker.Candidate(blockPos.getX() >> 4, blockPos.getZ() >> 4, blockPos.getY() >> 4));
       }
    }
 
-   private static void add(NetheriteChunkTracker.Candidate var0) {
-      if (!CANDIDATES.contains(var0)) {
+   private static void add(NetheriteChunkTracker.Candidate candidate) {
+      if (!CANDIDATES.contains(candidate)) {
          if (CANDIDATES.size() >= 512) {
             Iterator var1 = CANDIDATES.iterator();
             var1.next();
             var1.remove();
          }
 
-         CANDIDATES.add(var0);
+         CANDIDATES.add(candidate);
          if (listener != null) {
-            listener.onCandidate(var0);
+            listener.onCandidate(candidate);
          }
       }
    }
 
-   private static void trackLevel(ClientWorld var0) {
-      RegistryKey var1 = var0.method_27983();
-      if (var0 != lastLevel.get() || !var1.equals(lastDimension)) {
+   private static void trackLevel(ClientWorld clientWorld) {
+      RegistryKey var1 = clientWorld.getRegistryKey();
+      if (clientWorld != lastLevel.get() || !var1.equals(lastDimension)) {
          CANDIDATES.clear();
-         lastLevel = new WeakReference<>(var0);
+         lastLevel = new WeakReference<>(clientWorld);
          lastDimension = var1;
       }
    }
 
-   public static boolean isNether(ClientWorld var0) {
-      RegistryKey var1 = var0.method_27983();
-      return var1 == World.field_25180 || DONUT_NETHER.equals(var1) || var0.method_40134().method_40225(DimensionTypes.field_37667);
+   public static boolean isNether(ClientWorld clientWorld) {
+      RegistryKey var1 = clientWorld.getRegistryKey();
+      return var1 == World.NETHER || DONUT_NETHER.equals(var1) || clientWorld.getDimensionEntry().matchesKey(DimensionTypes.THE_NETHER);
    }
 
    public static List<NetheriteChunkTracker.Candidate> snapshot() {
-      return MinecraftClient.method_1551().field_1687 != lastLevel.get() ? List.of() : List.copyOf(CANDIDATES);
+      return MinecraftClient.getInstance().world != lastLevel.get() ? List.of() : List.copyOf(CANDIDATES);
    }
 
-   public static void setListener(NetheriteChunkTracker.CandidateListener var0) {
-      listener = var0;
+   public static void setListener(NetheriteChunkTracker.CandidateListener candidateListener) {
+      listener = candidateListener;
    }
 
-   public static void setRevealListener(NetheriteChunkTracker.RevealListener var0) {
-      revealListener = var0;
+   public static void setRevealListener(NetheriteChunkTracker.RevealListener revealListener) {
+      NetheriteChunkTracker.revealListener = revealListener;
    }
 
    @Environment(EnvType.CLIENT)
@@ -112,12 +114,12 @@ public final class NetheriteChunkTracker {
    @FunctionalInterface
    @Environment(EnvType.CLIENT)
    public interface CandidateListener {
-      void onCandidate(NetheriteChunkTracker.Candidate var1);
+      void onCandidate(NetheriteChunkTracker.Candidate candidate);
    }
 
    @FunctionalInterface
    @Environment(EnvType.CLIENT)
    public interface RevealListener {
-      void onRevealed(BlockPos var1);
+      void onRevealed(BlockPos blockPos);
    }
 }

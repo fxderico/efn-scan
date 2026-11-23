@@ -34,7 +34,9 @@ import net.minecraft.world.debug.gizmo.GizmoDrawing;
 public final class EspModule extends ClientModule {
    private static EspModule instance;
    private static final int ENTITY_CAP = 96;
-   private static final Comparator<EspModule.Target> PRIORITY = Comparator.<EspModule.Target, Boolean>comparing(var0 -> var0.group() != EspModule.Group.PLAYER)
+   private static final Comparator<EspModule.Target> PRIORITY = Comparator.<EspModule.Target, Boolean>comparing(
+         target -> target.group() != EspModule.Group.PLAYER
+      )
       .thenComparingDouble(EspModule.Target::distanceSq);
    private final BooleanSetting sPlayers = this.addSetting("players", new BooleanSetting("Players", true));
    private final BooleanSetting sMobs = this.addSetting("mobs", new BooleanSetting("Hostile Mobs", true));
@@ -78,14 +80,14 @@ public final class EspModule extends ClientModule {
       this.resetGlow();
    }
 
-   public static boolean shouldGlow(Entity var0) {
+   public static boolean shouldGlow(Entity entity) {
       EspModule var1 = instance;
-      return var1 != null && var1.isEnabled() && var1.sShape.is("Glow") ? var1.glowing().containsKey(var0) : false;
+      return var1 != null && var1.isEnabled() && var1.sShape.is("Glow") ? var1.glowing().containsKey(entity) : false;
    }
 
-   public static int glowColor(Entity var0) {
+   public static int glowColor(Entity entity) {
       EspModule var1 = instance;
-      Integer var2 = var1 == null ? null : var1.glowing().get(var0);
+      Integer var2 = var1 == null ? null : var1.glowing().get(entity);
       return (var2 == null ? 16777215 : var2) & 16777215;
    }
 
@@ -104,8 +106,8 @@ public final class EspModule extends ClientModule {
    }
 
    @EventHandler
-   public void onTick(TickEvent var1) {
-      ClientWorld var2 = MinecraftClient.method_1551().field_1687;
+   public void onTick(TickEvent tickEvent) {
+      ClientWorld var2 = MinecraftClient.getInstance().world;
       if (var2 != this.glowLevel || !this.sShape.is("Glow")) {
          this.resetGlow();
       }
@@ -120,7 +122,7 @@ public final class EspModule extends ClientModule {
    }
 
    @EventHandler
-   public void onRender3D(Render3DEvent var1) {
+   public void onRender3D(Render3DEvent render3DEvent) {
       boolean var2 = this.sBox.get() && !this.sShape.is("Glow");
       boolean var3 = this.sTracers.get();
       if (var2 || var3) {
@@ -128,46 +130,46 @@ public final class EspModule extends ClientModule {
          float var5 = this.sLineWidth.get();
          int var6 = Math.round(this.sFillAlpha.get() * 255.0F);
 
-         for (EspModule.Target var8 : this.targets(var1.partialTick)) {
+         for (EspModule.Target var8 : this.targets(render3DEvent.partialTick)) {
             int var9 = this.colorFor(var8);
-            Box var10 = interpolatedBox(var8.entity(), var1.partialTick);
+            Box var10 = interpolatedBox(var8.entity(), render3DEvent.partialTick);
             if (var2) {
                int var11 = var9 & 16777215 | var6 << 24;
 
                DrawStyle var12 = switch (var4) {
-                  case "Fill" -> DrawStyle.method_75539(var11);
-                  case "Both" -> DrawStyle.method_75537(var9, var5, var11);
-                  default -> DrawStyle.method_75536(var9, var5);
+                  case "Fill" -> DrawStyle.filled(var11);
+                  case "Both" -> DrawStyle.filledAndStroked(var9, var5, var11);
+                  default -> DrawStyle.stroked(var9, var5);
                };
-               GizmoDrawing.method_75541(var10, var12).method_75533();
+               GizmoDrawing.box(var10, var12).ignoreOcclusion();
             }
 
             if (var3) {
-               TracerEngine.draw(var10.method_1005(), this.sCustomTracerColor.get() ? this.sTracerColor.argb() : var9);
+               TracerEngine.draw(var10.getCenter(), this.sCustomTracerColor.get() ? this.sTracerColor.argb() : var9);
             }
          }
       }
    }
 
-   private List<EspModule.Target> targets(float var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      if (var2.field_1687 != null && var2.field_1724 != null) {
+   private List<EspModule.Target> targets(float f) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      if (var2.world != null && var2.player != null) {
          int var3 = Math.max(1, Math.min(96, this.sMaxEntities.getInt()));
          float var4 = Math.max(1.0F, this.sRange.get());
          double var5 = (double)var4 * var4;
-         Vec3d var7 = var2.field_1724.method_5836(var1);
+         Vec3d var7 = var2.player.getCameraPosVec(f);
          ArrayList var8 = new ArrayList();
 
-         for (Entity var10 : var2.field_1687.method_18112()) {
+         for (Entity var10 : var2.world.getEntities()) {
             EspModule.Group var15 = groupOf(var10);
             double var12;
             PlayerEntity var14;
             if (var15 != null
                && this.shown(var15)
-               && (var10 != var2.field_1724 || !this.sIgnoreSelf.get())
+               && (var10 != var2.player || !this.sIgnoreSelf.get())
                && !isGone(var10)
-               && (!(var10 instanceof PlayerEntity) || !(var14 = (PlayerEntity)var10).method_7325())
-               && !((var12 = var10.method_30950(var1).method_1025(var7)) > var5)) {
+               && (!(var10 instanceof PlayerEntity) || !(var14 = (PlayerEntity)var10).isSpectator())
+               && !((var12 = var10.getLerpedPos(f).squaredDistanceTo(var7)) > var5)) {
                var8.add(new EspModule.Target(var10, var15, var12));
             }
          }
@@ -183,36 +185,36 @@ public final class EspModule extends ClientModule {
       }
    }
 
-   private static boolean isGone(Entity var0) {
+   private static boolean isGone(Entity entity) {
       LivingEntity var1;
-      return var0.method_31481() || var0 instanceof LivingEntity && (var1 = (LivingEntity)var0).method_29504();
+      return entity.isRemoved() || entity instanceof LivingEntity && (var1 = (LivingEntity)entity).isDead();
    }
 
-   private static EspModule.Group groupOf(Entity var0) {
-      if (var0 instanceof PlayerEntity) {
+   private static EspModule.Group groupOf(Entity entity) {
+      if (entity instanceof PlayerEntity) {
          return EspModule.Group.PLAYER;
-      } else if (var0 instanceof Monster) {
+      } else if (entity instanceof Monster) {
          return EspModule.Group.HOSTILE;
       } else {
-         return var0 instanceof MobEntity ? EspModule.Group.PASSIVE : null;
+         return entity instanceof MobEntity ? EspModule.Group.PASSIVE : null;
       }
    }
 
-   private boolean shown(EspModule.Group var1) {
-      return switch (var1) {
+   private boolean shown(EspModule.Group group) {
+      return switch (group) {
          case PLAYER -> this.sPlayers.get();
          case HOSTILE -> this.sMobs.get();
          case PASSIVE -> this.sAnimals.get();
       };
    }
 
-   private int colorFor(EspModule.Target var1) {
-      return switch (var1.group()) {
+   private int colorFor(EspModule.Target target) {
+      return switch (target.group()) {
          case PLAYER -> {
             Entity var2;
-            if (this.sFriends.get() && (var2 = var1.entity()) instanceof PlayerEntity) {
+            if (this.sFriends.get() && (var2 = target.entity()) instanceof PlayerEntity) {
                PlayerEntity var3 = (PlayerEntity)var2;
-               if (FriendStore.getInstance().isFriend(var3.method_7334().name())) {
+               if (FriendStore.getInstance().isFriend(var3.getGameProfile().name())) {
                   yield this.sFriendColor.argb();
                }
             }
@@ -224,10 +226,10 @@ public final class EspModule extends ClientModule {
       };
    }
 
-   private static Box interpolatedBox(Entity var0, float var1) {
-      Vec3d var2 = var0.method_73189();
-      Vec3d var3 = var0.method_30950(var1);
-      return var0.method_5829().method_989(var3.field_1352 - var2.field_1352, var3.field_1351 - var2.field_1351, var3.field_1350 - var2.field_1350);
+   private static Box interpolatedBox(Entity entity, float f) {
+      Vec3d var2 = entity.getEntityPos();
+      Vec3d var3 = entity.getLerpedPos(f);
+      return entity.getBoundingBox().offset(var3.x - var2.x, var3.y - var2.y, var3.z - var2.z);
    }
 
    @Environment(EnvType.CLIENT)

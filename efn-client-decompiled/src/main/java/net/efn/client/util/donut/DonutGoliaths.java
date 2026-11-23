@@ -235,9 +235,9 @@ public final class DonutGoliaths {
    private DonutGoliaths() {
    }
 
-   public static DonutGoliaths.Goliath at(double var0, double var2) {
-      int var4 = (int)Math.floor((var0 + 225000.0) / 12500.0);
-      int var5 = (int)Math.floor((var2 + 225000.0) / 12500.0);
+   public static DonutGoliaths.Goliath at(double d, double e) {
+      int var4 = (int)Math.floor((d + 225000.0) / 12500.0);
+      int var5 = (int)Math.floor((e + 225000.0) / 12500.0);
       if (var4 >= 0 && var5 >= 0 && var4 < 36 && var5 < 36) {
          int var6 = LOOKUP[var5][var4];
          return var6 < 0 ? null : new DonutGoliaths.Goliath(var6 / 1000, var6 % 1000);
@@ -246,8 +246,8 @@ public final class DonutGoliaths {
       }
    }
 
-   public static int square(int var0, int var1) {
-      return var0 >= 0 && var1 >= 0 && var0 < 36 && var1 < 36 ? LOOKUP[var1][var0] : -1;
+   public static int square(int i, int j) {
+      return i >= 0 && j >= 0 && i < 36 && j < 36 ? LOOKUP[j][i] : -1;
    }
 
    static {

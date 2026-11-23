@@ -26,8 +26,8 @@ public record LyricsQuery(String title, String artist, String album, int duratio
       this.durationSeconds = durationSeconds;
    }
 
-   public LyricsQuery withDurationMillis(long var1) {
-      long var3 = Math.max(0L, (var1 + 500L) / 1000L);
+   public LyricsQuery withDurationMillis(long l) {
+      long var3 = Math.max(0L, (l + 500L) / 1000L);
       return new LyricsQuery(this.title, this.artist, this.album, var3 > 3600L ? 0 : (int)var3);
    }
 
@@ -50,7 +50,7 @@ public record LyricsQuery(String title, String artist, String album, int duratio
       }
    }
 
-   private static String squash(String var0) {
-      return var0.toLowerCase(Locale.ROOT).replaceAll("\\s+", " ");
+   private static String squash(String string) {
+      return string.toLowerCase(Locale.ROOT).replaceAll("\\s+", " ");
    }
 }

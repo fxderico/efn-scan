@@ -14,20 +14,20 @@ public final class ServerAckManager {
    public ServerAckManager() {
    }
 
-   public void begin(SchematicTarget var1, long var2, int var4, int var5, int var6, BlockState var7) {
-      this.pending = new PlacementConfirmation(var1.pos(), var1.expected(), var2, var2 + var4, var5, var6, var7);
+   public void begin(SchematicTarget schematicTarget, long l, int i, int j, int k, BlockState blockState) {
+      this.pending = new PlacementConfirmation(schematicTarget.pos(), schematicTarget.expected(), l, l + i, j, k, blockState);
    }
 
-   public ServerAckManager.Result poll(ClientWorld var1, long var2) {
+   public ServerAckManager.Result poll(ClientWorld clientWorld, long l) {
       if (this.pending == null) {
          return ServerAckManager.Result.IDLE;
-      } else if (!BlockAcks.answered(var1, this.pending.sequence())) {
-         return var2 >= this.pending.deadlineTick() ? ServerAckManager.Result.TIMEOUT : ServerAckManager.Result.WAITING;
+      } else if (!BlockAcks.answered(clientWorld, this.pending.sequence())) {
+         return l >= this.pending.deadlineTick() ? ServerAckManager.Result.TIMEOUT : ServerAckManager.Result.WAITING;
       } else {
-         BlockState var4 = this.pending.predicted() != null && !this.pending.predicted().method_26215()
-            ? this.pending.predicted()
-            : this.pending.expected().state();
-         return BlockStateUtil.statesMatch(var4, var1.method_8320(this.pending.pos())) ? ServerAckManager.Result.CONFIRMED : ServerAckManager.Result.REFUSED;
+         BlockState var4 = this.pending.predicted() != null && !this.pending.predicted().isAir() ? this.pending.predicted() : this.pending.expected().state();
+         return BlockStateUtil.statesMatch(var4, clientWorld.getBlockState(this.pending.pos()))
+            ? ServerAckManager.Result.CONFIRMED
+            : ServerAckManager.Result.REFUSED;
       }
    }
 

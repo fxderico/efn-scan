@@ -10,12 +10,12 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Environment(EnvType.CLIENT)
 @Mixin({ClientPlayerEntity.class})
 public interface AccessorLocalPlayer {
-   @Accessor("field_3923")
-   void efn$setPositionReminder(int var1);
+   @Accessor("ticksSinceLastPositionPacketSent")
+   void efn$setPositionReminder(int i);
 
-   @Accessor("field_3919")
+   @Accessor("lastSprinting")
    boolean efn$wasSprinting();
 
-   @Accessor("field_54156")
+   @Accessor("lastPlayerInput")
    PlayerInput efn$lastSentInput();
 }

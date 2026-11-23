@@ -18,15 +18,15 @@ public abstract class MixinLivingEntity {
    }
 
    @Inject(
-      method = {"method_6028"},
+      method = {"getHandSwingDuration"},
       at = {@At("RETURN")},
       cancellable = true
    )
-   private void efn$modifySwingDuration(CallbackInfoReturnable<Integer> var1) {
+   private void efn$modifySwingDuration(CallbackInfoReturnable<Integer> callbackInfoReturnable) {
       SlowSwingModule var2 = ModuleRegistry.get(SlowSwingModule.class);
       if (var2 != null && var2.isEnabled()) {
-         if (this == MinecraftClient.method_1551().field_1724) {
-            var1.setReturnValue(var2.getModifiedSwingDuration((Integer)var1.getReturnValue()));
+         if (this == MinecraftClient.getInstance().player) {
+            callbackInfoReturnable.setReturnValue(var2.getModifiedSwingDuration((Integer)callbackInfoReturnable.getReturnValue()));
          }
       }
    }

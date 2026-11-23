@@ -18,13 +18,13 @@ public abstract class MixinBlockStateBase {
    }
 
    @Inject(
-      method = {"method_26210"},
+      method = {"getAmbientOcclusionLightLevel"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$xrayNoAmbientOcclusion(BlockView var1, BlockPos var2, CallbackInfoReturnable<Float> var3) {
+   private void efn$xrayNoAmbientOcclusion(BlockView blockView, BlockPos blockPos, CallbackInfoReturnable<Float> callbackInfoReturnable) {
       if (XrayModule.active != null) {
-         var3.setReturnValue(1.0F);
+         callbackInfoReturnable.setReturnValue(1.0F);
       }
    }
 }

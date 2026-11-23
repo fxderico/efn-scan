@@ -15,8 +15,8 @@ final class TeleportConfirm {
    private boolean warned;
    private long sentAt;
 
-   TeleportConfirm(ClientModule var1) {
-      this.owner = var1;
+   TeleportConfirm(ClientModule clientModule) {
+      this.owner = clientModule;
    }
 
    void reset() {
@@ -29,8 +29,8 @@ final class TeleportConfirm {
       this.sentAt = System.currentTimeMillis();
    }
 
-   boolean tick(MinecraftClient var1) {
-      Dialogs.View var2 = Dialogs.current(var1);
+   boolean tick(MinecraftClient minecraftClient) {
+      Dialogs.View var2 = Dialogs.current(minecraftClient);
       if (var2 != null && var2.titled("teleport")) {
          if (var2.dialog() == this.pressed) {
             return true;
@@ -52,7 +52,7 @@ final class TeleportConfirm {
                }
 
                this.pressed = var2.dialog();
-               Dialogs.press(var1, var2, var3, Map.of());
+               Dialogs.press(minecraftClient, var2, var3, Map.of());
                return true;
             }
          }

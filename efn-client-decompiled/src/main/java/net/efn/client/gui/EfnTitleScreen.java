@@ -6,13 +6,12 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.input.KeyInput;
 
 @Environment(EnvType.CLIENT)
 public final class EfnTitleScreen extends TitleScreen {
-   private final MainMenuRenderer menu = new MainMenuRenderer((Screen)this);
+   private final MainMenuRenderer menu = new MainMenuRenderer(this);
 
    public EfnTitleScreen() {
    }
@@ -21,39 +20,48 @@ public final class EfnTitleScreen extends TitleScreen {
       return ThemeStore.get().customMainMenu.get();
    }
 
-   protected void method_25426() {
+   @Override
+   protected void init() {
       ImGuiManager.getInstance().activate(this.menu::render);
    }
 
-   public void method_25393() {
+   @Override
+   public void tick() {
    }
 
-   public boolean method_25404(KeyInput var1) {
-      return this.menu.keyPressed(var1.comp_4795()) || super.method_25404(var1);
+   @Override
+   public boolean keyPressed(KeyInput input) {
+      return this.menu.keyPressed(input.key()) || super.keyPressed(input);
    }
 
-   public boolean method_25402(Click var1, boolean var2) {
+   @Override
+   public boolean mouseClicked(Click click, boolean doubled) {
       return false;
    }
 
-   public void method_25432() {
-      super.method_25432();
+   @Override
+   public void removed() {
+      super.removed();
       ImGuiManager.getInstance().deactivate();
    }
 
-   public void method_25420(DrawContext var1, int var2, int var3, float var4) {
+   @Override
+   public void renderBackground(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
    }
 
-   public void method_25394(DrawContext var1, int var2, int var3, float var4) {
-      ImGuiManager.getInstance().requestCursor(var1);
-      var1.method_73199();
+   @Override
+   public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+      ImGuiManager.getInstance().requestCursor(context);
+      context.drawDeferredElements();
    }
 
-   public boolean method_25422() {
+   @Override
+   public boolean shouldCloseOnEsc() {
       return false;
    }
 
-   public boolean method_25421() {
+   @Override
+   public boolean shouldPause() {
       return false;
    }
 }

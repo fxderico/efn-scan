@@ -20,15 +20,17 @@ public abstract class MixinNoRenderLavaFog {
    }
 
    @Inject(
-      method = {"method_42591"},
+      method = {"applyStartEndModifier"},
       at = {@At("TAIL")}
    )
-   private void efn$clearLavaFog(FogData var1, Camera var2, ClientWorld var3, float var4, RenderTickCounter var5, CallbackInfo var6) {
+   private void efn$clearLavaFog(
+      FogData fogData, Camera camera, ClientWorld clientWorld, float f, RenderTickCounter renderTickCounter, CallbackInfo callbackInfo
+   ) {
       if (NoRenderModule.hideLavaFog()) {
-         var1.field_60582 = -8.0F;
-         var1.field_60584 = var4;
-         var1.field_60099 = var4;
-         var1.field_60100 = var4;
+         fogData.environmentalStart = -8.0F;
+         fogData.environmentalEnd = f;
+         fogData.skyEnd = f;
+         fogData.cloudEnd = f;
       }
    }
 }

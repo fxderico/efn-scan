@@ -37,39 +37,39 @@ final class PosedMesh {
    private float shiftZ;
    private boolean flipped;
 
-   private PosedMesh(GltfFile var1) {
-      this.file = var1;
-      this.globals = new float[var1.nodes()][];
-      this.parent = new int[var1.nodes()];
+   private PosedMesh(GltfFile gltfFile) {
+      this.file = gltfFile;
+      this.globals = new float[gltfFile.nodes()][];
+      this.parent = new int[gltfFile.nodes()];
       Arrays.fill(this.parent, -1);
    }
 
-   static PosedMesh pose(GltfFile var0, Map<Integer, Float> var1) throws IOException {
-      PosedMesh var2 = new PosedMesh(var0);
+   static PosedMesh pose(GltfFile gltfFile, Map<Integer, Float> map) throws IOException {
+      PosedMesh var2 = new PosedMesh(gltfFile);
 
-      for (int var3 = 0; var3 < var0.nodes(); var3++) {
-         for (JsonElement var5 : GltfFile.array(var0.node(var3), "children")) {
+      for (int var3 = 0; var3 < gltfFile.nodes(); var3++) {
+         for (JsonElement var5 : GltfFile.array(gltfFile.node(var3), "children")) {
             var2.parent[var5.getAsInt()] = var3;
          }
       }
 
-      JsonArray var9 = GltfFile.array(var0.json, "scenes");
+      JsonArray var9 = GltfFile.array(gltfFile.json, "scenes");
       JsonArray var10 = new JsonArray();
       if (var9.isEmpty()) {
-         for (int var11 = 0; var11 < var0.nodes(); var11++) {
+         for (int var11 = 0; var11 < gltfFile.nodes(); var11++) {
             if (var2.parent[var11] < 0) {
                var10.add(var11);
             }
          }
       } else {
-         var10 = GltfFile.array(var9.get(GltfFile.integer(var0.json, "scene", 0)).getAsJsonObject(), "nodes");
+         var10 = GltfFile.array(var9.get(GltfFile.integer(gltfFile.json, "scene", 0)).getAsJsonObject(), "nodes");
       }
 
       for (JsonElement var6 : var10) {
-         var2.walk(var6.getAsInt(), Mat4.identity(), var1);
+         var2.walk(var6.getAsInt(), Mat4.identity(), map);
       }
 
-      for (JsonElement var15 : GltfFile.array(var0.json, "skins")) {
+      for (JsonElement var15 : GltfFile.array(gltfFile.json, "skins")) {
          for (JsonElement var8 : GltfFile.array(var15.getAsJsonObject(), "joints")) {
             var2.joints.add(var8.getAsInt());
          }
@@ -86,28 +86,28 @@ final class PosedMesh {
       }
    }
 
-   private void walk(int var1, float[] var2, Map<Integer, Float> var3) {
-      float[] var4 = Mat4.mul(var2, Mat4.local(this.file.node(var1)));
-      Float var5 = (Float)var3.get(var1);
+   private void walk(int i, float[] fs, Map<Integer, Float> map) {
+      float[] var4 = Mat4.mul(fs, Mat4.local(this.file.node(i)));
+      Float var5 = (Float)map.get(i);
       if (var5 != null) {
          var4 = Mat4.mul(Mat4.rollAbout(var5, Mat4.point(var4, 0.0F, 0.0F, 0.0F)), var4);
       }
 
-      this.globals[var1] = var4;
+      this.globals[i] = var4;
 
-      for (JsonElement var7 : GltfFile.array(this.file.node(var1), "children")) {
-         this.walk(var7.getAsInt(), var4, var3);
+      for (JsonElement var7 : GltfFile.array(this.file.node(i), "children")) {
+         this.walk(var7.getAsInt(), var4, map);
       }
    }
 
-   private void collect(int var1) throws IOException {
-      JsonObject var2 = this.file.node(var1);
+   private void collect(int i) throws IOException {
+      JsonObject var2 = this.file.node(i);
       if (var2.has("mesh")) {
          JsonObject var3 = GltfFile.array(this.file.json, "meshes").get(var2.get("mesh").getAsInt()).getAsJsonObject();
          int var4 = GltfFile.integer(var2, "skin", -1);
 
          for (JsonElement var6 : GltfFile.array(var3, "primitives")) {
-            this.primitive(var6.getAsJsonObject(), var1, var4);
+            this.primitive(var6.getAsJsonObject(), i, var4);
          }
       }
 
@@ -116,10 +116,10 @@ final class PosedMesh {
       }
    }
 
-   private void primitive(JsonObject var1, int var2, int var3) throws IOException {
-      if (GltfFile.integer(var1, "mode", 4) == 4) {
-         JsonObject var5 = GltfFile.object(var1, "attributes");
-         int var6 = GltfFile.integer(var1, "material", -1);
+   private void primitive(JsonObject jsonObject, int i, int j) throws IOException {
+      if (GltfFile.integer(jsonObject, "mode", 4) == 4) {
+         JsonObject var5 = GltfFile.object(jsonObject, "attributes");
+         int var6 = GltfFile.integer(jsonObject, "material", -1);
          float[] var7 = this.file.floats(var5.get("POSITION").getAsInt());
          int var8 = var7.length / 3;
          float[] var9 = var5.has("NORMAL") ? this.file.floats(var5.get("NORMAL").getAsInt()) : null;
@@ -128,7 +128,7 @@ final class PosedMesh {
          float[] var12 = var5.has("COLOR_0") ? this.file.floats(var5.get("COLOR_0").getAsInt()) : null;
          int var13 = var12 == null ? 0 : var12.length / var8;
          this.colored |= var12 != null;
-         int[] var4 = var1.has("indices") ? this.file.ints(var1.get("indices").getAsInt()) : null;
+         int[] var4 = jsonObject.has("indices") ? this.file.ints(jsonObject.get("indices").getAsInt()) : null;
          if (var4 == null) {
             var4 = new int[var8];
             int var15 = 0;
@@ -151,8 +151,8 @@ final class PosedMesh {
             int[] var41 = null;
             int[] var42 = null;
             float[] var43 = null;
-            if (var3 >= 0 && var5.has("JOINTS_0") && var5.has("WEIGHTS_0")) {
-               JsonObject var19 = GltfFile.array(this.file.json, "skins").get(var3).getAsJsonObject();
+            if (j >= 0 && var5.has("JOINTS_0") && var5.has("WEIGHTS_0")) {
+               JsonObject var19 = GltfFile.array(this.file.json, "skins").get(j).getAsJsonObject();
                JsonArray var20 = GltfFile.array(var19, "joints");
                var42 = new int[var20.size()];
                float[] var21 = var19.has("inverseBindMatrices") ? this.file.floats(var19.get("inverseBindMatrices").getAsInt()) : null;
@@ -169,7 +169,7 @@ final class PosedMesh {
                var43 = this.file.floats(var5.get("WEIGHTS_0").getAsInt());
             }
 
-            float[] var44 = this.globals[var2];
+            float[] var44 = this.globals[i];
             int var45 = this.vertices;
             this.grow(var8, var4.length / 3);
 
@@ -207,7 +207,7 @@ final class PosedMesh {
                } else {
                   var51 = Mat4.point(var44, var52, var25, var26);
                   var49 = Mat4.dir(var44, var27, var28, var29);
-                  this.influence[var30 * 4] = var2;
+                  this.influence[var30 * 4] = i;
                   this.weight[var30 * 4] = 1.0F;
                }
 
@@ -238,10 +238,10 @@ final class PosedMesh {
       }
    }
 
-   private void smoothNormals(int var1, int var2, int var3) {
-      Arrays.fill(this.nrm, var1 * 3, (var1 + var2) * 3, 0.0F);
+   private void smoothNormals(int i, int j, int k) {
+      Arrays.fill(this.nrm, i * 3, (i + j) * 3, 0.0F);
 
-      for (int var4 = var3; var4 < this.triangles; var4++) {
+      for (int var4 = k; var4 < this.triangles; var4++) {
          float[] var5 = Mat4.faceNormal(this.pos, this.tris[var4 * 3], this.tris[var4 * 3 + 1], this.tris[var4 * 3 + 2]);
 
          for (int var6 = 0; var6 < 3; var6++) {
@@ -254,16 +254,16 @@ final class PosedMesh {
          }
       }
 
-      for (int var10 = var1; var10 < var1 + var2; var10++) {
+      for (int var10 = i; var10 < i + j; var10++) {
          float[] var11 = new float[]{this.nrm[var10 * 3], this.nrm[var10 * 3 + 1], this.nrm[var10 * 3 + 2]};
          Mat4.normalise(var11);
          System.arraycopy(var11, 0, this.nrm, var10 * 3, 3);
       }
    }
 
-   private void grow(int var1, int var2) {
-      int var3 = this.vertices + var1;
-      int var4 = this.triangles + var2;
+   private void grow(int i, int j) {
+      int var3 = this.vertices + i;
+      int var4 = this.triangles + j;
       this.pos = Arrays.copyOf(this.pos, var3 * 3);
       this.nrm = Arrays.copyOf(this.nrm, var3 * 3);
       this.uv = Arrays.copyOf(this.uv, var3 * 2);
@@ -274,17 +274,17 @@ final class PosedMesh {
       this.tris = Arrays.copyOf(this.tris, var4 * 3);
    }
 
-   private static int srgb(float var0) {
-      return Math.round((float)Math.pow(Math.max(0.0F, Math.min(1.0F, var0)), 0.45454545454545453) * 255.0F);
+   private static int srgb(float f) {
+      return Math.round((float)Math.pow(Math.max(0.0F, Math.min(1.0F, f)), 0.45454545454545453) * 255.0F);
    }
 
-   void cluster(int var1) {
-      if (this.triangles > var1) {
+   void cluster(int i) {
+      if (this.triangles > i) {
          float[] var3 = this.bounds();
          float var4 = Math.max(var3[3] - var3[0], Math.max(var3[4] - var3[1], var3[5] - var3[2])) / 600.0F;
          int[] var5 = new int[this.vertices];
 
-         while (this.weld(var4, var5) > var1) {
+         while (this.weld(var4, var5) > i) {
             var4 *= 1.25F;
          }
 
@@ -377,15 +377,15 @@ final class PosedMesh {
       }
    }
 
-   private int weld(float var1, int[] var2) {
+   private int weld(float f, int[] is) {
       HashMap var3 = new HashMap();
 
       for (int var4 = 0; var4 < this.vertices; var4++) {
-         String var5 = (int)Math.floor(this.pos[var4 * 3] / var1)
+         String var5 = (int)Math.floor(this.pos[var4 * 3] / f)
             + ","
-            + (int)Math.floor(this.pos[var4 * 3 + 1] / var1)
+            + (int)Math.floor(this.pos[var4 * 3 + 1] / f)
             + ","
-            + (int)Math.floor(this.pos[var4 * 3 + 2] / var1)
+            + (int)Math.floor(this.pos[var4 * 3 + 2] / f)
             + ","
             + this.material[var4]
             + ","
@@ -393,15 +393,15 @@ final class PosedMesh {
             + ","
             + Math.round(this.uv[var4 * 2 + 1] * 64.0F);
          Integer var6 = var3.putIfAbsent(var5, var3.size());
-         var2[var4] = var6 == null ? var3.size() - 1 : var6;
+         is[var4] = var6 == null ? var3.size() - 1 : var6;
       }
 
       HashSet var9 = new HashSet();
 
       for (int var10 = 0; var10 < this.triangles; var10++) {
-         int var11 = var2[this.tris[var10 * 3]];
-         int var7 = var2[this.tris[var10 * 3 + 1]];
-         int var8 = var2[this.tris[var10 * 3 + 2]];
+         int var11 = is[this.tris[var10 * 3]];
+         int var7 = is[this.tris[var10 * 3 + 1]];
+         int var8 = is[this.tris[var10 * 3 + 2]];
          if (var11 != var7 && var7 != var8 && var11 != var8) {
             var9.add(key(var11, var7, var8));
          }
@@ -410,24 +410,24 @@ final class PosedMesh {
       return var9.size();
    }
 
-   private static long key(int var0, int var1, int var2) {
-      int var3 = Math.min(var0, Math.min(var1, var2));
-      int var4 = Math.max(var0, Math.max(var1, var2));
-      int var5 = var0 + var1 + var2 - var3 - var4;
+   private static long key(int i, int j, int k) {
+      int var3 = Math.min(i, Math.min(j, k));
+      int var4 = Math.max(i, Math.max(j, k));
+      int var5 = i + j + k - var3 - var4;
       return (var3 * 2654435761L + var5) * 2246822519L + var4;
    }
 
-   int[] separate(int[] var1) {
+   int[] separate(int[] is) {
       HashMap var3 = new HashMap();
       ArrayList var4 = new ArrayList();
       ArrayList var5 = new ArrayList();
 
       for (int var6 = 0; var6 < this.triangles; var6++) {
-         int var7 = CharacterBake.owner(var1, this.tris[var6 * 3], this.tris[var6 * 3 + 1], this.tris[var6 * 3 + 2]);
+         int var7 = CharacterBake.owner(is, this.tris[var6 * 3], this.tris[var6 * 3 + 1], this.tris[var6 * 3 + 2]);
 
          for (int var8 = 0; var8 < 3; var8++) {
             int var2 = this.tris[var6 * 3 + var8];
-            if (var1[var2] != var7) {
+            if (is[var2] != var7) {
                Integer var9 = (Integer)var3.get(var2 * 8L + var7);
                if (var9 == null) {
                   var9 = this.vertices + var4.size();
@@ -443,7 +443,7 @@ final class PosedMesh {
 
       int var11 = this.vertices;
       this.grow(var4.size(), 0);
-      int[] var12 = Arrays.copyOf(var1, var11 + var4.size());
+      int[] var12 = Arrays.copyOf(is, var11 + var4.size());
 
       for (int var13 = 0; var13 < var4.size(); var13++) {
          int var10 = (Integer)var4.get(var13);
@@ -462,9 +462,9 @@ final class PosedMesh {
       return var12;
    }
 
-   void normalise(float var1, boolean var2) {
-      this.flipped = var2;
-      if (var2) {
+   void normalise(float f, boolean bl) {
+      this.flipped = bl;
+      if (bl) {
          for (int var3 = 0; var3 < this.vertices; var3++) {
             this.pos[var3 * 3] = -this.pos[var3 * 3];
             this.pos[var3 * 3 + 2] = -this.pos[var3 * 3 + 2];
@@ -474,7 +474,7 @@ final class PosedMesh {
       }
 
       float[] var5 = this.bounds();
-      this.scale = var1 / Math.max(1.0E-6F, var5[4] - var5[1]);
+      this.scale = f / Math.max(1.0E-6F, var5[4] - var5[1]);
       this.shiftX = -(var5[0] + var5[3]) * 0.5F;
       this.shiftY = -var5[1];
       this.shiftZ = -(var5[2] + var5[5]) * 0.5F;
@@ -499,23 +499,23 @@ final class PosedMesh {
       return var1;
    }
 
-   float[] world(int var1) {
-      float[] var2 = this.globals[var1];
+   float[] world(int i) {
+      float[] var2 = this.globals[i];
       return var2 == null ? new float[3] : Mat4.point(var2, 0.0F, 0.0F, 0.0F);
    }
 
-   float[] joint(int var1) {
-      float[] var2 = this.world(var1);
+   float[] joint(int i) {
+      float[] var2 = this.world(i);
       float var3 = this.flipped ? -var2[0] : var2[0];
       float var4 = this.flipped ? -var2[2] : var2[2];
       return new float[]{(var3 + this.shiftX) * this.scale, (var2[1] + this.shiftY) * this.scale, (var4 + this.shiftZ) * this.scale};
    }
 
-   boolean under(int var1, int var2) {
-      int var3 = var1;
+   boolean under(int i, int j) {
+      int var3 = i;
 
       for (int var4 = 0; var3 >= 0 && var4 <= this.parent.length; var4++) {
-         if (var3 == var2) {
+         if (var3 == j) {
             return true;
          }
 
@@ -525,13 +525,13 @@ final class PosedMesh {
       return false;
    }
 
-   float[] below(int var1) {
+   float[] below(int i) {
       float[] var2 = new float[this.vertices];
 
       for (int var3 = 0; var3 < this.vertices; var3++) {
          for (int var4 = 0; var4 < 4; var4++) {
             int var5 = this.influence[var3 * 4 + var4];
-            if (var5 >= 0 && this.under(var5, var1)) {
+            if (var5 >= 0 && this.under(var5, i)) {
                var2[var3] += this.weight[var3 * 4 + var4];
             }
          }

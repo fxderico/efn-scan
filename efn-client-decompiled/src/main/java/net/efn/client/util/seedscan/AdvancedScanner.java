@@ -44,8 +44,8 @@ public final class AdvancedScanner implements AutoCloseable {
    private volatile boolean stopped;
    private final ConcurrentLinkedQueue<Object> inbox = new ConcurrentLinkedQueue<>();
    private final ConcurrentLinkedQueue<Object> outbox = new ConcurrentLinkedQueue<>();
-   private final Long2ObjectOpenHashMap<List<BlobJudge.Cluster>> clusters = new Long2ObjectOpenHashMap();
-   private final Long2ObjectOpenHashMap<AdvancedScanner.ChunkResult> results = new Long2ObjectOpenHashMap();
+   private final Long2ObjectOpenHashMap<List<BlobJudge.Cluster>> clusters = new Long2ObjectOpenHashMap<>();
+   private final Long2ObjectOpenHashMap<AdvancedScanner.ChunkResult> results = new Long2ObjectOpenHashMap<>();
    private final LongOpenHashSet shownSent = new LongOpenHashSet();
    private final LongArrayFIFOQueue toJudge = new LongArrayFIFOQueue();
    private final LongOpenHashSet judgeQueued = new LongOpenHashSet();
@@ -68,16 +68,16 @@ public final class AdvancedScanner implements AutoCloseable {
    private boolean wrongHeight;
    private boolean released;
 
-   private AdvancedScanner(long var1) {
-      this.seed = var1;
+   private AdvancedScanner(long l) {
+      this.seed = l;
       this.worker = new Thread(this::work, "EFN Advanced Scanner");
       this.worker.setDaemon(true);
       this.worker.setPriority(2);
       this.worker.start();
    }
 
-   public static AdvancedScanner start(long var0) {
-      return new AdvancedScanner(var0);
+   public static AdvancedScanner start(long l) {
+      return new AdvancedScanner(l);
    }
 
    public long seed() {
@@ -90,11 +90,11 @@ public final class AdvancedScanner implements AutoCloseable {
       LockSupport.unpark(this.worker);
    }
 
-   public static boolean matchesHashedSeed(long var0, long var2) {
-      return BiomeAccess.method_27984(var0) == var2;
+   public static boolean matchesHashedSeed(long l, long m) {
+      return BiomeAccess.hashSeed(l) == m;
    }
 
-   static OptionalLong hashedSeed(ClientWorld var0) {
+   static OptionalLong hashedSeed(ClientWorld clientWorld) {
       try {
          Field var1 = null;
 
@@ -112,7 +112,7 @@ public final class AdvancedScanner implements AutoCloseable {
             return OptionalLong.empty();
          } else {
             var1.setAccessible(true);
-            return OptionalLong.of(var1.getLong(var0.method_22385()));
+            return OptionalLong.of(var1.getLong(clientWorld.getBiomeAccess()));
          }
       } catch (RuntimeException | ReflectiveOperationException var6) {
          return OptionalLong.empty();
@@ -125,7 +125,7 @@ public final class AdvancedScanner implements AutoCloseable {
       return var1;
    }
 
-   public List<AdvancedScanner.ChunkResult> tick(ClientWorld var1, long var2) {
+   public List<AdvancedScanner.ChunkResult> tick(ClientWorld clientWorld, long l) {
       this.ticks++;
 
       Object var4;
@@ -145,26 +145,26 @@ public final class AdvancedScanner implements AutoCloseable {
       if (this.stopped) {
          this.release();
          return List.of();
-      } else if (var1.method_31607() == -64 && var1.method_31605() == 384) {
+      } else if (clientWorld.getBottomY() == -64 && clientWorld.getHeight() == 384) {
          if (!this.hashChecked) {
             this.hashChecked = true;
-            OptionalLong var14 = hashedSeed(var1);
+            OptionalLong var14 = hashedSeed(clientWorld);
             if (var14.isPresent() && !matchesHashedSeed(this.seed, var14.getAsLong())) {
                this.notices.add("Seed " + this.seed + " does not match this server. Check the seed.");
             }
          }
 
-         MinecraftClient var15 = MinecraftClient.method_1551();
-         if (var15.field_1724 != null) {
-            this.updateArea(var1, var15.field_1724.method_31476(), Math.min((Integer)var15.field_1690.method_42503().method_41753(), 8));
+         MinecraftClient var15 = MinecraftClient.getInstance();
+         if (var15.player != null) {
+            this.updateArea(clientWorld, var15.player.getChunkPos(), Math.min(var15.options.getViewDistance().getValue(), 8));
          }
 
-         this.copyArrived(var1, var2);
+         this.copyArrived(clientWorld, l);
          ArrayList var6 = new ArrayList();
-         BlobJudge.Client var7 = clientView(var1);
+         BlobJudge.Client var7 = clientView(clientWorld);
          int var8 = this.toJudge.size();
 
-         while (var8-- > 0 && !this.toJudge.isEmpty() && System.nanoTime() < var2) {
+         while (var8-- > 0 && !this.toJudge.isEmpty() && System.nanoTime() < l) {
             long var11 = this.toJudge.dequeueLong();
             this.judgeQueued.remove(var11);
             if (this.settling.containsKey(var11)) {
@@ -178,7 +178,7 @@ public final class AdvancedScanner implements AutoCloseable {
 
             AdvancedScanner.ChunkResult var9;
             List var10;
-            if ((var10 = (List)this.clusters.get(var11)) != null && this.area.contains(var11) && (var9 = this.judge(var11, var10, var7)) != null) {
+            if ((var10 = this.clusters.get(var11)) != null && this.area.contains(var11) && (var9 = this.judge(var11, var10, var7)) != null) {
                this.results.put(var11, var9);
                var6.add(var9);
             }
@@ -195,24 +195,22 @@ public final class AdvancedScanner implements AutoCloseable {
       }
    }
 
-   private AdvancedScanner.ChunkResult judge(long var1, List<BlobJudge.Cluster> var3, BlobJudge.Client var4) {
-      ArrayList var5 = new ArrayList(var3.size());
+   private AdvancedScanner.ChunkResult judge(long l, List<BlobJudge.Cluster> list, BlobJudge.Client client) {
+      ArrayList var5 = new ArrayList(list.size());
 
-      for (BlobJudge.Cluster var7 : var3) {
-         BlobJudge.Verdict var8 = BlobJudge.judge(var7, var4, 1);
+      for (BlobJudge.Cluster var7 : list) {
+         BlobJudge.Verdict var8 = BlobJudge.judge(var7, client, 1);
          var5.add(var8);
          this.count(var8);
       }
 
-      return this.distrusted
-         ? new AdvancedScanner.ChunkResult(var1, 0, new long[0], List.of())
-         : decide(var1, (AdvancedScanner.ChunkResult)this.results.get(var1), var5);
+      return this.distrusted ? new AdvancedScanner.ChunkResult(l, 0, new long[0], List.of()) : decide(l, this.results.get(l), var5);
    }
 
-   static AdvancedScanner.ChunkResult decide(long var0, AdvancedScanner.ChunkResult var2, List<BlobJudge.Verdict> var3) {
+   static AdvancedScanner.ChunkResult decide(long l, AdvancedScanner.ChunkResult chunkResult, List<BlobJudge.Verdict> list) {
       HashMap var4 = new HashMap();
-      if (var2 != null) {
-         for (BlobJudge.Verdict var6 : var2.verdicts()) {
+      if (chunkResult != null) {
+         for (BlobJudge.Verdict var6 : chunkResult.verdicts()) {
             if (var6.status() != BlobJudge.Status.INCOMPLETE) {
                var4.put(clusterKey(var6.owner(), var6.kind()), var6);
             }
@@ -220,11 +218,11 @@ public final class AdvancedScanner implements AutoCloseable {
       }
 
       boolean var16 = false;
-      ArrayList var17 = new ArrayList(var3.size());
+      ArrayList var17 = new ArrayList(list.size());
       LongArrayList var7 = new LongArrayList();
       LongArrayList var8 = new LongArrayList();
 
-      for (BlobJudge.Verdict var10 : var3) {
+      for (BlobJudge.Verdict var10 : list) {
          if (var10.status() == BlobJudge.Status.INCOMPLETE) {
             BlobJudge.Verdict var11 = (BlobJudge.Verdict)var4.get(clusterKey(var10.owner(), var10.kind()));
             if (var11 != null) {
@@ -254,34 +252,34 @@ public final class AdvancedScanner implements AutoCloseable {
             }
          }
 
-         return new AdvancedScanner.ChunkResult(var0, var19, var8.toLongArray(), List.copyOf(var17));
+         return new AdvancedScanner.ChunkResult(l, var19, var8.toLongArray(), List.copyOf(var17));
       }
    }
 
-   static void dropOutside(Long2ObjectOpenHashMap<AdvancedScanner.ChunkResult> var0, LongOpenHashSet var1) {
-      ObjectIterator var2 = var0.long2ObjectEntrySet().fastIterator();
+   static void dropOutside(Long2ObjectOpenHashMap<AdvancedScanner.ChunkResult> long2ObjectOpenHashMap, LongOpenHashSet longOpenHashSet) {
+      ObjectIterator var2 = long2ObjectOpenHashMap.long2ObjectEntrySet().fastIterator();
 
       while (var2.hasNext()) {
          Entry var3 = (Entry)var2.next();
-         if (!var1.contains(var3.getLongKey()) && !((AdvancedScanner.ChunkResult)var3.getValue()).flagged()) {
+         if (!longOpenHashSet.contains(var3.getLongKey()) && !((AdvancedScanner.ChunkResult)var3.getValue()).flagged()) {
             var2.remove();
          }
       }
    }
 
-   private static long clusterKey(long var0, byte var2) {
-      return var0 * 31L + var2;
+   private static long clusterKey(long l, byte b) {
+      return l * 31L + b;
    }
 
-   public void blockChanged(BlockPos var1) {
+   public void blockChanged(BlockPos blockPos) {
       if (!this.stopped) {
-         if (var1.method_10264() >= -17 && var1.method_10264() <= 64) {
-            int var2 = var1.method_10263() >> 4;
-            int var3 = var1.method_10260() >> 4;
+         if (blockPos.getY() >= -17 && blockPos.getY() <= 64) {
+            int var2 = blockPos.getX() >> 4;
+            int var3 = blockPos.getZ() >> 4;
 
             for (int var4 = -2; var4 <= 2; var4++) {
                for (int var5 = -2; var5 <= 2; var5++) {
-                  long var6 = ChunkPos.method_8331(var2 + var4, var3 + var5);
+                  long var6 = ChunkPos.toLong(var2 + var4, var3 + var5);
                   if (this.clusters.containsKey(var6)) {
                      this.settling.put(var6, this.ticks + 20L);
                      this.queueJudge(var6);
@@ -292,42 +290,42 @@ public final class AdvancedScanner implements AutoCloseable {
       }
    }
 
-   public void chunkArrived(int var1, int var2) {
+   public void chunkArrived(int i, int j) {
       if (!this.stopped) {
          this.areaStale = true;
 
          for (int var3 = -1; var3 <= 1; var3++) {
             for (int var4 = -1; var4 <= 1; var4++) {
-               this.queueJudge(ChunkPos.method_8331(var1 + var3, var2 + var4));
+               this.queueJudge(ChunkPos.toLong(i + var3, j + var4));
             }
          }
       }
    }
 
-   static boolean insideWorldLimit(int var0, int var1) {
+   static boolean insideWorldLimit(int i, int j) {
       short var2 = 15625;
-      return var0 >= -var2 && var0 < var2 && var1 >= -var2 && var1 < var2;
+      return i >= -var2 && i < var2 && j >= -var2 && j < var2;
    }
 
-   private void queueJudge(long var1) {
-      if (this.judgeQueued.add(var1)) {
-         this.toJudge.enqueue(var1);
+   private void queueJudge(long l) {
+      if (this.judgeQueued.add(l)) {
+         this.toJudge.enqueue(l);
       }
    }
 
-   private void updateArea(ClientWorld var1, ChunkPos var2, int var3) {
-      boolean var4 = var2.field_9181 != this.areaX || var2.field_9180 != this.areaZ || var3 != this.areaRadius;
+   private void updateArea(ClientWorld clientWorld, ChunkPos chunkPos, int i) {
+      boolean var4 = chunkPos.x != this.areaX || chunkPos.z != this.areaZ || i != this.areaRadius;
       if (var4 || this.areaStale && this.ticks % 20L == 0L) {
          this.areaStale = false;
-         this.areaX = var2.field_9181;
-         this.areaZ = var2.field_9180;
-         this.areaRadius = var3;
+         this.areaX = chunkPos.x;
+         this.areaZ = chunkPos.z;
+         this.areaRadius = i;
          LongOpenHashSet var6 = new LongOpenHashSet();
 
-         for (int var7 = var2.field_9181 - var3; var7 <= var2.field_9181 + var3; var7++) {
-            for (int var8 = var2.field_9180 - var3; var8 <= var2.field_9180 + var3; var8++) {
-               if (insideWorldLimit(var7, var8) && var1.method_2935().method_21730(var7, var8) != null) {
-                  var6.add(ChunkPos.method_8331(var7, var8));
+         for (int var7 = chunkPos.x - i; var7 <= chunkPos.x + i; var7++) {
+            for (int var8 = chunkPos.z - i; var8 <= chunkPos.z + i; var8++) {
+               if (insideWorldLimit(var7, var8) && clientWorld.getChunkManager().getWorldChunk(var7, var8) != null) {
+                  var6.add(ChunkPos.toLong(var7, var8));
                }
             }
          }
@@ -335,21 +333,18 @@ public final class AdvancedScanner implements AutoCloseable {
          this.area = var6;
          this.clusters.keySet().retainAll(var6);
          dropOutside(this.results, var6);
-         int var9 = var3 + 1 + 1 + 1;
-         this.shownSent
-            .removeIf(
-               var2x -> Math.max(Math.abs(ChunkPos.method_8325(var2x) - var2.field_9181), Math.abs(ChunkPos.method_8332(var2x) - var2.field_9180)) > var9
-            );
-         this.send(new AdvancedScanner.Want(var6, var2.field_9181, var2.field_9180));
+         int var9 = i + 1 + 1 + 1;
+         this.shownSent.removeIf(l -> Math.max(Math.abs(ChunkPos.getPackedX(l) - chunkPos.x), Math.abs(ChunkPos.getPackedZ(l) - chunkPos.z)) > var9);
+         this.send(new AdvancedScanner.Want(var6, chunkPos.x, chunkPos.z));
       }
    }
 
-   private void copyArrived(ClientWorld var1, long var2) {
+   private void copyArrived(ClientWorld clientWorld, long l) {
       if (this.areaRadius >= 0) {
          int var4 = this.areaRadius + 1 + 1 + 1;
 
          for (int var5 = 0; var5 <= var4; var5++) {
-            if (System.nanoTime() >= var2) {
+            if (System.nanoTime() >= l) {
                return;
             }
 
@@ -358,20 +353,20 @@ public final class AdvancedScanner implements AutoCloseable {
                   WorldChunk var8;
                   long var9;
                   if (Math.max(Math.abs(var6 - this.areaX), Math.abs(var7 - this.areaZ)) == var5
-                     && !this.shownSent.contains(var9 = ChunkPos.method_8331(var6, var7))
-                     && (var8 = var1.method_2935().method_21730(var6, var7)) != null) {
-                     ChunkSection[] var11 = var8.method_12006();
+                     && !this.shownSent.contains(var9 = ChunkPos.toLong(var6, var7))
+                     && (var8 = clientWorld.getChunkManager().getWorldChunk(var6, var7)) != null) {
+                     ChunkSection[] var11 = var8.getSectionArray();
                      PalettedContainer[] var12 = new PalettedContainer[var11.length];
 
                      for (int var13 = 0; var13 < var11.length; var13++) {
-                        if (var11[var13] != null && !var11[var13].method_38292()) {
-                           var12[var13] = var11[var13].method_12265().method_39957();
+                        if (var11[var13] != null && !var11[var13].isEmpty()) {
+                           var12[var13] = var11[var13].getBlockStateContainer().copy();
                         }
                      }
 
                      this.shownSent.add(var9);
                      this.send(new AdvancedScanner.Copied(var6, var7, var12));
-                     if (System.nanoTime() >= var2) {
+                     if (System.nanoTime() >= l) {
                         return;
                      }
                   }
@@ -381,42 +376,42 @@ public final class AdvancedScanner implements AutoCloseable {
       }
    }
 
-   private static BlobJudge.Client clientView(final ClientWorld var0) {
+   private static BlobJudge.Client clientView(ClientWorld clientWorld) {
       return new BlobJudge.Client() {
          private int lastX = -2147483648;
          private int lastZ = -2147483648;
          private WorldChunk last;
 
          @Override
-         public BlockState state(int var1, int var2, int var3) {
-            int var4 = var1 >> 4;
-            int var5 = var3 >> 4;
+         public BlockState state(int i, int j, int k) {
+            int var4 = i >> 4;
+            int var5 = k >> 4;
             if (var4 != this.lastX || var5 != this.lastZ) {
                this.lastX = var4;
                this.lastZ = var5;
-               this.last = var0.method_2935().method_21730(var4, var5);
+               this.last = clientWorld.getChunkManager().getWorldChunk(var4, var5);
             }
 
             if (this.last == null) {
                return null;
             } else {
-               int var6 = this.last.method_31602(var2);
-               return var6 >= 0 && var6 < this.last.method_32890()
-                  ? this.last.method_38259(var6).method_12254(var1 & 15, var2 & 15, var3 & 15)
-                  : Blocks.field_10243.method_9564();
+               int var6 = this.last.getSectionIndex(j);
+               return var6 >= 0 && var6 < this.last.countVerticalSections()
+                  ? this.last.getSection(var6).getBlockState(i & 15, j & 15, k & 15)
+                  : Blocks.VOID_AIR.getDefaultState();
             }
          }
       };
    }
 
-   private void count(BlobJudge.Verdict var1) {
-      switch (var1.status()) {
+   private void count(BlobJudge.Verdict verdict) {
+      switch (verdict.status()) {
          case CLEAN:
          case ALERT:
          case MISPREDICTED:
          case HIDDEN:
-            if (this.counted.add(clusterKey(var1.owner(), var1.kind()))) {
-               switch (var1.status()) {
+            if (this.counted.add(clusterKey(verdict.owner(), verdict.kind()))) {
+               switch (verdict.status()) {
                   case CLEAN:
                   case ALERT:
                      this.trusted++;
@@ -447,9 +442,9 @@ public final class AdvancedScanner implements AutoCloseable {
       }
    }
 
-   private void send(Object var1) {
+   private void send(Object object) {
       if (!this.stopped && !this.closed) {
-         this.inbox.add(var1);
+         this.inbox.add(object);
          LockSupport.unpark(this.worker);
       }
    }
@@ -489,8 +484,8 @@ public final class AdvancedScanner implements AutoCloseable {
       }
    }
 
-   private void predict(SeedWorldgen var1) {
-      PredictionArea var2 = new PredictionArea(var1);
+   private void predict(SeedWorldgen seedWorldgen) {
+      PredictionArea var2 = new PredictionArea(seedWorldgen);
       boolean var3 = false;
 
       while (!this.closed) {

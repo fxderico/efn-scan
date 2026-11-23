@@ -19,15 +19,21 @@ public abstract class MixinTrialSpawnerRenderer {
    }
 
    @Inject(
-      method = {"method_74396"},
+      method = {"updateSpawnerRenderState"},
       at = {@At("HEAD")},
       cancellable = true
    )
    private static void efn$cancelSpawnerMobExtract(
-      MobSpawnerBlockEntityRenderState var0, float var1, Entity var2, EntityRenderManager var3, double var4, double var6, CallbackInfo var8
+      MobSpawnerBlockEntityRenderState mobSpawnerBlockEntityRenderState,
+      float f,
+      Entity entity,
+      EntityRenderManager entityRenderManager,
+      double d,
+      double e,
+      CallbackInfo callbackInfo
    ) {
       if (NoRenderModule.hideSpawnerMob()) {
-         var8.cancel();
+         callbackInfo.cancel();
       }
    }
 }

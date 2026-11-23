@@ -60,8 +60,8 @@ public final class StreamOverlay {
    private static long fakeMask;
    private static int fakeScale;
    private static ImDrawList fakeList;
-   private static final DigitFont.Sink FAKE_SINK = (var0, var1, var2, var3, var4) -> fakeList.addRectFilled(
-      var0, var1, var0 + var2, var1 + var3, var4 & -16711936 | var4 << 16 & 0xFF0000 | var4 >>> 16 & 0xFF
+   private static final DigitFont.Sink FAKE_SINK = (i, j, k, l, m) -> fakeList.addRectFilled(
+      i, j, i + k, j + l, m & -16711936 | m << 16 & 0xFF0000 | m >>> 16 & 0xFF
    );
    private static final ItemStack[] shownStack = new ItemStack[42];
    private static final int[] shownX = new int[42];
@@ -88,7 +88,7 @@ public final class StreamOverlay {
    private static int cursorX;
    private static int cursorY;
    private static final ItemLook look = new ItemLook();
-   private static final Object2ObjectOpenHashMap<List<Object>, int[]> icons = new Object2ObjectOpenHashMap();
+   private static final Object2ObjectOpenHashMap<List<Object>, int[]> icons = new Object2ObjectOpenHashMap<>();
    private static final int[][] slotIcon = new int[42][];
    private static final int[] pendingSlot = new int[49];
    private static final List<Object>[] pendingKey = newKeys(49);
@@ -146,50 +146,50 @@ public final class StreamOverlay {
       return hotbarVisible();
    }
 
-   public static void hotbar(int var0, int var1, int var2, ItemStack var3) {
+   public static void hotbar(int i, int j, int k, ItemStack itemStack) {
       if (hotbarVisible()) {
-         record(var0, var1, var2, var3);
+         record(i, j, k, itemStack);
       }
    }
 
-   public static void container(int var0, int var1, int var2, ItemStack var3, boolean var4) {
-      record(var0, var1, var2, var3);
-      if (var4) {
-         hovered = var0;
+   public static void container(int i, int j, int k, ItemStack itemStack, boolean bl) {
+      record(i, j, k, itemStack);
+      if (bl) {
+         hovered = i;
       }
    }
 
-   public static void carried(ItemStack var0, int var1, int var2) {
-      record(41, var1, var2, var0);
+   public static void carried(ItemStack itemStack, int i, int j) {
+      record(41, i, j, itemStack);
    }
 
-   public static void selection(int var0, int var1) {
+   public static void selection(int i, int j) {
       if (hotbarVisible()) {
          selectionSeen = true;
-         selectionX = var0;
-         selectionY = var1;
+         selectionX = i;
+         selectionY = j;
       }
    }
 
-   public static void tooltip(ItemStack var0, int var1, int var2) {
-      TextPanels.tooltip(var0, var1, var2);
+   public static void tooltip(ItemStack itemStack, int i, int j) {
+      TextPanels.tooltip(itemStack, i, j);
    }
 
-   public static void itemName(ItemStack var0, int var1, int var2) {
-      TextPanels.itemName(var0, var1, var2);
+   public static void itemName(ItemStack itemStack, int i, int j) {
+      TextPanels.itemName(itemStack, i, j);
    }
 
    private static boolean hotbarVisible() {
-      Screen var0 = MinecraftClient.method_1551().field_1755;
+      Screen var0 = MinecraftClient.getInstance().currentScreen;
       return var0 == null || var0 instanceof ChatScreen;
    }
 
-   private static void record(int var0, int var1, int var2, ItemStack var3) {
-      if (var0 >= 0 && var0 < 42 && (var0 != 41 || !var3.method_7960())) {
-         stack[var0] = var3;
-         guiX[var0] = var1;
-         guiY[var0] = var2;
-         mask |= 1L << var0;
+   private static void record(int i, int j, int k, ItemStack itemStack) {
+      if (i >= 0 && i < 42 && (i != 41 || !itemStack.isEmpty())) {
+         stack[i] = itemStack;
+         guiX[i] = j;
+         guiY[i] = k;
+         mask |= 1L << i;
       }
    }
 
@@ -206,7 +206,7 @@ public final class StreamOverlay {
 
             for (int var3 = 0; var3 < 41; var3++) {
                ItemStack var4;
-               if ((var0 >>> var3 & 1L) != 0L && !(var4 = NoInvLeakModule.fakeFor(var3)).method_7960()) {
+               if ((var0 >>> var3 & 1L) != 0L && !(var4 = NoInvLeakModule.fakeFor(var3)).isEmpty()) {
                   int var5 = guiX[var3] * var2;
                   int var6 = guiY[var3] * var2;
                   ItemIcons.draw(fakeList, var4, var5, var6, 16.0F * var2, 1.0F);
@@ -229,15 +229,15 @@ public final class StreamOverlay {
       selectionSeen = false;
       if (NoInvLeakModule.overlayWanted() && usable()) {
          try {
-            MinecraftClient var4 = MinecraftClient.method_1551();
-            Window var5 = var4.method_22683();
-            if (var5.method_65966()) {
+            MinecraftClient var4 = MinecraftClient.getInstance();
+            Window var5 = var4.getWindow();
+            if (var5.hasZeroWidthOrHeight()) {
                fakeMask = 0L;
                hideAll();
             } else {
-               int var6 = var5.method_4495();
-               int var7 = var5.method_4499();
-               int var8 = var5.method_4477();
+               int var6 = var5.getScaleFactor();
+               int var7 = var5.getX();
+               int var8 = var5.getY();
                boolean var9 = NoInvLeakModule.opaqueCells();
                var0 = withoutEmpty(var0, var9 && NoInvLeakModule.fillsEmpty());
                GpuTexture var10 = itemAtlas(var4);
@@ -269,9 +269,9 @@ public final class StreamOverlay {
       }
    }
 
-   private static void fail(Throwable var0, String var1) {
-      boolean var3 = var0 instanceof OverlayWindow.Unsupported || var0 instanceof LinkageError;
-      String var4 = var0.getMessage() == null ? var0.getClass().getSimpleName() : var0.getMessage();
+   private static void fail(Throwable throwable, String string) {
+      boolean var3 = throwable instanceof OverlayWindow.Unsupported || throwable instanceof LinkageError;
+      String var4 = throwable.getMessage() == null ? throwable.getClass().getSimpleName() : throwable.getMessage();
       long var5 = 0L;
       if (var3) {
          unsupported = true;
@@ -280,7 +280,7 @@ public final class StreamOverlay {
          retryAt = System.nanoTime() + var5;
       }
 
-      String var7 = var1 + "|" + var0.getClass().getName() + "|" + var4;
+      String var7 = string + "|" + throwable.getClass().getName() + "|" + var4;
       long var8 = System.nanoTime();
       long[] var10 = reported.get(var7);
       String var2 = var3 ? "turned off for this session" : "retrying in " + var5 / 1000000000L + " s";
@@ -288,13 +288,14 @@ public final class StreamOverlay {
          reported.put(var7, new long[]{var8, 0L});
          LOGGER.warn(
             "[EFN] No Inv Leak: Stream Only failed while {} ({}); {}. Windows build {}. Your items are shown as hidden to you as well until it works again.",
-            new Object[]{var1, var4, var2, OverlayWindow.windowsBuild(), var0}
+            string,
+            var4,
+            var2,
+            OverlayWindow.windowsBuild(),
+            throwable
          );
       } else if (var8 - var10[0] >= 60000000000L) {
-         LOGGER.warn(
-            "[EFN] No Inv Leak: Stream Only failed again while {} ({}), {} more time(s) since the last report; {}",
-            new Object[]{var1, var4, var10[1] + 1L, var2}
-         );
+         LOGGER.warn("[EFN] No Inv Leak: Stream Only failed again while {} ({}), {} more time(s) since the last report; {}", string, var4, var10[1] + 1L, var2);
          var10[0] = var8;
          var10[1] = 0L;
       } else {
@@ -312,16 +313,16 @@ public final class StreamOverlay {
       try {
          release();
       } catch (RuntimeException | LinkageError var13) {
-         LOGGER.debug("[EFN] No Inv Leak: overlay cleanup failed", var13);
+         LOGGER.debug("[EFN] No Inv Leak: overlay cleanup failed", (Throwable)var13);
       }
    }
 
-   private static void diagnose(MinecraftClient var0, Window var1) {
+   private static void diagnose(MinecraftClient minecraftClient, Window window) {
       if (!diagnosed) {
          diagnosed = true;
          transientFailures = 0;
-         boolean var4 = var1.method_4498();
-         boolean var3 = var4 && ((BorderlessFullscreen.Switchable)var1).efn$isBorderless();
+         boolean var4 = window.isFullscreen();
+         boolean var3 = var4 && ((BorderlessFullscreen.Switchable)window).efn$isBorderless();
          String var5 = !var4 ? "windowed" : (var3 ? "borderless fullscreen" : "exclusive fullscreen");
 
          String var2;
@@ -333,19 +334,17 @@ public final class StreamOverlay {
 
          LOGGER.info(
             "[EFN] No Inv Leak: Stream Only overlay active (Windows build {}, {}, window {}x{} at {},{}, framebuffer {}x{}, gui scale {}, {}, overlay {})",
-            new Object[]{
-               OverlayWindow.windowsBuild(),
-               var5,
-               var1.method_4480(),
-               var1.method_4507(),
-               var1.method_4499(),
-               var1.method_4477(),
-               var0.method_1522().field_1482,
-               var0.method_1522().field_1481,
-               var1.method_4495(),
-               var2,
-               slotWindow != null ? slotWindow.describe() : "pending"
-            }
+            OverlayWindow.windowsBuild(),
+            var5,
+            window.getWidth(),
+            window.getHeight(),
+            window.getX(),
+            window.getY(),
+            minecraftClient.getFramebuffer().textureWidth,
+            minecraftClient.getFramebuffer().textureHeight,
+            window.getScaleFactor(),
+            var2,
+            slotWindow != null ? slotWindow.describe() : "pending"
          );
          if (var4 && !var3 && !toldFullscreen) {
             toldFullscreen = true;
@@ -359,7 +358,7 @@ public final class StreamOverlay {
       if (RenderSystem.isOnRenderThread()) {
          release();
       } else {
-         MinecraftClient.method_1551().execute(StreamOverlay::release);
+         MinecraftClient.getInstance().execute(StreamOverlay::release);
       }
    }
 
@@ -367,13 +366,13 @@ public final class StreamOverlay {
       return slotWindow != null || cursorWindow != null || scratch != null || TextPanels.started();
    }
 
-   private static void layers(MinecraftClient var0, Window var1, long var2, int var4, int var5, int var6, boolean var7, boolean var8, int var9) {
-      long var11 = var2 & 2199023255551L;
-      boolean var10 = var11 != 0L || var8;
-      if (!var10 && (var2 >>> 41 & 1L) == 0L) {
+   private static void layers(MinecraftClient minecraftClient, Window window, long l, int i, int j, int k, boolean bl, boolean bl2, int m) {
+      long var11 = l & 2199023255551L;
+      boolean var10 = var11 != 0L || bl2;
+      if (!var10 && (l >>> 41 & 1L) == 0L) {
          hideSlotsAndCursor();
       } else {
-         int var14 = 16 * var4;
+         int var14 = 16 * i;
          if (var14 != iconPx || cachedBytes > 4194304) {
             resetIcons(var14);
          }
@@ -383,25 +382,25 @@ public final class StreamOverlay {
          }
 
          if (slotWindow == null && var10) {
-            slotWindow = new OverlayWindow(var1.method_4490());
+            slotWindow = new OverlayWindow(window.getHandle());
          }
 
-         if (cursorWindow == null && (var2 >>> 41 & 1L) != 0L) {
-            cursorWindow = new OverlayWindow(var1.method_4490());
+         if (cursorWindow == null && (l >>> 41 & 1L) != 0L) {
+            cursorWindow = new OverlayWindow(window.getHandle());
          }
 
          boolean var15 = var11 != shownMask
-            || var4 != shownScale
-            || var7 != shownOpaque
-            || var8 != shownSelection
-            || var8 && (selectionX != shownSelectionX || selectionY != shownSelectionY);
+            || i != shownScale
+            || bl != shownOpaque
+            || bl2 != shownSelection
+            || bl2 && (selectionX != shownSelectionX || selectionY != shownSelectionY);
          boolean var16 = false;
 
          for (int var17 = 0; var17 < 41; var17++) {
             if ((var11 >>> var17 & 1L) != 0L) {
                if (guiX[var17] != shownX[var17] || guiY[var17] != shownY[var17]) {
                   var15 = true;
-               } else if (stack[var17] != shownStack[var17] || stack[var17].method_7947() != shownCount[var17] || bar(stack[var17]) != shownBar[var17]) {
+               } else if (stack[var17] != shownStack[var17] || stack[var17].getCount() != shownCount[var17] || bar(stack[var17]) != shownBar[var17]) {
                   var16 = true;
                }
             }
@@ -412,17 +411,17 @@ public final class StreamOverlay {
             dropAsync();
          }
 
-         int var20 = resolveIcons(var2, var14);
-         boolean var18 = var7 && var11 != 0L && !backgroundValid;
+         int var20 = resolveIcons(l, var14);
+         boolean var18 = bl && var11 != 0L && !backgroundValid;
          boolean var19 = false;
          if (var20 > 0 || var18) {
-            synchronousRead(var11, var4, var18, var20);
+            synchronousRead(var11, i, var18, var20);
             if (var18) {
                var19 = true;
-               shownHover = var9;
+               shownHover = m;
             }
-         } else if (var7 && var11 != 0L) {
-            var19 = takeAsync(var11, var4);
+         } else if (bl && var11 != 0L) {
+            var19 = takeAsync(var11, i);
          }
 
          if (!var10) {
@@ -432,23 +431,23 @@ public final class StreamOverlay {
 
             shownMask = 0L;
          } else if (var15 || var16 || var19 || var20 > 0) {
-            composeSlots(var11, var4, var7, var8, var5, var6);
-         } else if (var5 != shownWindowX || var6 != shownWindowY) {
-            slotWindow.move(var5 + boxX, var6 + boxY);
-            shownWindowX = var5;
-            shownWindowY = var6;
+            composeSlots(var11, i, bl, bl2, j, k);
+         } else if (j != shownWindowX || k != shownWindowY) {
+            slotWindow.move(j + boxX, k + boxY);
+            shownWindowX = j;
+            shownWindowY = k;
          }
 
-         if (var7
+         if (bl
             && var11 != 0L
             && asyncFence == null
             && backgroundValid
-            && (var9 != shownHover || hotbarVisible() && System.nanoTime() - backgroundAt >= 33000000L)) {
-            requestAsync(var11, var4);
-            shownHover = var9;
+            && (m != shownHover || hotbarVisible() && System.nanoTime() - backgroundAt >= 33000000L)) {
+            requestAsync(var11, i);
+            shownHover = m;
          }
 
-         cursor(var2, var4, var5, var6);
+         cursor(l, i, j, k);
       }
    }
 
@@ -465,14 +464,14 @@ public final class StreamOverlay {
       cursorStack = null;
    }
 
-   private static long withoutEmpty(long var0, boolean var2) {
-      if (var2) {
-         return var0;
+   private static long withoutEmpty(long l, boolean bl) {
+      if (bl) {
+         return l;
       } else {
-         long var3 = var0;
+         long var3 = l;
 
          for (int var5 = 0; var5 < 41; var5++) {
-            if ((var3 >>> var5 & 1L) != 0L && stack[var5].method_7960()) {
+            if ((var3 >>> var5 & 1L) != 0L && stack[var5].isEmpty()) {
                var3 &= ~(1L << var5);
             }
          }
@@ -486,44 +485,44 @@ public final class StreamOverlay {
       TextPanels.hide();
    }
 
-   private static int bar(ItemStack var0) {
-      return var0.method_31578() ? var0.method_31580() << 5 | var0.method_31579() : -1;
+   private static int bar(ItemStack itemStack) {
+      return itemStack.isItemBarVisible() ? itemStack.getItemBarColor() << 5 | itemStack.getItemBarStep() : -1;
    }
 
-   private static int cellX(int var0, int var1) {
-      return var0 % 7 * var1;
+   private static int cellX(int i, int j) {
+      return i % 7 * j;
    }
 
-   private static int cellY(int var0, int var1) {
-      return var0 / 7 * var1;
+   private static int cellY(int i, int j) {
+      return i / 7 * j;
    }
 
-   private static int resolveIcons(long var0, int var2) {
+   private static int resolveIcons(long l, int i) {
       int var3 = 0;
 
       for (int var4 = 0; var4 < 42; var4++) {
-         if ((var0 >>> var4 & 1L) != 0L) {
+         if ((l >>> var4 & 1L) != 0L) {
             ItemStack var5 = stack[var4];
             if (var5 != shownStack[var4]) {
                slotIcon[var4] = null;
             }
 
             if (slotIcon[var4] == null) {
-               if (!var5.method_7960() && look.resolve(var5)) {
-                  int[] var6 = (int[])icons.get(look.identity);
+               if (!var5.isEmpty() && look.resolve(var5)) {
+                  int[] var6 = icons.get(look.identity);
                   if (var6 != null) {
                      slotIcon[var4] = var6;
                   } else {
                      int var7 = var3++;
 
                      try {
-                        ItemIcons.render(look, scratch, scratchView, scratchDepth, scratchDepthView, cellX(var7, var2), cellY(var7, var2), var2);
+                        ItemIcons.render(look, scratch, scratchView, scratchDepth, scratchDepthView, cellX(var7, i), cellY(var7, i), i);
                      } catch (RuntimeException var10) {
                         slotIcon[var4] = BLANK;
-                        look.method_65605();
-                        String var9 = "icon|" + var5.method_7909();
+                        look.clear();
+                        String var9 = "icon|" + var5.getItem();
                         if (reported.putIfAbsent(var9, new long[]{System.nanoTime(), 0L}) == null) {
-                           LOGGER.warn("[EFN] No Inv Leak: Stream Only could not draw the icon for {}; it stays blank", var5.method_7909(), var10);
+                           LOGGER.warn("[EFN] No Inv Leak: Stream Only could not draw the icon for {}; it stays blank", var5.getItem(), var10);
                         }
                         continue;
                      }
@@ -532,7 +531,7 @@ public final class StreamOverlay {
                      pendingKey[var7] = Arrays.asList(look.identity.toArray());
                   }
 
-                  look.method_65605();
+                  look.clear();
                } else {
                   slotIcon[var4] = BLANK;
                }
@@ -543,53 +542,53 @@ public final class StreamOverlay {
       return var3;
    }
 
-   private static void resetIcons(int var0) {
+   private static void resetIcons(int i) {
       icons.clear();
       cachedBytes = 0;
       Arrays.fill((Object[])slotIcon, null);
       dropAsync();
       backgroundValid = false;
-      if (var0 != iconPx || scratch == null) {
+      if (i != iconPx || scratch == null) {
          closeTextures();
          Arrays.fill((Object[])background, null);
          Arrays.fill((Object[])backgroundNext, null);
       }
    }
 
-   private static void allocate(int var0) {
-      int var1 = 7 * var0;
+   private static void allocate(int i) {
+      int var1 = 7 * i;
       GpuDevice var2 = RenderSystem.getDevice();
       scratch = var2.createTexture("EFN overlay icons", 15, TextureFormat.RGBA8, var1, var1, 1, 1);
       scratchView = var2.createTextureView(scratch);
       scratchDepth = var2.createTexture("EFN overlay icon depth", 8, TextureFormat.DEPTH32, var1, var1, 1, 1);
       scratchDepthView = var2.createTextureView(scratchDepth);
       var2.createCommandEncoder().clearColorAndDepthTextures(scratch, 0, scratchDepth, 1.0);
-      iconPx = var0;
+      iconPx = i;
    }
 
-   private static GpuTexture itemAtlas(MinecraftClient var0) {
+   private static GpuTexture itemAtlas(MinecraftClient minecraftClient) {
       try {
-         return var0.method_72703().method_73025(Atlases.field_64477).method_68004();
+         return minecraftClient.getAtlasManager().getAtlasTexture(Atlases.ITEMS).getGlTexture();
       } catch (RuntimeException var2) {
          return null;
       }
    }
 
-   private static void synchronousRead(long var0, int var2, boolean var3, int var4) {
-      int var5 = 16 * var2;
+   private static void synchronousRead(long l, int i, boolean bl, int j) {
+      int var5 = 16 * i;
       int var6 = 7 * var5;
-      long var7 = var4 > 0 ? (long)var6 * var6 * 4L : 0L;
-      boolean var9 = var3 && region(var0, var2, syncRegion);
+      long var7 = j > 0 ? (long)var6 * var6 * 4L : 0L;
+      boolean var9 = bl && region(l, i, syncRegion);
       long var10 = var9 ? (long)syncRegion[2] * syncRegion[3] * 4L : 0L;
       long var12 = var9 ? var7 + frameTextureBytes() : var7;
       long var14 = var7 + var10;
-      if (var3) {
+      if (bl) {
          backgroundValid = true;
       }
 
       if (var12 == 0L) {
-         if (var3) {
-            unpackBackground(null, 0, syncRegion, false, var0, var2);
+         if (bl) {
+            unpackBackground(null, 0, syncRegion, false, l, i);
          }
       } else {
          GpuDevice var16 = RenderSystem.getDevice();
@@ -605,7 +604,7 @@ public final class StreamOverlay {
          packDefaults();
 
          try {
-            if (var4 > 0) {
+            if (j > 0) {
                var17.copyTextureToBuffer(scratch, readback, 0L, NOTHING, 0);
             }
 
@@ -616,35 +615,17 @@ public final class StreamOverlay {
             packReset();
          }
 
-         GpuFence var18 = var17.createFence();
-
-         try {
+         try (GpuFence var18 = var17.createFence()) {
             GL11.glFlush();
             if (!var18.awaitCompletion(1000000000L)) {
                throw new IllegalStateException("overlay read-back timed out");
             }
-         } catch (Throwable var29) {
-            if (var18 != null) {
-               try {
-                  var18.close();
-               } catch (Throwable var28) {
-                  var29.addSuppressed(var28);
-               }
-            }
-
-            throw var29;
          }
 
-         if (var18 != null) {
-            var18.close();
-         }
-
-         MappedView var32 = var17.mapBuffer(readback.slice(0L, var14), true, false);
-
-         try {
+         try (MappedView var32 = var17.mapBuffer(readback.slice(0L, var14), true, false)) {
             ByteBuffer var19 = var32.data();
 
-            for (int var20 = 0; var20 < var4; var20++) {
+            for (int var20 = 0; var20 < j; var20++) {
                int[] var21 = unpackIcon(var19, cellX(var20, var5), cellY(var20, var5), var6, var5);
                icons.put(pendingKey[var20], var21);
                pendingKey[var20] = null;
@@ -652,31 +633,17 @@ public final class StreamOverlay {
                slotIcon[pendingSlot[var20]] = var21;
             }
 
-            if (var3) {
-               unpackBackground(var19, (int)var7, syncRegion, var9, var0, var2);
+            if (bl) {
+               unpackBackground(var19, (int)var7, syncRegion, var9, l, i);
                backgroundAt = System.nanoTime();
             }
-         } catch (Throwable var30) {
-            if (var32 != null) {
-               try {
-                  var32.close();
-               } catch (Throwable var27) {
-                  var30.addSuppressed(var27);
-               }
-            }
-
-            throw var30;
-         }
-
-         if (var32 != null) {
-            var32.close();
          }
       }
    }
 
-   private static void requestAsync(long var0, int var2) {
+   private static void requestAsync(long l, int i) {
       backgroundAt = System.nanoTime();
-      if (region(var0, var2, asyncRegion)) {
+      if (region(l, i, asyncRegion)) {
          long var3 = frameTextureBytes();
          GpuDevice var5 = RenderSystem.getDevice();
          if (asyncBuffer == null || asyncBuffer.size() < var3) {
@@ -698,8 +665,8 @@ public final class StreamOverlay {
 
          asyncFence = var6.createFence();
          GL11.glFlush();
-         asyncMask = var0;
-         asyncScale = var2;
+         asyncMask = l;
+         asyncScale = i;
 
          for (int var7 = 0; var7 < 41; var7++) {
             asyncX[var7] = guiX[var7];
@@ -708,12 +675,12 @@ public final class StreamOverlay {
       }
    }
 
-   private static boolean takeAsync(long var0, int var2) {
+   private static boolean takeAsync(long l, int i) {
       if (asyncFence != null && asyncFence.awaitCompletion(0L)) {
-         boolean var3 = asyncMask == var0 && asyncScale == var2;
+         boolean var3 = asyncMask == l && asyncScale == i;
 
          for (int var4 = 0; var3 && var4 < 41; var4++) {
-            if ((var0 >>> var4 & 1L) != 0L && (asyncX[var4] != guiX[var4] || asyncY[var4] != guiY[var4])) {
+            if ((l >>> var4 & 1L) != 0L && (asyncX[var4] != guiX[var4] || asyncY[var4] != guiY[var4])) {
                var3 = false;
             }
          }
@@ -722,24 +689,9 @@ public final class StreamOverlay {
          if (var3) {
             long var5 = (long)asyncRegion[2] * asyncRegion[3] * 4L;
             CommandEncoder var7 = RenderSystem.getDevice().createCommandEncoder();
-            MappedView var8 = var7.mapBuffer(asyncBuffer.slice(0L, var5), true, false);
 
-            try {
-               var13 = unpackBackground(var8.data(), 0, asyncRegion, true, var0, var2);
-            } catch (Throwable var12) {
-               if (var8 != null) {
-                  try {
-                     var8.close();
-                  } catch (Throwable var11) {
-                     var12.addSuppressed(var11);
-                  }
-               }
-
-               throw var12;
-            }
-
-            if (var8 != null) {
-               var8.close();
+            try (MappedView var8 = var7.mapBuffer(asyncBuffer.slice(0L, var5), true, false)) {
+               var13 = unpackBackground(var8.data(), 0, asyncRegion, true, l, i);
             }
          }
 
@@ -758,7 +710,7 @@ public final class StreamOverlay {
    }
 
    private static long frameTextureBytes() {
-      GpuTexture var0 = MinecraftClient.method_1551().method_1522().method_30277();
+      GpuTexture var0 = MinecraftClient.getInstance().getFramebuffer().getColorAttachment();
       return (long)var0.getWidth(0) * var0.getHeight(0) * 4L;
    }
 
@@ -772,20 +724,20 @@ public final class StreamOverlay {
       GlStateManager._pixelStore(3330, 0);
    }
 
-   private static boolean region(long var0, int var2, int[] var3) {
-      GpuTexture var4 = MinecraftClient.method_1551().method_1522().method_30277();
-      int var5 = 16 * var2;
+   private static boolean region(long l, int i, int[] is) {
+      GpuTexture var4 = MinecraftClient.getInstance().getFramebuffer().getColorAttachment();
+      int var5 = 16 * i;
       int var6 = 2147483647;
       int var7 = 2147483647;
       int var8 = -2147483648;
       int var9 = -2147483648;
 
       for (int var10 = 0; var10 < 41; var10++) {
-         if ((var0 >>> var10 & 1L) != 0L) {
-            var6 = Math.min(var6, guiX[var10] * var2);
-            var7 = Math.min(var7, guiY[var10] * var2);
-            var8 = Math.max(var8, guiX[var10] * var2 + var5);
-            var9 = Math.max(var9, guiY[var10] * var2 + var5);
+         if ((l >>> var10 & 1L) != 0L) {
+            var6 = Math.min(var6, guiX[var10] * i);
+            var7 = Math.min(var7, guiY[var10] * i);
+            var8 = Math.max(var8, guiX[var10] * i + var5);
+            var9 = Math.max(var9, guiY[var10] * i + var5);
          }
       }
 
@@ -794,64 +746,67 @@ public final class StreamOverlay {
       var8 = Math.min(var8, var4.getWidth(0));
       var9 = Math.min(var9, var4.getHeight(0));
       if (var8 > var6 && var9 > var7) {
-         var3[0] = var6;
-         var3[1] = var7;
-         var3[2] = var8 - var6;
-         var3[3] = var9 - var7;
+         is[0] = var6;
+         is[1] = var7;
+         is[2] = var8 - var6;
+         is[3] = var9 - var7;
          return true;
       } else {
          return false;
       }
    }
 
-   private static void copyRegion(CommandEncoder var0, GpuBuffer var1, long var2, int[] var4) {
-      GpuTexture var5 = MinecraftClient.method_1551().method_1522().method_30277();
-      var0.copyTextureToBuffer(var5, var1, var2, NOTHING, 0, var4[0], var5.getHeight(0) - var4[1] - var4[3], var4[2], var4[3]);
+   private static void copyRegion(CommandEncoder commandEncoder, GpuBuffer gpuBuffer, long l, int[] is) {
+      GpuTexture var5 = MinecraftClient.getInstance().getFramebuffer().getColorAttachment();
+      commandEncoder.copyTextureToBuffer(var5, gpuBuffer, l, NOTHING, 0, is[0], var5.getHeight(0) - is[1] - is[3], is[2], is[3]);
    }
 
-   private static int[] unpackIcon(ByteBuffer var0, int var1, int var2, int var3, int var4) {
-      int[] var5 = new int[var4 * var4];
+   private static int[] unpackIcon(ByteBuffer byteBuffer, int i, int j, int k, int l) {
+      int[] var5 = new int[l * l];
 
-      for (int var6 = 0; var6 < var4; var6++) {
-         int var7 = ((var3 - 1 - (var2 + var6)) * var3 + var1) * 4;
+      for (int var6 = 0; var6 < l; var6++) {
+         int var7 = ((k - 1 - (j + var6)) * k + i) * 4;
 
-         for (int var8 = 0; var8 < var4; var8++) {
+         for (int var8 = 0; var8 < l; var8++) {
             int var9 = var7 + var8 * 4;
-            int var10 = var0.get(var9 + 3) & 255;
-            var5[var6 * var4 + var8] = var10 << 24
-               | Math.min(var10, var0.get(var9) & 255) << 16
-               | Math.min(var10, var0.get(var9 + 1) & 255) << 8
-               | Math.min(var10, var0.get(var9 + 2) & 255);
+            int var10 = byteBuffer.get(var9 + 3) & 255;
+            var5[var6 * l + var8] = var10 << 24
+               | Math.min(var10, byteBuffer.get(var9) & 255) << 16
+               | Math.min(var10, byteBuffer.get(var9 + 1) & 255) << 8
+               | Math.min(var10, byteBuffer.get(var9 + 2) & 255);
          }
       }
 
       return var5;
    }
 
-   private static boolean unpackBackground(ByteBuffer var0, int var1, int[] var2, boolean var3, long var4, int var6) {
-      int var7 = 16 * var6;
-      int var8 = var2[0];
-      int var9 = var2[1];
-      int var10 = var2[2];
-      int var11 = var2[3];
+   private static boolean unpackBackground(ByteBuffer byteBuffer, int i, int[] is, boolean bl, long l, int j) {
+      int var7 = 16 * j;
+      int var8 = is[0];
+      int var9 = is[1];
+      int var10 = is[2];
+      int var11 = is[3];
       boolean var12 = false;
 
       for (int var13 = 0; var13 < 41; var13++) {
-         if ((var4 >>> var13 & 1L) != 0L) {
-            int var14 = guiX[var13] * var6 - var8;
-            int var15 = guiY[var13] * var6 - var9;
-            if (var3 && var14 >= 0 && var15 >= 0 && var14 + var7 <= var10 && var15 + var7 <= var11) {
+         if ((l >>> var13 & 1L) != 0L) {
+            int var14 = guiX[var13] * j - var8;
+            int var15 = guiY[var13] * j - var9;
+            if (bl && var14 >= 0 && var15 >= 0 && var14 + var7 <= var10 && var15 + var7 <= var11) {
                int[] var16 = backgroundNext[var13];
                if (var16 == null || var16.length != var7 * var7) {
                   var16 = new int[var7 * var7];
                }
 
                for (int var17 = 0; var17 < var7; var17++) {
-                  int var18 = var1 + ((var11 - 1 - (var15 + var17)) * var10 + var14) * 4;
+                  int var18 = i + ((var11 - 1 - (var15 + var17)) * var10 + var14) * 4;
 
                   for (int var19 = 0; var19 < var7; var19++) {
                      int var20 = var18 + var19 * 4;
-                     var16[var17 * var7 + var19] = 0xFF000000 | (var0.get(var20) & 255) << 16 | (var0.get(var20 + 1) & 255) << 8 | var0.get(var20 + 2) & 255;
+                     var16[var17 * var7 + var19] = 0xFF000000
+                        | (byteBuffer.get(var20) & 255) << 16
+                        | (byteBuffer.get(var20 + 1) & 255) << 8
+                        | byteBuffer.get(var20 + 2) & 255;
                   }
                }
 
@@ -876,9 +831,9 @@ public final class StreamOverlay {
       return var12;
    }
 
-   private static void composeSlots(long var0, int var2, boolean var3, boolean var4, int var5, int var6) {
-      int var10 = 16 * var2;
-      OverlayArt.Image var11 = var4 ? OverlayArt.selection() : null;
+   private static void composeSlots(long l, int i, boolean bl, boolean bl2, int j, int k) {
+      int var10 = 16 * i;
+      OverlayArt.Image var11 = bl2 ? OverlayArt.selection() : null;
       boolean var12 = var11 != null;
       int var13 = 2147483647;
       int var14 = 2147483647;
@@ -886,7 +841,7 @@ public final class StreamOverlay {
       int var16 = -2147483648;
 
       for (int var17 = 0; var17 < 41; var17++) {
-         if ((var0 >>> var17 & 1L) != 0L) {
+         if ((l >>> var17 & 1L) != 0L) {
             var13 = Math.min(var13, guiX[var17]);
             var14 = Math.min(var14, guiY[var17]);
             var15 = Math.max(var15, guiX[var17] + 17);
@@ -905,16 +860,16 @@ public final class StreamOverlay {
          slotWindow.hide();
          shownMask = 0L;
       } else {
-         int var26 = var13 * var2;
-         int var18 = var14 * var2;
-         int var19 = (var15 - var13) * var2;
-         int var20 = (var16 - var14) * var2;
+         int var26 = var13 * i;
+         int var18 = var14 * i;
+         int var19 = (var15 - var13) * i;
+         int var20 = (var16 - var14) * i;
          canvas.wrap(slotWindow.pixels(var19, var20), slotWindow.stride(), var19, var20);
-         if (var3) {
+         if (bl) {
             for (int var9 = 0; var9 < 41; var9++) {
-               if ((var0 >>> var9 & 1L) != 0L) {
-                  int var8 = guiX[var9] * var2 - var26;
-                  int var7 = guiY[var9] * var2 - var18;
+               if ((l >>> var9 & 1L) != 0L) {
+                  int var8 = guiX[var9] * i - var26;
+                  int var7 = guiY[var9] * i - var18;
                   int[] var21 = background[var9];
                   if (var21 != null) {
                      canvas.copy(var21, var10, var10, var8, var7);
@@ -926,52 +881,52 @@ public final class StreamOverlay {
          }
 
          if (var12) {
-            canvas.blend(var11.pixels(), var11.width(), var11.height(), selectionX * var2 - var26, selectionY * var2 - var18, var2);
+            canvas.blend(var11.pixels(), var11.width(), var11.height(), selectionX * i - var26, selectionY * i - var18, i);
          }
 
          for (int var24 = 0; var24 < 41; var24++) {
-            if ((var0 >>> var24 & 1L) != 0L) {
-               int var23 = guiX[var24] * var2 - var26;
-               int var22 = guiY[var24] * var2 - var18;
+            if ((l >>> var24 & 1L) != 0L) {
+               int var23 = guiX[var24] * i - var26;
+               int var22 = guiY[var24] * i - var18;
                int[] var27 = slotIcon[var24];
                if (var27 != null && var27 != BLANK) {
                   canvas.blend(var27, var10, var10, var23, var22, 1);
                }
 
-               if (!stack[var24].method_7960()) {
-                  DigitFont.decorations(canvas, stack[var24], var23, var22, var2);
+               if (!stack[var24].isEmpty()) {
+                  DigitFont.decorations(canvas, stack[var24], var23, var22, i);
                }
             }
          }
 
-         slotWindow.present(var5 + var26, var6 + var18, var19, var20);
-         diagnose(MinecraftClient.method_1551(), MinecraftClient.method_1551().method_22683());
+         slotWindow.present(j + var26, k + var18, var19, var20);
+         diagnose(MinecraftClient.getInstance(), MinecraftClient.getInstance().getWindow());
 
          for (int var25 = 0; var25 < 41; var25++) {
-            if ((var0 >>> var25 & 1L) != 0L) {
+            if ((l >>> var25 & 1L) != 0L) {
                shownStack[var25] = stack[var25];
                shownX[var25] = guiX[var25];
                shownY[var25] = guiY[var25];
-               shownCount[var25] = stack[var25].method_7947();
+               shownCount[var25] = stack[var25].getCount();
                shownBar[var25] = bar(stack[var25]);
             }
          }
 
-         shownMask = var0;
-         shownScale = var2;
-         shownOpaque = var3;
-         shownSelection = var4;
+         shownMask = l;
+         shownScale = i;
+         shownOpaque = bl;
+         shownSelection = bl2;
          shownSelectionX = selectionX;
          shownSelectionY = selectionY;
-         shownWindowX = var5;
-         shownWindowY = var6;
+         shownWindowX = j;
+         shownWindowY = k;
          boxX = var26;
          boxY = var18;
       }
    }
 
-   private static void cursor(long var0, int var2, int var3, int var4) {
-      if ((var0 >>> 41 & 1L) == 0L) {
+   private static void cursor(long l, int i, int j, int k) {
+      if ((l >>> 41 & 1L) == 0L) {
          if (cursorWindow != null) {
             cursorWindow.hide();
          }
@@ -979,28 +934,28 @@ public final class StreamOverlay {
          cursorStack = null;
       } else {
          ItemStack var6 = stack[41];
-         int var7 = 16 * var2;
-         int var8 = var3 + guiX[41] * var2;
-         int var9 = var4 + guiY[41] * var2;
-         boolean var5 = var6 == cursorStack && var6.method_7947() == cursorCount && bar(var6) == cursorBar && var2 == cursorScale;
+         int var7 = 16 * i;
+         int var8 = j + guiX[41] * i;
+         int var9 = k + guiY[41] * i;
+         boolean var5 = var6 == cursorStack && var6.getCount() == cursorCount && bar(var6) == cursorBar && i == cursorScale;
          if (var5) {
             if (var8 != cursorX || var9 != cursorY) {
                cursorWindow.move(var8, var9);
             }
          } else {
-            int var11 = var7 + var2;
+            int var11 = var7 + i;
             canvas.wrap(cursorWindow.pixels(var11, var11), cursorWindow.stride(), var11, var11);
             int[] var12 = slotIcon[41];
             if (var12 != null && var12 != BLANK) {
                canvas.blend(var12, var7, var7, 0, 0, 1);
             }
 
-            DigitFont.decorations(canvas, var6, 0, 0, var2);
+            DigitFont.decorations(canvas, var6, 0, 0, i);
             cursorWindow.present(var8, var9, var11, var11);
             cursorStack = var6;
-            cursorCount = var6.method_7947();
+            cursorCount = var6.getCount();
             cursorBar = bar(var6);
-            cursorScale = var2;
+            cursorScale = i;
          }
 
          cursorX = var8;
@@ -1074,7 +1029,7 @@ public final class StreamOverlay {
       backgroundValid = false;
    }
 
-   private static List<Object>[] newKeys(int var0) {
-      return new List[var0];
+   private static List<Object>[] newKeys(int i) {
+      return new List[i];
    }
 }

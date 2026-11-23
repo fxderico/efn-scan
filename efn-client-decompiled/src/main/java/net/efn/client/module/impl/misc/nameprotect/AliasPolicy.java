@@ -20,14 +20,14 @@ public final class AliasPolicy {
    private AliasPolicy() {
    }
 
-   public static String sanitize(String var0) {
-      if (var0 == null) {
+   public static String sanitize(String string) {
+      if (string == null) {
          return "";
       } else {
-         StringBuilder var1 = new StringBuilder(Math.min(var0.length(), 16));
+         StringBuilder var1 = new StringBuilder(Math.min(string.length(), 16));
 
-         for (int var2 = 0; var2 < var0.length() && var1.length() < 16; var2++) {
-            char var3 = var0.charAt(var2);
+         for (int var2 = 0; var2 < string.length() && var1.length() < 16; var2++) {
+            char var3 = string.charAt(var2);
             if (var3 == 167) {
                var2++;
             } else if (NameMatcher.isNameChar(var3)) {
@@ -41,11 +41,11 @@ public final class AliasPolicy {
       }
    }
 
-   public static String skeleton(CharSequence var0) {
-      StringBuilder var1 = new StringBuilder(var0.length());
+   public static String skeleton(CharSequence charSequence) {
+      StringBuilder var1 = new StringBuilder(charSequence.length());
 
-      for (int var2 = 0; var2 < var0.length(); var2++) {
-         char var3 = Character.toLowerCase(var0.charAt(var2));
+      for (int var2 = 0; var2 < charSequence.length(); var2++) {
+         char var3 = Character.toLowerCase(charSequence.charAt(var2));
          switch (var3) {
             case ' ':
             case '_':
@@ -77,8 +77,8 @@ public final class AliasPolicy {
       return var1.toString();
    }
 
-   public static AliasPolicy.Refusal check(String var0, Predicate<String> var1) {
-      String var2 = skeleton(var0);
+   public static AliasPolicy.Refusal check(String string, Predicate<String> predicate) {
+      String var2 = skeleton(string);
 
       for (String var6 : STAFF_FRAGMENTS) {
          if (var2.contains(var6)) {
@@ -88,23 +88,23 @@ public final class AliasPolicy {
 
       if (STAFF_WORDS.contains(var2)) {
          return AliasPolicy.Refusal.STAFF_TITLE;
-      } else if (var1.test(var2)) {
+      } else if (predicate.test(var2)) {
          return AliasPolicy.Refusal.PLAYER_NAME;
       } else {
          for (int var8 = 4; var8 < var2.length(); var8++) {
-            if (var1.test(var2.substring(0, var8)) || var1.test(var2.substring(var2.length() - var8))) {
+            if (predicate.test(var2.substring(0, var8)) || predicate.test(var2.substring(var2.length() - var8))) {
                return AliasPolicy.Refusal.PLAYER_NAME;
             }
          }
 
-         for (String var12 : var0.split("[ _]+")) {
+         for (String var12 : string.split("[ _]+")) {
             if (!var12.isEmpty()) {
                String var7 = skeleton(var12);
                if (STAFF_WORDS.contains(var7)) {
                   return AliasPolicy.Refusal.STAFF_TITLE;
                }
 
-               if (var1.test(var7)) {
+               if (predicate.test(var7)) {
                   return AliasPolicy.Refusal.PLAYER_NAME;
                }
             }
@@ -114,11 +114,11 @@ public final class AliasPolicy {
       }
    }
 
-   private static String[] skeletons(String... var0) {
-      String[] var1 = new String[var0.length];
+   private static String[] skeletons(String... strings) {
+      String[] var1 = new String[strings.length];
 
-      for (int var2 = 0; var2 < var0.length; var2++) {
-         var1[var2] = skeleton(var0[var2].toLowerCase(Locale.ROOT));
+      for (int var2 = 0; var2 < strings.length; var2++) {
+         var1[var2] = skeleton(strings[var2].toLowerCase(Locale.ROOT));
       }
 
       return var1;
@@ -131,8 +131,8 @@ public final class AliasPolicy {
 
       private final String reason;
 
-      private Refusal(String nullxx) {
-         this.reason = nullxx;
+      private Refusal(String string2) {
+         this.reason = string2;
       }
 
       public String reason() {

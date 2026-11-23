@@ -26,7 +26,7 @@ public final class StaffGhost {
    private static final float NOTE_IN = 0.5F;
    private static final float NOTE_STAY = 2.5F;
    private static final float NOTE_OUT = 1.0F;
-   private static final Text NOTE = Text.method_43470("Goodluck EFN User, Be Careful");
+   private static final Text NOTE = Text.literal("Goodluck EFN User, Be Careful");
    private static final int NOTE_COLOR = 16777045;
    private static final float DISTANCE = 1.49F;
    private static final float LIFT = 0.24F;
@@ -53,13 +53,13 @@ public final class StaffGhost {
    private StaffGhost() {
    }
 
-   public static void watching(UUID var0, String var1, int var2) {
-      MinecraftClient var3 = MinecraftClient.method_1551();
-      if (var3.field_1687 != null && var1 != null) {
-         String var4 = NameFilter.apply(var1);
-         watcher = var0;
-         hidden = !var4.equals(var1);
-         title = var2 > 0 ? var4 + " +" + var2 : var4;
+   public static void watching(UUID uUID, String string, int i) {
+      MinecraftClient var3 = MinecraftClient.getInstance();
+      if (var3.world != null && string != null) {
+         String var4 = NameFilter.apply(string);
+         watcher = uUID;
+         hidden = !var4.equals(string);
+         title = i > 0 ? var4 + " +" + i : var4;
          stage = 0;
          startNanos = System.nanoTime();
          noteNanos = 0L;
@@ -68,14 +68,14 @@ public final class StaffGhost {
    }
 
    public static boolean hasWork() {
-      if (active && MinecraftClient.method_1551().field_1687 == null) {
+      if (active && MinecraftClient.getInstance().world == null) {
          active = false;
       }
 
       return active;
    }
 
-   public static void renderNote(Render2DEvent var0) {
+   public static void renderNote(Render2DEvent render2DEvent) {
       if (noteNanos != 0L) {
          float var1 = (float)(System.nanoTime() - noteNanos) / 1.0E9F;
          if (var1 >= 4.0F) {
@@ -84,15 +84,15 @@ public final class StaffGhost {
             float var2 = var1 < 0.5F ? var1 / 0.5F : Math.min(1.0F, (4.0F - var1) / 1.0F);
             int var3 = Math.round(var2 * 255.0F);
             if (var3 > 8) {
-               DrawContext var4 = var0.graphics;
-               TextRenderer var5 = MinecraftClient.method_1551().field_1772;
-               var4.method_51448().pushMatrix();
-               var4.method_51448().translate(var4.method_51421() / 2.0F, var4.method_51443() / 2.0F);
-               var4.method_51448().scale(2.0F, 2.0F);
-               int var6 = -var5.method_27525(NOTE) / 2;
+               DrawContext var4 = render2DEvent.graphics;
+               TextRenderer var5 = MinecraftClient.getInstance().textRenderer;
+               var4.getMatrices().pushMatrix();
+               var4.getMatrices().translate(var4.getScaledWindowWidth() / 2.0F, var4.getScaledWindowHeight() / 2.0F);
+               var4.getMatrices().scale(2.0F, 2.0F);
+               int var6 = -var5.getWidth(NOTE) / 2;
                Objects.requireNonNull(var5);
-               var4.method_51439(var5, NOTE, var6, -4, ColorHelper.method_61330(var3, 16777045), true);
-               var4.method_51448().popMatrix();
+               var4.drawText(var5, NOTE, var6, -4, ColorHelper.withAlpha(var3, 16777045), true);
+               var4.getMatrices().popMatrix();
             }
          }
       }
@@ -100,16 +100,16 @@ public final class StaffGhost {
 
    public static void render() {
       if (hasWork()) {
-         MinecraftClient var0 = MinecraftClient.method_1551();
+         MinecraftClient var0 = MinecraftClient.getInstance();
          float var1 = elapsed();
          if (stage == 0 && var1 >= 1.25F) {
             stage = 1;
-            var0.field_1705.method_34001(10, 40, 15);
-            var0.field_1705.method_34002(Text.method_43470("WATCHING YOU").method_27695(new Formatting[]{Formatting.field_1061, Formatting.field_1067}));
-            var0.field_1705.method_34004(Text.method_43470(title).method_27695(new Formatting[]{Formatting.field_1061, Formatting.field_1067}));
+            var0.inGameHud.setTitleTicks(10, 40, 15);
+            var0.inGameHud.setSubtitle(Text.literal("WATCHING YOU").formatted(Formatting.RED, Formatting.BOLD));
+            var0.inGameHud.setTitle(Text.literal(title).formatted(Formatting.RED, Formatting.BOLD));
          } else if (stage == 1 && var1 >= 4.5F) {
             stage = 2;
-            var0.field_1705.method_1742();
+            var0.inGameHud.setDefaultTitleFade();
             noteNanos = System.nanoTime();
             active = false;
             return;
@@ -134,7 +134,7 @@ public final class StaffGhost {
       }
    }
 
-   private static void drawCube(ImDrawList var0, int var1, float var2, float var3, float var4, float var5, float var6, float var7, float var8, float var9) {
+   private static void drawCube(ImDrawList imDrawList, int i, float f, float g, float h, float j, float k, float l, float m, float n) {
       float[] var10 = new float[3];
       float[] var11 = new float[3];
       float[] var12 = new float[3];
@@ -142,9 +142,9 @@ public final class StaffGhost {
       float[] var14 = new float[var13.length];
 
       for (float[] var18 : FACES) {
-         corner(var18, 2, var2, var4, var5, var10);
-         corner(var18, 5, var2, var4, var5, var11);
-         corner(var18, 8, var2, var4, var5, var12);
+         corner(var18, 2, f, h, j, var10);
+         corner(var18, 5, f, h, j, var11);
+         corner(var18, 8, f, h, j, var12);
          float var19 = var11[0] - var10[0];
          float var20 = var11[1] - var10[1];
          float var21 = var11[2] - var10[2];
@@ -169,14 +169,14 @@ public final class StaffGhost {
                   float var35 = var10[0] + var19 * var33 + var22 * var34;
                   float var36 = var10[1] + var20 * var33 + var23 * var34;
                   float var37 = var10[2] + var21 * var33 + var24 * var34;
-                  var13[var31 * 9 + var32] = var6 * 0.5F + var35 / -var37 * var8;
-                  var14[var31 * 9 + var32] = var7 * 0.5F - var36 / -var37 * var8;
+                  var13[var31 * 9 + var32] = k * 0.5F + var35 / -var37 * m;
+                  var14[var31 * 9 + var32] = l * 0.5F - var36 / -var37 * m;
                }
             }
 
             int var42 = Math.round(var18[11] * 255.0F);
-            int var43 = Math.round(Math.max(0.0F, Math.min(1.0F, var9)) * 255.0F) << 24 | var42 << 16 | var42 << 8 | var42;
-            float var44 = (var18[0] + var3) / 64.0F;
+            int var43 = Math.round(Math.max(0.0F, Math.min(1.0F, n)) * 255.0F) << 24 | var42 << 16 | var42 << 8 | var42;
+            float var44 = (var18[0] + g) / 64.0F;
             float var45 = var18[1] / 64.0F;
             float var46 = 0.015625F;
 
@@ -186,8 +186,8 @@ public final class StaffGhost {
                   int var39 = var38 + 8 + 1;
                   float var40 = var44 + var48 * var46;
                   float var41 = var45 + var47 * var46;
-                  var0.addImageQuad(
-                     var1,
+                  imDrawList.addImageQuad(
+                     i,
                      var13[var38],
                      var14[var38],
                      var13[var38 + 1],
@@ -212,13 +212,13 @@ public final class StaffGhost {
       }
    }
 
-   private static void corner(float[] var0, int var1, float var2, float var3, float var4, float[] var5) {
-      float var6 = var0[var1] * var2;
-      float var7 = var0[var1 + 1] * var2 + 0.24F;
-      float var8 = var0[var1 + 2] * var2 - 1.49F;
-      var5[0] = var6;
-      var5[1] = var7 * var3 - var8 * var4;
-      var5[2] = var7 * var4 + var8 * var3;
+   private static void corner(float[] fs, int i, float f, float g, float h, float[] gs) {
+      float var6 = fs[i] * f;
+      float var7 = fs[i + 1] * f + 0.24F;
+      float var8 = fs[i + 2] * f - 1.49F;
+      gs[0] = var6;
+      gs[1] = var7 * g - var8 * h;
+      gs[2] = var7 * h + var8 * g;
    }
 
    private static float elapsed() {

@@ -45,38 +45,38 @@ public final class AntiTrapModule extends ClientModule {
       this.pendingSpawns.clear();
    }
 
-   private void onEntityAdded(WorldEntityAddEvent var1) {
+   private void onEntityAdded(WorldEntityAddEvent worldEntityAddEvent) {
       if (this.preventSpawn.get()) {
-         Entity var2 = var1.entity;
+         Entity var2 = worldEntityAddEvent.entity;
          if (this.isTrapEntity(var2)) {
             this.pendingSpawns.add(var2);
          }
       }
    }
 
-   private void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientWorld var3 = var2.field_1687;
-      ClientPlayerEntity var4 = var2.field_1724;
+   private void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientWorld var3 = var2.world;
+      ClientPlayerEntity var4 = var2.player;
       if (var3 != null && var4 != null) {
          if (!this.pendingSpawns.isEmpty()) {
             for (Entity var6 : this.pendingSpawns) {
                Entity var7;
-               if (!var6.method_31481()
-                  && var6.method_73183() == var3
-                  && ((var7 = var3.method_8469(var6.method_5628())) == null || var7 == var6)
+               if (!var6.isRemoved()
+                  && var6.getEntityWorld() == var3
+                  && ((var7 = var3.getEntityById(var6.getId())) == null || var7 == var6)
                   && this.isTrapEntity(var6)
                   && canRemove(var2, var4, var6)) {
-                  var6.method_31472();
+                  var6.discard();
                }
             }
 
             this.pendingSpawns.clear();
          }
 
-         if (var4.field_6012 % 20 == 0) {
+         if (var4.age % 20 == 0) {
             for (Entity var9 : this.collectTrapEntities(var2, var3, var4)) {
-               var9.method_31472();
+               var9.discard();
             }
          }
       } else {
@@ -85,13 +85,13 @@ public final class AntiTrapModule extends ClientModule {
    }
 
    private void removeTrapEntities() {
-      MinecraftClient var1 = MinecraftClient.method_1551();
-      ClientWorld var2 = var1.field_1687;
+      MinecraftClient var1 = MinecraftClient.getInstance();
+      ClientWorld var2 = var1.world;
       if (var2 != null) {
-         List var3 = this.collectTrapEntities(var1, var2, var1.field_1724);
+         List var3 = this.collectTrapEntities(var1, var2, var1.player);
 
          for (Entity var5 : var3) {
-            var5.method_31472();
+            var5.discard();
          }
 
          if (!var3.isEmpty()) {
@@ -100,11 +100,11 @@ public final class AntiTrapModule extends ClientModule {
       }
    }
 
-   private List<Entity> collectTrapEntities(MinecraftClient var1, ClientWorld var2, ClientPlayerEntity var3) {
+   private List<Entity> collectTrapEntities(MinecraftClient minecraftClient, ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity) {
       ArrayList var4 = new ArrayList();
 
-      for (Entity var6 : var2.method_18112()) {
-         if (this.isTrapEntity(var6) && canRemove(var1, var3, var6)) {
+      for (Entity var6 : clientWorld.getEntities()) {
+         if (this.isTrapEntity(var6) && canRemove(minecraftClient, clientPlayerEntity, var6)) {
             var4.add(var6);
          }
       }
@@ -112,20 +112,20 @@ public final class AntiTrapModule extends ClientModule {
       return var4;
    }
 
-   private boolean isTrapEntity(Entity var1) {
-      if (var1 == null) {
+   private boolean isTrapEntity(Entity entity) {
+      if (entity == null) {
          return false;
       } else {
-         EntityType var2 = var1.method_5864();
-         return this.armorStands.get() && var2 == EntityType.field_6131 ? true : this.chestMinecarts.get() && var2 == EntityType.field_6126;
+         EntityType var2 = entity.getType();
+         return this.armorStands.get() && var2 == EntityType.ARMOR_STAND ? true : this.chestMinecarts.get() && var2 == EntityType.CHEST_MINECART;
       }
    }
 
-   private static boolean canRemove(MinecraftClient var0, ClientPlayerEntity var1, Entity var2) {
-      if (var2 == var0.method_1560()) {
+   private static boolean canRemove(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, Entity entity) {
+      if (entity == minecraftClient.getCameraEntity()) {
          return false;
       } else {
-         return var1 == null ? true : var2 != var1 && !var2.method_5821(var1);
+         return clientPlayerEntity == null ? true : entity != clientPlayerEntity && !entity.hasPassengerDeep(clientPlayerEntity);
       }
    }
 }

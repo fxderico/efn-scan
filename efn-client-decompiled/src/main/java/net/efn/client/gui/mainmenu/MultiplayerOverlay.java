@@ -31,10 +31,10 @@ public final class MultiplayerOverlay {
    private long shownAt;
    private boolean overButton;
 
-   public MultiplayerOverlay(MultiplayerScreen var1) {
-      this.screen = var1;
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      this.panel = new ConnectionsPanel(() -> var2.method_63588(((AccessorMenusJoinMultiplayerScreen)var1)::efn$refreshServerList));
+   public MultiplayerOverlay(MultiplayerScreen multiplayerScreen) {
+      this.screen = multiplayerScreen;
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      this.panel = new ConnectionsPanel(() -> var2.send(((AccessorMenusJoinMultiplayerScreen)multiplayerScreen)::efn$refreshServerList));
    }
 
    public void show() {
@@ -50,8 +50,8 @@ public final class MultiplayerOverlay {
       return this.overButton || this.panel.isOpen();
    }
 
-   public boolean keyPressed(int var1) {
-      return this.panel.keyPressed(var1);
+   public boolean keyPressed(int i) {
+      return this.panel.keyPressed(i);
    }
 
    private void render() {
@@ -86,8 +86,8 @@ public final class MultiplayerOverlay {
    }
 
    private void header() {
-      Window var1 = MinecraftClient.method_1551().method_22683();
-      double var2 = var1.method_4495();
+      Window var1 = MinecraftClient.getInstance().getWindow();
+      double var2 = var1.getScaleFactor();
       float var4 = this.frame.scale();
       float var5 = this.frame.intro(0.0F);
       float var6 = 62.0F * var4;
@@ -99,7 +99,7 @@ public final class MultiplayerOverlay {
       Proxy var12 = Proxies.get().enabled();
       boolean var14 = this.button(ConnectionsPanel.Tab.ACCOUNTS, "Accounts", null, var7, var9, var11, var6, var4, var5);
       this.overButton = var14 | this.button(ConnectionsPanel.Tab.PROXIES, "Proxies", var12, var7 + var11 + 8.0F * var4, var9, var11, var6, var4, var5);
-      float var15 = (float)((var1.method_4486() + MinecraftClient.method_1551().field_1772.method_27525(this.screen.method_25440())) / 2.0 * var2);
+      float var15 = (float)((var1.getScaledWidth() + MinecraftClient.getInstance().textRenderer.getWidth(this.screen.getTitle())) / 2.0 * var2);
       float var16 = this.frame.width() - var7;
       float var17 = var16 - var15 - 3.0F * var7;
       if (!(var17 < 40.0F * var4)) {
@@ -125,48 +125,37 @@ public final class MultiplayerOverlay {
       }
    }
 
-   private boolean button(ConnectionsPanel.Tab var1, String var2, Proxy var3, float var4, float var5, float var6, float var7, float var8, float var9) {
+   private boolean button(ConnectionsPanel.Tab tab, String string, Proxy proxy, float f, float g, float h, float i, float j, float k) {
       ImDrawList var10 = this.frame.bg();
-      boolean var11 = this.ui.hovered(var4, var5, var6, var7);
-      if (this.ui.pressed(var4, var5, var6, var7)) {
-         this.panel.open(var1);
+      boolean var11 = this.ui.hovered(f, g, h, i);
+      if (this.ui.pressed(f, g, h, i)) {
+         this.panel.open(tab);
       }
 
-      float var12 = this.ui.hover(var1, var11);
-      var10.addRectFilled(var4, var5, var4 + var6, var5 + var7, HudDraw.col(-15461610, 0.88F * var9));
+      float var12 = this.ui.hover(tab, var11);
+      var10.addRectFilled(f, g, f + h, g + i, HudDraw.col(-15461610, 0.88F * k));
       if (var12 > 0.01F) {
-         var10.addRectFilled(var4, var5, var4 + var6, var5 + var7, HudDraw.col(-1575946, 0.06F * var12 * var9));
+         var10.addRectFilled(f, g, f + h, g + i, HudDraw.col(-1575946, 0.06F * var12 * k));
       }
 
-      var10.addRect(
-         var4,
-         var5,
-         var4 + var6,
-         var5 + var7,
-         HudDraw.col(HudDraw.mix(-1575946, -15408912, var12), (0.18F + 0.4F * var12) * var9),
-         0.0F,
-         0,
-         Math.max(1.0F, var8)
-      );
-      float var13 = 34.0F * var8;
-      float var14 = var4 + 16.0F * var8;
-      float var15 = var5 + (var7 - var13) * 0.5F;
-      if (var1 == ConnectionsPanel.Tab.ACCOUNTS) {
+      var10.addRect(f, g, f + h, g + i, HudDraw.col(HudDraw.mix(-1575946, -15408912, var12), (0.18F + 0.4F * var12) * k), 0.0F, 0, Math.max(1.0F, j));
+      float var13 = 34.0F * j;
+      float var14 = f + 16.0F * j;
+      float var15 = g + (i - var13) * 0.5F;
+      if (tab == ConnectionsPanel.Tab.ACCOUNTS) {
          Account var16 = Accounts.get().active();
          if (var16 != null) {
-            PlayerFaces.draw(var10, var16, var14, var15, var13, var8, var9);
+            PlayerFaces.draw(var10, var16, var14, var15, var13, j, k);
          } else {
-            PlayerFaces.draw(var10, MinecraftClient.method_1551().method_1548().method_44717(), false, var14, var15, var13, var8, var9);
+            PlayerFaces.draw(var10, MinecraftClient.getInstance().getSession().getUuidOrNull(), false, var14, var15, var13, j, k);
          }
       } else {
-         ConnectionsPanel.proxyDot(var10, var14 + var13 * 0.5F, var15 + var13 * 0.5F, var3 != null, 2.1F * var8, var9);
+         ConnectionsPanel.proxyDot(var10, var14 + var13 * 0.5F, var15 + var13 * 0.5F, proxy != null, 2.1F * j, k);
       }
 
       ImFont var17 = this.frame.menuFont();
       this.frame
-         .text(
-            var10, var17, var14 + var13 + 12.0F * var8, var5 + (var7 - this.frame.textHeight(var17)) * 0.5F, HudDraw.mix(-1575946, -6621958, var12), var9, var2
-         );
+         .text(var10, var17, var14 + var13 + 12.0F * j, g + (i - this.frame.textHeight(var17)) * 0.5F, HudDraw.mix(-1575946, -6621958, var12), k, string);
       return var11;
    }
 }

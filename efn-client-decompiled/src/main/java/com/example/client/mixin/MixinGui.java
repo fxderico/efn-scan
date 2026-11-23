@@ -22,64 +22,64 @@ public abstract class MixinGui {
    }
 
    @ModifyExpressionValue(
-      method = {"method_1736"},
+      method = {"renderCrosshair"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_5498;method_31034()Z"
+         target = "Lnet/minecraft/client/option/Perspective;isFirstPerson()Z"
       )}
    )
-   private boolean efn$freecamCrosshair(boolean var1) {
+   private boolean efn$freecamCrosshair(boolean bl) {
       FreecamModule var2 = FreecamModule.active;
-      return var2 != null && var2.showBody() && !var1 || var1;
+      return var2 != null && var2.showBody() && !bl || bl;
    }
 
    @Inject(
-      method = {"method_1753"},
+      method = {"render"},
       at = {@At("TAIL")}
    )
-   private void efn$onRender2D(DrawContext var1, RenderTickCounter var2, CallbackInfo var3) {
-      Render2DEvent.dispatch(var1, var2.method_60637(false));
+   private void efn$onRender2D(DrawContext drawContext, RenderTickCounter renderTickCounter, CallbackInfo callbackInfo) {
+      Render2DEvent.dispatch(drawContext, renderTickCounter.getTickProgress(false));
    }
 
    @Inject(
-      method = {"method_1765"},
+      method = {"renderStatusEffectOverlay"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$cancelVanillaEffects(DrawContext var1, RenderTickCounter var2, CallbackInfo var3) {
-      var3.cancel();
+   private void efn$cancelVanillaEffects(DrawContext drawContext, RenderTickCounter renderTickCounter, CallbackInfo callbackInfo) {
+      callbackInfo.cancel();
    }
 
    @Inject(
-      method = {"method_31977"},
+      method = {"renderOverlay"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$cancelTextureOverlay(DrawContext var1, Identifier var2, float var3, CallbackInfo var4) {
+   private void efn$cancelTextureOverlay(DrawContext drawContext, Identifier identifier, float f, CallbackInfo callbackInfo) {
       if (NoRenderModule.hidePumpkinPowderSnow()) {
-         var4.cancel();
+         callbackInfo.cancel();
       }
    }
 
    @Inject(
-      method = {"method_1746"},
+      method = {"renderPortalOverlay"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$cancelPortalOverlay(DrawContext var1, float var2, CallbackInfo var3) {
+   private void efn$cancelPortalOverlay(DrawContext drawContext, float f, CallbackInfo callbackInfo) {
       if (NoRenderModule.hideNauseaPortal()) {
-         var3.cancel();
+         callbackInfo.cancel();
       }
    }
 
    @Inject(
-      method = {"method_61980"},
+      method = {"renderNauseaOverlay"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$cancelConfusionOverlay(DrawContext var1, float var2, CallbackInfo var3) {
+   private void efn$cancelConfusionOverlay(DrawContext drawContext, float f, CallbackInfo callbackInfo) {
       if (NoRenderModule.hideNauseaPortal()) {
-         var3.cancel();
+         callbackInfo.cancel();
       }
    }
 }

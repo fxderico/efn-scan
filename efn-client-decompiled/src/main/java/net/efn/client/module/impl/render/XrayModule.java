@@ -80,7 +80,7 @@ public final class XrayModule extends ClientModule {
    }
 
    @EventHandler
-   public void onTick(TickEvent var1) {
+   public void onTick(TickEvent tickEvent) {
       if (this.reloadDelay >= 0 && --this.reloadDelay <= 0) {
          this.reloadDelay = -1;
          this.rebuildSnapshot();
@@ -95,14 +95,14 @@ public final class XrayModule extends ClientModule {
    }
 
    private void reloadWorld() {
-      MinecraftClient var1 = MinecraftClient.method_1551();
-      if (var1.field_1769 != null) {
-         var1.field_1769.method_3279();
+      MinecraftClient var1 = MinecraftClient.getInstance();
+      if (var1.worldRenderer != null) {
+         var1.worldRenderer.reload();
       }
    }
 
    private void rebuildSnapshot() {
-      active = new XrayModule.Snapshot(new ReferenceOpenHashSet(this.blocks.enabledBlocks()), this.exposedOnly.get(), this.opacity.get() / 100.0F);
+      active = new XrayModule.Snapshot(new ReferenceOpenHashSet<>(this.blocks.enabledBlocks()), this.exposedOnly.get(), this.opacity.get() / 100.0F);
    }
 
    @Environment(EnvType.CLIENT)
@@ -113,26 +113,26 @@ public final class XrayModule extends ClientModule {
       private final boolean exposedOnly;
       private final float opacity;
 
-      private Snapshot(ReferenceOpenHashSet<Block> var1, boolean var2, float var3) {
-         this.whitelist = var1;
-         this.exposedOnly = var2;
-         this.opacity = var3;
+      private Snapshot(ReferenceOpenHashSet<Block> referenceOpenHashSet, boolean bl, float f) {
+         this.whitelist = referenceOpenHashSet;
+         this.exposedOnly = bl;
+         this.opacity = f;
       }
 
-      public boolean isWhitelisted(Block var1) {
-         return this.whitelist.contains(var1);
+      public boolean isWhitelisted(Block block) {
+         return this.whitelist.contains(block);
       }
 
-      public float alphaFor(BlockRenderView var1, BlockState var2, BlockPos var3) {
-         return !this.whitelist.contains(var2.method_26204()) || this.exposedOnly && !this.isExposed(var1, var3) ? this.opacity : 1.0F;
+      public float alphaFor(BlockRenderView blockRenderView, BlockState blockState, BlockPos blockPos) {
+         return !this.whitelist.contains(blockState.getBlock()) || this.exposedOnly && !this.isExposed(blockRenderView, blockPos) ? this.opacity : 1.0F;
       }
 
-      private boolean isExposed(BlockRenderView var1, BlockPos var2) {
+      private boolean isExposed(BlockRenderView blockRenderView, BlockPos blockPos) {
          Mutable var3 = SCRATCH_POS.get();
 
          for (Direction var7 : DIRECTIONS) {
-            var3.method_25505(var2, var7);
-            if (!var1.method_8320(var3).method_26216()) {
+            var3.set(blockPos, var7);
+            if (!blockRenderView.getBlockState(var3).isOpaqueFullCube()) {
                return true;
             }
          }

@@ -23,23 +23,23 @@ public abstract class MixinMaceMultiPlayerGameMode {
    }
 
    @Inject(
-      method = {"method_2918"},
+      method = {"attackEntity"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_636;method_2911()V"
+         target = "Lnet/minecraft/client/network/ClientPlayerInteractionManager;syncSelectedSlot()V"
       )}
    )
-   private void efn$weaponBeforeAttack(PlayerEntity var1, Entity var2, CallbackInfo var3) {
-      ClientPlayerEntity var5 = MinecraftClient.method_1551().field_1724;
-      if (var1 == var5 && !MeleeAttacks.actedThisTick(var5)) {
+   private void efn$weaponBeforeAttack(PlayerEntity playerEntity, Entity entity, CallbackInfo callbackInfo) {
+      ClientPlayerEntity var5 = MinecraftClient.getInstance().player;
+      if (playerEntity == var5 && !MeleeAttacks.actedThisTick(var5)) {
          ShieldBreakerModule var6 = ModuleRegistry.get(ShieldBreakerModule.class);
          if (var6 != null && var6.isEnabled()) {
-            var6.beforeAttack(var5, var2);
+            var6.beforeAttack(var5, entity);
          }
 
          MaceModule var4;
          if ((var4 = ModuleRegistry.get(MaceModule.class)) != null && var4.isEnabled()) {
-            var4.beforeAttack(var5, var2);
+            var4.beforeAttack(var5, entity);
          }
       }
    }

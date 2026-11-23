@@ -22,51 +22,52 @@ final class Eater {
       this(Eater::edible);
    }
 
-   Eater(Predicate<ItemStack> var1) {
-      this.food = var1;
+   Eater(Predicate<ItemStack> predicate) {
+      this.food = predicate;
    }
 
-   static boolean hungry(ClientPlayerEntity var0) {
-      return var0.method_7344().method_7586() <= 14 || var0.method_6032() < var0.method_6063() && var0.method_7344().method_7586() < 18;
+   static boolean hungry(ClientPlayerEntity clientPlayerEntity) {
+      return clientPlayerEntity.getHungerManager().getFoodLevel() <= 14
+         || clientPlayerEntity.getHealth() < clientPlayerEntity.getMaxHealth() && clientPlayerEntity.getHungerManager().getFoodLevel() < 18;
    }
 
-   static boolean hasFood(ClientPlayerEntity var0) {
-      return Hands.has(var0, Eater::edible);
+   static boolean hasFood(ClientPlayerEntity clientPlayerEntity) {
+      return Hands.has(clientPlayerEntity, Eater::edible);
    }
 
-   static boolean edible(ItemStack var0) {
-      FoodComponent var1 = (FoodComponent)var0.method_58694(DataComponentTypes.field_50075);
-      return var1 != null && var1.comp_2491() > 0
-         ? !var0.method_31574(Items.field_8233)
-            && !var0.method_31574(Items.field_8511)
-            && !var0.method_31574(Items.field_8680)
-            && !var0.method_31574(Items.field_8635)
-            && !var0.method_31574(Items.field_8323)
-            && !var0.method_31574(Items.field_8766)
-            && !var0.method_31574(Items.field_8367)
-            && !var0.method_31574(Items.field_8463)
-            && !var0.method_31574(Items.field_8726)
+   static boolean edible(ItemStack itemStack) {
+      FoodComponent var1 = itemStack.get(DataComponentTypes.FOOD);
+      return var1 != null && var1.nutrition() > 0
+         ? !itemStack.isOf(Items.CHORUS_FRUIT)
+            && !itemStack.isOf(Items.ROTTEN_FLESH)
+            && !itemStack.isOf(Items.SPIDER_EYE)
+            && !itemStack.isOf(Items.POISONOUS_POTATO)
+            && !itemStack.isOf(Items.PUFFERFISH)
+            && !itemStack.isOf(Items.SUSPICIOUS_STEW)
+            && !itemStack.isOf(Items.ENCHANTED_GOLDEN_APPLE)
+            && !itemStack.isOf(Items.GOLDEN_APPLE)
+            && !itemStack.isOf(Items.CHICKEN)
          : false;
    }
 
-   Eater.Result tick(MinecraftClient var1) {
-      ClientPlayerEntity var2 = var1.field_1724;
-      if (var2 != null && var1.field_1761 != null) {
+   Eater.Result tick(MinecraftClient minecraftClient) {
+      ClientPlayerEntity var2 = minecraftClient.player;
+      if (var2 != null && minecraftClient.interactionManager != null) {
          if (this.startFood < 0) {
-            this.startFood = var2.method_7344().method_7586();
+            this.startFood = var2.getHungerManager().getFoodLevel();
          }
 
-         if (var2.method_7344().method_7586() > this.startFood) {
-            this.release(var1);
+         if (var2.getHungerManager().getFoodLevel() > this.startFood) {
+            this.release(minecraftClient);
             return Eater.Result.DONE;
          } else if (++this.ticks > 70) {
-            this.release(var1);
+            this.release(minecraftClient);
             return Eater.Result.FAILED;
-         } else if (!Hands.hold(var1, var2, this.food)) {
+         } else if (!Hands.hold(minecraftClient, var2, this.food)) {
             return Eater.Result.RUNNING;
          } else {
-            Aim.turn(var1, var2.method_36454(), -75.0F, 22.0F);
-            var1.field_1690.field_1904.method_23481(var2.method_36455() < -60.0F);
+            Aim.turn(minecraftClient, var2.getYaw(), -75.0F, 22.0F);
+            minecraftClient.options.useKey.setPressed(var2.getPitch() < -60.0F);
             return Eater.Result.RUNNING;
          }
       } else {
@@ -74,8 +75,8 @@ final class Eater {
       }
    }
 
-   void release(MinecraftClient var1) {
-      var1.field_1690.field_1904.method_23481(false);
+   void release(MinecraftClient minecraftClient) {
+      minecraftClient.options.useKey.setPressed(false);
    }
 
    @Environment(EnvType.CLIENT)

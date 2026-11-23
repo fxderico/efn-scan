@@ -16,14 +16,14 @@ public abstract class MixinNameProtectGuiMessage {
    }
 
    @ModifyArg(
-      method = {"method_75757"},
+      method = {"breakLines"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_341;method_1850(Lnet/minecraft/class_5348;ILnet/minecraft/class_327;)Ljava/util/List;"
+         target = "Lnet/minecraft/client/util/ChatMessages;breakRenderedChatMessageLines(Lnet/minecraft/text/StringVisitable;ILnet/minecraft/client/font/TextRenderer;)Ljava/util/List;"
       )},
       index = 0
    )
-   private StringVisitable efn$nameProtectChatLine(StringVisitable var1) {
-      return NameProtectModule.protectChatLine(var1);
+   private StringVisitable efn$nameProtectChatLine(StringVisitable stringVisitable) {
+      return NameProtectModule.protectChatLine(stringVisitable);
    }
 }

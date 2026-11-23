@@ -11,6 +11,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin({PlayerMoveC2SPacket.class})
 public interface AccessorJesusServerboundMovePlayerPacket {
    @Mutable
-   @Accessor("field_29179")
-   void efn$jesusSetOnGround(boolean var1);
+   @Accessor("onGround")
+   void efn$jesusSetOnGround(boolean bl);
 }

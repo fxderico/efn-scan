@@ -6,11 +6,11 @@ import net.fabricmc.api.Environment;
 
 @Environment(EnvType.CLIENT)
 final class AccountException extends CompletionException {
-   AccountException(String var1) {
-      super(var1);
+   AccountException(String string) {
+      super(string);
    }
 
-   AccountException(String var1, Throwable var2) {
-      super(var1, var2);
+   AccountException(String string, Throwable throwable) {
+      super(string, throwable);
    }
 }

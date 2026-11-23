@@ -22,23 +22,23 @@ public final class EventBus {
    private volatile long failedTasks;
    private static final MethodType FACTORY_TYPE = MethodType.methodType(Listener.class, Object.class);
    private static final ClassValue<List<EventBus.HandlerSpec>> HANDLER_SPECS = new ClassValue<List<EventBus.HandlerSpec>>() {
-      protected List<EventBus.HandlerSpec> computeValue(Class<?> var1) {
-         return EventBus.scan(var1);
+      protected List<EventBus.HandlerSpec> computeValue(Class<?> class_) {
+         return EventBus.scan(class_);
       }
    };
    private static final ClassValue<EventType<?>> TYPE_CACHE = new ClassValue<EventType<?>>() {
-      protected EventType<?> computeValue(Class<?> var1) {
+      protected EventType<?> computeValue(Class<?> class_) {
          try {
-            Field var2 = var1.getField("TYPE");
+            Field var2 = class_.getField("TYPE");
             if (!EventType.class.isAssignableFrom(var2.getType())) {
-               throw new IllegalArgumentException(var1.getName() + ".TYPE must be an EventType instance.");
+               throw new IllegalArgumentException(class_.getName() + ".TYPE must be an EventType instance.");
             } else {
                return (EventType<?>)var2.get(null);
             }
          } catch (NoSuchFieldException var3) {
-            throw new IllegalArgumentException("Event class " + var1.getName() + " must declare 'public static final EventType<...> TYPE'.", var3);
+            throw new IllegalArgumentException("Event class " + class_.getName() + " must declare 'public static final EventType<...> TYPE'.", var3);
          } catch (IllegalAccessException var4) {
-            throw new IllegalArgumentException("Cannot access " + var1.getName() + ".TYPE", var4);
+            throw new IllegalArgumentException("Cannot access " + class_.getName() + ".TYPE", var4);
          }
       }
    };
@@ -46,21 +46,21 @@ public final class EventBus {
    public EventBus() {
    }
 
-   public boolean postAsync(Runnable var1) {
-      return this.asyncQueue.offer(Objects.requireNonNull(var1));
+   public boolean postAsync(Runnable runnable) {
+      return this.asyncQueue.offer(Objects.requireNonNull(runnable));
    }
 
    public int drainAsync() {
       return this.drainAsync(512, 2000000L);
    }
 
-   public int drainAsync(int var1, long var2) {
-      if (var1 > 0 && var2 > 0L) {
+   public int drainAsync(int i, long l) {
+      if (i > 0 && l > 0L) {
          long var5 = System.nanoTime();
          int var7 = 0;
 
          Runnable var4;
-         while (var7 < var1 && System.nanoTime() - var5 < var2 && (var4 = this.asyncQueue.poll()) != null) {
+         while (var7 < i && System.nanoTime() - var5 < l && (var4 = this.asyncQueue.poll()) != null) {
             var7++;
 
             try {
@@ -80,26 +80,26 @@ public final class EventBus {
       }
    }
 
-   public <E extends Event> void off(ListenerHandle<E> var1) {
-      var1.unregister();
+   public <E extends Event> void off(ListenerHandle<E> listenerHandle) {
+      listenerHandle.unregister();
    }
 
-   public int register(Object var1) {
-      List var2 = HANDLER_SPECS.get(var1.getClass());
+   public int register(Object object) {
+      List var2 = HANDLER_SPECS.get(object.getClass());
       if (var2.isEmpty()) {
          return 0;
       } else {
          synchronized (this) {
-            return this.register(var1, var2);
+            return this.register(object, var2);
          }
       }
    }
 
-   private int register(Object var1, List<EventBus.HandlerSpec> var2) {
-      if (this.subscriptions.containsKey(var1)) {
-         throw new IllegalStateException("Subscriber already registered: " + var1.getClass().getName());
+   private int register(Object object, List<EventBus.HandlerSpec> list) {
+      if (this.subscriptions.containsKey(object)) {
+         throw new IllegalStateException("Subscriber already registered: " + object.getClass().getName());
       } else {
-         List var3 = buildEntries(var1, var2);
+         List var3 = buildEntries(object, list);
 
          try {
             for (EventBus.RegistrationEntry var11 : var3) {
@@ -121,13 +121,13 @@ public final class EventBus {
             throw var4;
          }
 
-         this.subscriptions.put(var1, var3);
+         this.subscriptions.put(object, var3);
          return var3.size();
       }
    }
 
-   public synchronized void unregister(Object var1) {
-      List var2 = this.subscriptions.remove(var1);
+   public synchronized void unregister(Object object) {
+      List var2 = this.subscriptions.remove(object);
       if (var2 != null) {
          for (EventBus.RegistrationEntry var4 : var2) {
             var4.unregister();
@@ -135,34 +135,34 @@ public final class EventBus {
       }
    }
 
-   private static List<EventBus.RegistrationEntry<?>> buildEntries(Object var0, List<EventBus.HandlerSpec> var1) {
-      ArrayList var2 = new ArrayList(var1.size());
+   private static List<EventBus.RegistrationEntry<?>> buildEntries(Object object, List<EventBus.HandlerSpec> list) {
+      ArrayList var2 = new ArrayList(list.size());
 
-      for (EventBus.HandlerSpec var4 : var1) {
+      for (EventBus.HandlerSpec var4 : list) {
          Listener var5 = var4.staticListener();
          if (var5 == null) {
             try {
-               var5 = castListener((Listener)var4.listenerFactory().invokeExact((Object)var0));
+               var5 = castListener((Listener)var4.listenerFactory().invokeExact((Object)object));
             } catch (Throwable var7) {
-               throw new RuntimeException("Failed to bind listener for " + var0.getClass().getName(), var7);
+               throw new RuntimeException("Failed to bind listener for " + object.getClass().getName(), var7);
             }
          }
 
-         ListenerHandle var6 = new ListenerHandle<>(var4.type(), var4.stage(), var4.priority(), var0, var5::invoke);
+         ListenerHandle var6 = new ListenerHandle<>(var4.type(), var4.stage(), var4.priority(), object, var5::invoke);
          var2.add(new EventBus.RegistrationEntry<>(var4.type(), var6));
       }
 
       return var2;
    }
 
-   private static Listener<Event> castListener(Listener<?> var0) {
-      return var0;
+   private static Listener<Event> castListener(Listener<?> listener) {
+      return listener;
    }
 
-   private static List<EventBus.HandlerSpec> scan(Class<?> var0) {
+   private static List<EventBus.HandlerSpec> scan(Class<?> class_) {
       ArrayList var1 = new ArrayList();
 
-      for (Class var2 = var0; var2 != null; var2 = var2.getSuperclass()) {
+      for (Class var2 = class_; var2 != null; var2 = var2.getSuperclass()) {
          for (Method var6 : var2.getDeclaredMethods()) {
             if (isHandler(var6) && !Modifier.isPublic(var6.getModifiers())) {
                throw new IllegalArgumentException("Event handler must be public: " + var6);
@@ -170,7 +170,7 @@ public final class EventBus {
          }
       }
 
-      for (Method var16 : var0.getMethods()) {
+      for (Method var16 : class_.getMethods()) {
          Stage var17 = Stage.PRE;
          EventPriority var7 = EventPriority.NORMAL;
          boolean var8 = false;
@@ -207,12 +207,12 @@ public final class EventBus {
       return var1.isEmpty() ? List.of() : List.copyOf(var1);
    }
 
-   private static boolean isHandler(Method var0) {
-      return var0.isAnnotationPresent(EventHandler.class) || var0.isAnnotationPresent(EventListener.class);
+   private static boolean isHandler(Method method) {
+      return method.isAnnotationPresent(EventHandler.class) || method.isAnnotationPresent(EventListener.class);
    }
 
-   static <E extends Event> EventType<E> resolveTypeFor(Class<E> var0) {
-      return (EventType<E>)TYPE_CACHE.get(var0);
+   static <E extends Event> EventType<E> resolveTypeFor(Class<E> class_) {
+      return (EventType<E>)TYPE_CACHE.get(class_);
    }
 
    @Environment(EnvType.CLIENT)

@@ -27,13 +27,13 @@ public final class NoJumpDelayModule extends ClientModule {
       active = null;
    }
 
-   public int rearm(int var1) {
+   public int rearm(int i) {
       int var2 = this.cooldown.getInt();
       int var3 = this.variance.getInt();
       if (var3 > 0) {
          var2 += ThreadLocalRandom.current().nextInt(var3 + 1);
       }
 
-      return Math.min(var1, var2);
+      return Math.min(i, var2);
    }
 }

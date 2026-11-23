@@ -48,11 +48,11 @@ public final class GoliathRtpModule extends ClientModule {
    protected void onEnable() {
       this.targets = null;
       this.pending = null;
-      MinecraftClient var1 = MinecraftClient.method_1551();
-      if (var1.field_1724 != null && var1.method_1562() != null) {
+      MinecraftClient var1 = MinecraftClient.getInstance();
+      if (var1.player != null && var1.getNetworkHandler() != null) {
          var1.execute(() -> {
             if (this.isEnabled()) {
-               var1.method_1507(new GoliathPickerScreen(lastPick, this::picked));
+               var1.setScreen(new GoliathPickerScreen(lastPick, this::picked));
             }
          });
       } else {
@@ -67,33 +67,33 @@ public final class GoliathRtpModule extends ClientModule {
       this.pending = null;
    }
 
-   private void picked(Set<DonutGoliaths.Goliath> var1) {
+   private void picked(Set<DonutGoliaths.Goliath> set) {
       if (this.isEnabled()) {
-         if (var1 != null && !var1.isEmpty()) {
-            this.targets = var1;
-            lastPick = var1;
+         if (set != null && !set.isEmpty()) {
+            this.targets = set;
+            lastPick = set;
             this.pending = null;
             this.settle = 0;
             this.sent = 0;
-            ClientPlayerEntity var2 = MinecraftClient.method_1551().field_1724;
+            ClientPlayerEntity var2 = MinecraftClient.getInstance().player;
             if (var2 != null) {
-               this.lastX = var2.method_23317();
-               this.lastZ = var2.method_23321();
+               this.lastX = var2.getX();
+               this.lastZ = var2.getZ();
             }
 
-            if (var1.size() == 1) {
-               DonutGoliaths.Goliath var6 = var1.iterator().next();
+            if (set.size() == 1) {
+               DonutGoliaths.Goliath var6 = (DonutGoliaths.Goliath)set.iterator().next();
                ModuleChat.send(this, ModuleChat.body().text("Going to ").name(var6.label()).text(" with /rtp " + DonutGoliaths.RTP[var6.region()] + "."));
             } else {
                TreeMap var3 = new TreeMap();
 
-               for (DonutGoliaths.Goliath var5 : var1) {
+               for (DonutGoliaths.Goliath var5 : set) {
                   var3.merge(DonutGoliaths.REGIONS[var5.region()], 1, Integer::sum);
                }
 
                StringBuilder var7 = new StringBuilder();
-               var3.forEach((var1x, var2x) -> var7.append(var7.isEmpty() ? "" : ", ").append(var1x).append(' ').append(var2x));
-               ModuleChat.send(this, ModuleChat.body().text("Going to any of ").name(var1.size() + " goliaths").text(" (" + var7 + ")."));
+               var3.forEach((string, integer) -> var7.append(var7.isEmpty() ? "" : ", ").append(string).append(' ').append(integer));
+               ModuleChat.send(this, ModuleChat.body().text("Going to any of ").name(set.size() + " goliaths").text(" (" + var7 + ")."));
             }
          } else {
             this.requestDisable();
@@ -102,15 +102,15 @@ public final class GoliathRtpModule extends ClientModule {
    }
 
    @EventHandler
-   public void onTick(TickEvent var1) {
-      MinecraftClient var5 = MinecraftClient.method_1551();
-      ClientPlayerEntity var6 = var5.field_1724;
-      if (this.targets != null && var6 != null && var5.field_1687 != null && var5.method_1562() != null) {
-         double var7 = var6.method_23317() - this.lastX;
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var5 = MinecraftClient.getInstance();
+      ClientPlayerEntity var6 = var5.player;
+      if (this.targets != null && var6 != null && var5.world != null && var5.getNetworkHandler() != null) {
+         double var7 = var6.getX() - this.lastX;
          double var3;
-         boolean var9 = var7 * var7 + (var3 = var6.method_23321() - this.lastZ) * var3 > 10000.0;
-         this.lastX = var6.method_23317();
-         this.lastZ = var6.method_23321();
+         boolean var9 = var7 * var7 + (var3 = var6.getZ() - this.lastZ) * var3 > 10000.0;
+         this.lastX = var6.getX();
+         this.lastZ = var6.getZ();
          if (this.pending != null) {
             if (!var9) {
                if (++this.sinceSent >= 100) {
@@ -142,7 +142,7 @@ public final class GoliathRtpModule extends ClientModule {
       }
    }
 
-   private int bestRegion(int var1) {
+   private int bestRegion(int i) {
       int[] var2 = new int[DonutGoliaths.REGIONS.length];
 
       for (DonutGoliaths.Goliath var4 : this.targets) {
@@ -155,7 +155,7 @@ public final class GoliathRtpModule extends ClientModule {
 
       for (int var6 = 0; var6 < var2.length; var6++) {
          double var7;
-         if (var6 != var1 && var2[var6] != 0 && DonutGoliaths.RTP[var6] != null && (var7 = (double)var2[var6] / DonutGoliaths.CELLS[var6].length) > var10) {
+         if (var6 != i && var2[var6] != 0 && DonutGoliaths.RTP[var6] != null && (var7 = (double)var2[var6] / DonutGoliaths.CELLS[var6].length) > var10) {
             var9 = var6;
             var10 = var7;
          }
@@ -164,19 +164,19 @@ public final class GoliathRtpModule extends ClientModule {
       return var9;
    }
 
-   private void send(MinecraftClient var1, String var2) {
-      var1.method_1562().method_45730("rtp " + var2);
-      this.pending = var2;
+   private void send(MinecraftClient minecraftClient, String string) {
+      minecraftClient.getNetworkHandler().sendChatCommand("rtp " + string);
+      this.pending = string;
       this.sinceSent = 0;
       this.sent++;
    }
 
-   private static DonutGoliaths.Goliath here(MinecraftClient var0) {
-      if (var0.field_1687.method_27983() == World.field_25181) {
+   private static DonutGoliaths.Goliath here(MinecraftClient minecraftClient) {
+      if (minecraftClient.world.getRegistryKey() == World.END) {
          return null;
       } else {
-         double var1 = var0.field_1687.method_27983() == World.field_25180 ? 8.0 : 1.0;
-         return DonutGoliaths.at(var0.field_1724.method_23317() * var1, var0.field_1724.method_23321() * var1);
+         double var1 = minecraftClient.world.getRegistryKey() == World.NETHER ? 8.0 : 1.0;
+         return DonutGoliaths.at(minecraftClient.player.getX() * var1, minecraftClient.player.getZ() * var1);
       }
    }
 }

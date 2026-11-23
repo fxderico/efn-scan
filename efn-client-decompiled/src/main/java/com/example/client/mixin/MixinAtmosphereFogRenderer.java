@@ -25,26 +25,26 @@ public abstract class MixinAtmosphereFogRenderer {
    }
 
    @Inject(
-      method = {"method_62185"},
+      method = {"getFogColor"},
       at = {@At("RETURN")}
    )
-   private void efn$fogColour(Camera var1, float var2, ClientWorld var3, int var4, float var5, CallbackInfoReturnable<Vector4f> var6) {
-      CameraSubmersionType var8 = var1.method_19334();
-      if (var8 == CameraSubmersionType.field_27886) {
-         PinkWater.underwater((Vector4f)var6.getReturnValue());
+   private void efn$fogColour(Camera camera, float f, ClientWorld clientWorld, int i, float g, CallbackInfoReturnable<Vector4f> callbackInfoReturnable) {
+      CameraSubmersionType var8 = camera.getSubmersionType();
+      if (var8 == CameraSubmersionType.WATER) {
+         PinkWater.underwater((Vector4f)callbackInfoReturnable.getReturnValue());
       }
 
-      if (var8 == CameraSubmersionType.field_27888 && !(var5 > 0.0F)) {
-         Entity var9 = var1.method_19331();
+      if (var8 == CameraSubmersionType.NONE && !(g > 0.0F)) {
+         Entity var9 = camera.getFocusedEntity();
          LivingEntity var7;
          if (!(var9 instanceof LivingEntity)
-            || !(var7 = (LivingEntity)var9).method_6059(StatusEffects.field_5919) && !var7.method_6059(StatusEffects.field_38092)) {
+            || !(var7 = (LivingEntity)var9).hasStatusEffect(StatusEffects.BLINDNESS) && !var7.hasStatusEffect(StatusEffects.DARKNESS)) {
             AtmosphereModule var10 = AtmosphereModule.get();
             if (var10 != null) {
-               var10.fog(var1, var3, (Vector4f)var6.getReturnValue());
+               var10.fog(camera, clientWorld, (Vector4f)callbackInfoReturnable.getReturnValue());
             }
 
-            PeepWorld.fog((Vector4f)var6.getReturnValue());
+            PeepWorld.fog((Vector4f)callbackInfoReturnable.getReturnValue());
          }
       }
    }

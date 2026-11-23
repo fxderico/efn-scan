@@ -9,6 +9,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Environment(EnvType.CLIENT)
 @Mixin({ClientWorld.class})
 public interface AccessorAtmosphereClientLevel {
-   @Accessor("field_21526")
+   @Accessor("lightningTicksLeft")
    int efn$atmosphereSkyFlash();
 }

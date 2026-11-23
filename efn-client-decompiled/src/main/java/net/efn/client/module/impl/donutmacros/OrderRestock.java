@@ -23,19 +23,19 @@ final class OrderRestock {
    private final Product product;
    private long nextCheckAt;
 
-   OrderRestock(OrderAhBot var1) {
-      this.bot = var1;
-      this.worker = var1.worker;
-      this.gui = var1.gui;
-      this.product = var1.product;
+   OrderRestock(OrderAhBot orderAhBot) {
+      this.bot = orderAhBot;
+      this.worker = orderAhBot.worker;
+      this.gui = orderAhBot.gui;
+      this.product = orderAhBot.product;
    }
 
-   private void say(ModuleChat.Body var1) {
-      this.bot.say(var1);
+   private void say(ModuleChat.Body body) {
+      this.bot.say(body);
    }
 
-   private static AuctionHouse.Problem fail(String var0) {
-      return new AuctionHouse.Problem(var0);
+   private static AuctionHouse.Problem fail(String string) {
+      return new AuctionHouse.Problem(string);
    }
 
    boolean run() {
@@ -47,7 +47,7 @@ final class OrderRestock {
          if (!this.openYourOrders()) {
             return false;
          } else {
-            int var3 = this.worker.call(() -> Gui.findNow(var1x -> var1x.method_31574(this.product.item()), 45));
+            int var3 = this.worker.call(() -> Gui.findNow(itemStack -> itemStack.isOf(this.product.item()), 45));
             if (var3 >= 0) {
                return this.collect(var3) > 0;
             } else {
@@ -72,13 +72,13 @@ final class OrderRestock {
       return OrdersNav.isYourOrdersNow();
    }
 
-   private static boolean isNewOrderPane(ItemStack var0) {
-      return OrdersNav.isNewOrderPane(var0);
+   private static boolean isNewOrderPane(ItemStack itemStack) {
+      return OrdersNav.isNewOrderPane(itemStack);
    }
 
-   private int collect(int var1) {
+   private int collect(int i) {
       String var2 = this.gui.fingerprint();
-      this.gui.click(var1, 0, SlotActionType.field_7790);
+      this.gui.click(i, 0, SlotActionType.PICKUP);
       boolean var3 = this.worker.waitFor(() -> Gui.containerOpenNow() && !this.isYourOrdersNow() && !Gui.fingerprintNow().equals(var2), 2000L);
       if (!var3) {
          this.say(ModuleChat.body().warn("Your order did not open."));
@@ -88,27 +88,27 @@ final class OrderRestock {
          this.worker.sleep(1000L);
          int[] var4 = this.worker.call(() -> {
             List var0 = Gui.containerNow();
-            int var1x = -1;
+            int var1 = -1;
 
             for (int var2x = 0; var2x < var0.size(); var2x++) {
                ItemStack var3x = (ItemStack)var0.get(var2x);
-               if (!var3x.method_7960()) {
+               if (!var3x.isEmpty()) {
                   String var4x = Gui.nameOf(var3x);
-                  if (var3x.method_31574(Items.field_8353) || var4x.contains("cancel")) {
+                  if (var3x.isOf(Items.RED_TERRACOTTA) || var4x.contains("cancel")) {
                      return new int[]{1, -1};
                   }
 
-                  if (var1x < 0 && var4x.contains("collect")) {
-                     var1x = var2x;
+                  if (var1 < 0 && var4x.contains("collect")) {
+                     var1 = var2x;
                   }
                }
             }
 
-            if (var1x < 0 && var0.size() > 13 && !((ItemStack)var0.get(13)).method_7960()) {
-               var1x = 13;
+            if (var1 < 0 && var0.size() > 13 && !((ItemStack)var0.get(13)).isEmpty()) {
+               var1 = 13;
             }
 
-            return new int[]{0, var1x};
+            return new int[]{0, var1};
          });
          if (var4[0] == 1) {
             this.say(ModuleChat.body().text("Your ").name(this.product.displayName()).text(" order is still filling."));
@@ -120,7 +120,7 @@ final class OrderRestock {
             return 0;
          } else {
             String var5 = this.gui.fingerprint();
-            this.gui.click(var4[1], 0, SlotActionType.field_7790);
+            this.gui.click(var4[1], 0, SlotActionType.PICKUP);
             this.worker.sleep(250L);
             this.gui.waitChange(var5, 2000L);
             this.worker.sleep(150L);
@@ -132,13 +132,13 @@ final class OrderRestock {
 
                for (int var10 = 0; var10 < var9.size(); var10++) {
                   ItemStack var11 = (ItemStack)var9.get(var10);
-                  if (!var11.method_7960() && var11.method_31574(this.product.item())) {
+                  if (!var11.isEmpty() && var11.isOf(this.product.item())) {
                      if (this.bot.inventoryCapReached()) {
                         break;
                      }
 
-                     var6 += var11.method_7947();
-                     this.gui.click(var10, 0, SlotActionType.field_7794);
+                     var6 += var11.getCount();
+                     this.gui.click(var10, 0, SlotActionType.QUICK_MOVE);
                      var8 = true;
                      this.worker.sleep(40L);
                   }
@@ -218,8 +218,8 @@ final class OrderRestock {
       return var1;
    }
 
-   private double waitTopOrder(long var1) {
-      long var3 = System.currentTimeMillis() + var1;
+   private double waitTopOrder(long l) {
+      long var3 = System.currentTimeMillis() + l;
 
       while (System.currentTimeMillis() < var3) {
          double var5 = this.worker.call(() -> {
@@ -227,7 +227,7 @@ final class OrderRestock {
                return -1.0;
             } else {
                for (ItemStack var2 : Gui.containerNow()) {
-                  if (!var2.method_7960() && var2.method_31574(this.product.item()) && (this.product.enchants().isEmpty() || this.product.matches(var2))) {
+                  if (!var2.isEmpty() && var2.isOf(this.product.item()) && (this.product.enchants().isEmpty() || this.product.matches(var2))) {
                      return ServerText.orderPrice(var2);
                   }
                }
@@ -245,15 +245,15 @@ final class OrderRestock {
       return -1.0;
    }
 
-   private void create(long var1) {
+   private void create(long l) {
       if (this.openYourOrders()) {
          int var4 = this.worker.call(() -> Gui.findNow(OrderRestock::isNewOrderPane, 45));
          if (var4 < 0) {
             this.say(ModuleChat.body().warn("No free order slot").text(" (no New Order button)."));
             this.gui.closeAll();
          } else {
-            this.gui.click(var4, 0, SlotActionType.field_7790);
-            Dialogs.View var5 = this.waitDialog(var0 -> var0.titled("item"), 10000L);
+            this.gui.click(var4, 0, SlotActionType.PICKUP);
+            Dialogs.View var5 = this.waitDialog(view -> view.titled("item"), 10000L);
             if (var5 == null) {
                throw fail("Choose Item did not open");
             } else {
@@ -263,7 +263,7 @@ final class OrderRestock {
                }
 
                Dialogs.Button var3;
-               if ((var3 = var5.find(var1x -> this.product.nameMatches(var1x.label(), false))) == null) {
+               if ((var3 = var5.find(button -> this.product.nameMatches(button.label(), false))) == null) {
                   var3 = this.closestLoose(var5);
                }
 
@@ -283,12 +283,12 @@ final class OrderRestock {
                   } else if (!(var5 = this.press(var5, var5.labelled("next", "continue"), textFor(var5, Integer.toString(this.product.orderAmount()))))
                      .titled("price")) {
                      throw fail("Expected the price menu, got " + var5.describe());
-                  } else if (!(var5 = this.press(var5, var5.labelled("review order", "review", "next"), textFor(var5, ServerText.exactMoney(var1))))
+                  } else if (!(var5 = this.press(var5, var5.labelled("review order", "review", "next"), textFor(var5, ServerText.exactMoney(l))))
                      .titled("review")) {
                      throw fail("Expected the review menu, got " + var5.describe());
                   } else {
                      this.checkItem(var5);
-                     String var14 = this.checkReview(var5, var1);
+                     String var14 = this.checkReview(var5, l);
                      if (var14 != null) {
                         Dialogs.Button var8 = var5.labelled("cancel");
                         if (var8 != null) {
@@ -317,7 +317,7 @@ final class OrderRestock {
                                  .text(" ")
                                  .name(this.product.describe())
                                  .text(" at $")
-                                 .value(ServerText.shortMoney(var1))
+                                 .value(ServerText.shortMoney(l))
                                  .text(" each.")
                            );
                         }
@@ -329,8 +329,8 @@ final class OrderRestock {
       }
    }
 
-   private Dialogs.Button closestLoose(Dialogs.View var1) {
-      for (Dialogs.Button var3 : var1.buttons()) {
+   private Dialogs.Button closestLoose(Dialogs.View view) {
+      for (Dialogs.Button var3 : view.buttons()) {
          if (this.product.nameMatches(var3.key().replaceFirst("^[0-9]+x?", ""), false)) {
             return var3;
          }
@@ -339,42 +339,42 @@ final class OrderRestock {
       return null;
    }
 
-   private void checkItem(Dialogs.View var1) {
-      if (!var1.items().isEmpty()) {
-         for (ItemStack var3 : var1.items()) {
-            if (var3.method_31574(this.product.item())) {
+   private void checkItem(Dialogs.View view) {
+      if (!view.items().isEmpty()) {
+         for (ItemStack var3 : view.items()) {
+            if (var3.isOf(this.product.item())) {
                return;
             }
          }
 
-         String var4 = var1.items().get(0).method_7964().getString();
+         String var4 = view.items().get(0).getName().getString();
          this.worker.run(() -> Dialogs.close(Gui.mc()));
          throw fail("Picked " + var4 + " instead of " + this.product.displayName() + ", cancelled");
       }
    }
 
-   private Dialogs.View pickEnchants(Dialogs.View var1) {
+   private Dialogs.View pickEnchants(Dialogs.View view) {
       if (this.product.enchants().isEmpty()) {
-         return this.press(var1, var1.labelled("skip enchantments", "skip"), Map.of());
+         return this.press(view, view.labelled("skip enchantments", "skip"), Map.of());
       } else {
          for (Product.Enchant var3 : this.product.enchants()) {
-            Dialogs.Button var4 = levelButton(var1, var3);
+            Dialogs.Button var4 = levelButton(view, var3);
             if (var4 == null) {
-               throw fail(var3.label() + " is not offered, " + var1.describe());
+               throw fail(var3.label() + " is not offered, " + view.describe());
             }
 
             if (!var4.green()) {
-               Dialogs.View var5 = var1;
+               Dialogs.View var5 = view;
                if (!this.worker.call(() -> Dialogs.press(Gui.mc(), var5, var4, Map.of()))) {
                   throw fail("The menu changed before picking " + var3.label());
                }
 
-               Dialogs.View var6 = this.waitDialog(var1x -> var1x.dialog() != var5.dialog(), 5000L);
+               Dialogs.View var6 = this.waitDialog(view2 -> view2.dialog() != var5.dialog(), 5000L);
                if (var6 == null && (var6 = this.worker.call(() -> Dialogs.current(Gui.mc()))) == null) {
                   throw fail("The enchantment menu closed after picking " + var3.label());
                }
 
-               var1 = var6;
+               view = var6;
                Dialogs.Button var7 = levelButton(var6, var3);
                if (var7 != null && !var7.green()) {
                   this.say(ModuleChat.body().warn("Could not confirm ").text(var3.label()).text(" was picked, continuing."));
@@ -382,17 +382,17 @@ final class OrderRestock {
             }
          }
 
-         return this.press(var1, var1.labelled("continue", "confirm", "done", "next"), Map.of());
+         return this.press(view, view.labelled("continue", "confirm", "done", "next"), Map.of());
       }
    }
 
-   static Dialogs.Button levelButton(Dialogs.View var0, Product.Enchant var1) {
+   static Dialogs.Button levelButton(Dialogs.View view, Product.Enchant enchant) {
       String var2 = "";
 
-      for (Dialogs.Button var4 : var0.buttons()) {
+      for (Dialogs.Button var4 : view.buttons()) {
          int var5 = ServerText.roman(var4.label());
          if (var5 > 0) {
-            if (var2.equals(var1.key()) && var5 == var1.level()) {
+            if (var2.equals(enchant.key()) && var5 == enchant.level()) {
                return var4;
             }
          } else if (!var4.label().isBlank()) {
@@ -403,8 +403,8 @@ final class OrderRestock {
       return null;
    }
 
-   private String checkReview(Dialogs.View var1, long var2) {
-      for (String var6 : var1.body()) {
+   private String checkReview(Dialogs.View view, long l) {
+      for (String var6 : view.body()) {
          List var4;
          if (var6.startsWith("amount")
             && !(var4 = ServerText.moneyAll(var6)).isEmpty()
@@ -413,11 +413,9 @@ final class OrderRestock {
          }
       }
 
-      for (String var11 : var1.body()) {
+      for (String var11 : view.body()) {
          List var9;
-         if (var11.startsWith("price")
-            && !(var9 = ServerText.moneyAll(var11)).isEmpty()
-            && Math.abs((Double)var9.get(0) - var2) > ServerText.displayStep(var11)) {
+         if (var11.startsWith("price") && !(var9 = ServerText.moneyAll(var11)).isEmpty() && Math.abs((Double)var9.get(0) - l) > ServerText.displayStep(var11)) {
             return var11;
          }
       }
@@ -425,35 +423,35 @@ final class OrderRestock {
       return null;
    }
 
-   private static Map<String, String> textFor(Dialogs.View var0, String var1) {
-      return var0.textInputs().isEmpty() ? Map.of() : Map.of(var0.textInputs().get(0), var1);
+   private static Map<String, String> textFor(Dialogs.View view, String string) {
+      return view.textInputs().isEmpty() ? Map.of() : Map.of(view.textInputs().get(0), string);
    }
 
-   private Dialogs.View press(Dialogs.View var1, Dialogs.Button var2, Map<String, String> var3) {
-      return this.press(var1, var2, var3, 8000L);
+   private Dialogs.View press(Dialogs.View view, Dialogs.Button button, Map<String, String> map) {
+      return this.press(view, button, map, 8000L);
    }
 
-   private Dialogs.View press(Dialogs.View var1, Dialogs.Button var2, Map<String, String> var3, long var4) {
-      if (var2 == null) {
-         throw fail("Button missing, " + var1.describe());
-      } else if (!this.worker.call(() -> Dialogs.press(Gui.mc(), var1, var2, var3))) {
-         throw fail("The menu changed before clicking " + var2.label());
+   private Dialogs.View press(Dialogs.View view, Dialogs.Button button, Map<String, String> map, long l) {
+      if (button == null) {
+         throw fail("Button missing, " + view.describe());
+      } else if (!this.worker.call(() -> Dialogs.press(Gui.mc(), view, button, map))) {
+         throw fail("The menu changed before clicking " + button.label());
       } else {
-         Dialogs.View var6 = this.waitDialog(var1x -> var1x.dialog() != var1.dialog(), var4);
+         Dialogs.View var6 = this.waitDialog(view2 -> view2.dialog() != view.dialog(), l);
          if (var6 == null) {
-            throw fail("No answer after clicking '" + var2.label() + "'");
+            throw fail("No answer after clicking '" + button.label() + "'");
          } else {
             return var6;
          }
       }
    }
 
-   private Dialogs.View waitDialog(Predicate<Dialogs.View> var1, long var2) {
-      long var4 = System.currentTimeMillis() + var2;
+   private Dialogs.View waitDialog(Predicate<Dialogs.View> predicate, long l) {
+      long var4 = System.currentTimeMillis() + l;
 
       while (System.currentTimeMillis() < var4) {
          Dialogs.View var6 = this.worker.call(() -> Dialogs.current(Gui.mc()));
-         if (var6 != null && var1.test(var6)) {
+         if (var6 != null && predicate.test(var6)) {
             return var6;
          }
 

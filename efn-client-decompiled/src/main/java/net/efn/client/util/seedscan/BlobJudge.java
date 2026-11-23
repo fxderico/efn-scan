@@ -31,77 +31,77 @@ public final class BlobJudge {
    public static final int SHELL_JUDGED = 32;
    public static final int SHELL_STONE = 64;
    private static final Set<Block> NATURAL = set(
-      Blocks.field_27114,
-      Blocks.field_29032,
-      Blocks.field_27159,
-      Blocks.field_27160,
-      Blocks.field_28049,
-      Blocks.field_28048,
-      Blocks.field_28681,
-      Blocks.field_28680,
-      Blocks.field_28685,
-      Blocks.field_10460,
-      Blocks.field_37568,
-      Blocks.field_37569,
-      Blocks.field_37570,
-      Blocks.field_28108,
-      Blocks.field_37571,
-      Blocks.field_10092,
-      Blocks.field_10515,
-      Blocks.field_22423
+      Blocks.CALCITE,
+      Blocks.SMOOTH_BASALT,
+      Blocks.AMETHYST_BLOCK,
+      Blocks.BUDDING_AMETHYST,
+      Blocks.DRIPSTONE_BLOCK,
+      Blocks.POINTED_DRIPSTONE,
+      Blocks.MOSS_BLOCK,
+      Blocks.MOSS_CARPET,
+      Blocks.ROOTED_DIRT,
+      Blocks.CLAY,
+      Blocks.SCULK,
+      Blocks.SCULK_VEIN,
+      Blocks.SCULK_CATALYST,
+      Blocks.SCULK_SENSOR,
+      Blocks.SCULK_SHRIEKER,
+      Blocks.MAGMA_BLOCK,
+      Blocks.NETHERRACK,
+      Blocks.CRYING_OBSIDIAN
    );
    private static final Set<Block> FAKES = set(
-      Blocks.field_10418,
-      Blocks.field_29219,
-      Blocks.field_10212,
-      Blocks.field_29027,
-      Blocks.field_27120,
-      Blocks.field_29221,
-      Blocks.field_10571,
-      Blocks.field_29026,
-      Blocks.field_10080,
-      Blocks.field_29030,
-      Blocks.field_10090,
-      Blocks.field_29028,
-      Blocks.field_10442,
-      Blocks.field_29029,
-      Blocks.field_10013,
-      Blocks.field_29220,
-      Blocks.field_33508,
-      Blocks.field_33509,
-      Blocks.field_10277,
-      Blocks.field_29224,
-      Blocks.field_9989,
-      Blocks.field_10540,
-      Blocks.field_10034,
-      Blocks.field_10443
+      Blocks.COAL_ORE,
+      Blocks.DEEPSLATE_COAL_ORE,
+      Blocks.IRON_ORE,
+      Blocks.DEEPSLATE_IRON_ORE,
+      Blocks.COPPER_ORE,
+      Blocks.DEEPSLATE_COPPER_ORE,
+      Blocks.GOLD_ORE,
+      Blocks.DEEPSLATE_GOLD_ORE,
+      Blocks.REDSTONE_ORE,
+      Blocks.DEEPSLATE_REDSTONE_ORE,
+      Blocks.LAPIS_ORE,
+      Blocks.DEEPSLATE_LAPIS_ORE,
+      Blocks.DIAMOND_ORE,
+      Blocks.DEEPSLATE_DIAMOND_ORE,
+      Blocks.EMERALD_ORE,
+      Blocks.DEEPSLATE_EMERALD_ORE,
+      Blocks.RAW_IRON_BLOCK,
+      Blocks.RAW_COPPER_BLOCK,
+      Blocks.INFESTED_STONE,
+      Blocks.INFESTED_DEEPSLATE,
+      Blocks.MOSSY_COBBLESTONE,
+      Blocks.OBSIDIAN,
+      Blocks.CHEST,
+      Blocks.ENDER_CHEST
    );
    private static final Map<Block, Boolean> STRUCTURE = new ConcurrentHashMap<>();
 
    private BlobJudge() {
    }
 
-   public static List<BlobJudge.Cluster> clusters(int var0, int var1, BlobJudge.Vanilla var2) {
+   public static List<BlobJudge.Cluster> clusters(int i, int j, BlobJudge.Vanilla vanilla) {
       ArrayList var3 = new ArrayList();
-      VanillaBand var4 = var2.band(var0, var1);
+      VanillaBand var4 = vanilla.band(i, j);
       if (var4 == null) {
          return var3;
       } else {
-         BlobJudge.Bands var5 = new BlobJudge.Bands(var2);
+         BlobJudge.Bands var5 = new BlobJudge.Bands(vanilla);
 
          for (byte var9 : new byte[]{4, 5, 6, 8}) {
             int var10 = VBlock.familyBit(var9);
             LongOpenHashSet var11 = new LongOpenHashSet();
 
             for (int var12 = 0; var12 <= 30; var12++) {
-               for (int var13 = var1 << 4; var13 < (var1 << 4) + 16; var13++) {
-                  for (int var14 = var0 << 4; var14 < (var0 << 4) + 16; var14++) {
+               for (int var13 = j << 4; var13 < (j << 4) + 16; var13++) {
+                  for (int var14 = i << 4; var14 < (i << 4) + 16; var14++) {
                      BlobJudge.Cluster var15;
                      long var16;
                      if ((var4.families(var14, var12, var13) & var10) != 0
-                        && !var11.contains(var16 = BlockPos.method_10064(var14, var12, var13))
-                        && BlockPos.method_10061((var15 = cluster(var16, var9, var5, var11)).owner()) >> 4 == var0
-                        && BlockPos.method_10083(var15.owner()) >> 4 == var1) {
+                        && !var11.contains(var16 = BlockPos.asLong(var14, var12, var13))
+                        && BlockPos.unpackLongX((var15 = cluster(var16, var9, var5, var11)).owner()) >> 4 == i
+                        && BlockPos.unpackLongZ(var15.owner()) >> 4 == j) {
                         var3.add(var15);
                      }
                   }
@@ -113,22 +113,22 @@ public final class BlobJudge {
       }
    }
 
-   private static BlobJudge.Cluster cluster(long var0, byte var2, BlobJudge.Bands var3, LongOpenHashSet var4) {
-      int var8 = VBlock.familyBit(var2);
+   private static BlobJudge.Cluster cluster(long l, byte b, BlobJudge.Bands bands, LongOpenHashSet longOpenHashSet) {
+      int var8 = VBlock.familyBit(b);
       LongArrayList var9 = new LongArrayList();
       LongOpenHashSet var10 = new LongOpenHashSet();
       LongArrayFIFOQueue var11 = new LongArrayFIFOQueue();
-      var11.enqueue(var0);
-      var10.add(var0);
+      var11.enqueue(l);
+      var10.add(l);
       boolean var12 = false;
       boolean var13 = false;
       boolean var14 = false;
-      long var15 = var0;
+      long var15 = l;
 
       while (!var11.isEmpty()) {
          long var17 = var11.dequeueLong();
          var9.add(var17);
-         int var19 = BlockPos.method_10071(var17);
+         int var19 = BlockPos.unpackLongY(var17);
          if (var19 >= 0 && var19 <= 30) {
             if (!var14 || before(var17, var15)) {
                var15 = var17;
@@ -142,9 +142,9 @@ public final class BlobJudge {
             break;
          }
 
-         int var20 = BlockPos.method_10061(var17);
-         int var21 = BlockPos.method_10071(var17);
-         int var22 = BlockPos.method_10083(var17);
+         int var20 = BlockPos.unpackLongX(var17);
+         int var21 = BlockPos.unpackLongY(var17);
+         int var22 = BlockPos.unpackLongZ(var17);
 
          for (int var23 = -1; var23 <= 1; var23++) {
             for (int var24 = -1; var24 <= 1; var24++) {
@@ -154,11 +154,11 @@ public final class BlobJudge {
                   int var27;
                   int var28;
                   if ((var23 != 0 || var24 != 0 || var25 != 0)
-                     && !var10.contains(var6 = BlockPos.method_10064(var28 = var20 + var23, var27 = var21 + var24, var26 = var22 + var25))) {
+                     && !var10.contains(var6 = BlockPos.asLong(var28 = var20 + var23, var27 = var21 + var24, var26 = var22 + var25))) {
                      if (!VanillaBand.inBand(var27)) {
                         var13 = true;
                      } else {
-                        VanillaBand var5 = var3.at(var28, var26);
+                        VanillaBand var5 = bands.at(var28, var26);
                         if (var5 == null) {
                            var12 = true;
                         } else if ((var5.families(var28, var27, var26) & var8) != 0) {
@@ -172,29 +172,29 @@ public final class BlobJudge {
          }
       }
 
-      var4.addAll(var10);
+      longOpenHashSet.addAll(var10);
       long[] var34 = new long[0];
       if (var13) {
-         return new BlobJudge.Cluster(var2, var15, BlobJudge.Status.OUT_OF_BAND, var34, var34, var34, new byte[0]);
+         return new BlobJudge.Cluster(b, var15, BlobJudge.Status.OUT_OF_BAND, var34, var34, var34, new byte[0]);
       } else if (var12) {
-         return new BlobJudge.Cluster(var2, var15, BlobJudge.Status.INCOMPLETE, var34, var34, var34, new byte[0]);
+         return new BlobJudge.Cluster(b, var15, BlobJudge.Status.INCOMPLETE, var34, var34, var34, new byte[0]);
       } else {
          LongArrayList var18 = new LongArrayList();
          LongOpenHashSet var35 = new LongOpenHashSet();
 
          for (int var36 = 0; var36 < var9.size(); var36++) {
             long var38 = var9.getLong(var36);
-            int var41 = BlockPos.method_10061(var38);
-            int var43 = BlockPos.method_10071(var38);
-            int var45 = BlockPos.method_10083(var38);
-            if (var43 >= 0 && var43 <= 30 && var3.at(var41, var45).certain(var41, var43, var45) == var2) {
+            int var41 = BlockPos.unpackLongX(var38);
+            int var43 = BlockPos.unpackLongY(var38);
+            int var45 = BlockPos.unpackLongZ(var38);
+            if (var43 >= 0 && var43 <= 30 && bands.at(var41, var45).certain(var41, var43, var45) == b) {
                var18.add(var38);
             }
 
             for (int var47 = -1; var47 <= 1; var47++) {
                for (int var48 = -1; var48 <= 1; var48++) {
                   for (int var50 = -1; var50 <= 1; var50++) {
-                     long var33 = BlockPos.method_10064(var41 + var47, var43 + var48, var45 + var50);
+                     long var33 = BlockPos.asLong(var41 + var47, var43 + var48, var45 + var50);
                      if (!var10.contains(var33)) {
                         var35.add(var33);
                      }
@@ -207,11 +207,11 @@ public final class BlobJudge {
          ByteArrayList var39 = new ByteArrayList(var37.length);
 
          for (long var46 : var37) {
-            int var49 = BlockPos.method_10061(var46);
-            int var51 = BlockPos.method_10071(var46);
-            int var29 = BlockPos.method_10083(var46);
+            int var49 = BlockPos.unpackLongX(var46);
+            int var51 = BlockPos.unpackLongY(var46);
+            int var29 = BlockPos.unpackLongZ(var46);
             int var30 = 0;
-            VanillaBand var32 = var3.at(var49, var29);
+            VanillaBand var32 = bands.at(var49, var29);
             if (var32 != null && VanillaBand.inBand(var51)) {
                var30 = var32.families(var49, var51, var29);
                byte var31 = var32.certain(var49, var51, var29);
@@ -231,20 +231,20 @@ public final class BlobJudge {
             var39.add((byte)var30);
          }
 
-         return new BlobJudge.Cluster(var2, var15, null, var9.toLongArray(), var18.toLongArray(), var37, var39.toByteArray());
+         return new BlobJudge.Cluster(b, var15, null, var9.toLongArray(), var18.toLongArray(), var37, var39.toByteArray());
       }
    }
 
-   public static BlobJudge.Verdict judge(BlobJudge.Cluster var0, BlobJudge.Client var1, int var2) {
-      byte var4 = var0.kind();
-      long var5 = var0.owner();
-      if (var0.unfinished() != null) {
-         return verdict(var0.unfinished(), var4, var5);
+   public static BlobJudge.Verdict judge(BlobJudge.Cluster cluster, BlobJudge.Client client, int i) {
+      byte var4 = cluster.kind();
+      long var5 = cluster.owner();
+      if (cluster.unfinished() != null) {
+         return verdict(cluster.unfinished(), var4, var5);
       } else {
          boolean var7 = false;
 
-         for (long var11 : var0.cells()) {
-            BlockState var13 = var1.state(BlockPos.method_10061(var11), BlockPos.method_10071(var11), BlockPos.method_10083(var11));
+         for (long var11 : cluster.cells()) {
+            BlockState var13 = client.state(BlockPos.unpackLongX(var11), BlockPos.unpackLongY(var11), BlockPos.unpackLongZ(var11));
             if (var13 == null) {
                return verdict(BlobJudge.Status.INCOMPLETE, var4, var5);
             }
@@ -253,15 +253,15 @@ public final class BlobJudge {
                return verdict(BlobJudge.Status.OPEN, var4, var5);
             }
 
-            var7 |= isStructure(var13.method_26204());
+            var7 |= isStructure(var13.getBlock());
          }
 
-         long[] var25 = var0.shell();
-         byte[] var26 = var0.shellFlags();
+         long[] var25 = cluster.shell();
+         byte[] var26 = cluster.shellFlags();
          int var27 = 0;
 
          for (int var28 = 0; var28 < var25.length; var28++) {
-            BlockState var12 = var1.state(BlockPos.method_10061(var25[var28]), BlockPos.method_10071(var25[var28]), BlockPos.method_10083(var25[var28]));
+            BlockState var12 = client.state(BlockPos.unpackLongX(var25[var28]), BlockPos.unpackLongY(var25[var28]), BlockPos.unpackLongZ(var25[var28]));
             if (var12 == null) {
                return verdict(BlobJudge.Status.INCOMPLETE, var4, var5);
             }
@@ -270,7 +270,7 @@ public final class BlobJudge {
                return verdict(BlobJudge.Status.OPEN, var4, var5);
             }
 
-            var7 |= isStructure(var12.method_26204());
+            var7 |= isStructure(var12.getBlock());
             if ((var26[var28] & 16) != 0) {
                var27++;
             }
@@ -288,8 +288,8 @@ public final class BlobJudge {
             LongArrayList var15 = new LongArrayList();
             LongArrayList var16 = new LongArrayList();
 
-            for (long var20 : var0.judged()) {
-               Block var22 = var1.state(BlockPos.method_10061(var20), BlockPos.method_10071(var20), BlockPos.method_10083(var20)).method_26204();
+            for (long var20 : cluster.judged()) {
+               Block var22 = client.state(BlockPos.unpackLongX(var20), BlockPos.unpackLongY(var20), BlockPos.unpackLongZ(var20)).getBlock();
                if (var22 == var29) {
                   var30++;
                   var31++;
@@ -303,21 +303,21 @@ public final class BlobJudge {
 
             for (int var32 = 0; var32 < var25.length; var32++) {
                if ((var26[var32] & 32) != 0 && (var26[var32] & 16) == 0) {
-                  int var37 = BlockPos.method_10061(var25[var32]);
+                  int var37 = BlockPos.unpackLongX(var25[var32]);
                   int var34;
                   int var36;
-                  BlockState var21 = var1.state(var37, var36 = BlockPos.method_10071(var25[var32]), var34 = BlockPos.method_10083(var25[var32]));
+                  BlockState var21 = client.state(var37, var36 = BlockPos.unpackLongY(var25[var32]), var34 = BlockPos.unpackLongZ(var25[var32]));
                   byte var38 = VBlock.of(var21);
                   int var23 = VBlock.familyBit(var38);
                   if (var23 != 0) {
-                     if ((var26[var32] & var23) == 0 && (var38 != 8 || !nearOpen(var1, var37, var36, var34))) {
+                     if ((var26[var32] & var23) == 0 && (var38 != 8 || !nearOpen(client, var37, var36, var34))) {
                         var16.add(var25[var32]);
                      }
                   } else if ((var26[var32] & 64) != 0
                      && var38 != 3
-                     && !FAKES.contains(var21.method_26204())
-                     && !NATURAL.contains(var21.method_26204())
-                     && !nearOpen(var1, var37, var36, var34)) {
+                     && !FAKES.contains(var21.getBlock())
+                     && !NATURAL.contains(var21.getBlock())
+                     && !nearOpen(client, var37, var36, var34)) {
                      var16.add(var25[var32]);
                   }
                }
@@ -340,26 +340,26 @@ public final class BlobJudge {
                   var33[var15.size() + var24] = var16.getLong(var24);
                }
 
-               BlobJudge.Status var35 = var33.length >= Math.max(1, var2) ? BlobJudge.Status.ALERT : BlobJudge.Status.CLEAN;
+               BlobJudge.Status var35 = var33.length >= Math.max(1, i) ? BlobJudge.Status.ALERT : BlobJudge.Status.CLEAN;
                return new BlobJudge.Verdict(var35, var4, var5, var33);
             }
          }
       }
    }
 
-   private static BlobJudge.Verdict verdict(BlobJudge.Status var0, byte var1, long var2) {
-      return new BlobJudge.Verdict(var0, var1, var2, new long[0]);
+   private static BlobJudge.Verdict verdict(BlobJudge.Status status, byte b, long l) {
+      return new BlobJudge.Verdict(status, b, l, new long[0]);
    }
 
-   public static boolean open(BlockState var0) {
-      return var0.method_26215() || !var0.method_26227().method_15769();
+   public static boolean open(BlockState blockState) {
+      return blockState.isAir() || !blockState.getFluidState().isEmpty();
    }
 
-   private static boolean nearOpen(BlobJudge.Client var0, int var1, int var2, int var3) {
+   private static boolean nearOpen(BlobJudge.Client client, int i, int j, int k) {
       for (int var4 = -1; var4 <= 1; var4++) {
          for (int var5 = -1; var5 <= 1; var5++) {
             for (int var6 = -1; var6 <= 1; var6++) {
-               BlockState var7 = var0.state(var1 + var4, var2 + var5, var3 + var6);
+               BlockState var7 = client.state(i + var4, j + var5, k + var6);
                if (var7 == null || open(var7)) {
                   return true;
                }
@@ -370,30 +370,30 @@ public final class BlobJudge {
       return false;
    }
 
-   private static boolean before(long var0, long var2) {
-      if (BlockPos.method_10071(var0) != BlockPos.method_10071(var2)) {
-         return BlockPos.method_10071(var0) < BlockPos.method_10071(var2);
+   private static boolean before(long l, long m) {
+      if (BlockPos.unpackLongY(l) != BlockPos.unpackLongY(m)) {
+         return BlockPos.unpackLongY(l) < BlockPos.unpackLongY(m);
       } else {
-         return BlockPos.method_10083(var0) != BlockPos.method_10083(var2)
-            ? BlockPos.method_10083(var0) < BlockPos.method_10083(var2)
-            : BlockPos.method_10061(var0) < BlockPos.method_10061(var2);
+         return BlockPos.unpackLongZ(l) != BlockPos.unpackLongZ(m)
+            ? BlockPos.unpackLongZ(l) < BlockPos.unpackLongZ(m)
+            : BlockPos.unpackLongX(l) < BlockPos.unpackLongX(m);
       }
    }
 
-   static boolean isStructure(Block var0) {
-      Boolean var1 = STRUCTURE.get(var0);
-      return var1 != null ? var1 : STRUCTURE.computeIfAbsent(var0, BlobJudge::structureBlock);
+   static boolean isStructure(Block block) {
+      Boolean var1 = STRUCTURE.get(block);
+      return var1 != null ? var1 : STRUCTURE.computeIfAbsent(block, BlobJudge::structureBlock);
    }
 
-   private static boolean structureBlock(Block var0) {
-      if (var0 != Blocks.field_10166
-         && var0 != Blocks.field_10260
-         && var0 != Blocks.field_47336
-         && var0 != Blocks.field_48851
-         && var0 != Blocks.field_10398
-         && var0 != Blocks.field_38420
-         && var0 != Blocks.field_10174) {
-         String var1 = Registries.field_41175.method_10221(var0).method_12832();
+   private static boolean structureBlock(Block block) {
+      if (block != Blocks.BONE_BLOCK
+         && block != Blocks.SPAWNER
+         && block != Blocks.TRIAL_SPAWNER
+         && block != Blocks.VAULT
+         && block != Blocks.END_PORTAL_FRAME
+         && block != Blocks.REINFORCED_DEEPSLATE
+         && block != Blocks.SEA_LANTERN) {
+         String var1 = Registries.BLOCK.getId(block).getPath();
          return var1.contains("stone_brick")
             || var1.contains("tuff") && !var1.equals("tuff")
             || var1.contains("copper") && !var1.contains("ore") && !var1.equals("raw_copper_block")
@@ -412,9 +412,9 @@ public final class BlobJudge {
       }
    }
 
-   private static Set<Block> set(Block... var0) {
+   private static Set<Block> set(Block... blocks) {
       Set var1 = Collections.newSetFromMap(new IdentityHashMap());
-      Collections.addAll(var1, var0);
+      Collections.addAll(var1, blocks);
       return var1;
    }
 
@@ -425,20 +425,20 @@ public final class BlobJudge {
       private int lastZ = -2147483648;
       private VanillaBand last;
 
-      Bands(BlobJudge.Vanilla var1) {
-         this.vanilla = var1;
+      Bands(BlobJudge.Vanilla vanilla) {
+         this.vanilla = vanilla;
       }
 
-      VanillaBand at(int var1, int var2) {
-         return this.band(var1 >> 4, var2 >> 4);
+      VanillaBand at(int i, int j) {
+         return this.band(i >> 4, j >> 4);
       }
 
       @Override
-      public VanillaBand band(int var1, int var2) {
-         if (var1 != this.lastX || var2 != this.lastZ) {
-            this.lastX = var1;
-            this.lastZ = var2;
-            this.last = this.vanilla.band(var1, var2);
+      public VanillaBand band(int i, int j) {
+         if (i != this.lastX || j != this.lastZ) {
+            this.lastX = i;
+            this.lastZ = j;
+            this.last = this.vanilla.band(i, j);
          }
 
          return this.last;
@@ -447,7 +447,7 @@ public final class BlobJudge {
 
    @Environment(EnvType.CLIENT)
    public interface Client {
-      BlockState state(int var1, int var2, int var3);
+      BlockState state(int i, int j, int k);
    }
 
    @Environment(EnvType.CLIENT)
@@ -473,7 +473,7 @@ public final class BlobJudge {
 
    @Environment(EnvType.CLIENT)
    public interface Vanilla {
-      VanillaBand band(int var1, int var2);
+      VanillaBand band(int i, int j);
    }
 
    @Environment(EnvType.CLIENT)

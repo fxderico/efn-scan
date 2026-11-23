@@ -37,8 +37,8 @@ public final class CustomFovModule extends ClientModule {
       return this.fov.getInt();
    }
 
-   public static void hudFovApplied(float var0, float var1) {
-      screenEffectScale = var0 == var1 ? 1.0F : (float)(Math.tan(Math.toRadians(var1) * 0.5) / Math.tan(Math.toRadians(var0) * 0.5));
+   public static void hudFovApplied(float f, float g) {
+      screenEffectScale = f == g ? 1.0F : (float)(Math.tan(Math.toRadians(g) * 0.5) / Math.tan(Math.toRadians(f) * 0.5));
    }
 
    public static float screenEffectScale() {
@@ -56,13 +56,13 @@ public final class CustomFovModule extends ClientModule {
    }
 
    private static void scheduleTerrainUpdate() {
-      MinecraftClient var0 = MinecraftClient.method_1551();
+      MinecraftClient var0 = MinecraftClient.getInstance();
       if (var0 != null) {
-         if (!var0.method_18854()) {
+         if (!var0.isOnThread()) {
             var0.execute(CustomFovModule::scheduleTerrainUpdate);
          } else {
-            if (var0.field_1687 != null && var0.field_1769 != null) {
-               var0.field_1769.method_3292();
+            if (var0.world != null && var0.worldRenderer != null) {
+               var0.worldRenderer.scheduleTerrainUpdate();
             }
          }
       }

@@ -231,7 +231,7 @@ public final class ClickGuiRenderer {
       this.panelCacheRevision = -1;
       this.panelFold = new HashMap<>();
       this.rowMotion = new HashMap<>();
-      this.keyLabels = new Int2ObjectOpenHashMap();
+      this.keyLabels = new Int2ObjectOpenHashMap<>();
       this.cachedRegistryRevision = -1;
       this.cachedGlobalSearch = "";
       this.cachedGlobalResults = List.of();
@@ -316,25 +316,25 @@ public final class ClickGuiRenderer {
       }
    }
 
-   public void showModuleSettings(ClientModule var1) {
+   public void showModuleSettings(ClientModule clientModule) {
       this.switchTab(ClickGuiRenderer.Tab.MODULES);
-      this.openSettings(var1);
+      this.openSettings(clientModule);
    }
 
-   private void switchTab(ClickGuiRenderer.Tab var1) {
-      if (var1 != this.tab) {
+   private void switchTab(ClickGuiRenderer.Tab tab) {
+      if (tab != this.tab) {
          this.closeSettings();
-         this.tab = var1;
+         this.tab = tab;
          this.viewChangedAt = System.nanoTime();
          this.pendingConfirm = null;
          this.profileList.disarm();
-         if (var1 == ClickGuiRenderer.Tab.CONFIG) {
+         if (tab == ClickGuiRenderer.Tab.CONFIG) {
             ConfigProfiles.getInstance().refresh();
          }
       }
    }
 
-   private void renderModulePanels(float var1, float var2) {
+   private void renderModulePanels(float f, float g) {
       ClickGuiRenderer.CategoryPanel[] var3 = this.visiblePanels();
       boolean var4 = this.panelHomes.containsKey("##panel_search");
 
@@ -349,10 +349,10 @@ public final class ClickGuiRenderer {
       this.fitPanels(var3);
 
       for (ClickGuiRenderer.CategoryPanel var12 : var3) {
-         this.renderCategoryPanel(var12, var1, var2);
+         this.renderCategoryPanel(var12, f, g);
       }
 
-      this.renderSearchPanel(var1, var2);
+      this.renderSearchPanel(f, g);
    }
 
    private ClickGuiRenderer.CategoryPanel[] visiblePanels() {
@@ -373,36 +373,36 @@ public final class ClickGuiRenderer {
       return this.panelCache;
    }
 
-   private void renderCategoryPanel(ClickGuiRenderer.CategoryPanel var1, float var2, float var3) {
-      List var4 = this.modulesFor(var1.category());
+   private void renderCategoryPanel(ClickGuiRenderer.CategoryPanel categoryPanel, float f, float g) {
+      List var4 = this.modulesFor(categoryPanel.category());
       float var5 = Math.min(rowListHeight(var4.size()), maxListHeight());
-      float var6 = this.unfolded(var1, var2);
+      float var6 = this.unfolded(categoryPanel, f);
       if (var6 < 1.0F) {
          ImGui.setNextWindowSize(EfnWidgets.s(212.0F), EfnWidgets.s(42.0F) + var5 * var6, 1);
       }
 
-      if (this.beginPanel(var1.id(), var3)) {
-         String var7 = var1.category().displayName();
-         this.drawPanelChrome(var7, var1.category());
+      if (this.beginPanel(categoryPanel.id(), g)) {
+         String var7 = categoryPanel.category().displayName();
+         this.drawPanelChrome(var7, categoryPanel.category());
          this.recordPanelRect();
-         this.renderFoldControl(var1.category(), var6);
+         this.renderFoldControl(categoryPanel.category(), var6);
          if (var6 > 0.0F) {
-            this.renderRowList(var1.rowsId(), var4, var5, false, var2);
+            this.renderRowList(categoryPanel.rowsId(), var4, var5, false, f);
          }
       }
 
       endPanel();
    }
 
-   private float unfolded(ClickGuiRenderer.CategoryPanel var1, float var2) {
-      float var3 = PanelStateStore.getInstance().isCollapsed(var1.category()) ? 0.0F : 1.0F;
-      float[] var4 = this.panelFold.get(var1.id());
+   private float unfolded(ClickGuiRenderer.CategoryPanel categoryPanel, float f) {
+      float var3 = PanelStateStore.getInstance().isCollapsed(categoryPanel.category()) ? 0.0F : 1.0F;
+      float[] var4 = this.panelFold.get(categoryPanel.id());
       if (var4 == null) {
          var4 = new float[]{var3};
-         this.panelFold.put(var1.id(), var4);
+         this.panelFold.put(categoryPanel.id(), var4);
       }
 
-      var4[0] = smooth(var4[0], var3, var2, 14.0F);
+      var4[0] = smooth(var4[0], var3, f, 14.0F);
       if (Math.abs(var4[0] - var3) < 0.002F) {
          var4[0] = var3;
       }
@@ -410,7 +410,7 @@ public final class ClickGuiRenderer {
       return var4[0];
    }
 
-   private void renderFoldControl(ModuleCategory var1, float var2) {
+   private void renderFoldControl(ModuleCategory moduleCategory, float f) {
       float var3 = ImGui.getWindowPosX();
       float var4 = ImGui.getWindowPosY();
       float var5 = ImGui.getWindowWidth();
@@ -425,14 +425,14 @@ public final class ClickGuiRenderer {
       ImGui.setCursorPos(0.0F, var6);
       if (var11 || var10 && ImGui.isMouseClicked(1)) {
          PanelStateStore var13 = PanelStateStore.getInstance();
-         var13.setCollapsed(var1, !var13.isCollapsed(var1));
+         var13.setCollapsed(moduleCategory, !var13.isCollapsed(moduleCategory));
       }
 
-      EfnWidgets.chevronRotated(ImGui.getWindowDrawList(), var8, var9, EfnWidgets.s(4.0F), EfnTheme.lerpColor(-4542808, -461582, var12), var2 * 1.5707964F);
+      EfnWidgets.chevronRotated(ImGui.getWindowDrawList(), var8, var9, EfnWidgets.s(4.0F), EfnTheme.lerpColor(-4542808, -461582, var12), f * 1.5707964F);
    }
 
-   private void renderSearchPanel(float var1, float var2) {
-      if (this.beginPanel("##panel_search", var2)) {
+   private void renderSearchPanel(float f, float g) {
+      if (this.beginPanel("##panel_search", g)) {
          this.drawPanelChrome("Search", null);
          this.recordPanelRect();
          float var4 = EfnWidgets.s(6.0F) + EfnWidgets.s(2.0F);
@@ -450,7 +450,7 @@ public final class ClickGuiRenderer {
          String var5 = normalizeSearch(this.globalSearch.get());
          List var3 = var5.isEmpty() ? List.of() : this.searchModules(var5);
          float var7 = var5.isEmpty() ? 0.0F : (var3.isEmpty() ? EfnWidgets.s(34.0F) : Math.min(rowListHeight(var3.size()), maxListHeight()));
-         this.searchBodyH = smooth(this.searchBodyH, var7, var1, 14.0F);
+         this.searchBodyH = smooth(this.searchBodyH, var7, f, 14.0F);
          if (Math.abs(this.searchBodyH - var7) < 0.5F) {
             this.searchBodyH = var7;
          }
@@ -471,7 +471,7 @@ public final class ClickGuiRenderer {
                );
                ImGui.endChild();
             } else {
-               this.renderRowList("##search_rows", var3, this.searchBodyH, true, var1);
+               this.renderRowList("##search_rows", var3, this.searchBodyH, true, f);
             }
          }
       }
@@ -479,24 +479,24 @@ public final class ClickGuiRenderer {
       endPanel();
    }
 
-   private boolean beginPanel(String var1, float var2) {
-      float[] var4 = this.panelTargets.remove(var1);
+   private boolean beginPanel(String string, float f) {
+      float[] var4 = this.panelTargets.remove(string);
       if (var4 != null) {
          ImGui.setNextWindowPos(var4[0], var4[1], 1);
       }
 
       ImGui.setNextWindowSizeConstraints(EfnWidgets.s(212.0F), 0.0F, EfnWidgets.s(212.0F), 3.4028235E38F);
-      ImGui.pushStyleVar(0, var2);
+      ImGui.pushStyleVar(0, f);
       ImGui.pushStyleVar(2, 0.0F, 0.0F);
       ImGui.pushStyleVar(14, 0.0F, 0.0F);
       ImGui.pushStyleVar(3, panelRounding());
-      boolean var5 = ImGui.begin(var1, 123);
+      boolean var5 = ImGui.begin(string, 123);
       float var6 = ImGui.getWindowPosX();
       float var7 = ImGui.getWindowPosY();
-      float[] var8 = this.panelSpots.computeIfAbsent(var1, var2x -> new float[]{var6, var7});
+      float[] var8 = this.panelSpots.computeIfAbsent(string, stringx -> new float[]{var6, var7});
       boolean var3 = Math.abs(var6 - var8[0]) > 0.5F || Math.abs(var7 - var8[1]) > 0.5F;
       if (var4 == null && var3 && ImGui.isMouseDown(0)) {
-         this.panelHomes.put(var1, new float[]{var6 / EfnWidgets.s(1.0F), var7 / EfnWidgets.s(1.0F)});
+         this.panelHomes.put(string, new float[]{var6 / EfnWidgets.s(1.0F), var7 / EfnWidgets.s(1.0F)});
          this.panelHomesDirty = true;
       }
 
@@ -517,7 +517,7 @@ public final class ClickGuiRenderer {
       ImGui.popStyleVar(4);
    }
 
-   private void drawPanelChrome(String var1, ModuleCategory var2) {
+   private void drawPanelChrome(String string, ModuleCategory moduleCategory) {
       float var3 = ImGui.getWindowPosX();
       float var4 = ImGui.getWindowPosY();
       float var5 = ImGui.getWindowWidth();
@@ -531,108 +531,106 @@ public final class ClickGuiRenderer {
       float var10 = EfnWidgets.s(7.0F);
       float var11 = var3 + EfnWidgets.s(14.0F) + var10;
       float var12 = var4 + var9 * 0.5F;
-      if (var2 == null) {
+      if (moduleCategory == null) {
          EfnWidgets.magnifier(var7, var11, var12, var10, -4542808);
       } else {
-         drawCategoryIcon(var7, var2, var11, var12, var10, -4542808);
+         drawCategoryIcon(var7, moduleCategory, var11, var12, var10, -4542808);
       }
 
       float var13 = var11 + var10 + EfnWidgets.s(9.0F);
       float var14 = var4 + (var9 - EfnWidgets.lineHeight(var8)) * 0.5F;
-      EfnWidgets.text(var7, var8, var13, var14, -461582, var1, this.panelGuard);
+      EfnWidgets.text(var7, var8, var13, var14, -461582, string, this.panelGuard);
       ImGui.dummy(var5, var9);
    }
 
-   private static void drawHeaderBand(ImDrawList var0, float var1, float var2, float var3, float var4) {
+   private static void drawHeaderBand(ImDrawList imDrawList, float f, float g, float h, float i) {
       float var5 = panelRounding();
-      float var6 = Math.min(var4, var5 + EfnWidgets.s(2.0F));
-      int var7 = EfnWidgets.c(EfnWidgets.withAlpha(251658239, 1.0F - var6 / (2.0F * var4)));
-      int var8 = EfnWidgets.c(EfnWidgets.withAlpha(251658239, 1.0F - var6 / var4));
+      float var6 = Math.min(i, var5 + EfnWidgets.s(2.0F));
+      int var7 = EfnWidgets.c(EfnWidgets.withAlpha(251658239, 1.0F - var6 / (2.0F * i)));
+      int var8 = EfnWidgets.c(EfnWidgets.withAlpha(251658239, 1.0F - var6 / i));
       int var9 = EfnWidgets.c(16777215);
-      var0.addRectFilled(var1, var2, var1 + var3, var2 + var6, var7, var5, 48);
-      var0.addRectFilledMultiColor(var1, var2 + var6, var1 + var3, var2 + var4, var8, var8, var9, var9);
+      imDrawList.addRectFilled(f, g, f + h, g + var6, var7, var5, 48);
+      imDrawList.addRectFilledMultiColor(f, g + var6, f + h, g + i, var8, var8, var9, var9);
    }
 
-   private static void softRule(ImDrawList var0, float var1, float var2, float var3, int var4) {
-      float var5 = (var1 + var2) * 0.5F;
-      int var6 = EfnWidgets.c(var4);
-      int var7 = EfnWidgets.c(var4 & 16777215);
-      var0.addRectFilledMultiColor(var1, var3, var5, var3 + 1.0F, var7, var6, var6, var7);
-      var0.addRectFilledMultiColor(var5, var3, var2, var3 + 1.0F, var6, var7, var7, var6);
+   private static void softRule(ImDrawList imDrawList, float f, float g, float h, int i) {
+      float var5 = (f + g) * 0.5F;
+      int var6 = EfnWidgets.c(i);
+      int var7 = EfnWidgets.c(i & 16777215);
+      imDrawList.addRectFilledMultiColor(f, h, var5, h + 1.0F, var7, var6, var6, var7);
+      imDrawList.addRectFilledMultiColor(var5, h, g, h + 1.0F, var6, var7, var7, var6);
    }
 
-   private static void drawCategoryIcon(ImDrawList var0, ModuleCategory var1, float var2, float var3, float var4, int var5) {
-      switch (var1.icon()) {
+   private static void drawCategoryIcon(ImDrawList imDrawList, ModuleCategory moduleCategory, float f, float g, float h, int i) {
+      switch (moduleCategory.icon()) {
          case CROSSHAIR:
-            EfnWidgets.crosshair(var0, var2, var3, var4, var5);
+            EfnWidgets.crosshair(imDrawList, f, g, h, i);
             break;
          case CHEVRON:
-            EfnWidgets.chevron(var0, var2, var3, var4, var5, true);
+            EfnWidgets.chevron(imDrawList, f, g, h, i, true);
             break;
          case MOVE:
-            EfnWidgets.move(var0, var2, var3, var4, var5);
+            EfnWidgets.move(imDrawList, f, g, h, i);
             break;
          case GRID:
-            EfnWidgets.grid(var0, var2, var3, var4, var5);
+            EfnWidgets.grid(imDrawList, f, g, h, i);
             break;
          case RING:
-            EfnWidgets.ring(var0, var2, var3, var4, var5);
+            EfnWidgets.ring(imDrawList, f, g, h, i);
             break;
          case EYE:
-            EfnWidgets.eye(var0, var2, var3, var4, var5);
+            EfnWidgets.eye(imDrawList, f, g, h, i);
             break;
          case MONITOR:
-            EfnWidgets.monitor(var0, var2, var3, var4, var5);
+            EfnWidgets.monitor(imDrawList, f, g, h, i);
             break;
          case HOUSE:
-            EfnWidgets.house(var0, var2, var3, var4, var5);
+            EfnWidgets.house(imDrawList, f, g, h, i);
             break;
          case SCROLL:
-            EfnWidgets.scroll(var0, var2, var3, var4, var5);
+            EfnWidgets.scroll(imDrawList, f, g, h, i);
             break;
          case BOLT:
-            EfnWidgets.bolt(var0, var2, var3, var4, var5);
+            EfnWidgets.bolt(imDrawList, f, g, h, i);
       }
    }
 
-   public static void drawShadow(float var0, float var1, float var2, float var3, float var4, int var5) {
+   public static void drawShadow(float f, float g, float h, float i, float j, int k) {
       ImDrawList var6 = ImGui.getBackgroundDrawList();
 
-      for (int var7 = 1; var7 <= var5; var7++) {
+      for (int var7 = 1; var7 <= k; var7++) {
          float var8 = EfnWidgets.s(2.5F) * var7;
-         var6.addRectFilled(
-            var0 - var8, var1 - var8 + EfnWidgets.s(4.0F), var0 + var2 + var8, var1 + var3 + var8 + EfnWidgets.s(4.0F), EfnWidgets.c(335544320), var4 + var8
-         );
+         var6.addRectFilled(f - var8, g - var8 + EfnWidgets.s(4.0F), f + h + var8, g + i + var8 + EfnWidgets.s(4.0F), EfnWidgets.c(335544320), j + var8);
       }
    }
 
-   private static float rowListHeight(int var0) {
-      return var0 * EfnWidgets.s(32.0F) - EfnWidgets.s(2.0F) + EfnWidgets.s(6.0F);
+   private static float rowListHeight(int i) {
+      return i * EfnWidgets.s(32.0F) - EfnWidgets.s(2.0F) + EfnWidgets.s(6.0F);
    }
 
    private static float maxListHeight() {
       return Math.max(EfnWidgets.s(120.0F), ImGui.getIO().getDisplaySizeY() * 0.62F - EfnWidgets.s(42.0F));
    }
 
-   private void renderRowList(String var1, List<ClientModule> var2, float var3, boolean var4, float var5) {
-      if (ImGui.beginChild(var1, EfnWidgets.s(212.0F), Math.max(1.0F, var3), false, 24)) {
-         Motion.Rows var6 = this.rowMotion.computeIfAbsent(var1, var0 -> new Motion.Rows());
-         var6.bind(var2);
+   private void renderRowList(String string, List<ClientModule> list, float f, boolean bl, float g) {
+      if (ImGui.beginChild(string, EfnWidgets.s(212.0F), Math.max(1.0F, f), false, 24)) {
+         Motion.Rows var6 = this.rowMotion.computeIfAbsent(string, stringx -> new Motion.Rows());
+         var6.bind(list);
          this.rowDividers = ThemeStore.get().moduleDividers.get();
 
-         for (int var7 = 0; var7 < var2.size(); var7++) {
-            this.renderModuleRow((ClientModule)var2.get(var7), var4, var6, var7, var5);
+         for (int var7 = 0; var7 < list.size(); var7++) {
+            this.renderModuleRow((ClientModule)list.get(var7), bl, var6, var7, g);
          }
 
          ImGui.dummy(1.0F, EfnWidgets.s(6.0F) - EfnWidgets.s(2.0F));
-         this.applySmoothScroll(var1, var5);
+         this.applySmoothScroll(string, g);
       }
 
       ImGui.endChild();
    }
 
-   private void renderModuleRow(ClientModule var1, boolean var2, Motion.Rows var3, int var4, float var5) {
-      ImGui.pushID(var1.id());
+   private void renderModuleRow(ClientModule clientModule, boolean bl, Motion.Rows rows, int i, float f) {
+      ImGui.pushID(clientModule.id());
       float var7 = EfnWidgets.s(6.0F);
       float var8 = EfnWidgets.s(30.0F);
       float var9 = ImGui.getCursorPosY();
@@ -641,29 +639,29 @@ public final class ClickGuiRenderer {
       float var11 = ImGui.getCursorScreenPosY();
       float var12 = ImGui.getWindowWidth() - var7 * 2.0F;
       if (ImGui.invisibleButton("##row", var12, var8) && !this.inspectMode) {
-         if (var1.isAction()) {
-            var1.onClick();
+         if (clientModule.isAction()) {
+            clientModule.onClick();
          } else {
-            var1.toggle();
+            clientModule.toggle();
          }
       }
 
       boolean var13 = ImGui.isItemHovered();
       if (!this.inspectMode && ImGui.isItemClicked(1)) {
-         this.openSettings(var1);
+         this.openSettings(clientModule);
       }
 
       if (!this.inspectMode && ImGui.isItemHovered(65536)) {
-         String var14 = var1.description();
+         String var14 = clientModule.description();
          showTooltip(var14 != null && !var14.isBlank() ? var14 + "\nRight-click for settings" : "Right-click for settings");
       }
 
-      float var27 = var3.hover(var4, var13, var5, 18.0F);
-      float var15 = var3.on(var4, var1.isEnabled(), var5, 14.0F);
+      float var27 = rows.hover(i, var13, f, 18.0F);
+      float var15 = rows.on(i, clientModule.isEnabled(), f, 14.0F);
       ImDrawList var16 = ImGui.getWindowDrawList();
       float var17 = Math.max(var27, var15);
       float var6;
-      if (this.rowDividers && var4 > 0 && (var6 = 1.0F - Math.max(var17, this.rowAboveEmphasis)) > 0.01F) {
+      if (this.rowDividers && i > 0 && (var6 = 1.0F - Math.max(var17, this.rowAboveEmphasis)) > 0.01F) {
          float var18 = (float)Math.floor(var11 - EfnWidgets.s(2.0F) * 0.5F);
          softRule(var16, var10 + EfnWidgets.s(8.0F), var10 + var12 - EfnWidgets.s(8.0F), var18, EfnWidgets.withAlpha(620756991, var6));
       }
@@ -687,18 +685,18 @@ public final class ClickGuiRenderer {
 
       ImFont var19 = ImGui.getFont();
       ImFont var20 = ImGuiManager.getInstance().smallFont();
-      String var21 = var2 ? var1.category().displayName() : (var1.keybind() == -1 ? null : this.keyLabel(var1.keybind()));
+      String var21 = bl ? clientModule.category().displayName() : (clientModule.keybind() == -1 ? null : this.keyLabel(clientModule.keybind()));
       float var22 = var21 == null ? 0.0F : EfnWidgets.textWidth(var20, var21);
       int var23 = EfnTheme.lerpColor(EfnTheme.lerpColor(-2042416, -461582, var27), -1, var15);
-      float var24 = var12 - EfnWidgets.s(var21 == null && !var1.isAction() ? 20.0F : 28.0F) - var22;
-      String var25 = EfnWidgets.ellipsize(var19, var1.name(), var24);
+      float var24 = var12 - EfnWidgets.s(var21 == null && !clientModule.isAction() ? 20.0F : 28.0F) - var22;
+      String var25 = EfnWidgets.ellipsize(var19, clientModule.name(), var24);
       EfnWidgets.text(var16, var19, var10 + EfnWidgets.s(10.0F), var11 + (var8 - EfnWidgets.lineHeight(var19)) * 0.5F, var23, var25, this.panelGuard);
       if (var21 != null) {
          int var26 = EfnTheme.lerpColor(-4542808, -419430401, var15);
          EfnWidgets.text(
             var16, var20, var10 + var12 - EfnWidgets.s(10.0F) - var22, var11 + (var8 - EfnWidgets.lineHeight(var20)) * 0.5F, var26, var21, this.panelGuard
          );
-      } else if (var1.isAction()) {
+      } else if (clientModule.isAction()) {
          EfnWidgets.chevronRight(
             var16, var10 + var12 - EfnWidgets.s(14.0F), var11 + var8 * 0.5F, EfnWidgets.s(4.0F), EfnTheme.lerpColor(-4542808, -461582, var27)
          );
@@ -708,21 +706,21 @@ public final class ClickGuiRenderer {
       ImGui.popID();
    }
 
-   public static void showTooltip(String var0) {
+   public static void showTooltip(String string) {
       ImGui.pushStyleVar(2, EfnWidgets.s(10.0F), EfnWidgets.s(8.0F));
       ImGui.beginTooltip();
       ImGui.pushTextWrapPos(EfnWidgets.s(280.0F));
-      ImGui.textUnformatted(var0);
+      ImGui.textUnformatted(string);
       ImGui.popTextWrapPos();
       ImGui.endTooltip();
       ImGui.popStyleVar();
    }
 
-   private void applySmoothScroll(String var1, float var2) {
-      smoothScroll(this.scroll.computeIfAbsent(var1, var0 -> new float[2]), var2);
+   private void applySmoothScroll(String string, float f) {
+      smoothScroll(this.scroll.computeIfAbsent(string, stringx -> new float[2]), f);
    }
 
-   public static void smoothScroll(float[] var0, float var1) {
+   public static void smoothScroll(float[] fs, float f) {
       float var3 = ImGui.getScrollMaxY();
       float var4 = ImGui.getWindowPosX();
       float var5 = ImGui.getWindowPosY();
@@ -739,29 +737,29 @@ public final class ClickGuiRenderer {
          var10 = SCROLLBAR_HELD.get();
          var11 = var10 || SCROLLBAR_HOVERED.get();
          if (var10 && ImGui.isMouseClicked(0)) {
-            float var14 = var5 + var9 * (var0[0] / var3);
+            float var14 = var5 + var9 * (fs[0] / var3);
             float var15 = ImGui.getMousePosY();
-            var0[1] = var15 >= var14 && var15 <= var14 + var8 ? var0[0] : (var15 - var5 - var8 * 0.5F) / var9 * var3;
-            scrollDragFrom = var0[1];
+            fs[1] = var15 >= var14 && var15 <= var14 + var8 ? fs[0] : (var15 - var5 - var8 * 0.5F) / var9 * var3;
+            scrollDragFrom = fs[1];
          } else if (var10) {
-            var0[1] = scrollDragFrom + ImGui.getMouseDragDeltaY(0, 0.0F) * var3 / var9;
+            fs[1] = scrollDragFrom + ImGui.getMouseDragDeltaY(0, 0.0F) * var3 / var9;
          }
       }
 
       float var2;
       if (!var10 && ImGui.isWindowHovered() && (var2 = ImGui.getIO().getMouseWheel()) != 0.0F) {
-         var0[1] -= var2 * EfnWidgets.s(56.0F);
+         fs[1] -= var2 * EfnWidgets.s(56.0F);
       }
 
-      var0[1] = Math.max(0.0F, Math.min(var3, var0[1]));
-      float var16 = var0[0] = var10 ? var0[1] : smooth(var0[0], var0[1], var1, 16.0F);
-      if (Math.abs(var0[0] - var0[1]) < 0.3F) {
-         var0[0] = var0[1];
+      fs[1] = Math.max(0.0F, Math.min(var3, fs[1]));
+      float var16 = fs[0] = var10 ? fs[1] : smooth(fs[0], fs[1], f, 16.0F);
+      if (Math.abs(fs[0] - fs[1]) < 0.3F) {
+         fs[0] = fs[1];
       }
 
-      ImGui.setScrollY(var0[0]);
+      ImGui.setScrollY(fs[0]);
       if (var3 > 0.5F) {
-         float var13 = var5 + var9 * (var0[0] / var3);
+         float var13 = var5 + var9 * (fs[0] / var3);
          ImGui.getWindowDrawList()
             .addRectFilled(
                var4 + var6 - (var11 ? EfnWidgets.s(6.0F) : EfnWidgets.s(4.0F)),
@@ -774,13 +772,13 @@ public final class ClickGuiRenderer {
       }
    }
 
-   private ClickGuiRenderer.PanelLayout panelLayout(ClickGuiRenderer.CategoryPanel[] var1) {
+   private ClickGuiRenderer.PanelLayout panelLayout(ClickGuiRenderer.CategoryPanel[] categoryPanels) {
       ArrayList var2 = new ArrayList();
       ArrayList var3 = new ArrayList();
       ArrayList var4 = new ArrayList();
       PanelStateStore var5 = PanelStateStore.getInstance();
 
-      for (ClickGuiRenderer.CategoryPanel var9 : var1) {
+      for (ClickGuiRenderer.CategoryPanel var9 : categoryPanels) {
          var2.add(var9.id());
          var3.add(var9.category().name());
          var4.add(
@@ -796,8 +794,8 @@ public final class ClickGuiRenderer {
       return new ClickGuiRenderer.PanelLayout(var2, var3, var4);
    }
 
-   private void placeNewPanels(ClickGuiRenderer.CategoryPanel[] var1) {
-      ClickGuiRenderer.PanelLayout var2 = this.panelLayout(var1);
+   private void placeNewPanels(ClickGuiRenderer.CategoryPanel[] categoryPanels) {
+      ClickGuiRenderer.PanelLayout var2 = this.panelLayout(categoryPanels);
       List var3 = var2.ids();
       List var4 = var2.keys();
       List var5 = var2.heights();
@@ -850,14 +848,14 @@ public final class ClickGuiRenderer {
       this.panelLayoutKey = "";
    }
 
-   private void fitPanels(ClickGuiRenderer.CategoryPanel[] var1) {
+   private void fitPanels(ClickGuiRenderer.CategoryPanel[] categoryPanels) {
       float var4 = ImGui.getIO().getDisplaySizeX();
       float var2;
       float var3;
       String var5 = var4 + "x" + (var3 = ImGui.getIO().getDisplaySizeY()) + "@" + (var2 = EfnWidgets.s(1.0F));
       if (!var5.equals(this.panelLayoutKey)) {
          this.panelLayoutKey = var5;
-         ClickGuiRenderer.PanelLayout var6 = this.panelLayout(var1);
+         ClickGuiRenderer.PanelLayout var6 = this.panelLayout(categoryPanels);
          float var7 = EfnWidgets.s(212.0F);
          float var8 = var3 - EfnWidgets.s(70.0F) - EfnWidgets.s(42.0F);
          ArrayList var9 = new ArrayList();
@@ -885,10 +883,10 @@ public final class ClickGuiRenderer {
       }
    }
 
-   private static float[] bundledSpot(String var0) {
+   private static float[] bundledSpot(String string) {
       float var2 = ImGui.getIO().getDisplaySizeX();
       float var1;
-      float[] var3 = BundledDefaults.panelSpot(var0, var2, var1 = ImGui.getIO().getDisplaySizeY());
+      float[] var3 = BundledDefaults.panelSpot(string, var2, var1 = ImGui.getIO().getDisplaySizeY());
       if (var3 == null) {
          return null;
       } else {
@@ -898,19 +896,19 @@ public final class ClickGuiRenderer {
       }
    }
 
-   private static float[] panelPosFor(int var0, int var1) {
+   private static float[] panelPosFor(int i, int j) {
       float var2 = ImGui.getIO().getDisplaySizeX();
       float var3 = ImGui.getIO().getDisplaySizeY();
       float var4 = EfnWidgets.s(212.0F);
       float var5 = EfnWidgets.s(14.0F);
       int var6 = Math.max(1, (int)((var2 - EfnWidgets.s(40.0F) + var5) / (var4 + var5)));
-      int var7 = Math.min(var6, var1);
+      int var7 = Math.min(var6, j);
       float var8 = var7 * (var4 + var5) - var5;
       float var9 = Math.max(EfnWidgets.s(20.0F), (var2 - var8) * 0.5F);
-      return new float[]{var9 + var0 % var6 * (var4 + var5), EfnWidgets.s(28.0F) + var0 / var6 * var3 * 0.45F};
+      return new float[]{var9 + i % var6 * (var4 + var5), EfnWidgets.s(28.0F) + i / var6 * var3 * 0.45F};
    }
 
-   private static float[] freeSpot(float var0, List<float[]> var1) {
+   private static float[] freeSpot(float f, List<float[]> list) {
       float var3 = ImGui.getIO().getDisplaySizeX();
       float var4 = ImGui.getIO().getDisplaySizeY();
       float var5 = EfnWidgets.s(212.0F);
@@ -919,13 +917,13 @@ public final class ClickGuiRenderer {
       float var8 = var4 - EfnWidgets.s(70.0F) - var6;
       float var9 = 3.4028235E38F;
 
-      for (float[] var11 : var1) {
+      for (float[] var11 : list) {
          var9 = Math.min(var9, var11[1]);
       }
 
       float[] var20 = null;
 
-      for (float[] var12 : var1) {
+      for (float[] var12 : list) {
          boolean var13 = var12[1] < var9 + EfnWidgets.s(42.0F);
          if (var13 && (var20 == null || var12[0] + var12[2] > var20[0] + var20[2])) {
             var20 = var12;
@@ -946,17 +944,17 @@ public final class ClickGuiRenderer {
       ArrayList var24 = new ArrayList();
       var24.add(new float[]{var7, EfnWidgets.s(28.0F)});
 
-      for (float[] var14 : var1) {
+      for (float[] var14 : list) {
          var24.add(new float[]{var14[0] + var14[2] + var6, var14[1]});
          var24.add(new float[]{var14[0], var14[1] + var14[3] + var6});
       }
 
-      var24.sort(Comparator.<float[]>comparingDouble(var0x -> var0x[1]).thenComparingDouble(var0x -> var0x[0]));
+      var24.sort(Comparator.<float[]>comparingDouble(fs -> fs[1]).thenComparingDouble(fs -> fs[0]));
       var24.addFirst(var2);
 
       for (float[] var28 : var24) {
-         boolean var15 = var28[0] >= 0.0F && var28[1] >= 0.0F && var28[0] + var5 <= var3 - var7 && var28[1] + var0 <= var8;
-         if (var15 && coveredArea(var28[0], var28[1], var0, var1) == 0.0F) {
+         boolean var15 = var28[0] >= 0.0F && var28[1] >= 0.0F && var28[0] + var5 <= var3 - var7 && var28[1] + f <= var8;
+         if (var15 && coveredArea(var28[0], var28[1], f, list) == 0.0F) {
             return var28;
          }
       }
@@ -967,7 +965,7 @@ public final class ClickGuiRenderer {
       for (float[] var16 : var24) {
          float var18 = Math.max(0.0F, Math.min(var16[0], var3 - var5 - var7));
          float var17;
-         float var19 = coveredArea(var18, var17 = Math.max(0.0F, Math.min(var16[1], var4 - var0 - var7)), var0, var1);
+         float var19 = coveredArea(var18, var17 = Math.max(0.0F, Math.min(var16[1], var4 - f - var7)), f, list);
          if (var19 < var29) {
             var27 = new float[]{var18, var17};
             var29 = var19;
@@ -977,14 +975,14 @@ public final class ClickGuiRenderer {
       return var27;
    }
 
-   private static float coveredArea(float var0, float var1, float var2, List<float[]> var3) {
+   private static float coveredArea(float f, float g, float h, List<float[]> list) {
       float var4 = EfnWidgets.s(212.0F);
       float var5 = EfnWidgets.s(14.0F) * 0.5F;
       float var6 = 0.0F;
 
-      for (float[] var8 : var3) {
-         float var9 = Math.min(var0 + var4, var8[0] + var8[2]) + var5 - Math.max(var0, var8[0]);
-         float var10 = Math.min(var1 + var2, var8[1] + var8[3]) + var5 - Math.max(var1, var8[1]);
+      for (float[] var8 : list) {
+         float var9 = Math.min(f + var4, var8[0] + var8[2]) + var5 - Math.max(f, var8[0]);
+         float var10 = Math.min(g + h, var8[1] + var8[3]) + var5 - Math.max(g, var8[1]);
          if (var9 > 0.0F && var10 > 0.0F) {
             var6 += var9 * var10;
          }
@@ -1021,11 +1019,11 @@ public final class ClickGuiRenderer {
       }
    }
 
-   private List<ClientModule> modulesFor(ModuleCategory var1) {
-      return ModuleRegistry.inCategory(var1);
+   private List<ClientModule> modulesFor(ModuleCategory moduleCategory) {
+      return ModuleRegistry.inCategory(moduleCategory);
    }
 
-   private List<ClientModule> searchModules(String var1) {
+   private List<ClientModule> searchModules(String string) {
       int var2 = ModuleRegistry.revision();
       if (var2 != this.cachedRegistryRevision) {
          this.cachedRegistryRevision = var2;
@@ -1033,28 +1031,28 @@ public final class ClickGuiRenderer {
          this.cachedGlobalResults = List.of();
       }
 
-      if (var1.equals(this.cachedGlobalSearch)) {
+      if (string.equals(this.cachedGlobalSearch)) {
          return this.cachedGlobalResults;
       } else {
          ArrayList var3 = new ArrayList();
 
          for (ClientModule var5 : ModuleRegistry.all()) {
-            if (var5.name().toLowerCase(Locale.ROOT).contains(var1)) {
+            if (var5.name().toLowerCase(Locale.ROOT).contains(string)) {
                var3.add(var5);
             }
          }
 
-         this.cachedGlobalSearch = var1;
+         this.cachedGlobalSearch = string;
          this.cachedGlobalResults = List.copyOf(var3);
          return this.cachedGlobalResults;
       }
    }
 
-   private static String normalizeSearch(String var0) {
-      return var0 == null ? "" : var0.toLowerCase(Locale.ROOT).trim();
+   private static String normalizeSearch(String string) {
+      return string == null ? "" : string.toLowerCase(Locale.ROOT).trim();
    }
 
-   private void renderTabBar(float var1, float var2) {
+   private void renderTabBar(float f, float g) {
       ClickGuiRenderer.Tab[] var3 = ClickGuiRenderer.Tab.values();
       ImFont var4 = ImGui.getFont();
       float var5 = EfnWidgets.s(44.0F);
@@ -1071,10 +1069,10 @@ public final class ClickGuiRenderer {
       float var25 = ImGui.getIO().getDisplaySizeX();
       float var11 = ImGui.getIO().getDisplaySizeY();
       float var12 = (var25 - var9) * 0.5F;
-      float var13 = var11 - var5 - EfnWidgets.s(26.0F) + EfnWidgets.s(16.0F) * (1.0F - var2);
+      float var13 = var11 - var5 - EfnWidgets.s(26.0F) + EfnWidgets.s(16.0F) * (1.0F - g);
       ImGui.setNextWindowPos(var12, var13, 1);
       ImGui.setNextWindowSize(var9, var5, 1);
-      ImGui.pushStyleVar(0, Math.max(0.01F, var2));
+      ImGui.pushStyleVar(0, Math.max(0.01F, g));
       ImGui.pushStyleVar(2, 0.0F, 0.0F);
       ImGui.pushStyleVar(3, var5 * 0.5F);
       ImGui.pushStyleColor(2, GuiPalette.tabBarBg());
@@ -1100,8 +1098,8 @@ public final class ClickGuiRenderer {
             this.tabIndicatorW = var26;
          }
 
-         this.tabIndicatorX = smooth(this.tabIndicatorX, var15, var1, 18.0F);
-         this.tabIndicatorW = smooth(this.tabIndicatorW, var26, var1, 18.0F);
+         this.tabIndicatorX = smooth(this.tabIndicatorX, var15, f, 18.0F);
+         this.tabIndicatorW = smooth(this.tabIndicatorW, var26, f, 18.0F);
          float var17 = var5 - var6 * 2.0F;
          var14.addRectFilled(
             var12 + this.tabIndicatorX,
@@ -1142,21 +1140,21 @@ public final class ClickGuiRenderer {
       ImGui.popStyleVar(3);
    }
 
-   private float[] beginCard(String var1, float var2, float var3) {
-      return this.beginCard(var1, var2, var3, ImGui.getIO().getDisplaySizeX() * 0.5F);
+   private float[] beginCard(String string, float f, float g) {
+      return this.beginCard(string, f, g, ImGui.getIO().getDisplaySizeX() * 0.5F);
    }
 
-   private float[] beginCard(String var1, float var2, float var3, float var4) {
+   private float[] beginCard(String string, float f, float g, float h) {
       float var5 = ImGui.getIO().getDisplaySizeX();
       float var6 = ImGui.getIO().getDisplaySizeY();
       float var7 = EfnWidgets.s(86.0F);
       float var8 = Math.min(var5 - EfnWidgets.s(32.0F), EfnWidgets.s(460.0F));
       float var9 = Math.min(var6 - var7 - EfnWidgets.s(32.0F), EfnWidgets.s(760.0F));
-      float var10 = Math.max(EfnWidgets.s(16.0F), var4 - var8 * 0.5F);
-      float var11 = Math.max(EfnWidgets.s(16.0F), (var6 - var7 - var9) * 0.5F + EfnWidgets.s(8.0F)) + EfnWidgets.s(24.0F) * (1.0F - var3);
+      float var10 = Math.max(EfnWidgets.s(16.0F), h - var8 * 0.5F);
+      float var11 = Math.max(EfnWidgets.s(16.0F), (var6 - var7 - var9) * 0.5F + EfnWidgets.s(8.0F)) + EfnWidgets.s(24.0F) * (1.0F - g);
       ImGui.setNextWindowPos(var10, var11, 1);
       ImGui.setNextWindowSize(var8, var9, 1);
-      ImGui.pushStyleVar(0, var2);
+      ImGui.pushStyleVar(0, f);
       ImGui.pushStyleVar(2, 0.0F, 0.0F);
       ImGui.pushStyleVar(14, 0.0F, 0.0F);
       ImGui.pushStyleVar(3, cardRounding());
@@ -1166,7 +1164,7 @@ public final class ClickGuiRenderer {
          ImGui.pushStyleColor(1, -2042416);
       }
 
-      ImGui.begin(var1, 8511);
+      ImGui.begin(string, 8511);
       drawShadow(var10, var11, var8, var9, cardRounding(), 6);
       ImDrawList var12 = ImGui.getWindowDrawList();
       Surface var13 = ThemeStore.get().cards;
@@ -1192,54 +1190,54 @@ public final class ClickGuiRenderer {
       ImGui.popStyleVar(4);
    }
 
-   public static void drawCardTitle(String var0, float var1, float var2) {
-      drawCardTitle(var0, var1, var2, false);
+   public static void drawCardTitle(String string, float f, float g) {
+      drawCardTitle(string, f, g, false);
    }
 
-   private static void drawCardTitle(String var0, float var1, float var2, boolean var3) {
+   private static void drawCardTitle(String string, float f, float g, boolean bl) {
       ImFont var4 = ImGuiManager.getInstance().titleFont();
       EfnWidgets.text(
-         ImGui.getWindowDrawList(), var4, ImGui.getWindowPosX() + var1, ImGui.getWindowPosY() + var2 - EfnWidgets.lineHeight(var4) * 0.5F, -461582, var0, var3
+         ImGui.getWindowDrawList(), var4, ImGui.getWindowPosX() + f, ImGui.getWindowPosY() + g - EfnWidgets.lineHeight(var4) * 0.5F, -461582, string, bl
       );
    }
 
-   public static float mutedParagraph(String var0, float var1, float var2, float var3) {
-      ImGui.setCursorPos(var1, var2);
-      ImGui.pushTextWrapPos(var3);
+   public static float mutedParagraph(String string, float f, float g, float h) {
+      ImGui.setCursorPos(f, g);
+      ImGui.pushTextWrapPos(h);
       ImGui.pushStyleColor(0, ImGui.getStyleColorVec4(1));
-      ImGui.textUnformatted(var0);
+      ImGui.textUnformatted(string);
       ImGui.popStyleColor();
       ImGui.popTextWrapPos();
       return ImGui.getCursorPosY();
    }
 
-   public static void cardDivider(float var0, float var1, float var2) {
+   public static void cardDivider(float f, float g, float h) {
       float var3 = ImGui.getWindowPosX();
       float var4 = ImGui.getWindowPosY();
-      ImGui.getWindowDrawList().addLine(var3 + var0, var4 + var2, var3 + var1 - var0, var4 + var2, EfnWidgets.c(268435455), 1.0F);
+      ImGui.getWindowDrawList().addLine(var3 + f, var4 + h, var3 + g - f, var4 + h, EfnWidgets.c(268435455), 1.0F);
    }
 
-   private void renderModuleCard(ClientModule var1, float var2, float var3, float var4) {
-      this.renderModuleCard(var1, var2, var3, var4, false);
+   private void renderModuleCard(ClientModule clientModule, float f, float g, float h) {
+      this.renderModuleCard(clientModule, f, g, h, false);
    }
 
-   private void renderModuleCard(ClientModule var1, float var2, float var3, float var4, boolean var5) {
-      this.renderModuleCard(var1, var2, var3, var4, var5, !var5);
+   private void renderModuleCard(ClientModule clientModule, float f, float g, float h, boolean bl) {
+      this.renderModuleCard(clientModule, f, g, h, bl, !bl);
    }
 
-   private void renderModuleCard(ClientModule var1, float var2, float var3, float var4, boolean var5, boolean var6) {
+   private void renderModuleCard(ClientModule clientModule, float f, float g, float h, boolean bl, boolean bl2) {
       float var8 = ImGui.getIO().getDisplaySizeX();
       float var9 = ImGui.getIO().getDisplaySizeY();
       float[] var7;
-      if (var5) {
-         var7 = this.beginCard("##preview_card", var3, var4, (var8 - EfnWidgets.s(408.0F)) * 0.5F);
+      if (bl) {
+         var7 = this.beginCard("##preview_card", g, h, (var8 - EfnWidgets.s(408.0F)) * 0.5F);
          this.cardRect = new float[]{var7[3], var7[4], var7[0], var7[1]};
          this.outlineSurface(ThemeStore.get().cards, var7[3], var7[4], var7[0], var7[1], cardRounding());
          ImGui.pushStyleVar(1, 1.0F);
          ImGui.beginDisabled();
       } else {
-         ImGui.getBackgroundDrawList().addRectFilled(0.0F, 0.0F, var8, var9, EfnWidgets.withAlpha(1426063360, var4));
-         var7 = this.beginCard("##module_card", var3, var4);
+         ImGui.getBackgroundDrawList().addRectFilled(0.0F, 0.0F, var8, var9, EfnWidgets.withAlpha(1426063360, h));
+         var7 = this.beginCard("##module_card", g, h);
       }
 
       float var10 = var7[0];
@@ -1251,7 +1249,7 @@ public final class ClickGuiRenderer {
       float var16 = ImGui.getWindowPosX();
       float var17 = ImGui.getWindowPosY();
       float var18 = var12;
-      if (!var5 && var6) {
+      if (!bl && bl2) {
          ImGui.setCursorPos(var12 - EfnWidgets.s(4.0F), var13);
          if (EfnWidgets.iconButton("##back", var14)) {
             this.closeSettings();
@@ -1263,13 +1261,13 @@ public final class ClickGuiRenderer {
          var18 = var12 + var14 + EfnWidgets.s(8.0F);
       }
 
-      drawCardTitle(var1.name(), var18, var13 + var14 * 0.5F, this.cardGuard);
-      if (var1.isAction()) {
+      drawCardTitle(clientModule.name(), var18, var13 + var14 * 0.5F, this.cardGuard);
+      if (clientModule.isAction()) {
          float var19 = EfnWidgets.s(72.0F);
          float var20 = EfnWidgets.s(30.0F);
          ImGui.setCursorPos(var10 - var12 - var19, var13 + (var14 - var20) * 0.5F);
          if (EfnWidgets.chipButton("##open", "Open", var19, var20, true)) {
-            var1.onClick();
+            clientModule.onClick();
          }
       } else {
          float var26 = EfnWidgets.s(46.0F);
@@ -1278,14 +1276,14 @@ public final class ClickGuiRenderer {
          float var21 = ImGui.getCursorScreenPosX();
          float var22 = ImGui.getCursorScreenPosY();
          if (ImGui.invisibleButton("##enabled", var26, var29)) {
-            var1.toggle();
+            clientModule.toggle();
          }
 
-         EfnWidgets.drawSwitch(var15, var21, var22, var26, var29, EfnWidgets.animate(ImGui.getItemID(), var1.isEnabled(), 14.0F));
+         EfnWidgets.drawSwitch(var15, var21, var22, var26, var29, EfnWidgets.animate(ImGui.getItemID(), clientModule.isEnabled(), 14.0F));
       }
 
       float var27 = var13 + var14 + EfnWidgets.s(12.0F);
-      String var30 = var1.description();
+      String var30 = clientModule.description();
       if (var30 != null && !var30.isBlank()) {
          var27 = mutedParagraph(var30, var12, var27, var10 - var12) + EfnWidgets.s(4.0F);
       }
@@ -1297,17 +1295,17 @@ public final class ClickGuiRenderer {
          float var31 = var10 - var12 * 2.0F;
          float var32 = ImGui.getCursorPosY() + EfnWidgets.s(16.0F);
          this.sectionLabel("Settings", var12);
-         if (!var5 && var1.hasModifiedSettings()) {
-            this.renderResetAllChip(var1, var12, var31, var32);
+         if (!bl && clientModule.hasModifiedSettings()) {
+            this.renderResetAllChip(clientModule, var12, var31, var32);
          }
 
          boolean var23 = false;
 
-         for (Setting var25 : var1.settings()) {
-            if (var25.isVisible() && (!var1.isAction() || var25 != var1.showInHud())) {
+         for (Setting var25 : clientModule.settings()) {
+            if (var25.isVisible() && (!clientModule.isAction() || var25 != clientModule.showInHud())) {
                var23 = true;
                ImGui.pushID(var25.id());
-               this.renderSetting(var1, var25, var12, var31);
+               this.renderSetting(clientModule, var25, var12, var31);
                ImGui.popID();
             }
          }
@@ -1318,23 +1316,23 @@ public final class ClickGuiRenderer {
 
          this.sectionLabel("Keybind", var12);
          ImGui.pushID("##keybind_row");
-         this.renderKeybindRow(var1, var12, var31);
+         this.renderKeybindRow(clientModule, var12, var31);
          ImGui.popID();
-         if (isHudModule(var1)) {
+         if (isHudModule(clientModule)) {
             this.renderHudActions(var12, var31);
          }
 
-         if (var1.inConfigs()) {
+         if (clientModule.inConfigs()) {
             this.sectionLabel("Config", var12);
-            this.renderModuleConfigActions(var1, var12, var31);
+            this.renderModuleConfigActions(clientModule, var12, var31);
          }
 
          ImGui.dummy(1.0F, EfnWidgets.s(18.0F));
-         this.applySmoothScroll("card_" + var1.id(), var2);
+         this.applySmoothScroll("card_" + clientModule.id(), f);
       }
 
       ImGui.endChild();
-      if (var5) {
+      if (bl) {
          ImGui.endDisabled();
          ImGui.popStyleVar();
       }
@@ -1342,17 +1340,17 @@ public final class ClickGuiRenderer {
       this.endCard();
    }
 
-   private void renderResetAllChip(ClientModule var1, float var2, float var3, float var4) {
+   private void renderResetAllChip(ClientModule clientModule, float f, float g, float h) {
       float var5 = ImGui.getCursorPosY();
-      String var6 = "reset:" + var1.id();
+      String var6 = "reset:" + clientModule.id();
       String var7 = this.isConfirming(var6) ? "Confirm reset" : "Reset all";
       ImFont var8 = ImGuiManager.getInstance().smallFont();
       boolean var9 = pushFont(var8);
       float var10 = EfnWidgets.textWidth(var8, var7) + EfnWidgets.s(18.0F);
       float var11 = EfnWidgets.lineHeight(var8) + EfnWidgets.s(8.0F);
-      ImGui.setCursorPos(var2 + var3 - var10, var4 + (ImGui.getTextLineHeight() - var11) * 0.5F);
+      ImGui.setCursorPos(f + g - var10, h + (ImGui.getTextLineHeight() - var11) * 0.5F);
       if (EfnWidgets.chipButton("##reset_all", var7, var10, var11, this.isConfirming(var6)) && this.confirmClick(var6)) {
-         var1.resetSettings();
+         clientModule.resetSettings();
       }
 
       if (ImGui.isItemHovered(65536)) {
@@ -1366,26 +1364,26 @@ public final class ClickGuiRenderer {
       ImGui.setCursorPosY(var5);
    }
 
-   private boolean confirmClick(String var1) {
-      if (this.isConfirming(var1)) {
+   private boolean confirmClick(String string) {
+      if (this.isConfirming(string)) {
          this.pendingConfirm = null;
          return true;
       } else {
-         this.pendingConfirm = var1;
+         this.pendingConfirm = string;
          this.pendingConfirmAt = System.nanoTime();
          return false;
       }
    }
 
-   private boolean isConfirming(String var1) {
-      return var1.equals(this.pendingConfirm) && System.nanoTime() - this.pendingConfirmAt < 3000000000L;
+   private boolean isConfirming(String string) {
+      return string.equals(this.pendingConfirm) && System.nanoTime() - this.pendingConfirmAt < 3000000000L;
    }
 
-   private void sectionLabel(String var1, float var2) {
-      ImGui.setCursorPos(var2, ImGui.getCursorPosY() + EfnWidgets.s(16.0F));
+   private void sectionLabel(String string, float f) {
+      ImGui.setCursorPos(f, ImGui.getCursorPosY() + EfnWidgets.s(16.0F));
       boolean var3 = pushFont(ImGuiManager.getInstance().smallFont());
       ImGui.pushStyleColor(0, ImGui.getStyleColorVec4(1));
-      ImGui.textUnformatted(var1);
+      ImGui.textUnformatted(string);
       ImGui.popStyleColor();
       if (var3) {
          ImGui.popFont();
@@ -1395,25 +1393,25 @@ public final class ClickGuiRenderer {
       this.dividerPending = false;
    }
 
-   private float rowStart(float var1, float var2) {
+   private float rowStart(float f, float g) {
       float var3 = ImGui.getCursorPosY();
       if (this.dividerPending) {
          float var4 = ImGui.getWindowPosX();
          float var5 = ImGui.getCursorScreenPosY();
-         ImGui.getWindowDrawList().addLine(var4 + var1, var5, var4 + var1 + var2, var5, EfnWidgets.c(268435455), 1.0F);
+         ImGui.getWindowDrawList().addLine(var4 + f, var5, var4 + f + g, var5, EfnWidgets.c(268435455), 1.0F);
       }
 
       this.dividerPending = true;
       return var3;
    }
 
-   public static void rowLabel(String var0, float var1, float var2, float var3) {
-      ImGui.setCursorPos(var1, var2 + (var3 - ImGui.getTextLineHeight()) * 0.5F);
-      ImGui.textUnformatted(var0);
+   public static void rowLabel(String string, float f, float g, float h) {
+      ImGui.setCursorPos(f, g + (h - ImGui.getTextLineHeight()) * 0.5F);
+      ImGui.textUnformatted(string);
    }
 
-   private void openSettings(ClientModule var1) {
-      this.settingsModule = var1;
+   private void openSettings(ClientModule clientModule) {
+      this.settingsModule = clientModule;
       this.viewChangedAt = System.nanoTime();
       this.cardJustOpened = true;
    }
@@ -1444,8 +1442,8 @@ public final class ClickGuiRenderer {
       }
    }
 
-   private void renderFriendsCard(float var1, float var2, float var3) {
-      float[] var4 = this.beginCard("##friends_card", var2, var3);
+   private void renderFriendsCard(float f, float g, float h) {
+      float[] var4 = this.beginCard("##friends_card", g, h);
       float var5 = var4[0];
       float var6 = var4[1];
       float var7 = EfnWidgets.s(24.0F);
@@ -1517,30 +1515,30 @@ public final class ClickGuiRenderer {
          }
 
          ImGui.dummy(1.0F, EfnWidgets.s(12.0F));
-         this.applySmoothScroll("friends", var1);
+         this.applySmoothScroll("friends", f);
       }
 
       ImGui.endChild();
       this.endCard();
    }
 
-   private void renderFriendRow(FriendStore var1, String var2, float var3, float var4) {
-      ImGui.pushID("friend_" + var2);
+   private void renderFriendRow(FriendStore friendStore, String string, float f, float g) {
+      ImGui.pushID("friend_" + string);
       float var5 = EfnWidgets.s(48.0F);
       float var6 = ImGui.getCursorPosY();
-      ImGui.setCursorPos(var3, var6);
+      ImGui.setCursorPos(f, var6);
       float var7 = ImGui.getCursorScreenPosX();
       float var8 = ImGui.getCursorScreenPosY();
       ImGui.setNextItemAllowOverlap();
-      ImGui.invisibleButton("##row", var4, var5);
-      boolean var9 = ImGui.isMouseHoveringRect(var7, var8, var7 + var4, var8 + var5);
+      ImGui.invisibleButton("##row", g, var5);
+      boolean var9 = ImGui.isMouseHoveringRect(var7, var8, var7 + g, var8 + var5);
       float var10 = EfnWidgets.animate(ImGui.getItemID(), var9, 18.0F);
       ImDrawList var11 = ImGui.getWindowDrawList();
       if (var10 > 0.01F) {
          var11.addRectFilled(
             var7 - EfnWidgets.s(8.0F),
             var8,
-            var7 + var4 + EfnWidgets.s(8.0F),
+            var7 + g + EfnWidgets.s(8.0F),
             var8 + var5,
             EfnWidgets.c(EfnWidgets.withAlpha(218103807, var10)),
             EfnWidgets.s(10.0F)
@@ -1550,19 +1548,19 @@ public final class ClickGuiRenderer {
       float var12 = EfnWidgets.s(15.0F);
       float var13 = var7 + var12;
       float var14 = var8 + var5 * 0.5F;
-      int var15 = AVATAR_COLORS[Math.floorMod(var2.toLowerCase(Locale.ROOT).hashCode(), AVATAR_COLORS.length)];
+      int var15 = AVATAR_COLORS[Math.floorMod(string.toLowerCase(Locale.ROOT).hashCode(), AVATAR_COLORS.length)];
       var11.addCircleFilled(var13, var14, var12, EfnWidgets.c(var15), 32);
       ImFont var16 = ImGuiManager.getInstance().categoryFont();
-      String var17 = var2.substring(0, 1).toUpperCase(Locale.ROOT);
+      String var17 = string.substring(0, 1).toUpperCase(Locale.ROOT);
       EfnWidgets.text(var11, var16, var13 - EfnWidgets.textWidth(var16, var17) * 0.5F, var14 - EfnWidgets.lineHeight(var16) * 0.5F, -1, var17);
       ImFont var18 = ImGui.getFont();
-      EfnWidgets.text(var11, var18, var7 + var12 * 2.0F + EfnWidgets.s(12.0F), var8 + (var5 - EfnWidgets.lineHeight(var18)) * 0.5F, -461582, var2);
+      EfnWidgets.text(var11, var18, var7 + var12 * 2.0F + EfnWidgets.s(12.0F), var8 + (var5 - EfnWidgets.lineHeight(var18)) * 0.5F, -461582, string);
       float var19 = EfnWidgets.s(28.0F);
-      ImGui.setCursorPos(var3 + var4 - var19, var6 + (var5 - var19) * 0.5F);
+      ImGui.setCursorPos(f + g - var19, var6 + (var5 - var19) * 0.5F);
       float var20 = ImGui.getCursorScreenPosX();
       float var21 = ImGui.getCursorScreenPosY();
       if (ImGui.invisibleButton("##remove", var19, var19)) {
-         var1.remove(var2);
+         friendStore.remove(string);
       }
 
       float var22 = EfnWidgets.animate(ImGui.getItemID(), ImGui.isItemHovered(), 18.0F);
@@ -1577,14 +1575,14 @@ public final class ClickGuiRenderer {
       ImGui.popID();
    }
 
-   private void tryAddFriend(FriendStore var1) {
+   private void tryAddFriend(FriendStore friendStore) {
       String var2 = this.friendInput.get().trim();
       if (!FriendStore.isValidName(var2)) {
          this.friendMessage = "Use 1-16 letters, digits or _ (Bedrock names start with .)";
-      } else if (var1.isFriend(var2)) {
+      } else if (friendStore.isFriend(var2)) {
          this.friendMessage = var2 + " is already on your list";
       } else {
-         var1.add(var2);
+         friendStore.add(var2);
          this.friendInput.set("");
          this.friendMessage = null;
       }
@@ -1593,8 +1591,8 @@ public final class ClickGuiRenderer {
       this.focusFriendInput = true;
    }
 
-   private void renderConfigCard(float var1, float var2, float var3) {
-      float[] var4 = this.beginCard("##config_card", var2, var3);
+   private void renderConfigCard(float f, float g, float h) {
+      float[] var4 = this.beginCard("##config_card", g, h);
       float var5 = var4[0];
       float var6 = var4[1];
       float var7 = EfnWidgets.s(24.0F);
@@ -1735,19 +1733,19 @@ public final class ClickGuiRenderer {
          ImGui.dummy(1.0F, EfnWidgets.s(12.0F));
          float var34 = this.profileList.takeScrollTarget();
          if (!Float.isNaN(var34)) {
-            this.scroll.computeIfAbsent("profiles", var0 -> new float[2])[1] = var34;
+            this.scroll.computeIfAbsent("profiles", string -> new float[2])[1] = var34;
          }
 
-         this.applySmoothScroll("profiles", var1);
+         this.applySmoothScroll("profiles", f);
       }
 
       ImGui.endChild();
       this.endCard();
    }
 
-   private void tryCreateProfile(ConfigProfiles var1) {
+   private void tryCreateProfile(ConfigProfiles configProfiles) {
       try {
-         String var2 = var1.create(this.profileInput.get());
+         String var2 = configProfiles.create(this.profileInput.get());
          this.profileInput.set("");
          this.profileList.open(var2);
          this.setConfigMessage("Created " + var2 + " from the current modules", false);
@@ -1766,9 +1764,9 @@ public final class ClickGuiRenderer {
       }
    }
 
-   private void importProfile(Path var1) {
+   private void importProfile(Path path) {
       try {
-         String var2 = ConfigProfiles.getInstance().importFile(var1);
+         String var2 = ConfigProfiles.getInstance().importFile(path);
          this.profileList.open(var2);
          this.setConfigMessage("Imported " + var2 + " - press Load to use it", false);
       } catch (ProfileException var3) {
@@ -1780,7 +1778,7 @@ public final class ClickGuiRenderer {
       ConfigProfiles var1 = ConfigProfiles.getInstance();
 
       try {
-         String var2 = var1.importCode(MinecraftClient.method_1551().field_1774.method_1460());
+         String var2 = var1.importCode(MinecraftClient.getInstance().keyboard.getClipboard());
          ConfigProfiles.Profile var3 = var1.find(var2);
          var1.backup(var3 == null ? Set.of(ConfigProfiles.Part.MODULES) : var3.parts());
          var1.load(var2);
@@ -1791,36 +1789,36 @@ public final class ClickGuiRenderer {
       }
    }
 
-   private void saveAllConfigs(ModuleConfigStore var1) {
-      var1.save();
+   private void saveAllConfigs(ModuleConfigStore moduleConfigStore) {
+      moduleConfigStore.save();
       ThemeStore.get().save();
       HudTheme.get().save();
       HudLayoutStore.getInstance().save();
       FriendStore.getInstance().save();
-      if (var1.isReadOnly()) {
+      if (moduleConfigStore.isReadOnly()) {
          this.setConfigMessage("modules.json is unreadable, so it was left untouched", true);
       } else {
          this.setConfigMessage("Everything saved", false);
       }
    }
 
-   private void openProfilesFolder(ConfigProfiles var1) {
+   private void openProfilesFolder(ConfigProfiles configProfiles) {
       try {
-         Path var2 = var1.directory();
+         Path var2 = configProfiles.directory();
          Files.createDirectories(var2);
-         Util.method_668().method_60932(var2);
+         Util.getOperatingSystem().open(var2);
       } catch (RuntimeException | IOException var3) {
          this.setConfigMessage("Could not open the profiles folder", true);
       }
    }
 
-   private void setConfigMessage(String var1, boolean var2) {
-      this.configMessage = var1;
-      this.configMessageError = var2;
+   private void setConfigMessage(String string, boolean bl) {
+      this.configMessage = string;
+      this.configMessageError = bl;
       this.configMessageAt = System.nanoTime();
    }
 
-   private void renderThemeStudio(float var1, float var2, float var3) {
+   private void renderThemeStudio(float f, float g, float h) {
       ThemeStore var4 = ThemeStore.get();
       float var5 = easeOut(elapsed(this.previewChangedAt, 260.0F));
       this.panelRects.clear();
@@ -1829,18 +1827,18 @@ public final class ClickGuiRenderer {
       if (this.themeSurface == var4.cards) {
          ClientModule var6 = previewModule();
          if (var6 != null) {
-            this.renderModuleCard(var6, var1, var2 * var5, Math.min(var3, var5), true);
+            this.renderModuleCard(var6, f, g * var5, Math.min(h, var5), true);
          }
       } else {
-         this.renderModulePanels(var1, var2 * var5);
+         this.renderModulePanels(f, g * var5);
       }
 
       this.inspectMode = false;
-      this.renderInspector(var4, var1, var2);
+      this.renderInspector(var4, f, g);
       this.highlightSurfaces(var4);
    }
 
-   private void renderInspector(ThemeStore var1, float var2, float var3) {
+   private void renderInspector(ThemeStore themeStore, float f, float g) {
       float var4 = ImGui.getIO().getDisplaySizeX();
       float var5 = ImGui.getIO().getDisplaySizeY();
       float var6 = EfnWidgets.s(360.0F);
@@ -1852,11 +1850,11 @@ public final class ClickGuiRenderer {
          this.focusInspector = false;
       }
 
-      ImGui.pushStyleVar(0, var3);
+      ImGui.pushStyleVar(0, g);
       ImGui.pushStyleVar(2, 0.0F, 0.0F);
       ImGui.pushStyleVar(14, 0.0F, 0.0F);
       ImGui.pushStyleVar(3, cardRounding());
-      ImGui.pushStyleColor(2, GuiPalette.abgr(var1.cards.color.argbWithAlpha(255)));
+      ImGui.pushStyleColor(2, GuiPalette.abgr(themeStore.cards.color.argbWithAlpha(255)));
       byte var8 = 59;
       if (ImGui.begin("##theme_inspector", var8)) {
          float var9 = ImGui.getWindowPosX();
@@ -1880,19 +1878,19 @@ public final class ClickGuiRenderer {
             var13 = mutedParagraph("Click a panel or card on screen to edit it.", var11, var13, var6 - var11);
          }
 
-         var13 = this.renderSurfaceTabs(var1, var11, var13 + EfnWidgets.s(12.0F), var6 - var11 * 2.0F) + EfnWidgets.s(14.0F);
+         var13 = this.renderSurfaceTabs(themeStore, var11, var13 + EfnWidgets.s(12.0F), var6 - var11 * 2.0F) + EfnWidgets.s(14.0F);
          cardDivider(var11, var6, var13);
          ImGui.setCursorPos(0.0F, var13 + 1.0F);
          if (ImGui.beginChild("##inspector_body", var6, Math.max(1.0F, var7 - var13 - 1.0F - EfnWidgets.s(10.0F)), false, 24)) {
             float var14 = var6 - var11 * 2.0F;
             if (this.themeSurface == null) {
-               this.renderGlobalOptions(var1, var11, var14);
+               this.renderGlobalOptions(themeStore, var11, var14);
             } else {
                this.renderSurfaceOptions(this.themeSurface, var11, var14);
             }
 
             ImGui.dummy(1.0F, EfnWidgets.s(18.0F));
-            this.applySmoothScroll("inspector", var2);
+            this.applySmoothScroll("inspector", f);
          }
 
          ImGui.endChild();
@@ -1903,9 +1901,9 @@ public final class ClickGuiRenderer {
       ImGui.popStyleVar(4);
    }
 
-   private float renderSurfaceTabs(ThemeStore var1, float var2, float var3, float var4) {
+   private float renderSurfaceTabs(ThemeStore themeStore, float f, float g, float h) {
       String[] var5 = new String[]{"Global", "Panels", "Cards", "Tab bar"};
-      Surface[] var6 = new Surface[]{null, var1.panels, var1.cards, var1.tabBar};
+      Surface[] var6 = new Surface[]{null, themeStore.panels, themeStore.cards, themeStore.tabBar};
       int var7 = 0;
 
       for (int var8 = 1; var8 < var6.length; var8++) {
@@ -1915,63 +1913,74 @@ public final class ClickGuiRenderer {
       }
 
       float var10 = EfnWidgets.s(32.0F);
-      ImGui.setCursorPos(var2, var3);
-      int var9 = EfnWidgets.segmented("##surface", var5, var7, var4, var10);
+      ImGui.setCursorPos(f, g);
+      int var9 = EfnWidgets.segmented("##surface", var5, var7, h, var10);
       if (var9 >= 0) {
          this.selectSurface(var6[var9]);
       }
 
-      return var3 + var10;
+      return g + var10;
    }
 
-   private void renderGlobalOptions(ThemeStore var1, float var2, float var3) {
-      this.sectionLabel("Presets", var2);
-      this.renderPresetRow(var1, var2, var3);
-      this.sectionLabel("Colors", var2);
-      this.settingRows(var2, var3, var1.accent);
-      this.sectionLabel("Layout", var2);
-      this.settingRows(var2, var3, var1.rounding, var1.moduleDividers, var1.backgroundDim, var1.menuBlur);
-      this.sectionLabel("Interface", var2);
-      this.settingRows(var2, var3, var1.uiScale, var1.font, var1.animationSpeed, var1.animateLines, var1.customMainMenu, var1.communityPopup);
-      this.sectionLabel("Share", var2);
-      this.renderThemeActions(var1, var2, var3);
+   private void renderGlobalOptions(ThemeStore themeStore, float f, float g) {
+      this.sectionLabel("Presets", f);
+      this.renderPresetRow(themeStore, f, g);
+      this.sectionLabel("Colors", f);
+      this.settingRows(f, g, themeStore.accent);
+      this.sectionLabel("Layout", f);
+      this.settingRows(f, g, themeStore.rounding, themeStore.moduleDividers, themeStore.backgroundDim, themeStore.menuBlur);
+      this.sectionLabel("Interface", f);
+      this.settingRows(
+         f, g, themeStore.uiScale, themeStore.font, themeStore.animationSpeed, themeStore.animateLines, themeStore.customMainMenu, themeStore.communityPopup
+      );
+      this.sectionLabel("Share", f);
+      this.renderThemeActions(themeStore, f, g);
    }
 
-   private void renderSurfaceOptions(Surface var1, float var2, float var3) {
-      this.sectionLabel("Fill", var2);
-      this.settingRows(var2, var3, var1.color, var1.opacity);
-      this.sectionLabel("Background", var2);
-      this.settingRows(var2, var3, var1.background);
-      if (var1.isImage()) {
-         this.renderImageGallery(var1, var2, var3);
+   private void renderSurfaceOptions(Surface surface, float f, float g) {
+      this.sectionLabel("Fill", f);
+      this.settingRows(f, g, surface.color, surface.opacity);
+      this.sectionLabel("Background", f);
+      this.settingRows(f, g, surface.background);
+      if (surface.isImage()) {
+         this.renderImageGallery(surface, f, g);
       }
 
       this.settingRows(
-         var2, var3, var1.mapping, var1.coverage, var1.headerHeight, var1.imageOpacity, var1.imageScale, var1.imageX, var1.imageY, var1.lineOpacity
+         f,
+         g,
+         surface.mapping,
+         surface.coverage,
+         surface.headerHeight,
+         surface.imageOpacity,
+         surface.imageScale,
+         surface.imageX,
+         surface.imageY,
+         surface.lineOpacity
       );
-      if (var1.isScreenMapped()) {
+      if (surface.isScreenMapped()) {
          mutedParagraph(
             "Screen mapping pins the background to the screen, so each surface is a window onto it. Drag a panel to see another part.",
-            var2,
+            f,
             ImGui.getCursorPosY() + EfnWidgets.s(12.0F),
-            var2 + var3
+            f + g
          );
       }
    }
 
-   private void selectSurface(Surface var1) {
-      if (var1 != this.themeSurface) {
+   private void selectSurface(Surface surface) {
+      if (surface != this.themeSurface) {
          ThemeStore var2 = ThemeStore.get();
-         if (var1 == var2.cards != (this.themeSurface == var2.cards)) {
+         if (surface == var2.cards != (this.themeSurface == var2.cards)) {
             this.previewChangedAt = System.nanoTime();
          }
 
-         this.themeSurface = var1;
+         this.themeSurface = surface;
          this.focusInspector = true;
       }
    }
 
-   private void highlightSurfaces(ThemeStore var1) {
+   private void highlightSurfaces(ThemeStore themeStore) {
       float var3 = ImGui.getIO().getMousePosX();
       float var2;
       boolean var4 = contains(this.inspectorRect, var3, var2 = ImGui.getIO().getMousePosY()) || ImGui.isPopupOpen("", 3072);
@@ -1979,23 +1988,23 @@ public final class ClickGuiRenderer {
       if (!var4) {
          for (float[] var7 : this.panelRects) {
             if (contains(var7, var3, var2)) {
-               var5 = var1.panels;
+               var5 = themeStore.panels;
             }
          }
 
          if (contains(this.cardRect, var3, var2)) {
-            var5 = var1.cards;
+            var5 = themeStore.cards;
          }
 
          if (contains(this.tabBarRect, var3, var2)) {
-            var5 = var1.tabBar;
+            var5 = themeStore.tabBar;
          }
       }
 
       this.hoveredSurface = var5;
       if (var5 != null) {
          ImDrawList var15 = ImGui.getForegroundDrawList();
-         boolean var16 = var5 == var1.tabBar;
+         boolean var16 = var5 == themeStore.tabBar;
          String var8 = var5.label + (var16 ? "  \u00b7  right-click to edit" : "  \u00b7  click to edit");
          ImFont var9 = ImGuiManager.getInstance().smallFont();
          float var10 = EfnWidgets.textWidth(var9, var8) + EfnWidgets.s(18.0F);
@@ -2011,12 +2020,12 @@ public final class ClickGuiRenderer {
       }
    }
 
-   private void outlineSurface(Surface var1, float var2, float var3, float var4, float var5, float var6) {
+   private void outlineSurface(Surface surface, float f, float g, float h, float i, float j) {
       int var7;
-      if (var1 == this.themeSurface) {
+      if (surface == this.themeSurface) {
          var7 = EfnWidgets.withAlpha(GuiPalette.accent(), 0.8F);
       } else {
-         if (var1 != this.hoveredSurface) {
+         if (surface != this.hoveredSurface) {
             return;
          }
 
@@ -2026,8 +2035,8 @@ public final class ClickGuiRenderer {
       float var8 = EfnWidgets.s(3.0F);
       float var9 = var8 + EfnWidgets.s(2.0F);
       ImDrawList var10 = ImGui.getWindowDrawList();
-      var10.pushClipRect(var2 - var9, var3 - var9, var2 + var4 + var9, var3 + var5 + var9, false);
-      var10.addRect(var2 - var8, var3 - var8, var2 + var4 + var8, var3 + var5 + var8, var7, var6 + var8, 0, EfnWidgets.s(1.5F));
+      var10.pushClipRect(f - var9, g - var9, f + h + var9, g + i + var9, false);
+      var10.addRect(f - var8, g - var8, f + h + var8, g + i + var8, var7, j + var8, 0, EfnWidgets.s(1.5F));
       var10.popClipRect();
    }
 
@@ -2042,8 +2051,8 @@ public final class ClickGuiRenderer {
       }
    }
 
-   private static boolean contains(float[] var0, float var1, float var2) {
-      return var0 != null && var1 >= var0[0] && var1 <= var0[0] + var0[2] && var2 >= var0[1] && var2 <= var0[1] + var0[3];
+   private static boolean contains(float[] fs, float f, float g) {
+      return fs != null && f >= fs[0] && f <= fs[0] + fs[2] && g >= fs[1] && g <= fs[1] + fs[3];
    }
 
    private static ClientModule previewModule() {
@@ -2062,35 +2071,35 @@ public final class ClickGuiRenderer {
       return var0;
    }
 
-   private void settingRows(float var1, float var2, Setting... var3) {
-      for (Setting var7 : var3) {
+   private void settingRows(float f, float g, Setting... settings) {
+      for (Setting var7 : settings) {
          if (var7.isVisible()) {
             ImGui.pushID(var7.id());
-            this.renderSetting(null, var7, var1, var2);
+            this.renderSetting(null, var7, f, g);
             ImGui.popID();
          }
       }
    }
 
-   private void renderPresetRow(ThemeStore var1, float var2, float var3) {
+   private void renderPresetRow(ThemeStore themeStore, float f, float g) {
       float var4 = EfnWidgets.s(46.0F) + EfnWidgets.s(6.0F);
-      float var5 = this.rowStart(var2, var3);
+      float var5 = this.rowStart(f, g);
       float var6 = EfnWidgets.s(28.0F);
       float var7 = EfnWidgets.s(12.0F);
       ImDrawList var8 = ImGui.getWindowDrawList();
 
       for (int var9 = 0; var9 < ThemeStore.PRESETS.size(); var9++) {
          ThemeStore.Preset var10 = ThemeStore.PRESETS.get(var9);
-         ImGui.setCursorPos(var2 + var9 * (var6 + var7), var5 + (var4 - var6) * 0.5F);
+         ImGui.setCursorPos(f + var9 * (var6 + var7), var5 + (var4 - var6) * 0.5F);
          float var11 = ImGui.getCursorScreenPosX() + var6 * 0.5F;
          float var12 = ImGui.getCursorScreenPosY() + var6 * 0.5F;
          if (ImGui.invisibleButton("##preset" + var9, var6, var6)) {
-            var1.applyPreset(var10);
+            themeStore.applyPreset(var10);
          }
 
          boolean var13 = ImGui.isItemHovered();
          float var14 = EfnWidgets.animate(ImGui.getItemID(), var13, 18.0F);
-         boolean var15 = var1.matchesPreset(var10);
+         boolean var15 = themeStore.matchesPreset(var10);
          var8.addCircleFilled(var11, var12, var6 * 0.5F - EfnWidgets.s(3.0F), EfnWidgets.c(GuiPalette.abgr(var10.accent())), 32);
          if (var15) {
             var8.addCircle(var11, var12, var6 * 0.5F, EfnWidgets.c(-1), 32, EfnWidgets.s(1.5F));
@@ -2106,12 +2115,12 @@ public final class ClickGuiRenderer {
       ImGui.setCursorPos(0.0F, var5 + var4);
    }
 
-   private void renderImageGallery(Surface var1, float var2, float var3) {
+   private void renderImageGallery(Surface surface, float f, float g) {
       List var4 = ThemeImages.get().files();
       byte var5 = 3;
       float var6 = EfnWidgets.s(8.0F);
       float var7 = EfnWidgets.s(8.0F);
-      float var8 = (var3 - var6 * (var5 - 1)) / var5;
+      float var8 = (g - var6 * (var5 - 1)) / var5;
       float var9 = var8 * 0.6F;
       float var10 = ImGui.getCursorPosY() + EfnWidgets.s(4.0F);
       ImDrawList var11 = ImGui.getWindowDrawList();
@@ -2120,7 +2129,7 @@ public final class ClickGuiRenderer {
       int var14 = var4.size() + 1;
 
       for (int var15 = 0; var15 < var14; var15++) {
-         ImGui.setCursorPos(var2 + var15 % var5 * (var8 + var6), var10 + var15 / var5 * (var9 + var6));
+         ImGui.setCursorPos(f + var15 % var5 * (var8 + var6), var10 + var15 / var5 * (var9 + var6));
          float var16 = ImGui.getCursorScreenPosX();
          float var17 = ImGui.getCursorScreenPosY();
          String var18 = var15 == 0 ? null : (String)var4.get(var15 - 1);
@@ -2201,7 +2210,7 @@ public final class ClickGuiRenderer {
                   );
                }
 
-               if (var18.equals(var1.image.get())) {
+               if (var18.equals(surface.image.get())) {
                   var11.addRect(
                      var16 - EfnWidgets.s(1.0F),
                      var17 - EfnWidgets.s(1.0F),
@@ -2229,7 +2238,7 @@ public final class ClickGuiRenderer {
                   if (var20) {
                      this.pendingConfirm = null;
                   } else {
-                     var1.image.set(var18);
+                     surface.image.set(var18);
                   }
                }
 
@@ -2253,53 +2262,53 @@ public final class ClickGuiRenderer {
       float var45 = EfnWidgets.lineHeight(var12);
       float var46 = ImGui.getWindowPosX();
       float var47 = ImGui.getWindowPosY() - ImGui.getScrollY();
-      EfnWidgets.text(var11, var12, var46 + var2, var47 + var40, -4542808, var41);
-      ImGui.setCursorPos(var2 + var43, var40);
+      EfnWidgets.text(var11, var12, var46 + f, var47 + var40, -4542808, var41);
+      ImGui.setCursorPos(f + var43, var40);
       if (ImGui.invisibleButton("##openfolder", var44, var45)) {
          ThemeImages.get().openFolder();
       }
 
       float var48 = EfnWidgets.animate(ImGui.getItemID(), ImGui.isItemHovered(), 18.0F);
-      EfnWidgets.text(var11, var12, var46 + var2 + var43, var47 + var40, EfnTheme.lerpColor(GuiPalette.accent(), GuiPalette.accentHover(), var48), var42);
+      EfnWidgets.text(var11, var12, var46 + f + var43, var47 + var40, EfnTheme.lerpColor(GuiPalette.accent(), GuiPalette.accentHover(), var48), var42);
       ImGui.setCursorPos(0.0F, var40 + var45 + EfnWidgets.s(8.0F));
    }
 
-   private void renderThemeActions(ThemeStore var1, float var2, float var3) {
+   private void renderThemeActions(ThemeStore themeStore, float f, float g) {
       float var4 = EfnWidgets.s(8.0F);
       float var5 = EfnWidgets.s(34.0F);
-      float var6 = (var3 - var4 * 2.0F) / 3.0F;
+      float var6 = (g - var4 * 2.0F) / 3.0F;
       float var7 = ImGui.getCursorPosY() + EfnWidgets.s(6.0F);
-      ImGui.setCursorPos(var2, var7);
+      ImGui.setCursorPos(f, var7);
       if (EfnWidgets.chipButton("##copytheme", "Copy theme", var6, var5, false)) {
-         MinecraftClient.method_1551().field_1774.method_1455(var1.exportString());
+         MinecraftClient.getInstance().keyboard.setClipboard(themeStore.exportString());
          this.showThemeMessage("Theme copied to the clipboard", false);
       }
 
-      ImGui.setCursorPos(var2 + var6 + var4, var7);
+      ImGui.setCursorPos(f + var6 + var4, var7);
       if (EfnWidgets.chipButton("##pastetheme", "Paste theme", var6, var5, false)) {
-         boolean var8 = var1.importString(MinecraftClient.method_1551().field_1774.method_1460());
+         boolean var8 = themeStore.importString(MinecraftClient.getInstance().keyboard.getClipboard());
          this.showThemeMessage(var8 ? "Theme applied from the clipboard" : "The clipboard doesn't contain an EFN theme", !var8);
       }
 
-      ImGui.setCursorPos(var2 + (var6 + var4) * 2.0F, var7);
+      ImGui.setCursorPos(f + (var6 + var4) * 2.0F, var7);
       if (EfnWidgets.chipButton("##resettheme", "Reset", var6, var5, false)) {
-         var1.resetToDefaults();
+         themeStore.resetToDefaults();
          this.showThemeMessage("Theme reset to the defaults", false);
       }
 
       ImGui.setCursorPos(0.0F, var7 + var5);
    }
 
-   private void showThemeMessage(String var1, boolean var2) {
-      this.themeMessage = var1;
-      this.themeMessageError = var2;
+   private void showThemeMessage(String string, boolean bl) {
+      this.themeMessage = string;
+      this.themeMessageError = bl;
       this.themeMessageAt = System.nanoTime();
    }
 
-   public void onFilesDropped(List<Path> var1) {
-      if (!var1.isEmpty()) {
+   public void onFilesDropped(List<Path> list) {
+      if (!list.isEmpty()) {
          if (this.tab == ClickGuiRenderer.Tab.CONFIG) {
-            for (Path var3 : var1) {
+            for (Path var3 : list) {
                if (var3.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".json")) {
                   this.importProfile(var3);
                   return;
@@ -2307,7 +2316,7 @@ public final class ClickGuiRenderer {
             }
          }
 
-         for (Path var5 : var1) {
+         for (Path var5 : list) {
             if (ThemeImages.isImage(var5)) {
                if (this.tab == ClickGuiRenderer.Tab.HUD) {
                   this.importHudHeaderImage(var5);
@@ -2329,8 +2338,8 @@ public final class ClickGuiRenderer {
       }
    }
 
-   private void importHudHeaderImage(Path var1) {
-      String var2 = ThemeImages.get().importFile(var1);
+   private void importHudHeaderImage(Path path) {
+      String var2 = ThemeImages.get().importFile(path);
       if (var2 == null) {
          this.showHudMessage("Only PNG, JPG and GIF images can be used", true);
       } else {
@@ -2345,8 +2354,8 @@ public final class ClickGuiRenderer {
       }
    }
 
-   private void importHeaderImage(Path var1) {
-      String var2 = ThemeImages.get().importFile(var1);
+   private void importHeaderImage(Path path) {
+      String var2 = ThemeImages.get().importFile(path);
       if (var2 == null) {
          this.showThemeMessage("Only PNG, JPG and GIF images can be used", true);
       } else {
@@ -2358,9 +2367,9 @@ public final class ClickGuiRenderer {
       }
    }
 
-   private void deleteImage(String var1) {
-      boolean var3 = ThemeImages.get().delete(var1);
-      String var2 = var3 ? "Deleted " + var1 : "Couldn't delete " + var1;
+   private void deleteImage(String string) {
+      boolean var3 = ThemeImages.get().delete(string);
+      String var2 = var3 ? "Deleted " + string : "Couldn't delete " + string;
       if (this.tab == ClickGuiRenderer.Tab.HUD) {
          this.showHudMessage(var2, !var3);
       } else {
@@ -2368,76 +2377,76 @@ public final class ClickGuiRenderer {
       }
    }
 
-   private static void drawCheck(float var0, float var1, float var2, int var3) {
+   private static void drawCheck(float f, float g, float h, int i) {
       ImDrawList var4 = ImGui.getWindowDrawList();
-      var4.addRectFilled(var0, var1, var0 + 16.0F, var1 + 16.0F, -13226454, 4.0F);
-      var4.addRect(var0 + 0.5F, var1 + 0.5F, var0 + 16.0F - 0.5F, var1 + 16.0F - 0.5F, EfnTheme.lerpColor(452984831, var3, var2), 4.0F);
-      if (var2 > 0.01F) {
-         var4.addLine(var0 + 4.0F, var1 + 8.0F, var0 + 7.0F, var1 + 11.0F, var3, 2.0F * var2);
-         var4.addLine(var0 + 7.0F, var1 + 11.0F, var0 + 12.0F, var1 + 5.0F, var3, 2.0F * var2);
+      var4.addRectFilled(f, g, f + 16.0F, g + 16.0F, -13226454, 4.0F);
+      var4.addRect(f + 0.5F, g + 0.5F, f + 16.0F - 0.5F, g + 16.0F - 0.5F, EfnTheme.lerpColor(452984831, i, h), 4.0F);
+      if (h > 0.01F) {
+         var4.addLine(f + 4.0F, g + 8.0F, f + 7.0F, g + 11.0F, i, 2.0F * h);
+         var4.addLine(f + 7.0F, g + 11.0F, f + 12.0F, g + 5.0F, i, 2.0F * h);
       }
    }
 
-   static float smooth(float var0, float var1, float var2, float var3) {
-      return var0 + (var1 - var0) * (1.0F - (float)Math.exp(-var3 * Math.max(0.0F, var2)));
+   static float smooth(float f, float g, float h, float i) {
+      return f + (g - f) * (1.0F - (float)Math.exp(-i * Math.max(0.0F, h)));
    }
 
-   public static float animationDelta(float var0) {
+   public static float animationDelta(float f) {
       float var1 = GuiPalette.animationSpeed();
-      return var1 <= 0.0F ? 1.0F : var0 * var1;
+      return var1 <= 0.0F ? 1.0F : f * var1;
    }
 
-   public static float elapsed(long var0, float var2) {
+   public static float elapsed(long l, float f) {
       float var3 = GuiPalette.animationSpeed();
-      return var3 <= 0.0F ? 1.0F : Math.min(1.0F, (float)(System.nanoTime() - var0) * var3 / (var2 * 1000000.0F));
+      return var3 <= 0.0F ? 1.0F : Math.min(1.0F, (float)(System.nanoTime() - l) * var3 / (f * 1000000.0F));
    }
 
-   public static float easeOut(float var0) {
-      float var1 = 1.0F - var0;
+   public static float easeOut(float f) {
+      float var1 = 1.0F - f;
       return 1.0F - var1 * var1 * var1;
    }
 
-   private void renderKeybindRow(ClientModule var1, float var2, float var3) {
+   private void renderKeybindRow(ClientModule clientModule, float f, float g) {
       float var5 = EfnWidgets.s(46.0F);
-      float var6 = this.rowStart(var2, var3);
-      boolean var4 = this.listeningModule == var1;
+      float var6 = this.rowStart(f, g);
+      boolean var4 = this.listeningModule == clientModule;
       if (var4) {
          if (this.listeningFirstFrame) {
             this.listeningFirstFrame = false;
          } else {
             int var8 = scanPressedKey();
             if (var8 == 256) {
-               var1.setKeybind(-1);
+               clientModule.setKeybind(-1);
                this.listeningModule = null;
                var4 = false;
             } else if (var8 != -1) {
-               var1.setKeybind(var8);
+               clientModule.setKeybind(var8);
                this.listeningModule = null;
                var4 = false;
             }
          }
       }
 
-      rowLabel("Key", var2, var6, var5);
+      rowLabel("Key", f, var6, var5);
       float var14 = EfnWidgets.s(30.0F);
       float var9 = EfnWidgets.s(96.0F);
       float var10 = EfnWidgets.s(76.0F);
       float var11 = EfnWidgets.s(8.0F);
       float var12 = var6 + (var5 - var14) * 0.5F;
-      if (!var1.isAction()) {
-         ImGui.setCursorPos(var2 + var3 - var9 - var11 - var10, var12);
-         if (EfnWidgets.chipButton("##bindmode", var1.isHoldMode() ? "Hold" : "Toggle", var10, var14, false)) {
-            var1.setHoldMode(!var1.isHoldMode());
+      if (!clientModule.isAction()) {
+         ImGui.setCursorPos(f + g - var9 - var11 - var10, var12);
+         if (EfnWidgets.chipButton("##bindmode", clientModule.isHoldMode() ? "Hold" : "Toggle", var10, var14, false)) {
+            clientModule.setHoldMode(!clientModule.isHoldMode());
          }
       }
 
-      String var13 = var4 ? "Press a key..." : (var1.keybind() == -1 ? "None" : keyName(var1.keybind()));
-      ImGui.setCursorPos(var2 + var3 - var9, var12);
+      String var13 = var4 ? "Press a key..." : (clientModule.keybind() == -1 ? "None" : keyName(clientModule.keybind()));
+      ImGui.setCursorPos(f + g - var9, var12);
       if (EfnWidgets.chipButton("##bind", var13, var9, var14, var4)) {
          if (var4) {
             this.listeningModule = null;
          } else {
-            this.listeningModule = var1;
+            this.listeningModule = clientModule;
             this.listeningFirstFrame = true;
             this.listeningKeySetting = null;
             this.listeningKeyFirstFrame = false;
@@ -2475,7 +2484,7 @@ public final class ClickGuiRenderer {
    }
 
    public static int scanPressedKey() {
-      long var0 = MinecraftClient.method_1551().method_22683().method_4490();
+      long var0 = MinecraftClient.getInstance().getWindow().getHandle();
 
       for (int var2 = 32; var2 <= 348; var2++) {
          if (GLFW.glfwGetKey(var0, var2) == 1) {
@@ -2492,19 +2501,19 @@ public final class ClickGuiRenderer {
       return -1;
    }
 
-   private String keyLabel(int var1) {
-      String var2 = (String)this.keyLabels.get(var1);
+   private String keyLabel(int i) {
+      String var2 = this.keyLabels.get(i);
       if (var2 == null) {
-         var2 = keyName(var1);
-         this.keyLabels.put(var1, var2);
+         var2 = keyName(i);
+         this.keyLabels.put(i, var2);
       }
 
       return var2;
    }
 
-   public static String keyName(int var0) {
-      if (var0 >= 1000) {
-         int var2 = var0 - 1000;
+   public static String keyName(int i) {
+      if (i >= 1000) {
+         int var2 = i - 1000;
 
          return switch (var2) {
             case 0 -> "LMB";
@@ -2514,10 +2523,10 @@ public final class ClickGuiRenderer {
          };
       } else {
          String var1;
-         if ((var0 >= 39 && var0 <= 96 || var0 >= 161 && var0 <= 162) && (var1 = GLFW.glfwGetKeyName(var0, -1)) != null && !var1.isBlank()) {
+         if ((i >= 39 && i <= 96 || i >= 161 && i <= 162) && (var1 = GLFW.glfwGetKeyName(i, -1)) != null && !var1.isBlank()) {
             return var1.toUpperCase(Locale.ROOT);
          } else {
-            return switch (var0) {
+            return switch (i) {
                case 32 -> "SPACE";
                case 256 -> "ESC";
                case 257 -> "ENTER";
@@ -2552,31 +2561,31 @@ public final class ClickGuiRenderer {
                case 344 -> "R SHIFT";
                case 345 -> "R CTRL";
                case 346 -> "R ALT";
-               default -> "K" + var0;
+               default -> "K" + i;
             };
          }
       }
    }
 
-   private void renderModuleConfigActions(ClientModule var1, float var2, float var3) {
+   private void renderModuleConfigActions(ClientModule clientModule, float f, float g) {
       float var4 = EfnWidgets.s(8.0F);
       float var5 = EfnWidgets.s(36.0F);
-      float var6 = (var3 - var4) * 0.5F;
+      float var6 = (g - var4) * 0.5F;
       float var7 = ImGui.getCursorPosY() + EfnWidgets.s(6.0F);
-      ImGui.setCursorPos(var2, var7);
+      ImGui.setCursorPos(f, var7);
       if (EfnWidgets.chipButton("##copy_config", "Copy Config", var6, var5, true)) {
-         this.copyModuleConfig(var1);
+         this.copyModuleConfig(clientModule);
       }
 
       if (ImGui.isItemHovered(65536)) {
          showTooltip("Copy this module's settings as a short code");
       }
 
-      String var8 = "paste:" + var1.id();
+      String var8 = "paste:" + clientModule.id();
       boolean var9 = this.isConfirming(var8);
-      ImGui.setCursorPos(var2 + var6 + var4, var7);
+      ImGui.setCursorPos(f + var6 + var4, var7);
       if (EfnWidgets.chipButton("##paste_config", var9 ? "Confirm paste" : "Paste Config", var6, var5, var9) && this.confirmClick(var8)) {
-         this.pasteModuleConfig(var1);
+         this.pasteModuleConfig(clientModule);
       }
 
       if (ImGui.isItemHovered(65536)) {
@@ -2585,8 +2594,8 @@ public final class ClickGuiRenderer {
 
       var7 += var5 + EfnWidgets.s(8.0F);
       ImFont var10 = ImGuiManager.getInstance().smallFont();
-      if (var1.id().equals(this.moduleCodeFor) && this.moduleCodeMessage != null && elapsed(this.moduleCodeAt, 2500.0F) < 1.0F) {
-         ImGui.setCursorPos(var2, var7);
+      if (clientModule.id().equals(this.moduleCodeFor) && this.moduleCodeMessage != null && elapsed(this.moduleCodeAt, 2500.0F) < 1.0F) {
+         ImGui.setCursorPos(f, var7);
          boolean var11 = pushFont(var10);
          ImGui.pushStyleColor(0, this.moduleCodeError ? -10856974 : -4542808);
          ImGui.textUnformatted(this.moduleCodeMessage);
@@ -2599,39 +2608,39 @@ public final class ClickGuiRenderer {
       ImGui.setCursorPos(0.0F, var7 + EfnWidgets.lineHeight(var10));
    }
 
-   private void copyModuleConfig(ClientModule var1) {
-      String var2 = ModuleCodes.copy(var1);
-      MinecraftClient.method_1551().field_1774.method_1455(var2);
-      this.setModuleCodeMessage(var1, "Copied, " + var2.length() + " characters", false);
+   private void copyModuleConfig(ClientModule clientModule) {
+      String var2 = ModuleCodes.copy(clientModule);
+      MinecraftClient.getInstance().keyboard.setClipboard(var2);
+      this.setModuleCodeMessage(clientModule, "Copied, " + var2.length() + " characters", false);
    }
 
-   private void pasteModuleConfig(ClientModule var1) {
+   private void pasteModuleConfig(ClientModule clientModule) {
       try {
-         ModuleCodes.paste(var1, MinecraftClient.method_1551().field_1774.method_1460());
-         this.setModuleCodeMessage(var1, "Config pasted", false);
+         ModuleCodes.paste(clientModule, MinecraftClient.getInstance().keyboard.getClipboard());
+         this.setModuleCodeMessage(clientModule, "Config pasted", false);
       } catch (ProfileException var3) {
-         this.setModuleCodeMessage(var1, var3.getMessage(), true);
+         this.setModuleCodeMessage(clientModule, var3.getMessage(), true);
       }
    }
 
-   private void setModuleCodeMessage(ClientModule var1, String var2, boolean var3) {
-      this.moduleCodeFor = var1.id();
-      this.moduleCodeMessage = var2;
-      this.moduleCodeError = var3;
+   private void setModuleCodeMessage(ClientModule clientModule, String string, boolean bl) {
+      this.moduleCodeFor = clientModule.id();
+      this.moduleCodeMessage = string;
+      this.moduleCodeError = bl;
       this.moduleCodeAt = System.nanoTime();
    }
 
-   private void renderHudActions(float var1, float var2) {
+   private void renderHudActions(float f, float g) {
       float var3 = EfnWidgets.s(8.0F);
       float var4 = EfnWidgets.s(36.0F);
-      float var5 = (var2 - var3) * 0.5F;
+      float var5 = (g - var3) * 0.5F;
       float var6 = ImGui.getCursorPosY() + EfnWidgets.s(14.0F);
-      ImGui.setCursorPos(var1, var6);
+      ImGui.setCursorPos(f, var6);
       if (EfnWidgets.chipButton("##editlayout", "Edit Layout", var5, var4, true)) {
-         MinecraftClient.method_1551().method_1507(new HudEditorScreen());
+         MinecraftClient.getInstance().setScreen(new HudEditorScreen());
       }
 
-      ImGui.setCursorPos(var1 + var5 + var3, var6);
+      ImGui.setCursorPos(f + var5 + var3, var6);
       if (EfnWidgets.chipButton("##resetlayout", "Reset Layout", var5, var4, false)) {
          HudLayoutStore.getInstance().resetToDefaults(ImGui.getIO().getDisplaySizeX(), ImGui.getIO().getDisplaySizeY());
       }
@@ -2639,8 +2648,8 @@ public final class ClickGuiRenderer {
       ImGui.setCursorPos(0.0F, var6 + var4);
    }
 
-   private static boolean isHudModule(ClientModule var0) {
-      return var0.category() == ModuleCategory.CLIENT && "HUD".equals(var0.name());
+   private static boolean isHudModule(ClientModule clientModule) {
+      return clientModule.category() == ModuleCategory.CLIENT && "HUD".equals(clientModule.name());
    }
 
    private static ClientModule hudModule() {
@@ -2653,8 +2662,8 @@ public final class ClickGuiRenderer {
       return null;
    }
 
-   private void renderHudStudio(float var1, float var2, float var3) {
-      this.renderHudInspector(var1, var2);
+   private void renderHudStudio(float f, float g, float h) {
+      this.renderHudInspector(f, g);
       this.highlightHudElements();
       float var4 = ImGui.getIO().getDisplaySizeX();
       float var5 = ImGui.getIO().getDisplaySizeY();
@@ -2665,7 +2674,7 @@ public final class ClickGuiRenderer {
       return ImGui.isWindowHovered(4) || ImGui.isAnyItemActive() || ImGui.isPopupOpen("", 3072);
    }
 
-   private void renderHudInspector(float var1, float var2) {
+   private void renderHudInspector(float f, float g) {
       float var3 = ImGui.getIO().getDisplaySizeX();
       float var4 = ImGui.getIO().getDisplaySizeY();
       float var5 = EfnWidgets.s(360.0F);
@@ -2677,7 +2686,7 @@ public final class ClickGuiRenderer {
          this.focusHudInspector = false;
       }
 
-      ImGui.pushStyleVar(0, var2);
+      ImGui.pushStyleVar(0, g);
       ImGui.pushStyleVar(2, 0.0F, 0.0F);
       ImGui.pushStyleVar(14, 0.0F, 0.0F);
       ImGui.pushStyleVar(3, cardRounding());
@@ -2704,7 +2713,7 @@ public final class ClickGuiRenderer {
             var12 = mutedParagraph("Click an element on screen to edit it.", var10, var12, var5 - var10);
          }
 
-         var12 = this.renderHudElementTabs(var10, var12 + EfnWidgets.s(12.0F), var5 - var10 * 2.0F, var1) + EfnWidgets.s(14.0F);
+         var12 = this.renderHudElementTabs(var10, var12 + EfnWidgets.s(12.0F), var5 - var10 * 2.0F, f) + EfnWidgets.s(14.0F);
          cardDivider(var10, var5, var12);
          ImGui.setCursorPos(0.0F, var12 + 1.0F);
          if (ImGui.beginChild("##hud_inspector_body", var5, Math.max(1.0F, var6 - var12 - 1.0F - EfnWidgets.s(10.0F)), false, 24)) {
@@ -2717,7 +2726,7 @@ public final class ClickGuiRenderer {
             }
 
             ImGui.dummy(1.0F, EfnWidgets.s(18.0F));
-            this.applySmoothScroll("hud_inspector", var1);
+            this.applySmoothScroll("hud_inspector", f);
          }
 
          ImGui.endChild();
@@ -2728,7 +2737,7 @@ public final class ClickGuiRenderer {
       ImGui.popStyleVar(4);
    }
 
-   private float renderHudElementTabs(float var1, float var2, float var3, float var4) {
+   private float renderHudElementTabs(float f, float g, float h, float i) {
       @Environment(EnvType.CLIENT)
       record Item(String id, String label) {
       }
@@ -2755,15 +2764,15 @@ public final class ClickGuiRenderer {
       float var8 = EfnWidgets.s(24.0F);
       float var9 = EfnWidgets.s(6.0F);
       float var10 = EfnWidgets.s(6.0F);
-      float var11 = var1;
-      float var12 = var2;
+      float var11 = f;
+      float var12 = g;
 
       try {
          for (Item var14 : var5) {
             boolean var15 = Objects.equals(var14.id(), this.hudElementId);
             float var16 = EfnWidgets.textWidth(var6, var14.label()) + EfnWidgets.s(18.0F);
-            if (var11 + var16 > var1 + var3 && var11 > var1) {
-               var11 = var1;
+            if (var11 + var16 > f + h && var11 > f) {
+               var11 = f;
                var12 += var8 + var10;
             }
 
@@ -2783,105 +2792,105 @@ public final class ClickGuiRenderer {
       return var12 + var8;
    }
 
-   private void renderHudGeneralOptions(float var1, float var2) {
+   private void renderHudGeneralOptions(float f, float g) {
       ClientModule var3 = hudModule();
       if (var3 != null) {
-         this.sectionLabel("Settings", var1);
-         this.settingRows(var1, var2, var3.settings().toArray(new Setting[0]));
+         this.sectionLabel("Settings", f);
+         this.settingRows(f, g, var3.settings().toArray(new Setting[0]));
       }
 
-      this.sectionLabel("Layout", var1);
-      this.settingRows(var1, var2, HudTheme.get().font, HudTheme.get().rounding);
+      this.sectionLabel("Layout", f);
+      this.settingRows(f, g, HudTheme.get().font, HudTheme.get().rounding);
       float var4 = ImGui.getCursorPosY() + EfnWidgets.s(6.0F);
       float var5 = EfnWidgets.s(34.0F);
-      ImGui.setCursorPos(var1, var4);
-      if (EfnWidgets.chipButton("##resethudlayout", "Reset positions & sizes", var2, var5, false)) {
+      ImGui.setCursorPos(f, var4);
+      if (EfnWidgets.chipButton("##resethudlayout", "Reset positions & sizes", g, var5, false)) {
          HudLayoutStore.getInstance().resetToDefaults(ImGui.getIO().getDisplaySizeX(), ImGui.getIO().getDisplaySizeY());
          this.showHudMessage("HUD layout reset", false);
       }
 
       ImGui.setCursorPos(0.0F, var4 + var5);
-      this.sectionLabel("Share", var1);
-      this.renderHudThemeActions(var1, var2);
+      this.sectionLabel("Share", f);
+      this.renderHudThemeActions(f, g);
    }
 
-   private void renderHudElementOptions(String var1, float var2, float var3) {
+   private void renderHudElementOptions(String string, float f, float g) {
       ClientModule var9 = hudModule();
       HudModule var7;
       List var8;
-      if (var9 instanceof HudModule && !(var8 = (var7 = (HudModule)var9).elementSettings(var1)).isEmpty()) {
-         this.sectionLabel(hudOptionsTitle(var1), var2);
-         this.settingRows(var2, var3, var8.toArray(new Setting[0]));
+      if (var9 instanceof HudModule && !(var8 = (var7 = (HudModule)var9).elementSettings(string)).isEmpty()) {
+         this.sectionLabel(hudOptionsTitle(string), f);
+         this.settingRows(f, g, var8.toArray(new Setting[0]));
       }
 
       RegionMapModule var6;
-      if ("region_map".equals(var1) && (var6 = ModuleRegistry.get(RegionMapModule.class)) != null) {
-         this.renderInlineModuleToggle(var6, var2, var3);
-         this.sectionLabel("Settings", var2);
-         this.settingRows(var2, var3, var6.settings().toArray(new Setting[0]));
+      if ("region_map".equals(string) && (var6 = ModuleRegistry.get(RegionMapModule.class)) != null) {
+         this.renderInlineModuleToggle(var6, f, g);
+         this.sectionLabel("Settings", f);
+         this.settingRows(f, g, var6.settings().toArray(new Setting[0]));
       }
 
-      ClientModule var5 = (ClientModule)("radar".equals(var1)
+      ClientModule var5 = (ClientModule)("radar".equals(string)
          ? ModuleRegistry.get(RadarModule.class)
-         : ("hotkeys".equals(var1) ? ModuleRegistry.get(HotkeysModule.class) : null));
+         : ("hotkeys".equals(string) ? ModuleRegistry.get(HotkeysModule.class) : null));
       if (var5 != null) {
-         this.renderInlineModuleToggle(var5, var2, var3);
+         this.renderInlineModuleToggle(var5, f, g);
          if (!var5.settings().isEmpty()) {
-            this.sectionLabel("Settings", var2);
-            this.settingRows(var2, var3, var5.settings().toArray(new Setting[0]));
+            this.sectionLabel("Settings", f);
+            this.settingRows(f, g, var5.settings().toArray(new Setting[0]));
          }
       }
 
       Surface var4;
-      if ((var4 = HudTheme.get().forElementId(var1)) != null) {
-         this.renderSurfaceOptions(var4, var2, var3);
+      if ((var4 = HudTheme.get().forElementId(string)) != null) {
+         this.renderSurfaceOptions(var4, f, g);
       }
    }
 
-   private static String hudOptionsTitle(String var0) {
-      return switch (var0) {
+   private static String hudOptionsTitle(String string) {
+      return switch (string) {
          case "toggle_toasts" -> "Style";
          case "target_card", "armor_status", "item_cooldowns" -> "Options";
          default -> "Show";
       };
    }
 
-   private void renderInlineModuleToggle(ClientModule var1, float var2, float var3) {
+   private void renderInlineModuleToggle(ClientModule clientModule, float f, float g) {
       float var4 = EfnWidgets.s(46.0F);
-      float var5 = this.rowStart(var2, var3);
-      rowLabel("Active", var2, var5, var4);
+      float var5 = this.rowStart(f, g);
+      rowLabel("Active", f, var5, var4);
       float var6 = EfnWidgets.s(40.0F);
       float var7 = EfnWidgets.s(22.0F);
-      ImGui.setCursorPos(var2 + var3 - var6, var5 + (var4 - var7) * 0.5F);
+      ImGui.setCursorPos(f + g - var6, var5 + (var4 - var7) * 0.5F);
       float var8 = ImGui.getCursorScreenPosX();
       float var9 = ImGui.getCursorScreenPosY();
       if (ImGui.invisibleButton("##active", var6, var7)) {
-         var1.toggle();
+         clientModule.toggle();
       }
 
-      EfnWidgets.drawSwitch(ImGui.getWindowDrawList(), var8, var9, var6, var7, EfnWidgets.animate(ImGui.getItemID(), var1.isEnabled(), 16.0F));
+      EfnWidgets.drawSwitch(ImGui.getWindowDrawList(), var8, var9, var6, var7, EfnWidgets.animate(ImGui.getItemID(), clientModule.isEnabled(), 16.0F));
       ImGui.setCursorPos(0.0F, var5 + var4);
    }
 
-   private void renderHudThemeActions(float var1, float var2) {
+   private void renderHudThemeActions(float f, float g) {
       HudTheme var3 = HudTheme.get();
       float var4 = EfnWidgets.s(8.0F);
       float var5 = EfnWidgets.s(34.0F);
-      float var6 = (var2 - var4 * 2.0F) / 3.0F;
+      float var6 = (g - var4 * 2.0F) / 3.0F;
       float var7 = ImGui.getCursorPosY() + EfnWidgets.s(6.0F);
-      ImGui.setCursorPos(var1, var7);
+      ImGui.setCursorPos(f, var7);
       if (EfnWidgets.chipButton("##copyhudtheme", "Copy theme", var6, var5, false)) {
-         MinecraftClient.method_1551().field_1774.method_1455(var3.exportString());
+         MinecraftClient.getInstance().keyboard.setClipboard(var3.exportString());
          this.showHudMessage("HUD theme copied to the clipboard", false);
       }
 
-      ImGui.setCursorPos(var1 + var6 + var4, var7);
+      ImGui.setCursorPos(f + var6 + var4, var7);
       if (EfnWidgets.chipButton("##pastehudtheme", "Paste theme", var6, var5, false)) {
-         boolean var8 = var3.importString(MinecraftClient.method_1551().field_1774.method_1460());
+         boolean var8 = var3.importString(MinecraftClient.getInstance().keyboard.getClipboard());
          this.showHudMessage(var8 ? "HUD theme applied from the clipboard" : "The clipboard doesn't contain an EFN HUD theme", !var8);
       }
 
-      ImGui.setCursorPos(var1 + (var6 + var4) * 2.0F, var7);
+      ImGui.setCursorPos(f + (var6 + var4) * 2.0F, var7);
       if (EfnWidgets.chipButton("##resethudtheme", "Reset", var6, var5, false)) {
          var3.resetToDefaults();
          this.showHudMessage("HUD theme reset to the defaults", false);
@@ -2890,15 +2899,15 @@ public final class ClickGuiRenderer {
       ImGui.setCursorPos(0.0F, var7 + var5);
    }
 
-   private void showHudMessage(String var1, boolean var2) {
-      this.hudMessage = var1;
-      this.hudMessageError = var2;
+   private void showHudMessage(String string, boolean bl) {
+      this.hudMessage = string;
+      this.hudMessageError = bl;
       this.hudMessageAt = System.nanoTime();
    }
 
-   private void selectHudElement(String var1) {
-      if (!Objects.equals(var1, this.hudElementId)) {
-         this.hudElementId = var1;
+   private void selectHudElement(String string) {
+      if (!Objects.equals(string, this.hudElementId)) {
+         this.hudElementId = string;
          this.focusHudInspector = true;
       }
    }
@@ -2944,15 +2953,24 @@ public final class ClickGuiRenderer {
       }
    }
 
-   private void outlineHudElement(ImDrawList var1, HudLayoutStore.HudElementState var2, int var3) {
+   private void outlineHudElement(ImDrawList imDrawList, HudLayoutStore.HudElementState hudElementState, int i) {
       float var4 = EfnWidgets.s(3.0F);
-      float var5 = HudRenderer.hudRounding() * HudRenderer.scaleOf(var2);
-      var1.addRect(var2.x - var4, var2.y - var4, var2.x + var2.width + var4, var2.y + var2.height + var4, var3, var5 + var4, 0, EfnWidgets.s(1.5F));
+      float var5 = HudRenderer.hudRounding() * HudRenderer.scaleOf(hudElementState);
+      imDrawList.addRect(
+         hudElementState.x - var4,
+         hudElementState.y - var4,
+         hudElementState.x + hudElementState.width + var4,
+         hudElementState.y + hudElementState.height + var4,
+         i,
+         var5 + var4,
+         0,
+         EfnWidgets.s(1.5F)
+      );
    }
 
-   private static HudLayoutStore.HudElementState findHudElementState(String var0) {
+   private static HudLayoutStore.HudElementState findHudElementState(String string) {
       for (HudLayoutStore.HudElementState var2 : HudLayoutStore.getInstance().orderedElements()) {
-         if (var2.id.equals(var0)) {
+         if (var2.id.equals(string)) {
             return var2;
          }
       }
@@ -2960,9 +2978,9 @@ public final class ClickGuiRenderer {
       return null;
    }
 
-   private void openColorPicker(ClientModule var1, ColorSetting var2) {
-      this.activeColorModule = var1;
-      this.activeColorSetting = var2;
+   private void openColorPicker(ClientModule clientModule, ColorSetting colorSetting) {
+      this.activeColorModule = clientModule;
+      this.activeColorSetting = colorSetting;
       this.colorPickerOpen.set(true);
    }
 
@@ -3128,32 +3146,32 @@ public final class ClickGuiRenderer {
       }
    }
 
-   private void renderItemEntryToggle(ItemColorListSetting var1, ItemColorListSetting.ItemEntry var2, float var3) {
+   private void renderItemEntryToggle(ItemColorListSetting itemColorListSetting, ItemColorListSetting.ItemEntry itemEntry, float f) {
       float var4 = 16.0F;
       float var5 = 16.0F;
       float var6 = ImGui.getCursorScreenPosX();
       float var7 = ImGui.getCursorScreenPosY();
       if (ImGui.invisibleButton("##ietog", 16.0F, 16.0F)) {
-         var2.enabled().set(!var2.enabled().get());
-         var1.notifyChanged();
+         itemEntry.enabled().set(!itemEntry.enabled().get());
+         itemColorListSetting.notifyChanged();
       }
 
-      float var8 = var2.enabled().get() ? 1.0F : 0.0F;
-      float var9 = this.itemEntryTogAnim.getOrDefault(var2, var8);
-      var9 = smooth(var9, var8, var3, 14.0F);
-      this.itemEntryTogAnim.put(var2, var9);
+      float var8 = itemEntry.enabled().get() ? 1.0F : 0.0F;
+      float var9 = this.itemEntryTogAnim.getOrDefault(itemEntry, var8);
+      var9 = smooth(var9, var8, f, 14.0F);
+      this.itemEntryTogAnim.put(itemEntry, var9);
       drawCheck(var6, var7, var9, GuiPalette.accent());
    }
 
-   private void renderSetting(ClientModule var1, Setting var2, float var3, float var4) {
+   private void renderSetting(ClientModule clientModule, Setting setting, float f, float g) {
       float var9 = EfnWidgets.s(46.0F);
-      float var10 = this.rowStart(var3, var4);
+      float var10 = this.rowStart(f, g);
       ImDrawList var11 = ImGui.getWindowDrawList();
-      if (var2 instanceof BooleanSetting var13) {
-         ImGui.setCursorPos(var3, var10);
+      if (setting instanceof BooleanSetting var13) {
+         ImGui.setCursorPos(f, var10);
          float var14 = ImGui.getCursorScreenPosX();
          float var15 = ImGui.getCursorScreenPosY();
-         if (ImGui.invisibleButton("##row", var4, var9)) {
+         if (ImGui.invisibleButton("##row", g, var9)) {
             var13.set(!var13.get());
          }
 
@@ -3162,23 +3180,23 @@ public final class ClickGuiRenderer {
             var11.addRectFilled(
                var14 - EfnWidgets.s(10.0F),
                var15 + EfnWidgets.s(3.0F),
-               var14 + var4 + EfnWidgets.s(10.0F),
+               var14 + g + EfnWidgets.s(10.0F),
                var15 + var9 - EfnWidgets.s(3.0F),
                EfnWidgets.c(EfnWidgets.withAlpha(184549375, var12)),
                EfnWidgets.s(10.0F)
             );
          }
 
-         rowLabel(var2.name(), var3, var10, var9);
+         rowLabel(setting.name(), f, var10, var9);
          float var16 = EfnWidgets.s(40.0F);
          float var17 = EfnWidgets.s(22.0F);
          EfnWidgets.drawSwitch(
-            var11, var14 + var4 - var16, var15 + (var9 - var17) * 0.5F, var16, var17, EfnWidgets.animate(ImGui.getID("##switch"), var13.get(), 16.0F)
+            var11, var14 + g - var16, var15 + (var9 - var17) * 0.5F, var16, var17, EfnWidgets.animate(ImGui.getID("##switch"), var13.get(), 16.0F)
          );
-      } else if (var2 instanceof NumberSetting var23) {
+      } else if (setting instanceof NumberSetting var23) {
          var9 = EfnWidgets.s(64.0F);
-         ImGui.setCursorPos(var3, var10 + EfnWidgets.s(10.0F));
-         ImGui.textUnformatted(var2.name());
+         ImGui.setCursorPos(f, var10 + EfnWidgets.s(10.0F));
+         ImGui.textUnformatted(setting.name());
          ImFont var32 = ImGuiManager.getInstance().smallFont();
          String var39 = var23.formatted();
          float var43 = EfnWidgets.textWidth(var32, var39);
@@ -3186,38 +3204,38 @@ public final class ClickGuiRenderer {
          float var53 = EfnWidgets.lineHeight(var32) + EfnWidgets.s(8.0F);
          float var18 = ImGui.getWindowPosX();
          float var19 = ImGui.getWindowPosY() - ImGui.getScrollY();
-         float var20 = var18 + var3 + var4 - var49;
+         float var20 = var18 + f + g - var49;
          float var21 = var19 + var10 + EfnWidgets.s(8.0F);
          var11.addRectFilled(var20, var21, var20 + var49, var21 + var53, EfnWidgets.c(-13226454), var53 * 0.5F);
          EfnWidgets.text(var11, var32, var20 + EfnWidgets.s(8.0F), var21 + EfnWidgets.s(4.0F), -461582, var39);
-         ImGui.setCursorPos(var3 - EfnWidgets.s(7.0F), var10 + EfnWidgets.s(36.0F));
-         if (EfnWidgets.sliderFloat("##v", var23.value(), var23.min(), var23.max(), var4 + EfnWidgets.s(14.0F), var23::snap)) {
+         ImGui.setCursorPos(f - EfnWidgets.s(7.0F), var10 + EfnWidgets.s(36.0F));
+         if (EfnWidgets.sliderFloat("##v", var23.value(), var23.min(), var23.max(), g + EfnWidgets.s(14.0F), var23::snap)) {
             var23.notifyChanged();
          }
-      } else if (var2 instanceof ModeSetting var24) {
-         rowLabel(var2.name(), var3, var10, var9);
+      } else if (setting instanceof ModeSetting var24) {
+         rowLabel(setting.name(), f, var10, var9);
          float var33 = 0.0F;
 
          for (String var44 : var24.modes()) {
             var33 = Math.max(var33, ImGui.calcTextSize(var44).x);
          }
 
-         float var41 = Math.min(var4 * 0.6F, Math.max(EfnWidgets.s(120.0F), var33 + EfnWidgets.s(44.0F)));
+         float var41 = Math.min(g * 0.6F, Math.max(EfnWidgets.s(120.0F), var33 + EfnWidgets.s(44.0F)));
          float var45 = EfnWidgets.s(30.0F);
-         ImGui.setCursorPos(var3 + var4 - var41, var10 + (var9 - var45) * 0.5F);
+         ImGui.setCursorPos(f + g - var41, var10 + (var9 - var45) * 0.5F);
          int var50 = EfnWidgets.dropdown("##mode", var24.get(), var24.modes(), var41, var45);
          if (var50 >= 0) {
             var24.set(var24.modes().get(var50));
          }
-      } else if (var2 instanceof ColorSetting var25) {
-         rowLabel(var2.name(), var3, var10, var9);
+      } else if (setting instanceof ColorSetting var25) {
+         rowLabel(setting.name(), f, var10, var9);
          float var34 = EfnWidgets.s(44.0F);
          float var42 = EfnWidgets.s(24.0F);
-         ImGui.setCursorPos(var3 + var4 - var34, var10 + (var9 - var42) * 0.5F);
+         ImGui.setCursorPos(f + g - var34, var10 + (var9 - var42) * 0.5F);
          float var46 = ImGui.getCursorScreenPosX();
          float var51 = ImGui.getCursorScreenPosY();
          if (ImGui.invisibleButton("##color", var34, var42)) {
-            this.openColorPicker(var1, var25);
+            this.openColorPicker(clientModule, var25);
          }
 
          boolean var54 = ImGui.isItemHovered();
@@ -3232,7 +3250,7 @@ public final class ClickGuiRenderer {
          if (var54) {
             showTooltip(String.format("#%02X%02X%02X", var57, var58, var59));
          }
-      } else if (var2 instanceof KeySetting var35) {
+      } else if (setting instanceof KeySetting var35) {
          boolean var26 = this.listeningKeySetting == var35;
          if (var26) {
             if (this.listeningKeyFirstFrame) {
@@ -3251,11 +3269,11 @@ public final class ClickGuiRenderer {
             }
          }
 
-         rowLabel(var2.name(), var3, var10, var9);
+         rowLabel(setting.name(), f, var10, var9);
          float var48 = EfnWidgets.s(96.0F);
          float var52 = EfnWidgets.s(30.0F);
          String var55 = var26 ? "Press a key..." : (var35.value() == -1 ? "None" : keyName(var35.value()));
-         ImGui.setCursorPos(var3 + var4 - var48, var10 + (var9 - var52) * 0.5F);
+         ImGui.setCursorPos(f + g - var48, var10 + (var9 - var52) * 0.5F);
          if (EfnWidgets.chipButton("##keyval", var55, var48, var52, var26)) {
             if (var26) {
                this.listeningKeySetting = null;
@@ -3268,22 +3286,22 @@ public final class ClickGuiRenderer {
          }
       } else {
          StringSetting var8;
-         if (var2 instanceof StringSetting && !(var8 = (StringSetting)var2).presets().isEmpty()) {
-            var9 = this.itemPickers.renderPresets(var1, var8, var3, var4, var10);
+         if (setting instanceof StringSetting && !(var8 = (StringSetting)setting).presets().isEmpty()) {
+            var9 = this.itemPickers.renderPresets(clientModule, var8, f, g, var10);
          } else {
             StringSetting var7;
-            if (var2 instanceof StringSetting && (var7 = (StringSetting)var2).isItemPicker()) {
-               var9 = this.itemPickers.renderItem(var1, var7, var3, var4, var10);
+            if (setting instanceof StringSetting && (var7 = (StringSetting)setting).isItemPicker()) {
+               var9 = this.itemPickers.renderItem(clientModule, var7, f, g, var10);
             } else {
                StringSetting var6;
-               if (var2 instanceof StringSetting && (var6 = (StringSetting)var2).enchantItem() != null) {
-                  var9 = this.itemPickers.renderEnchants(var1, var6, var3, var4, var10);
-               } else if (var2 instanceof StringSetting var36) {
-                  ImGui.setCursorPos(var3, var10 + EfnWidgets.s(10.0F));
-                  ImGui.textUnformatted(var2.name());
-                  ImGui.setCursorPos(var3, var10 + EfnWidgets.s(34.0F));
+               if (setting instanceof StringSetting && (var6 = (StringSetting)setting).enchantItem() != null) {
+                  var9 = this.itemPickers.renderEnchants(clientModule, var6, f, g, var10);
+               } else if (setting instanceof StringSetting var36) {
+                  ImGui.setCursorPos(f, var10 + EfnWidgets.s(10.0F));
+                  ImGui.textUnformatted(setting.name());
+                  ImGui.setCursorPos(f, var10 + EfnWidgets.s(34.0F));
                   ImGui.pushStyleVar(11, EfnWidgets.s(12.0F), EfnWidgets.s(8.0F));
-                  ImGui.setNextItemWidth(var4);
+                  ImGui.setNextItemWidth(g);
                   boolean var27 = var36.hint() != null
                      ? ImGui.inputTextWithHint("##str", var36.hint(), var36.getImString())
                      : ImGui.inputText("##str", var36.getImString());
@@ -3295,23 +3313,23 @@ public final class ClickGuiRenderer {
                   var9 = EfnWidgets.s(34.0F) + ImGui.getTextLineHeight() + EfnWidgets.s(16.0F) + EfnWidgets.s(12.0F);
                } else {
                   StringListSetting var5;
-                  if (var2 instanceof StringListSetting && (var5 = (StringListSetting)var2).isItemPicker()) {
-                     var9 = this.itemPickers.renderList(var1, var5, var3, var4, var10);
-                  } else if (var2 instanceof StringListSetting var28) {
-                     var9 = renderStringList(var28, var3, var4, var10);
-                  } else if (var2 instanceof ActionSetting var29) {
+                  if (setting instanceof StringListSetting && (var5 = (StringListSetting)setting).isItemPicker()) {
+                     var9 = this.itemPickers.renderList(clientModule, var5, f, g, var10);
+                  } else if (setting instanceof StringListSetting var28) {
+                     var9 = renderStringList(var28, f, g, var10);
+                  } else if (setting instanceof ActionSetting var29) {
                      float var37 = EfnWidgets.s(36.0F);
-                     ImGui.setCursorPos(var3, var10 + (var9 + EfnWidgets.s(6.0F) - var37) * 0.5F);
-                     if (EfnWidgets.chipButton("##action", var2.name(), var4, var37, false)) {
+                     ImGui.setCursorPos(f, var10 + (var9 + EfnWidgets.s(6.0F) - var37) * 0.5F);
+                     if (EfnWidgets.chipButton("##action", setting.name(), g, var37, false)) {
                         var29.run();
                      }
 
                      var9 += EfnWidgets.s(6.0F);
-                  } else if (var2 instanceof BlockColorListSetting var30) {
-                     var9 = this.blockLists.render(var1, var30, var3, var4, var10);
-                  } else if (var2 instanceof ItemColorListSetting var31) {
-                     long var38 = var31.entries().stream().filter(var0 -> var0.enabled().get()).count();
-                     if (listChip(var2.name(), "Edit (" + var38 + ")", var3, var4, var10, var9)) {
+                  } else if (setting instanceof BlockColorListSetting var30) {
+                     var9 = this.blockLists.render(clientModule, var30, f, g, var10);
+                  } else if (setting instanceof ItemColorListSetting var31) {
+                     long var38 = var31.entries().stream().filter(itemEntry -> itemEntry.enabled().get()).count();
+                     if (listChip(setting.name(), "Edit (" + var38 + ")", f, g, var10, var9)) {
                         this.activeItemColorPalette = var31;
                         this.itemColorWindowOpen = true;
                         this.activeItemColorEntry = null;
@@ -3323,25 +3341,25 @@ public final class ClickGuiRenderer {
          }
       }
 
-      if (!(var2 instanceof ActionSetting)) {
-         this.renderResetAffordance(var2, var3, var4, var10, var9);
+      if (!(setting instanceof ActionSetting)) {
+         this.renderResetAffordance(setting, f, g, var10, var9);
       }
 
       ImGui.setCursorPos(0.0F, var10 + var9);
    }
 
-   private void renderResetAffordance(Setting var1, float var2, float var3, float var4, float var5) {
+   private void renderResetAffordance(Setting setting, float f, float g, float h, float i) {
       if (this.tab != ClickGuiRenderer.Tab.THEME) {
-         boolean var7 = !var1.isDefault();
+         boolean var7 = !setting.isDefault();
          float var8 = ImGui.getWindowPosX();
          float var9 = ImGui.getWindowPosY() - ImGui.getScrollY();
-         boolean var10 = var1 instanceof NumberSetting
-            || var1 instanceof StringSetting
-            || var1 instanceof StringListSetting
-            || var1 instanceof BlockColorListSetting;
-         float var6 = var10 ? var4 + EfnWidgets.s(10.0F) + ImGui.getTextLineHeight() * 0.5F : var4 + var5 * 0.5F;
+         boolean var10 = setting instanceof NumberSetting
+            || setting instanceof StringSetting
+            || setting instanceof StringListSetting
+            || setting instanceof BlockColorListSetting;
+         float var6 = var10 ? h + EfnWidgets.s(10.0F) + ImGui.getTextLineHeight() * 0.5F : h + i * 0.5F;
          if (var7) {
-            float var12 = var8 + var2 - EfnWidgets.s(11.0F);
+            float var12 = var8 + f - EfnWidgets.s(11.0F);
             float var13 = var9 + var6;
             float var14 = EfnWidgets.s(3.0F);
             ImGui.getWindowDrawList().addCircleFilled(var12, var13, var14, EfnWidgets.c(GuiPalette.accent()), 12);
@@ -3350,19 +3368,19 @@ public final class ClickGuiRenderer {
             }
          }
 
-         float var15 = var8 + var2 - EfnWidgets.s(10.0F);
-         float var16 = var9 + var4;
-         if (ImGui.isWindowHovered() && ImGui.isMouseClicked(1) && ImGui.isMouseHoveringRect(var15, var16, var15 + var3 + EfnWidgets.s(20.0F), var16 + var5)) {
+         float var15 = var8 + f - EfnWidgets.s(10.0F);
+         float var16 = var9 + h;
+         if (ImGui.isWindowHovered() && ImGui.isMouseClicked(1) && ImGui.isMouseHoveringRect(var15, var16, var15 + g + EfnWidgets.s(20.0F), var16 + i)) {
             ImGui.openPopup("##setting_ctx");
          }
 
          ImGui.pushStyleVar(2, EfnWidgets.s(6.0F), EfnWidgets.s(6.0F));
          if (ImGui.beginPopup("##setting_ctx")) {
-            ImGui.textDisabled(var1.name());
+            ImGui.textDisabled(setting.name());
             ImGui.separator();
             if (var7) {
                if (ImGui.selectable("Reset to default")) {
-                  var1.resetToDefault();
+                  setting.resetToDefault();
                }
             } else {
                ImGui.textDisabled("Already at default");
@@ -3375,25 +3393,25 @@ public final class ClickGuiRenderer {
       }
    }
 
-   private static float renderStringList(StringListSetting var0, float var1, float var2, float var3) {
-      ImGui.setCursorPos(var1, var3 + EfnWidgets.s(10.0F));
-      ImGui.textUnformatted(var0.name());
-      float var5 = var3 + EfnWidgets.s(34.0F);
+   private static float renderStringList(StringListSetting stringListSetting, float f, float g, float h) {
+      ImGui.setCursorPos(f, h + EfnWidgets.s(10.0F));
+      ImGui.textUnformatted(stringListSetting.name());
+      float var5 = h + EfnWidgets.s(34.0F);
       float var6 = EfnWidgets.s(6.0F);
       float var4;
       float var7 = var4 = ImGui.getTextLineHeight() + EfnWidgets.s(16.0F);
       int var8 = -1;
       ImGui.pushStyleVar(11, EfnWidgets.s(12.0F), EfnWidgets.s(8.0F));
 
-      for (int var9 = 0; var9 < var0.size(); var9++) {
+      for (int var9 = 0; var9 < stringListSetting.size(); var9++) {
          ImGui.pushID(var9);
-         ImGui.setCursorPos(var1, var5);
-         ImGui.setNextItemWidth(var2 - var7 - var6);
-         if (ImGui.inputText("##entry", var0.entry(var9))) {
-            var0.edited();
+         ImGui.setCursorPos(f, var5);
+         ImGui.setNextItemWidth(g - var7 - var6);
+         if (ImGui.inputText("##entry", stringListSetting.entry(var9))) {
+            stringListSetting.edited();
          }
 
-         ImGui.setCursorPos(var1 + var2 - var7, var5);
+         ImGui.setCursorPos(f + g - var7, var5);
          if (EfnWidgets.chipButton("##remove", "x", var7, var4, false)) {
             var8 = var9;
          }
@@ -3404,28 +3422,28 @@ public final class ClickGuiRenderer {
 
       ImGui.popStyleVar();
       if (var8 >= 0) {
-         var0.remove(var8);
+         stringListSetting.remove(var8);
       }
 
-      if (var0.canAdd()) {
+      if (stringListSetting.canAdd()) {
          float var10 = EfnWidgets.s(30.0F);
-         ImGui.setCursorPos(var1, var5);
-         if (EfnWidgets.chipButton("##add", "+ Add", var2, var10, false)) {
-            var0.add();
+         ImGui.setCursorPos(f, var5);
+         if (EfnWidgets.chipButton("##add", "+ Add", g, var10, false)) {
+            stringListSetting.add();
          }
 
          var5 += var10;
       }
 
-      return var5 - var3 + EfnWidgets.s(12.0F);
+      return var5 - h + EfnWidgets.s(12.0F);
    }
 
-   private static boolean listChip(String var0, String var1, float var2, float var3, float var4, float var5) {
-      rowLabel(var0, var2, var4, var5);
-      float var6 = Math.max(EfnWidgets.s(96.0F), ImGui.calcTextSize(var1).x + EfnWidgets.s(28.0F));
+   private static boolean listChip(String string, String string2, float f, float g, float h, float i) {
+      rowLabel(string, f, h, i);
+      float var6 = Math.max(EfnWidgets.s(96.0F), ImGui.calcTextSize(string2).x + EfnWidgets.s(28.0F));
       float var7 = EfnWidgets.s(30.0F);
-      ImGui.setCursorPos(var2 + var3 - var6, var4 + (var5 - var7) * 0.5F);
-      return EfnWidgets.chipButton("##listedit", var1, var6, var7, false);
+      ImGui.setCursorPos(f + g - var6, h + (i - var7) * 0.5F);
+      return EfnWidgets.chipButton("##listedit", string2, var6, var7, false);
    }
 
    public static void applyTheme() {
@@ -3464,11 +3482,11 @@ public final class ClickGuiRenderer {
       ImGui.popStyleVar(11);
    }
 
-   public static boolean pushFont(ImFont var0) {
-      if (var0 == null) {
+   public static boolean pushFont(ImFont imFont) {
+      if (imFont == null) {
          return false;
       } else {
-         ImGui.pushFont(var0);
+         ImGui.pushFont(imFont);
          return true;
       }
    }
@@ -3491,8 +3509,8 @@ public final class ClickGuiRenderer {
 
       final String label;
 
-      private Tab(String nullxx) {
-         this.label = nullxx;
+      private Tab(String string2) {
+         this.label = string2;
       }
    }
 }

@@ -19,28 +19,28 @@ public abstract class MixinSwingAnimationLivingEntity {
    }
 
    @ModifyExpressionValue(
-      method = {"method_6119", "method_23667"},
+      method = {"tickHandSwing", "swingHand"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_1309;method_6028()I"
+         target = "Lnet/minecraft/entity/LivingEntity;getHandSwingDuration()I"
       )}
    )
-   private int efn$swingTempo(int var1) {
+   private int efn$swingTempo(int i) {
       SwingAnimationModule var2 = SwingAnimationModule.active;
-      return var2 != null && this == MinecraftClient.method_1551().field_1724 ? var2.swingTicks(var1) : var1;
+      return var2 != null && this == MinecraftClient.getInstance().player ? var2.swingTicks(i) : i;
    }
 
    @Inject(
-      method = {"method_23667"},
+      method = {"swingHand"},
       at = {@At(
          value = "FIELD",
-         target = "Lnet/minecraft/class_1309;field_6252:Z",
+         target = "Lnet/minecraft/entity/LivingEntity;handSwinging:Z",
          opcode = 181
       )}
    )
-   private void efn$latchSwing(Hand var1, boolean var2, CallbackInfo var3) {
+   private void efn$latchSwing(Hand hand, boolean bl, CallbackInfo callbackInfo) {
       SwingAnimationModule var4 = SwingAnimationModule.active;
-      if (var4 != null && this == MinecraftClient.method_1551().field_1724) {
+      if (var4 != null && this == MinecraftClient.getInstance().player) {
          var4.latch();
       }
    }

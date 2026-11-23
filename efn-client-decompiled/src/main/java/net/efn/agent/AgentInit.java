@@ -13,6 +13,7 @@ public class AgentInit implements ModInitializer {
    public AgentInit() {
    }
 
+   @Override
    public void onInitialize() {
       new Thread(() -> {
          try {

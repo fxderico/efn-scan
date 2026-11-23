@@ -17,66 +17,66 @@ public abstract class MixinNameProtectGui {
    }
 
    @ModifyVariable(
-      method = {"method_34004"},
+      method = {"setTitle"},
       at = {@At("HEAD")},
       argsOnly = true
    )
-   private Text efn$nameProtectTitle(Text var1) {
-      return NameProtectModule.protect(var1);
+   private Text efn$nameProtectTitle(Text text) {
+      return NameProtectModule.protect(text);
    }
 
    @ModifyVariable(
-      method = {"method_34002"},
+      method = {"setSubtitle"},
       at = {@At("HEAD")},
       argsOnly = true
    )
-   private Text efn$nameProtectSubtitle(Text var1) {
-      return NameProtectModule.protect(var1);
+   private Text efn$nameProtectSubtitle(Text text) {
+      return NameProtectModule.protect(text);
    }
 
    @ModifyVariable(
-      method = {"method_1758"},
+      method = {"setOverlayMessage"},
       at = {@At("HEAD")},
       argsOnly = true
    )
-   private Text efn$nameProtectActionBar(Text var1) {
-      return NameProtectModule.protect(var1);
+   private Text efn$nameProtectActionBar(Text text) {
+      return NameProtectModule.protect(text);
    }
 
    @ModifyExpressionValue(
-      method = {"method_1757"},
+      method = {"renderScoreboardSidebar"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_266;method_1114()Lnet/minecraft/class_2561;"
+         target = "Lnet/minecraft/scoreboard/ScoreboardObjective;getDisplayName()Lnet/minecraft/text/Text;"
       )}
    )
-   private Text efn$nameProtectSidebarTitle(Text var1) {
-      return NameProtectModule.protect(var1);
+   private Text efn$nameProtectSidebarTitle(Text text) {
+      return NameProtectModule.protect(text);
    }
 
    @ModifyExpressionValue(
-      method = {"method_1757"},
+      method = {"renderScoreboardSidebar"},
       at = {@At(
          value = "FIELD",
          opcode = 180,
          ordinal = 0,
-         target = "Lnet/minecraft/class_329$class_9016;comp_2131:Lnet/minecraft/class_2561;"
+         target = "Lnet/minecraft/client/gui/hud/InGameHud$SidebarEntry;name:Lnet/minecraft/text/Text;"
       )}
    )
-   private Text efn$nameProtectSidebarLineWidth(Text var1) {
-      return NameProtectModule.protect(var1);
+   private Text efn$nameProtectSidebarLineWidth(Text text) {
+      return NameProtectModule.protect(text);
    }
 
    @ModifyExpressionValue(
-      method = {"method_1757"},
+      method = {"renderScoreboardSidebar"},
       at = {@At(
          value = "FIELD",
          opcode = 180,
          ordinal = 1,
-         target = "Lnet/minecraft/class_329$class_9016;comp_2131:Lnet/minecraft/class_2561;"
+         target = "Lnet/minecraft/client/gui/hud/InGameHud$SidebarEntry;name:Lnet/minecraft/text/Text;"
       )}
    )
-   private Text efn$nameProtectSidebarLineDraw(Text var1) {
-      return NameProtectModule.protect(var1);
+   private Text efn$nameProtectSidebarLineDraw(Text text) {
+      return NameProtectModule.protect(text);
    }
 }

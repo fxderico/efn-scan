@@ -22,27 +22,27 @@ public abstract class MixinShaderEspLevelRenderer {
    }
 
    @Inject(
-      method = {"method_72914"},
+      method = {"getAndUpdateRenderState"},
       at = {@At("RETURN")}
    )
-   private void efn$glowEspKeepState(Entity var1, float var2, CallbackInfoReturnable<EntityRenderState> var3) {
+   private void efn$glowEspKeepState(Entity entity, float f, CallbackInfoReturnable<EntityRenderState> callbackInfoReturnable) {
       if (ShaderEspModule.active != null) {
-         ShaderEspModule.extracted(var1, (EntityRenderState)var3.getReturnValue());
+         ShaderEspModule.extracted(entity, (EntityRenderState)callbackInfoReturnable.getReturnValue());
       }
    }
 
    @Inject(
-      method = {"method_22710"},
+      method = {"render"},
       at = {@At("TAIL")}
    )
    private void efn$glowEsp(
-      CallbackInfo var1,
-      @Local(argsOnly = true) Camera var2,
-      @Local(argsOnly = true,ordinal = 0) Matrix4f var3,
-      @Local(argsOnly = true,ordinal = 1) Matrix4f var4
+      CallbackInfo callbackInfo,
+      @Local(argsOnly = true) Camera camera,
+      @Local(argsOnly = true,ordinal = 0) Matrix4f matrix4f,
+      @Local(argsOnly = true,ordinal = 1) Matrix4f matrix4f2
    ) {
       if (ShaderEspModule.active != null) {
-         ShaderEspModule.afterLevel(var2, var3, var4);
+         ShaderEspModule.afterLevel(camera, matrix4f, matrix4f2);
       }
    }
 }

@@ -11,11 +11,9 @@ public final class TargetingUtils {
    private TargetingUtils() {
    }
 
-   public static Vec3d closestPoint(Vec3d var0, Box var1) {
+   public static Vec3d closestPoint(Vec3d vec3d, Box box) {
       return new Vec3d(
-         MathHelper.method_15350(var0.field_1352, var1.field_1323, var1.field_1320),
-         MathHelper.method_15350(var0.field_1351, var1.field_1322, var1.field_1325),
-         MathHelper.method_15350(var0.field_1350, var1.field_1321, var1.field_1324)
+         MathHelper.clamp(vec3d.x, box.minX, box.maxX), MathHelper.clamp(vec3d.y, box.minY, box.maxY), MathHelper.clamp(vec3d.z, box.minZ, box.maxZ)
       );
    }
 }

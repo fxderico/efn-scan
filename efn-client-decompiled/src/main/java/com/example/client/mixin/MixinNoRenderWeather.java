@@ -22,24 +22,24 @@ public abstract class MixinNoRenderWeather {
    }
 
    @Inject(
-      method = {"method_62320"},
+      method = {"renderPrecipitation"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$hideWeather(VertexConsumerProvider var1, Vec3d var2, WeatherRenderState var3, CallbackInfo var4) {
+   private void efn$hideWeather(VertexConsumerProvider vertexConsumerProvider, Vec3d vec3d, WeatherRenderState weatherRenderState, CallbackInfo callbackInfo) {
       if (NoRenderModule.hideWeather()) {
-         var4.cancel();
+         callbackInfo.cancel();
       }
    }
 
    @Inject(
-      method = {"method_62319"},
+      method = {"addParticlesAndSound"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$hideRainSplashes(ClientWorld var1, Camera var2, int var3, ParticlesMode var4, int var5, CallbackInfo var6) {
+   private void efn$hideRainSplashes(ClientWorld clientWorld, Camera camera, int i, ParticlesMode particlesMode, int j, CallbackInfo callbackInfo) {
       if (NoRenderModule.hideWeather()) {
-         var6.cancel();
+         callbackInfo.cancel();
       }
    }
 }

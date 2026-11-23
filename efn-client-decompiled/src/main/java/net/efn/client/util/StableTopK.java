@@ -18,17 +18,17 @@ public final class StableTopK<T> {
    private long encountered;
    private boolean overflow;
 
-   public StableTopK(Comparator<? super T> var1) {
-      this.priority = var1;
-      this.ranked = (var1x, var2) -> {
-         int var3 = var1.compare(var1x.value(), var2.value());
-         return var3 != 0 ? var3 : Long.compare(var1x.order(), var2.order());
+   public StableTopK(Comparator<? super T> comparator) {
+      this.priority = comparator;
+      this.ranked = (entry, entry2) -> {
+         int var3 = comparator.compare(entry.value(), entry2.value());
+         return var3 != 0 ? var3 : Long.compare(entry.order(), entry2.order());
       };
       this.heap = new PriorityQueue<>(this.ranked.reversed());
    }
 
-   public void reset(int var1) {
-      this.limit = Math.max(0, var1);
+   public void reset(int i) {
+      this.limit = Math.max(0, i);
       this.encountered = 0L;
       this.overflow = false;
       this.heap.clear();
@@ -36,16 +36,16 @@ public final class StableTopK<T> {
       this.result.clear();
    }
 
-   public void offer(T var1) {
+   public void offer(T object) {
       long var2 = this.encountered++;
       if (this.heap.size() < this.limit) {
-         this.heap.add(new StableTopK.Entry<>((T)var1, var2));
-         this.result.add((T)var1);
+         this.heap.add(new StableTopK.Entry<>((T)object, var2));
+         this.result.add((T)object);
       } else {
          this.overflow = true;
-         if (this.limit != 0 && this.priority.compare((T)var1, this.heap.peek().value()) < 0) {
+         if (this.limit != 0 && this.priority.compare((T)object, this.heap.peek().value()) < 0) {
             this.heap.poll();
-            this.heap.add(new StableTopK.Entry<>((T)var1, var2));
+            this.heap.add(new StableTopK.Entry<>((T)object, var2));
          }
       }
    }

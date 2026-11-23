@@ -31,8 +31,8 @@ final class GifAnimation {
    private static final int QUEUE_FRAMES = 8;
    private static final long UPLOAD_BUDGET_NANOS = 2000000L;
    private static long frameUploadNanos;
-   private static final ExecutorService POSTERS = Executors.newSingleThreadExecutor(var0 -> {
-      Thread var1 = new Thread(var0, "EFN GIF posters");
+   private static final ExecutorService POSTERS = Executors.newSingleThreadExecutor(runnable -> {
+      Thread var1 = new Thread(runnable, "EFN GIF posters");
       var1.setDaemon(true);
       return var1;
    });
@@ -47,25 +47,25 @@ final class GifAnimation {
    private volatile int decodedFramePixels;
    private long startNanos = -1L;
 
-   private GifAnimation(String var1, boolean var2, boolean var3) {
-      this.name = var1;
-      this.poster = var2;
-      this.optimized = var3;
-      this.ends = new int[var2 ? 1 : 300];
+   private GifAnimation(String string, boolean bl, boolean bl2) {
+      this.name = string;
+      this.poster = bl;
+      this.optimized = bl2;
+      this.ends = new int[bl ? 1 : 300];
    }
 
-   static GifAnimation load(Path var0, boolean var1, boolean var2) {
-      GifAnimation var3 = new GifAnimation(var0.getFileName().toString(), var1, var2);
-      if (var1) {
-         POSTERS.execute(() -> var3.decode(var0));
+   static GifAnimation load(Path path, boolean bl, boolean bl2) {
+      GifAnimation var3 = new GifAnimation(path.getFileName().toString(), bl, bl2);
+      if (bl) {
+         POSTERS.execute(() -> var3.decode(path));
       } else {
-         Thread.ofPlatform().daemon().name("EFN GIF decoder").start(() -> var3.decode(var0));
+         Thread.ofPlatform().daemon().name("EFN GIF decoder").start(() -> var3.decode(path));
       }
 
       return var3;
    }
 
-   static void beginFrame(boolean var0) {
+   static void beginFrame(boolean bl) {
       frameUploadNanos = 0L;
    }
 
@@ -126,10 +126,10 @@ final class GifAnimation {
       this.textures.clear();
    }
 
-   private void decode(Path var1) {
+   private void decode(Path path) {
       try {
          if (!this.cancelled) {
-            GifDecoder var2 = GifDecoder.open(Files.readAllBytes(var1));
+            GifDecoder var2 = GifDecoder.open(Files.readAllBytes(path));
             int var3 = var2.width();
             int var4 = var2.height();
             int var5 = Math.min(var2.frameCount(), this.ends.length);
@@ -144,11 +144,11 @@ final class GifAnimation {
             int var12 = Math.max(1, (int)Math.floor(var4 * var9));
             this.decodedFramePixels = var11 * var12;
             if (!this.poster && var5 < var2.frameCount()) {
-               LOGGER.info("[EFN] {} has {} frames; only the first {} will play", new Object[]{this.name, var2.frameCount(), var5});
+               LOGGER.info("[EFN] {} has {} frames; only the first {} will play", this.name, var2.frameCount(), var5);
             }
 
             if (!this.poster && var11 < var3) {
-               LOGGER.info("[EFN] {} ({}x{}, {} frames) plays at {}x{} to keep its memory use down", new Object[]{this.name, var3, var4, var5, var11, var12});
+               LOGGER.info("[EFN] {} ({}x{}, {} frames) plays at {}x{} to keep its memory use down", this.name, var3, var4, var5, var11, var12);
             }
 
             var2.decode(var11, var12, var5, this::offer);
@@ -162,8 +162,8 @@ final class GifAnimation {
       }
    }
 
-   private boolean offer(GifDecoder.Frame var1) {
-      int[] var2 = var1.argb();
+   private boolean offer(GifDecoder.Frame frame) {
+      int[] var2 = frame.argb();
 
       for (int var3 = 0; var3 < var2.length; var3++) {
          int var4 = var2[var3];
@@ -172,7 +172,7 @@ final class GifAnimation {
 
       try {
          while (!this.cancelled) {
-            if (this.queue.offer(var1, 50L, TimeUnit.MILLISECONDS)) {
+            if (this.queue.offer(frame, 50L, TimeUnit.MILLISECONDS)) {
                return true;
             }
          }

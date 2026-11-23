@@ -23,11 +23,11 @@ public final class VehicleAntiKick {
    public VehicleAntiKick() {
    }
 
-   public void start(int var1) {
-      this.delayLeft = var1;
+   public void start(int i) {
+      this.delayLeft = i;
       this.forget();
-      ClientPlayerEntity var2 = MinecraftClient.method_1551().field_1724;
-      this.trackedVehicle = var2 != null ? var2.method_5854() : null;
+      ClientPlayerEntity var2 = MinecraftClient.getInstance().player;
+      this.trackedVehicle = var2 != null ? var2.getVehicle() : null;
    }
 
    public void stop() {
@@ -35,18 +35,16 @@ public final class VehicleAntiKick {
    }
 
    public void tick() {
-      MinecraftClient var1 = MinecraftClient.method_1551();
-      ClientPlayerEntity var2 = var1.field_1724;
-      Entity var3 = var2 != null ? var2.method_5854() : null;
+      MinecraftClient var1 = MinecraftClient.getInstance();
+      ClientPlayerEntity var2 = var1.player;
+      Entity var3 = var2 != null ? var2.getVehicle() : null;
       this.trackVehicle(var3);
       if (this.sentPacket && System.nanoTime() - this.dipNanos >= 50000000L) {
-         ClientPlayNetworkHandler var4 = var1.method_1562();
+         ClientPlayNetworkHandler var4 = var1.getNetworkHandler();
          if (var3 != null && var4 != null && this.lastPacketY != 1.7976931348623157E308) {
-            VehicleMoveC2SPacket var5 = VehicleMoveC2SPacket.method_65307(var3);
-            Vec3d var6 = var5.comp_3350();
-            var4.method_52787(
-               new VehicleMoveC2SPacket(new Vec3d(var6.field_1352, this.lastPacketY, var6.field_1350), var5.comp_3351(), var5.comp_3352(), var5.comp_3353())
-            );
+            VehicleMoveC2SPacket var5 = VehicleMoveC2SPacket.fromVehicle(var3);
+            Vec3d var6 = var5.position();
+            var4.sendPacket(new VehicleMoveC2SPacket(new Vec3d(var6.x, this.lastPacketY, var6.z), var5.yaw(), var5.pitch(), var5.onGround()));
          }
 
          this.sentPacket = false;
@@ -57,28 +55,28 @@ public final class VehicleAntiKick {
       }
    }
 
-   public boolean onPacketSend(VehicleMoveC2SPacket var1, int var2) {
-      MinecraftClient var4 = MinecraftClient.method_1551();
-      if (!var4.method_18854()) {
+   public boolean onPacketSend(VehicleMoveC2SPacket vehicleMoveC2SPacket, int i) {
+      MinecraftClient var4 = MinecraftClient.getInstance();
+      if (!var4.isOnThread()) {
          return false;
       } else {
-         ClientPlayerEntity var5 = var4.field_1724;
-         Entity var3 = var5 != null ? var5.method_5854() : null;
+         ClientPlayerEntity var5 = var4.player;
+         Entity var3 = var5 != null ? var5.getVehicle() : null;
          if (var3 == null) {
             return false;
          } else {
             this.trackVehicle(var3);
-            Vec3d var7 = var1.comp_3350();
-            double var8 = var7.field_1351;
+            Vec3d var7 = vehicleMoveC2SPacket.position();
+            double var8 = var7.y;
             if (this.sentPacket && System.nanoTime() - this.dipNanos < 50000000L) {
                this.lastPacketY = var8;
                return true;
             } else {
-               if (this.delayLeft <= 0 && !this.sentPacket && this.shouldFlyDown(var8) && EntityControlVehicleHook.isOnAir(var3) && !var3.method_70987()) {
-                  ((AccessorBoatFlyServerboundMoveVehiclePacket)var1).efn$setPosition(new Vec3d(var7.field_1352, this.lastPacketY - 0.0313, var7.field_1350));
+               if (this.delayLeft <= 0 && !this.sentPacket && this.shouldFlyDown(var8) && EntityControlVehicleHook.isOnAir(var3) && !var3.isFlyingVehicle()) {
+                  ((AccessorBoatFlyServerboundMoveVehiclePacket)vehicleMoveC2SPacket).efn$setPosition(new Vec3d(var7.x, this.lastPacketY - 0.0313, var7.z));
                   this.sentPacket = true;
                   this.dipNanos = System.nanoTime();
-                  this.delayLeft = var2;
+                  this.delayLeft = i;
                }
 
                this.lastPacketY = var8;
@@ -88,8 +86,8 @@ public final class VehicleAntiKick {
       }
    }
 
-   public void observe(VehicleMoveC2SPacket var1) {
-      this.lastPacketY = var1.comp_3350().field_1351;
+   public void observe(VehicleMoveC2SPacket vehicleMoveC2SPacket) {
+      this.lastPacketY = vehicleMoveC2SPacket.position().y;
    }
 
    public boolean isHolding() {
@@ -101,13 +99,13 @@ public final class VehicleAntiKick {
       this.sentPacket = false;
    }
 
-   private boolean shouldFlyDown(double var1) {
-      return var1 >= this.lastPacketY ? true : this.lastPacketY - var1 < 0.0313;
+   private boolean shouldFlyDown(double d) {
+      return d >= this.lastPacketY ? true : this.lastPacketY - d < 0.0313;
    }
 
-   private void trackVehicle(Entity var1) {
-      if (var1 != this.trackedVehicle) {
-         this.trackedVehicle = var1;
+   private void trackVehicle(Entity entity) {
+      if (entity != this.trackedVehicle) {
+         this.trackedVehicle = entity;
          this.forget();
       }
    }

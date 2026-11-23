@@ -18,46 +18,46 @@ public final class PlaybackClock {
    public PlaybackClock() {
    }
 
-   public void update(NowPlaying var1, long var2) {
-      if (var1 != this.sample) {
+   public void update(NowPlaying nowPlaying, long l) {
+      if (nowPlaying != this.sample) {
          NowPlaying var4 = this.sample;
-         this.sample = var1;
-         if (var1 != null && var1.hasTimeline()) {
-            double var5 = this.position(var2);
-            double var7 = var1.positionAt(var2);
+         this.sample = nowPlaying;
+         if (nowPlaying != null && nowPlaying.hasTimeline()) {
+            double var5 = this.position(l);
+            double var7 = nowPlaying.positionAt(l);
             boolean var9 = var4 != null
                && var4.hasTimeline()
-               && var4.sameTrack(var1)
+               && var4.sameTrack(nowPlaying)
                && this.running
-               && var1.playing()
-               && Math.abs(var7 - var5) < 1200.0 * Math.min(1.0, var1.rate());
+               && nowPlaying.playing()
+               && Math.abs(var7 - var5) < 1200.0 * Math.min(1.0, nowPlaying.rate());
             this.base = var9 ? var5 : var7;
             this.correction = var9 ? var7 - var5 : 0.0;
-            this.baseAt = var2;
-            this.running = var1.playing();
-            this.durationMs = var1.durationMs();
-            this.rate = var1.rate();
+            this.baseAt = l;
+            this.running = nowPlaying.playing();
+            this.durationMs = nowPlaying.durationMs();
+            this.rate = nowPlaying.rate();
          } else {
             this.running = false;
             this.durationMs = 0L;
             this.base = 0.0;
             this.correction = 0.0;
-            this.baseAt = var2;
+            this.baseAt = l;
          }
       }
    }
 
-   public long positionAt(long var1) {
-      return this.durationMs <= 0L ? 0L : Math.max(0L, Math.min(this.durationMs, Math.round(this.position(var1))));
+   public long positionAt(long l) {
+      return this.durationMs <= 0L ? 0L : Math.max(0L, Math.min(this.durationMs, Math.round(this.position(l))));
    }
 
-   private double position(long var1) {
+   private double position(long l) {
       if (this.durationMs <= 0L) {
          return 0.0;
       } else if (!this.running) {
          return this.base;
       } else {
-         double var3 = Math.max(0L, var1 - this.baseAt);
+         double var3 = Math.max(0L, l - this.baseAt);
          return this.base + var3 * this.rate + this.correction * Math.min(1.0, var3 / 1500.0);
       }
    }

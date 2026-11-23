@@ -21,19 +21,19 @@ final class OrderAhBot {
    private boolean warnedFull;
    volatile long orderedAt;
 
-   OrderAhBot(OrderAhSellerModule var1, MacroWorker var2, Product var3, AuctionHouse.Config var4, String var5) {
-      this.ah = new AuctionHouse(var1, var2, var4, var5);
-      this.worker = var2;
+   OrderAhBot(OrderAhSellerModule orderAhSellerModule, MacroWorker macroWorker, Product product, AuctionHouse.Config config, String string) {
+      this.ah = new AuctionHouse(orderAhSellerModule, macroWorker, config, string);
+      this.worker = macroWorker;
       this.gui = this.ah.gui;
-      this.product = var3;
-      this.config = var4;
-      this.stock = new AuctionHouse.Stock(var3, false);
+      this.product = product;
+      this.config = config;
+      this.stock = new AuctionHouse.Stock(product, false);
       this.stocks = List.of(this.stock);
       this.restock = new OrderRestock(this);
    }
 
-   void say(ModuleChat.Body var1) {
-      this.ah.say(var1);
+   void say(ModuleChat.Body body) {
+      this.ah.say(body);
    }
 
    boolean inventoryCapReached() {
@@ -123,8 +123,8 @@ final class OrderAhBot {
       }
    }
 
-   void onChat(String var1) {
-      String var2 = ServerText.normalize(var1);
+   void onChat(String string) {
+      String var2 = ServerText.normalize(string);
       if (!var2.isEmpty()) {
          if (var2.startsWith("you ordered")) {
             this.orderedAt = System.currentTimeMillis();

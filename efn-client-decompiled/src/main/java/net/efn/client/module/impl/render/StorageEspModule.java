@@ -2,7 +2,6 @@ package net.efn.client.module.impl.render;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap.Entry;
-import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import java.util.HashMap;
 import java.util.Map;
 import net.efn.client.esp.BlockLayer;
@@ -49,7 +48,7 @@ import net.minecraft.world.chunk.WorldChunk;
 
 @Environment(EnvType.CLIENT)
 public final class StorageEspModule extends ClientModule implements ChunkScanner.Consumer {
-   private final EspStyle style = new EspStyle((var1, var2) -> (S)this.addSetting(var1, var2), "Outline", 0.25F, 256.0F);
+   private final EspStyle style = new EspStyle((string, setting) -> (S)this.addSetting(string, setting), "Outline", 0.25F, 256.0F);
    private final BooleanSetting sTracers = this.addSetting("tracers", new BooleanSetting("Tracers", false));
    private final StorageEspModule.Type chest = new StorageEspModule.Type(
       "Chest", true, -6530304, "chests", "chest-color", "chest-tracers", "chest-tracer-color"
@@ -80,16 +79,16 @@ public final class StorageEspModule extends ClientModule implements ChunkScanner
    };
    private final BlockLayer layer = new BlockLayer(new BlockLayer.Palette() {
       @Override
-      public int color(Object var1) {
-         return ((StorageEspModule.Type)var1).color.argb();
+      public int color(Object object) {
+         return ((StorageEspModule.Type)object).color.argb();
       }
 
       @Override
-      public int tracerColor(Object var1) {
-         StorageEspModule.Type var2 = (StorageEspModule.Type)var1;
+      public int tracerColor(Object object) {
+         StorageEspModule.Type var2 = (StorageEspModule.Type)object;
          return var2.tracers.get() ? var2.tracerColor.argb() : 0;
       }
-   }, () -> MinecraftClient.method_1551().field_1687 == null ? null : MinecraftClient.method_1551().field_1687.method_27983());
+   }, () -> MinecraftClient.getInstance().world == null ? null : MinecraftClient.getInstance().world.getRegistryKey());
    private final Map<RegistryKey<World>, Long2ObjectOpenHashMap<StorageEspModule.Type>> detections = new HashMap<>();
    private RegistryKey<World> shownDimension;
 
@@ -97,51 +96,51 @@ public final class StorageEspModule extends ClientModule implements ChunkScanner
       super("storage-esp", "Storage ESP Bypass", "Highlights storage blocks and spawners with per-type colours.", ModuleCategory.BASE_RAID);
    }
 
-   private StorageEspModule.Type typeOf(Block var1) {
-      if (var1 instanceof ChestBlock) {
+   private StorageEspModule.Type typeOf(Block block) {
+      if (block instanceof ChestBlock) {
          return this.chest;
-      } else if (var1 instanceof EnderChestBlock) {
+      } else if (block instanceof EnderChestBlock) {
          return this.enderChest;
-      } else if (var1 instanceof ShulkerBoxBlock) {
+      } else if (block instanceof ShulkerBoxBlock) {
          return this.shulker;
-      } else if (var1 instanceof SpawnerBlock) {
+      } else if (block instanceof SpawnerBlock) {
          return this.spawner;
-      } else if (var1 instanceof AbstractFurnaceBlock) {
+      } else if (block instanceof AbstractFurnaceBlock) {
          return this.furnace;
-      } else if (var1 instanceof BarrelBlock) {
+      } else if (block instanceof BarrelBlock) {
          return this.barrel;
-      } else if (var1 instanceof EnchantingTableBlock) {
+      } else if (block instanceof EnchantingTableBlock) {
          return this.enchanting;
       } else {
-         return var1 instanceof HopperBlock ? this.hopper : null;
+         return block instanceof HopperBlock ? this.hopper : null;
       }
    }
 
-   private StorageEspModule.Type typeOf(BlockEntityType<?> var1) {
-      if (var1 == BlockEntityType.field_11914 || var1 == BlockEntityType.field_11891) {
+   private StorageEspModule.Type typeOf(BlockEntityType<?> blockEntityType) {
+      if (blockEntityType == BlockEntityType.CHEST || blockEntityType == BlockEntityType.TRAPPED_CHEST) {
          return this.chest;
-      } else if (var1 == BlockEntityType.field_11901) {
+      } else if (blockEntityType == BlockEntityType.ENDER_CHEST) {
          return this.enderChest;
-      } else if (var1 == BlockEntityType.field_11896) {
+      } else if (blockEntityType == BlockEntityType.SHULKER_BOX) {
          return this.shulker;
-      } else if (var1 == BlockEntityType.field_11889) {
+      } else if (blockEntityType == BlockEntityType.MOB_SPAWNER) {
          return this.spawner;
-      } else if (var1 == BlockEntityType.field_11903 || var1 == BlockEntityType.field_16415 || var1 == BlockEntityType.field_16414) {
+      } else if (blockEntityType == BlockEntityType.FURNACE || blockEntityType == BlockEntityType.BLAST_FURNACE || blockEntityType == BlockEntityType.SMOKER) {
          return this.furnace;
-      } else if (var1 == BlockEntityType.field_16411) {
+      } else if (blockEntityType == BlockEntityType.BARREL) {
          return this.barrel;
-      } else if (var1 == BlockEntityType.field_11912) {
+      } else if (blockEntityType == BlockEntityType.ENCHANTING_TABLE) {
          return this.enchanting;
       } else {
-         return var1 == BlockEntityType.field_11888 ? this.hopper : null;
+         return blockEntityType == BlockEntityType.HOPPER ? this.hopper : null;
       }
    }
 
-   private StorageEspModule.Type typeOf(BlockEntityType<?> var1, NbtCompound var2) {
-      StorageEspModule.Type var3 = this.typeOf(var1);
-      if (var3 == null && var2 != null) {
-         Identifier var4 = var2.method_10558("id").<Identifier>map(Identifier::method_12829).orElse(null);
-         return var4 == null ? null : this.typeOf((BlockEntityType<?>)Registries.field_41181.method_63535(var4));
+   private StorageEspModule.Type typeOf(BlockEntityType<?> blockEntityType, NbtCompound nbtCompound) {
+      StorageEspModule.Type var3 = this.typeOf(blockEntityType);
+      if (var3 == null && nbtCompound != null) {
+         Identifier var4 = nbtCompound.getString("id").map(Identifier::tryParse).orElse(null);
+         return var4 == null ? null : this.typeOf(Registries.BLOCK_ENTITY_TYPE.get(var4));
       } else {
          return var3;
       }
@@ -150,14 +149,11 @@ public final class StorageEspModule extends ClientModule implements ChunkScanner
    private void rescan() {
       if (this.isEnabled()) {
          this.layer.clear();
-         ClientWorld var2 = MinecraftClient.method_1551().field_1687;
-         this.shownDimension = var2 == null ? null : var2.method_27983();
+         ClientWorld var2 = MinecraftClient.getInstance().world;
+         this.shownDimension = var2 == null ? null : var2.getRegistryKey();
          Long2ObjectOpenHashMap var1 = this.shownDimension == null ? null : this.detections.get(this.shownDimension);
          if (var1 != null) {
-            ObjectIterator var4 = var1.long2ObjectEntrySet().iterator();
-
-            while (var4.hasNext()) {
-               Entry var5 = (Entry)var4.next();
+            for (Entry var5 : var1.long2ObjectEntrySet()) {
                if (((StorageEspModule.Type)var5.getValue()).enabled.get()) {
                   this.layer.put(var5.getLongKey(), var5.getValue());
                }
@@ -185,15 +181,15 @@ public final class StorageEspModule extends ClientModule implements ChunkScanner
       this.detections.clear();
       this.layer.clear();
       ChunkScanner.register(this);
-      ClientWorld var1 = MinecraftClient.method_1551().field_1687;
-      RegistryKey var2 = this.shownDimension = var1 == null ? null : var1.method_27983();
-      if (var1 != null && MinecraftClient.method_1551().field_1724 != null) {
-         ChunkPos var3 = MinecraftClient.method_1551().field_1724.method_31476();
-         int var4 = MinecraftClient.method_1551().field_1690.method_38521() + 1;
+      ClientWorld var1 = MinecraftClient.getInstance().world;
+      RegistryKey var2 = this.shownDimension = var1 == null ? null : var1.getRegistryKey();
+      if (var1 != null && MinecraftClient.getInstance().player != null) {
+         ChunkPos var3 = MinecraftClient.getInstance().player.getChunkPos();
+         int var4 = MinecraftClient.getInstance().options.getClampedViewDistance() + 1;
 
-         for (int var5 = var3.field_9181 - var4; var5 <= var3.field_9181 + var4; var5++) {
-            for (int var6 = var3.field_9180 - var4; var6 <= var3.field_9180 + var4; var6++) {
-               WorldChunk var7 = var1.method_2935().method_21730(var5, var6);
+         for (int var5 = var3.x - var4; var5 <= var3.x + var4; var5++) {
+            for (int var6 = var3.z - var4; var6 <= var3.z + var4; var6++) {
+               WorldChunk var7 = var1.getChunkManager().getWorldChunk(var5, var6);
                if (var7 != null) {
                   this.scanBlockEntities(var7);
                }
@@ -210,50 +206,48 @@ public final class StorageEspModule extends ClientModule implements ChunkScanner
       this.shownDimension = null;
    }
 
-   private void found(BlockPos var1, StorageEspModule.Type var2) {
-      ClientWorld var3 = MinecraftClient.method_1551().field_1687;
-      if (var2 != null && var3 != null) {
-         long var4 = var1.method_10063();
-         StorageEspModule.Type var6 = (StorageEspModule.Type)this.detections
-            .computeIfAbsent(var3.method_27983(), var0 -> new Long2ObjectOpenHashMap())
-            .put(var4, var2);
-         if (var6 != var2) {
+   private void found(BlockPos blockPos, StorageEspModule.Type type) {
+      ClientWorld var3 = MinecraftClient.getInstance().world;
+      if (type != null && var3 != null) {
+         long var4 = blockPos.asLong();
+         StorageEspModule.Type var6 = this.detections.computeIfAbsent(var3.getRegistryKey(), registryKey -> new Long2ObjectOpenHashMap<>()).put(var4, type);
+         if (var6 != type) {
             if (var6 != null) {
                this.layer.remove(var4);
             }
 
-            if (var2.enabled.get()) {
-               this.layer.put(var4, var2);
+            if (type.enabled.get()) {
+               this.layer.put(var4, type);
             }
          }
       }
    }
 
-   private void gone(BlockPos var1) {
-      ClientWorld var2 = MinecraftClient.method_1551().field_1687;
+   private void gone(BlockPos blockPos) {
+      ClientWorld var2 = MinecraftClient.getInstance().world;
       if (var2 != null) {
-         Long2ObjectOpenHashMap var3 = this.detections.get(var2.method_27983());
-         if (var3 != null && var3.remove(var1.method_10063()) != null) {
-            this.layer.remove(var1.method_10063());
+         Long2ObjectOpenHashMap var3 = this.detections.get(var2.getRegistryKey());
+         if (var3 != null && var3.remove(blockPos.asLong()) != null) {
+            this.layer.remove(blockPos.asLong());
          }
       }
    }
 
    @Override
-   public boolean wants(BlockState var1) {
-      return this.typeOf(var1.method_26204()) != null;
+   public boolean wants(BlockState blockState) {
+      return this.typeOf(blockState.getBlock()) != null;
    }
 
    @Override
-   public void found(long var1, BlockState var3) {
-      this.found(BlockPos.method_10092(var1), this.typeOf(var3.method_26204()));
+   public void found(long l, BlockState blockState) {
+      this.found(BlockPos.fromLong(l), this.typeOf(blockState.getBlock()));
    }
 
    @Override
-   public void removed(long var1) {
-      ClientWorld var3 = MinecraftClient.method_1551().field_1687;
-      if (var3 != null && var3.method_8320(BlockPos.method_10092(var1)).method_26215()) {
-         this.gone(BlockPos.method_10092(var1));
+   public void removed(long l) {
+      ClientWorld var3 = MinecraftClient.getInstance().world;
+      if (var3 != null && var3.getBlockState(BlockPos.fromLong(l)).isAir()) {
+         this.gone(BlockPos.fromLong(l));
       }
    }
 
@@ -263,44 +257,44 @@ public final class StorageEspModule extends ClientModule implements ChunkScanner
       this.layer.clear();
    }
 
-   private void scanBlockEntities(WorldChunk var1) {
-      for (BlockEntity var3 : var1.method_12214().values()) {
-         this.found(var3.method_11016(), this.typeOf(var3.method_11017()));
+   private void scanBlockEntities(WorldChunk worldChunk) {
+      for (BlockEntity var3 : worldChunk.getBlockEntities().values()) {
+         this.found(var3.getPos(), this.typeOf(var3.getType()));
       }
    }
 
-   private void blockChanged(BlockPos var1, BlockState var2) {
-      StorageEspModule.Type var3 = this.typeOf(var2.method_26204());
+   private void blockChanged(BlockPos blockPos, BlockState blockState) {
+      StorageEspModule.Type var3 = this.typeOf(blockState.getBlock());
       if (var3 != null) {
-         this.found(var1, var3);
-      } else if (var2.method_26215()) {
-         this.gone(var1);
+         this.found(blockPos, var3);
+      } else if (blockState.isAir()) {
+         this.gone(blockPos);
       }
    }
 
    @EventHandler
-   public void onPacketApplied(PacketAppliedEvent var1) {
-      ClientWorld var3 = MinecraftClient.method_1551().field_1687;
+   public void onPacketApplied(PacketAppliedEvent packetAppliedEvent) {
+      ClientWorld var3 = MinecraftClient.getInstance().world;
       if (var3 != null) {
-         if (var3.method_27983() != this.shownDimension) {
+         if (var3.getRegistryKey() != this.shownDimension) {
             this.rescan();
          }
 
-         Packet var2 = var1.packet;
-         if (var1.packet instanceof ChunkDataS2CPacket) {
+         Packet var2 = packetAppliedEvent.packet;
+         if (packetAppliedEvent.packet instanceof ChunkDataS2CPacket) {
             ChunkDataS2CPacket var4 = (ChunkDataS2CPacket)var2;
-            var4.method_38598()
-               .method_38587(var4.method_11523(), var4.method_11524())
-               .accept((var1x, var2x, var3x) -> this.found(var1x, this.typeOf(var2x, var3x)));
-            WorldChunk var5 = var3.method_2935().method_21730(var4.method_11523(), var4.method_11524());
+            var4.getChunkData()
+               .getBlockEntities(var4.getChunkX(), var4.getChunkZ())
+               .accept((blockPos, blockEntityType, nbtCompound) -> this.found(blockPos, this.typeOf(blockEntityType, nbtCompound)));
+            WorldChunk var5 = var3.getChunkManager().getWorldChunk(var4.getChunkX(), var4.getChunkZ());
             if (var5 != null) {
                this.scanBlockEntities(var5);
             }
-         } else if (var1.packet instanceof BlockUpdateS2CPacket var8) {
-            this.blockChanged(var8.method_11309(), var8.method_11308());
-         } else if (var1.packet instanceof ChunkDeltaUpdateS2CPacket var9) {
-            var9.method_30621(this::blockChanged);
-         } else if (var1.packet instanceof GameJoinS2CPacket) {
+         } else if (packetAppliedEvent.packet instanceof BlockUpdateS2CPacket var8) {
+            this.blockChanged(var8.getPos(), var8.getState());
+         } else if (packetAppliedEvent.packet instanceof ChunkDeltaUpdateS2CPacket var9) {
+            var9.visitUpdates(this::blockChanged);
+         } else if (packetAppliedEvent.packet instanceof GameJoinS2CPacket) {
             this.detections.clear();
             this.layer.clear();
          }
@@ -308,12 +302,12 @@ public final class StorageEspModule extends ClientModule implements ChunkScanner
    }
 
    @EventHandler
-   public void onPacketReceiveNetty(PacketReceiveNettyEvent var1) {
-      if (var1.packet instanceof BlockEntityUpdateS2CPacket var3) {
-         BlockPos var4 = var3.method_11293();
-         StorageEspModule.Type var5 = this.typeOf(var3.method_11291(), var3.method_11290());
+   public void onPacketReceiveNetty(PacketReceiveNettyEvent packetReceiveNettyEvent) {
+      if (packetReceiveNettyEvent.packet instanceof BlockEntityUpdateS2CPacket var3) {
+         BlockPos var4 = var3.getPos();
+         StorageEspModule.Type var5 = this.typeOf(var3.getBlockEntityType(), var3.getNbt());
          if (var5 != null) {
-            MinecraftClient.method_1551().execute(() -> {
+            MinecraftClient.getInstance().execute(() -> {
                if (this.isEnabled()) {
                   this.found(var4, var5);
                }
@@ -323,13 +317,13 @@ public final class StorageEspModule extends ClientModule implements ChunkScanner
    }
 
    @EventHandler
-   public void onRender3D(Render3DEvent var1) {
-      ClientWorld var2 = MinecraftClient.method_1551().field_1687;
-      if (var2 != null && var2.method_27983() != this.shownDimension) {
+   public void onRender3D(Render3DEvent render3DEvent) {
+      ClientWorld var2 = MinecraftClient.getInstance().world;
+      if (var2 != null && var2.getRegistryKey() != this.shownDimension) {
          this.rescan();
       }
 
-      this.layer.render(var1, this.style);
+      this.layer.render(render3DEvent, this.style);
       if (this.anyTracer()) {
          this.layer.renderTracers(this.style);
       }
@@ -342,11 +336,11 @@ public final class StorageEspModule extends ClientModule implements ChunkScanner
       final ColorSetting color;
       final ColorSetting tracerColor;
 
-      Type(String nullx, boolean nullxx, int nullxxx, String nullxxxx, String nullxxxxx, String nullxxxxxx, String nullxxxxxxx) {
-         this.enabled = StorageEspModule.this.addSetting(nullxxxx, new BooleanSetting(nullx, nullxx));
-         this.color = StorageEspModule.this.addSetting(nullxxxxx, new ColorSetting(nullx + " Color", nullxxx));
-         this.tracers = StorageEspModule.this.addSetting(nullxxxxxx, new BooleanSetting(nullx + " Tracers", false));
-         this.tracerColor = StorageEspModule.this.addSetting(nullxxxxxxx, new ColorSetting(nullx + " Tracer Color", nullxxx));
+      Type(String string, boolean bl, int i, String string2, String string3, String string4, String string5) {
+         this.enabled = StorageEspModule.this.addSetting(string2, new BooleanSetting(string, bl));
+         this.color = StorageEspModule.this.addSetting(string3, new ColorSetting(string + " Color", i));
+         this.tracers = StorageEspModule.this.addSetting(string4, new BooleanSetting(string + " Tracers", false));
+         this.tracerColor = StorageEspModule.this.addSetting(string5, new ColorSetting(string + " Tracer Color", i));
          this.color.visibleWhen(this.enabled::get);
          this.tracers.visibleWhen(() -> StorageEspModule.this.sTracers.get() && this.enabled.get());
          this.tracerColor.visibleWhen(() -> StorageEspModule.this.sTracers.get() && this.enabled.get() && this.tracers.get());

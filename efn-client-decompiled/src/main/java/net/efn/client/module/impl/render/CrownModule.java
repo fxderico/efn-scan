@@ -41,24 +41,24 @@ public final class CrownModule extends HeadCosmeticModule {
    }
 
    @Override
-   CrownMesh headMesh(boolean var1) {
+   CrownMesh headMesh(boolean bl) {
       this.refreshMeshes();
-      int var2 = var1 ? 1 : 0;
+      int var2 = bl ? 1 : 0;
       CrownMesh var3 = this.meshes[var2];
       if (var3 == null) {
-         this.meshes[var2] = var3 = CrownMesh.head(this.styleIndex(), 0, var1);
+         this.meshes[var2] = var3 = CrownMesh.head(this.styleIndex(), 0, bl);
       }
 
       return var3;
    }
 
    @Override
-   CrownMesh bodyMesh(boolean var1) {
+   CrownMesh bodyMesh(boolean bl) {
       this.refreshMeshes();
-      int var2 = var1 ? 3 : 2;
+      int var2 = bl ? 3 : 2;
       CrownMesh var3 = this.meshes[var2];
       if (var3 == null) {
-         this.meshes[var2] = var3 = CrownMesh.broadCollar(var1, false);
+         this.meshes[var2] = var3 = CrownMesh.broadCollar(bl, false);
       }
 
       return var3;
@@ -98,9 +98,9 @@ public final class CrownModule extends HeadCosmeticModule {
          int var3 = CosmeticAccent.argb();
          int var4;
          var1[0] = var4 = metal(var3);
-         var1[1] = ColorHelper.method_61321(var3, 0.78F);
+         var1[1] = ColorHelper.scaleRgb(var3, 0.78F);
          var1[2] = gem(var3);
-         var1[3] = ColorHelper.method_61321(var4, 0.62F);
+         var1[3] = ColorHelper.scaleRgb(var4, 0.62F);
       }
 
       return var1;
@@ -121,10 +121,10 @@ public final class CrownModule extends HeadCosmeticModule {
       return this.friends.get();
    }
 
-   private static int bronze(int var0) {
-      int var1 = (int)((var0 >> 16 & 0xFF) * 0.7F);
-      int var2 = (int)((var0 >> 8 & 0xFF) * 0.55F);
-      int var3 = (int)((var0 & 0xFF) * 0.4F);
+   private static int bronze(int i) {
+      int var1 = (int)((i >> 16 & 0xFF) * 0.7F);
+      int var2 = (int)((i >> 8 & 0xFF) * 0.55F);
+      int var3 = (int)((i & 0xFF) * 0.4F);
       return 0xFF000000 | var1 << 16 | var2 << 8 | var3;
    }
 }

@@ -9,18 +9,18 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Environment(EnvType.CLIENT)
 @Mixin(
-   targets = {"net/minecraft/class_374$class_375"}
+   targets = {"net/minecraft/client/toast/ToastManager$Entry"}
 )
 public interface AccessorHudToastInstance {
-   @Accessor("field_2241")
+   @Accessor("instance")
    Toast efn$hudToast();
 
-   @Accessor("field_52787")
+   @Accessor("topIndex")
    int efn$hudFirstSlot();
 
-   @Accessor("field_2244")
+   @Accessor("visibility")
    Visibility efn$hudVisibility();
 
-   @Accessor("field_52789")
+   @Accessor("visibleWidthPortion")
    float efn$hudVisiblePortion();
 }

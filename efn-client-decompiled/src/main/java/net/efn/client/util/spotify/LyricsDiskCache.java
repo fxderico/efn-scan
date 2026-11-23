@@ -29,14 +29,14 @@ final class LyricsDiskCache {
    private final int maxFiles;
    private final long maxBytes;
 
-   LyricsDiskCache(Path var1, int var2, long var3) {
-      this.dir = var1;
-      this.maxFiles = var2;
-      this.maxBytes = var3;
+   LyricsDiskCache(Path path, int i, long l) {
+      this.dir = path;
+      this.maxFiles = i;
+      this.maxBytes = l;
    }
 
-   LyricsDiskCache.Entry read(String var1) {
-      Path var2 = this.file(var1);
+   LyricsDiskCache.Entry read(String string) {
+      Path var2 = this.file(string);
       if (var2 == null) {
          return null;
       } else {
@@ -69,14 +69,14 @@ final class LyricsDiskCache {
       }
    }
 
-   void write(String var1, LrclibTrack var2, long var3) {
-      Path var5 = this.file(var1);
+   void write(String string, LrclibTrack lrclibTrack, long l) {
+      Path var5 = this.file(string);
       if (var5 != null) {
          JsonObject var6 = new JsonObject();
          var6.addProperty("format", 1);
-         var6.addProperty("fetchedAt", var3);
-         if (var2 != null) {
-            var6.add("track", var2.toJson());
+         var6.addProperty("fetchedAt", l);
+         if (lrclibTrack != null) {
+            var6.add("track", lrclibTrack.toJson());
          }
 
          Path var7 = var5.resolveSibling(var5.getFileName() + ".tmp");
@@ -138,34 +138,34 @@ final class LyricsDiskCache {
       }
    }
 
-   private Path file(String var1) {
-      return var1 != null && KEY.matcher(var1).matches() ? this.dir.resolve(var1 + ".json") : null;
+   private Path file(String string) {
+      return string != null && KEY.matcher(string).matches() ? this.dir.resolve(string + ".json") : null;
    }
 
-   private static boolean delete(Path var0) {
+   private static boolean delete(Path path) {
       try {
-         Files.deleteIfExists(var0);
+         Files.deleteIfExists(path);
          return true;
       } catch (IOException var2) {
          return false;
       }
    }
 
-   private static void touch(Path var0) {
+   private static void touch(Path path) {
       try {
-         Files.setLastModifiedTime(var0, FileTime.fromMillis(System.currentTimeMillis()));
+         Files.setLastModifiedTime(path, FileTime.fromMillis(System.currentTimeMillis()));
       } catch (IOException var2) {
       }
    }
 
-   private static int intValue(JsonObject var0, String var1) {
-      JsonElement var3 = var0.get(var1);
+   private static int intValue(JsonObject jsonObject, String string) {
+      JsonElement var3 = jsonObject.get(string);
       JsonPrimitive var2;
       return var3 instanceof JsonPrimitive && (var2 = (JsonPrimitive)var3).isNumber() ? var2.getAsInt() : -1;
    }
 
-   private static long longValue(JsonObject var0, String var1) {
-      JsonElement var3 = var0.get(var1);
+   private static long longValue(JsonObject jsonObject, String string) {
+      JsonElement var3 = jsonObject.get(string);
       JsonPrimitive var2;
       return var3 instanceof JsonPrimitive && (var2 = (JsonPrimitive)var3).isNumber() ? var2.getAsLong() : -1L;
    }

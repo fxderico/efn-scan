@@ -42,17 +42,17 @@ public class ClientModule {
    private int keybind = -1;
    private boolean holdMode;
 
-   protected ClientModule(String var1, String var2, ModuleCategory var3) {
-      this(StableId.legacy(var1), var1, var2, var3);
+   protected ClientModule(String string, String string2, ModuleCategory moduleCategory) {
+      this(StableId.legacy(string), string, string2, moduleCategory);
    }
 
-   protected ClientModule(String var1, String var2, String var3, ModuleCategory var4) {
-      this.id = StableId.validate(var1);
-      this.name = var2;
-      this.description = var3;
-      this.category = Objects.requireNonNull(var4, "category");
-      this.showInHud = var4 != ModuleCategory.CLIENT ? this.addSetting("show-in-hud", new BooleanSetting("Show in HUD", true)) : null;
-      BooleanSetting var5 = this.toggleMessage = var4 != ModuleCategory.CLIENT
+   protected ClientModule(String string, String string2, String string3, ModuleCategory moduleCategory) {
+      this.id = StableId.validate(string);
+      this.name = string2;
+      this.description = string3;
+      this.category = Objects.requireNonNull(moduleCategory, "category");
+      this.showInHud = moduleCategory != ModuleCategory.CLIENT ? this.addSetting("show-in-hud", new BooleanSetting("Show in HUD", true)) : null;
+      BooleanSetting var5 = this.toggleMessage = moduleCategory != ModuleCategory.CLIENT
          ? this.addSetting("toggle-message", new BooleanSetting("Toggle Message", true))
          : null;
       if (this.toggleMessage != null) {
@@ -60,26 +60,26 @@ public class ClientModule {
       }
    }
 
-   protected final <S extends Setting> S addSetting(S var1) {
-      return this.addSetting(var1.id(), (S)var1);
+   protected final <S extends Setting> S addSetting(S setting) {
+      return this.addSetting(setting.id(), (S)setting);
    }
 
-   protected final <S extends Setting> S addSetting(String var1, S var2) {
-      return this.insertSetting(this.settings.size(), var1, (S)var2);
+   protected final <S extends Setting> S addSetting(String string, S setting) {
+      return this.insertSetting(this.settings.size(), string, (S)setting);
    }
 
-   private <S extends Setting> S insertSetting(int var1, String var2, S var3) {
+   private <S extends Setting> S insertSetting(int i, String string, S setting) {
       for (Setting var5 : this.settings) {
-         if (var5.id().equals(var2)) {
-            throw new IllegalArgumentException("Duplicate setting id: " + this.id + "/" + var2);
+         if (var5.id().equals(string)) {
+            throw new IllegalArgumentException("Duplicate setting id: " + this.id + "/" + string);
          }
       }
 
-      var3.bindId(var2);
-      var3.onChange(ModuleRevision.CHANGED);
-      this.settings.add(var1, var3);
+      setting.bindId(string);
+      setting.onChange(ModuleRevision.CHANGED);
+      this.settings.add(i, setting);
       ModuleRevision.changed();
-      return (S)var3;
+      return (S)setting;
    }
 
    protected final BooleanSetting usesNotifications() {
@@ -161,7 +161,7 @@ public class ClientModule {
       return 0;
    }
 
-   public void migrateSettings(int var1) {
+   public void migrateSettings(int i) {
    }
 
    public boolean isAction() {
@@ -175,23 +175,23 @@ public class ClientModule {
       return this.enabled;
    }
 
-   public final void setEnabled(boolean var1) {
+   public final void setEnabled(boolean bl) {
       boolean var2 = this.enabled;
-      this.switchTo(var1);
+      this.switchTo(bl);
       if (this.enabled != var2) {
          ModuleToggleEvent.dispatch(this);
       }
    }
 
-   private void switchTo(boolean var1) {
-      if (this.enabled != var1 && !this.disabling) {
-         this.enabled = var1;
+   private void switchTo(boolean bl) {
+      if (this.enabled != bl && !this.disabling) {
+         this.enabled = bl;
          ModuleRevision.changed();
          if (this.registered) {
             ModuleRegistry.switched(this);
          }
 
-         if (var1) {
+         if (bl) {
             this.enabling = true;
             this.disableRequested = false;
 
@@ -264,9 +264,9 @@ public class ClientModule {
       return this.keybind;
    }
 
-   public final void setKeybind(int var1) {
-      if (this.keybind != var1) {
-         this.keybind = var1;
+   public final void setKeybind(int i) {
+      if (this.keybind != i) {
+         this.keybind = i;
          ModuleRevision.changed();
       }
    }
@@ -275,9 +275,9 @@ public class ClientModule {
       return this.holdMode;
    }
 
-   public final void setHoldMode(boolean var1) {
-      if (this.holdMode != var1) {
-         this.holdMode = var1;
+   public final void setHoldMode(boolean bl) {
+      if (this.holdMode != bl) {
+         this.holdMode = bl;
          ModuleRevision.changed();
       }
    }
@@ -288,19 +288,19 @@ public class ClientModule {
    protected void onDisable() {
    }
 
-   protected <E extends Event> void on(EventType<E> var1, Consumer<E> var2) {
-      this.on(var1, Stage.PRE, EventPriority.NORMAL, var2);
+   protected <E extends Event> void on(EventType<E> eventType, Consumer<E> consumer) {
+      this.on(eventType, Stage.PRE, EventPriority.NORMAL, consumer);
    }
 
-   protected <E extends Event> void on(EventType<E> var1, Stage var2, Consumer<E> var3) {
-      this.on(var1, var2, EventPriority.NORMAL, var3);
+   protected <E extends Event> void on(EventType<E> eventType, Stage stage, Consumer<E> consumer) {
+      this.on(eventType, stage, EventPriority.NORMAL, consumer);
    }
 
-   protected <E extends Event> void on(EventType<E> var1, Stage var2, EventPriority var3, Consumer<E> var4) {
+   protected <E extends Event> void on(EventType<E> eventType, Stage stage, EventPriority eventPriority, Consumer<E> consumer) {
       if (!this.enabled) {
          throw new IllegalStateException("Cannot register a listener on disabled module: " + this.name);
       } else {
-         this.ownedListeners.add(var1.listen(this, var2, var3, var4));
+         this.ownedListeners.add(eventType.listen(this, stage, eventPriority, consumer));
       }
    }
 }

@@ -6,5 +6,5 @@ import net.fabricmc.api.Environment;
 @FunctionalInterface
 @Environment(EnvType.CLIENT)
 public interface Listener<E extends Event> {
-   void invoke(E var1);
+   void invoke(E event);
 }

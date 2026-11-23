@@ -128,18 +128,18 @@ public final class OrderAhSellerModule extends ClientModule {
 
    @Override
    protected void onEnable() {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      if (var2.field_1724 != null && var2.method_1548() != null) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      if (var2.player != null && var2.getSession() != null) {
          String var3 = this.validate();
          if (var3 != null) {
             this.info(ModuleChat.body().warn(var3));
             this.requestDisable();
          } else {
             OrderAhBot var1;
-            this.bot = var1 = new OrderAhBot(this, this.worker, this.buildProduct(), this.buildConfig(), var2.method_1548().method_1676());
-            this.worker.start(var1::run, var3x -> {
-               LOGGER.error("[EFN] Order AH Trader stopped", var3x);
-               this.info(ModuleChat.body().danger("Stopped").text(": " + var3x));
+            this.bot = var1 = new OrderAhBot(this, this.worker, this.buildProduct(), this.buildConfig(), var2.getSession().getUsername());
+            this.worker.start(var1::run, throwable -> {
+               LOGGER.error("[EFN] Order AH Trader stopped", throwable);
+               this.info(ModuleChat.body().danger("Stopped").text(": " + throwable));
                var2.execute(() -> {
                   if (this.bot == var1) {
                      this.setEnabled(false);
@@ -158,11 +158,11 @@ public final class OrderAhSellerModule extends ClientModule {
       OrderAhBot var1 = this.bot;
       this.bot = null;
       this.worker.stop();
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientPlayerEntity var3 = var2.field_1724;
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientPlayerEntity var3 = var2.player;
       if (var1 != null && var3 != null) {
-         if (var3.field_7512 != var3.field_7498) {
-            var3.method_7346();
+         if (var3.currentScreenHandler != var3.playerScreenHandler) {
+            var3.closeHandledScreen();
          } else {
             Dialogs.close(var2);
          }
@@ -172,13 +172,13 @@ public final class OrderAhSellerModule extends ClientModule {
    }
 
    @EventHandler
-   public void onPacket(PacketReceiveNettyEvent var1) {
+   public void onPacket(PacketReceiveNettyEvent packetReceiveNettyEvent) {
       OrderAhBot var4 = this.bot;
       if (var4 != null) {
-         Packet var3 = var1.packet;
+         Packet var3 = packetReceiveNettyEvent.packet;
          GameMessageS2CPacket var2;
-         if (var1.packet instanceof GameMessageS2CPacket && (var2 = (GameMessageS2CPacket)var3).comp_763() != null) {
-            var4.onChat(var2.comp_763().getString());
+         if (packetReceiveNettyEvent.packet instanceof GameMessageS2CPacket && (var2 = (GameMessageS2CPacket)var3).content() != null) {
+            var4.onChat(var2.content().getString());
          }
       }
    }
@@ -215,7 +215,7 @@ public final class OrderAhSellerModule extends ClientModule {
          var2,
          this.items[var1].get().trim(),
          Product.searchText(var2),
-         new ItemStack(var2).method_7964().getString(),
+         new ItemStack(var2).getName().getString(),
          ServerText.parseMoney(this.minPrices[var1].get()),
          ItemEnchants.supports(var2) ? Product.parseEnchants(this.enchants[var1].get()) : List.of(),
          this.restock[var1].get(),
@@ -242,16 +242,16 @@ public final class OrderAhSellerModule extends ClientModule {
       );
    }
 
-   private static int parseAmount(String var0) {
+   private static int parseAmount(String string) {
       try {
-         int var1 = Integer.parseInt(var0.trim());
+         int var1 = Integer.parseInt(string.trim());
          return var1 > 0 ? var1 : -1;
       } catch (NumberFormatException var2) {
          return -1;
       }
    }
 
-   private void info(ModuleChat.Body var1) {
-      ModuleChat.send(this, var1);
+   private void info(ModuleChat.Body body) {
+      ModuleChat.send(this, body);
    }
 }

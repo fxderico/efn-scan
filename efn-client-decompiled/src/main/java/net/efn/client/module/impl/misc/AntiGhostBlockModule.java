@@ -35,7 +35,7 @@ public final class AntiGhostBlockModule extends ClientModule {
    @Override
    protected void onEnable() {
       this.pending.clear();
-      this.world = MinecraftClient.method_1551().field_1687;
+      this.world = MinecraftClient.getInstance().world;
    }
 
    @Override
@@ -44,44 +44,48 @@ public final class AntiGhostBlockModule extends ClientModule {
       this.world = null;
    }
 
-   private static AntiGhostBlockModule active(ClientWorld var0) {
+   private static AntiGhostBlockModule active(ClientWorld clientWorld) {
       AntiGhostBlockModule var1 = instance;
       if (var1 != null && var1.isEnabled()) {
-         MinecraftClient var2 = MinecraftClient.method_1551();
-         if (var1.world != var2.field_1687) {
+         MinecraftClient var2 = MinecraftClient.getInstance();
+         if (var1.world != var2.world) {
             var1.pending.clear();
-            var1.world = var2.field_1687;
+            var1.world = var2.world;
          }
 
-         return var0 != null && var0 == var2.field_1687 && var2.field_1724 != null && var2.method_1562() != null && !var2.method_1542() ? var1 : null;
+         return clientWorld != null && clientWorld == var2.world && var2.player != null && var2.getNetworkHandler() != null && !var2.isInSingleplayer()
+            ? var1
+            : null;
       } else {
          return null;
       }
    }
 
-   private static long timeoutNanos(MinecraftClient var0) {
-      PlayerListEntry var1 = var0.method_1562() != null && var0.field_1724 != null ? var0.method_1562().method_2871(var0.field_1724.method_5667()) : null;
-      long var2 = var1 == null ? 0L : Math.max(0, var1.method_2959());
+   private static long timeoutNanos(MinecraftClient minecraftClient) {
+      PlayerListEntry var1 = minecraftClient.getNetworkHandler() != null && minecraftClient.player != null
+         ? minecraftClient.getNetworkHandler().getPlayerListEntry(minecraftClient.player.getUuid())
+         : null;
+      long var2 = var1 == null ? 0L : Math.max(0, var1.getLatency());
       return Math.max(2000L, var2 * 3L + 500L) * 1000000L;
    }
 
    @EventHandler
-   public void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      AntiGhostBlockModule var3 = active(var2.field_1687);
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      AntiGhostBlockModule var3 = active(var2.world);
       if (var3 != null) {
          long var4 = System.nanoTime();
          long var6 = timeoutNanos(var2);
-         var3.pending.values().removeIf(var4x -> var4 - var4x.since >= var6);
+         var3.pending.values().removeIf(pending -> var4 - pending.since >= var6);
       }
    }
 
-   public static boolean holdBreak(BlockPos var0) {
-      MinecraftClient var1 = MinecraftClient.method_1551();
-      AntiGhostBlockModule var2 = active(var1.field_1687);
-      if (var2 != null && !var1.field_1687.method_8320(var0).method_26215()) {
-         int var3 = ((AccessorNetheriteClientLevel)var1.field_1687).efn$blockStatePredictionHandler().method_41942();
-         long var4 = var0.method_10063();
+   public static boolean holdBreak(BlockPos blockPos) {
+      MinecraftClient var1 = MinecraftClient.getInstance();
+      AntiGhostBlockModule var2 = active(var1.world);
+      if (var2 != null && !var1.world.getBlockState(blockPos).isAir()) {
+         int var3 = ((AccessorNetheriteClientLevel)var1.world).efn$blockStatePredictionHandler().getSequence();
+         long var4 = blockPos.asLong();
          if (!var2.pending.containsKey(var4)) {
             if (var2.pending.size() >= 256) {
                Iterator var6 = var2.pending.keySet().iterator();
@@ -98,33 +102,33 @@ public final class AntiGhostBlockModule extends ClientModule {
       }
    }
 
-   public static boolean waiting(BlockPos var0) {
-      MinecraftClient var1 = MinecraftClient.method_1551();
-      AntiGhostBlockModule var2 = active(var1.field_1687);
+   public static boolean waiting(BlockPos blockPos) {
+      MinecraftClient var1 = MinecraftClient.getInstance();
+      AntiGhostBlockModule var2 = active(var1.world);
       if (var2 == null) {
          return false;
       } else {
-         AntiGhostBlockModule.Pending var3 = var2.pending.get(var0.method_10063());
+         AntiGhostBlockModule.Pending var3 = var2.pending.get(blockPos.asLong());
          if (var3 == null) {
             return false;
          } else if (System.nanoTime() - var3.since < timeoutNanos(var1)) {
             return true;
          } else {
-            var2.pending.remove(var0.method_10063());
+            var2.pending.remove(blockPos.asLong());
             return false;
          }
       }
    }
 
-   public static boolean serverAnswered(ClientWorld var0, BlockPos var1) {
-      AntiGhostBlockModule var2 = active(var0);
-      return var2 != null && var2.pending.remove(var1.method_10063()) != null;
+   public static boolean serverAnswered(ClientWorld clientWorld, BlockPos blockPos) {
+      AntiGhostBlockModule var2 = active(clientWorld);
+      return var2 != null && var2.pending.remove(blockPos.asLong()) != null;
    }
 
-   public static void acknowledged(ClientWorld var0, int var1) {
-      AntiGhostBlockModule var2 = active(var0);
+   public static void acknowledged(ClientWorld clientWorld, int i) {
+      AntiGhostBlockModule var2 = active(clientWorld);
       if (var2 != null) {
-         var2.pending.values().removeIf(var1x -> var1x.sequence <= var1);
+         var2.pending.values().removeIf(pending -> pending.sequence <= i);
       }
    }
 

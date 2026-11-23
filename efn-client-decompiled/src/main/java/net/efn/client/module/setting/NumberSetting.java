@@ -20,24 +20,24 @@ public final class NumberSetting extends Setting {
    private double gridMin;
    private double gridStep;
 
-   public NumberSetting(String var1, float var2, float var3, float var4) {
-      super(var1);
-      this.value = new float[]{var2};
-      this.min = var3;
-      this.max = var4;
+   public NumberSetting(String string, float f, float g, float h) {
+      super(string);
+      this.value = new float[]{f};
+      this.min = g;
+      this.max = h;
    }
 
-   public NumberSetting step(float var1) {
-      if (var1 >= 0.0F && !Float.isInfinite(var1)) {
-         this.step = var1;
-         this.stepDecimals = var1 > 0.0F ? Math.max(decimalsOf(var1), decimalsOf(this.min)) : 0;
+   public NumberSetting step(float f) {
+      if (f >= 0.0F && !Float.isInfinite(f)) {
+         this.step = f;
+         this.stepDecimals = f > 0.0F ? Math.max(decimalsOf(f), decimalsOf(this.min)) : 0;
          this.gridMin = this.toDecimals(this.min);
-         double var2 = this.toDecimals(var1);
-         this.gridStep = var2 > 0.0 ? var2 : var1;
+         double var2 = this.toDecimals(f);
+         this.gridStep = var2 > 0.0 ? var2 : f;
          this.set(this.value[0]);
          return this;
       } else {
-         throw new IllegalArgumentException("Invalid step " + var1 + " for setting '" + this.name() + "'");
+         throw new IllegalArgumentException("Invalid step " + f + " for setting '" + this.name() + "'");
       }
    }
 
@@ -53,16 +53,16 @@ public final class NumberSetting extends Setting {
       return Math.round(this.value[0]);
    }
 
-   public void set(float var1) {
-      float var2 = this.snap(var1);
+   public void set(float f) {
+      float var2 = this.snap(f);
       if (this.value[0] != var2) {
          this.value[0] = var2;
          this.notifyChanged();
       }
    }
 
-   public float snap(float var1) {
-      float var2 = this.clamp(var1);
+   public float snap(float f) {
+      float var2 = this.clamp(f);
       if (this.step <= 0.0F) {
          return var2;
       } else {
@@ -106,30 +106,30 @@ public final class NumberSetting extends Setting {
       return this.max;
    }
 
-   private float clamp(float var1) {
-      if (Float.isNaN(var1)) {
+   private float clamp(float f) {
+      if (Float.isNaN(f)) {
          return this.value[0];
-      } else if (var1 < this.min) {
+      } else if (f < this.min) {
          return this.min;
       } else {
-         return var1 > this.max ? this.max : var1;
+         return f > this.max ? this.max : f;
       }
    }
 
-   private float onGrid(long var1) {
-      return (float)this.toDecimals(this.gridMin + var1 * this.gridStep);
+   private float onGrid(long l) {
+      return (float)this.toDecimals(this.gridMin + l * this.gridStep);
    }
 
-   private double toDecimals(double var1) {
+   private double toDecimals(double d) {
       double var3 = POW10[this.stepDecimals];
-      return Math.round(var1 * var3) / var3;
+      return Math.round(d * var3) / var3;
    }
 
-   private static int decimalsOf(float var0) {
-      if (!Float.isFinite(var0)) {
+   private static int decimalsOf(float f) {
+      if (!Float.isFinite(f)) {
          return 0;
       } else {
-         int var1 = new BigDecimal(Float.toString(var0)).stripTrailingZeros().scale();
+         int var1 = new BigDecimal(Float.toString(f)).stripTrailingZeros().scale();
          return Math.max(0, Math.min(4, var1));
       }
    }
@@ -140,10 +140,10 @@ public final class NumberSetting extends Setting {
    }
 
    @Override
-   protected void deserializeValue(JsonElement var1) {
-      if (var1 != null && var1.isJsonPrimitive()) {
+   protected void deserializeValue(JsonElement jsonElement) {
+      if (jsonElement != null && jsonElement.isJsonPrimitive()) {
          try {
-            this.value[0] = this.snap(var1.getAsFloat());
+            this.value[0] = this.snap(jsonElement.getAsFloat());
          } catch (RuntimeException var3) {
          }
       }

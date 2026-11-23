@@ -21,24 +21,24 @@ public abstract class MixinAntiGhostBlockClientLevel {
    }
 
    @WrapOperation(
-      method = {"method_41928"},
+      method = {"handleBlockUpdate"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_7202;method_41940(Lnet/minecraft/class_2338;Lnet/minecraft/class_2680;)Z"
+         target = "Lnet/minecraft/client/network/PendingUpdateManager;hasPendingUpdate(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;)Z"
       )}
    )
-   private boolean efn$serverAnswer(PendingUpdateManager var1, BlockPos var2, BlockState var3, Operation<Boolean> var4) {
-      boolean var5 = (Boolean)var4.call(new Object[]{var1, var2, var3});
+   private boolean efn$serverAnswer(PendingUpdateManager pendingUpdateManager, BlockPos blockPos, BlockState blockState, Operation<Boolean> operation) {
+      boolean var5 = (Boolean)operation.call(pendingUpdateManager, blockPos, blockState);
       ClientWorld var6 = (ClientWorld)this;
-      return var5 && !AntiGhostBlockModule.serverAnswered(var6, var2);
+      return var5 && !AntiGhostBlockModule.serverAnswered(var6, blockPos);
    }
 
    @Inject(
-      method = {"method_41927"},
+      method = {"handlePlayerActionResponse"},
       at = {@At("TAIL")}
    )
-   private void efn$acknowledged(int var1, CallbackInfo var2) {
+   private void efn$acknowledged(int i, CallbackInfo callbackInfo) {
       ClientWorld var3 = (ClientWorld)this;
-      AntiGhostBlockModule.acknowledged(var3, var1);
+      AntiGhostBlockModule.acknowledged(var3, i);
    }
 }

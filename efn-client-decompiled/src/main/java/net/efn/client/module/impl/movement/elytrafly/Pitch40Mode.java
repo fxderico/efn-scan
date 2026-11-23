@@ -13,14 +13,14 @@ public final class Pitch40Mode extends ElytraFlightMode {
    private boolean pitchingDown = true;
    private float pitch;
 
-   public Pitch40Mode(ElytraFlyModule var1) {
-      super(var1);
+   public Pitch40Mode(ElytraFlyModule elytraFlyModule) {
+      super(elytraFlyModule);
    }
 
    @Override
    public void onActivate() {
-      ClientPlayerEntity var1 = this.mc.field_1724;
-      if (var1.method_23318() < this.elytraFly.pitch40upperBounds.get()) {
+      ClientPlayerEntity var1 = this.mc.player;
+      if (var1.getY() < this.elytraFly.pitch40upperBounds.get()) {
          ModuleChat.send(
             this.elytraFly,
             ModuleChat.body()
@@ -31,7 +31,7 @@ public final class Pitch40Mode extends ElytraFlightMode {
                .text(")")
          );
          this.elytraFly.disableFromMode();
-      } else if (var1.method_23318() - 40.0 < this.elytraFly.pitch40lowerBounds.get()) {
+      } else if (var1.getY() - 40.0 < this.elytraFly.pitch40lowerBounds.get()) {
          ModuleChat.send(
             this.elytraFly,
             ModuleChat.body()
@@ -49,18 +49,18 @@ public final class Pitch40Mode extends ElytraFlightMode {
       this.pitch = 37.72F;
    }
 
-   private float randPitch(float var1, float var2) {
-      return (float)(var1 + var2 * (Math.random() - 0.5));
+   private float randPitch(float f, float g) {
+      return (float)(f + g * (Math.random() - 0.5));
    }
 
    @Override
    public void onTick() {
       super.onTick();
-      ClientPlayerEntity var1 = this.mc.field_1724;
+      ClientPlayerEntity var1 = this.mc.player;
       if (var1 != null) {
-         if (this.pitchingDown && var1.method_23318() <= this.elytraFly.pitch40lowerBounds.get()) {
+         if (this.pitchingDown && var1.getY() <= this.elytraFly.pitch40lowerBounds.get()) {
             this.pitchingDown = false;
-         } else if (!this.pitchingDown && var1.method_23318() >= this.elytraFly.pitch40upperBounds.get()) {
+         } else if (!this.pitchingDown && var1.getY() >= this.elytraFly.pitch40upperBounds.get()) {
             this.pitchingDown = true;
          }
 
@@ -74,7 +74,7 @@ public final class Pitch40Mode extends ElytraFlightMode {
             this.pitch = this.pitch + this.randPitch(this.elytraFly.pitch40rotationSpeedDown.get(), 0.5F);
          }
 
-         var1.method_36457(this.pitch);
+         var1.setPitch(this.pitch);
       }
    }
 
@@ -83,13 +83,13 @@ public final class Pitch40Mode extends ElytraFlightMode {
    }
 
    @Override
-   public void handleHorizontalSpeed(PlayerMoveEvent var1) {
-      this.velX = var1.x;
-      this.velZ = var1.z;
+   public void handleHorizontalSpeed(PlayerMoveEvent playerMoveEvent) {
+      this.velX = playerMoveEvent.x;
+      this.velZ = playerMoveEvent.z;
    }
 
    @Override
-   public void handleVerticalSpeed(PlayerMoveEvent var1) {
+   public void handleVerticalSpeed(PlayerMoveEvent playerMoveEvent) {
    }
 
    @Override

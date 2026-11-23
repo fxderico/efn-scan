@@ -32,8 +32,8 @@ public final class EntitySpeedModule extends ClientModule {
       EntityControlVehicleHook.refresh();
    }
 
-   public boolean appliesTo(Entity var1) {
-      return (!this.onlyOnGround.get() || var1.method_24828() || var1.method_70987()) && (this.inWater.get() || !var1.method_5799());
+   public boolean appliesTo(Entity entity) {
+      return (!this.onlyOnGround.get() || entity.isOnGround() || entity.isFlyingVehicle()) && (this.inWater.get() || !entity.isTouchingWater());
    }
 
    public double horizontalSpeed() {

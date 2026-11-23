@@ -21,30 +21,30 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MixinBorderlessWindow implements BorderlessFullscreen.Switchable {
    @Shadow
    @Final
-   private long field_5187;
+   private long handle;
    @Shadow
    @Final
-   private MonitorTracker field_5195;
+   private MonitorTracker monitorTracker;
    @Shadow
-   private boolean field_5191;
+   private boolean fullscreen;
    @Shadow
-   private boolean field_5177;
+   private boolean currentFullscreen;
    @Shadow
-   private int field_5175;
+   private int windowedX;
    @Shadow
-   private int field_5185;
+   private int windowedY;
    @Shadow
-   private int field_5174;
+   private int windowedWidth;
    @Shadow
-   private int field_5184;
+   private int windowedHeight;
    @Shadow
-   private int field_5183;
+   private int x;
    @Shadow
-   private int field_5198;
+   private int y;
    @Shadow
-   private int field_5182;
+   private int width;
    @Shadow
-   private int field_5197;
+   private int height;
    @Unique
    private boolean efn$borderless;
 
@@ -52,35 +52,35 @@ public abstract class MixinBorderlessWindow implements BorderlessFullscreen.Swit
    }
 
    @Inject(
-      method = {"method_4479"},
+      method = {"updateWindowRegion"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$setMode(CallbackInfo var1) {
-      if (this.field_5191 && BorderlessFullscreen.wanted()) {
-         Monitor var3 = this.field_5195.method_1681((Window)this);
+   private void efn$setMode(CallbackInfo callbackInfo) {
+      if (this.fullscreen && BorderlessFullscreen.wanted()) {
+         Monitor var3 = this.monitorTracker.getMonitor((Window)this);
          if (var3 != null) {
-            boolean var2 = GLFW.glfwGetWindowMonitor(this.field_5187) != 0L;
+            boolean var2 = GLFW.glfwGetWindowMonitor(this.handle) != 0L;
             if (!var2 && !this.efn$borderless) {
-               this.field_5175 = this.field_5183;
-               this.field_5185 = this.field_5198;
-               this.field_5174 = this.field_5182;
-               this.field_5184 = this.field_5197;
+               this.windowedX = this.x;
+               this.windowedY = this.y;
+               this.windowedWidth = this.width;
+               this.windowedHeight = this.height;
             }
 
-            VideoMode var5 = var3.method_1617();
-            this.field_5183 = var3.method_1616();
-            this.field_5198 = var3.method_1618();
-            this.field_5182 = var5.method_1668();
-            this.field_5197 = var5.method_1669();
-            GLFW.glfwSetWindowAttrib(this.field_5187, 131077, 0);
-            GLFW.glfwSetWindowMonitor(this.field_5187, 0L, this.field_5183, this.field_5198, this.field_5182, this.field_5197, -1);
+            VideoMode var5 = var3.getCurrentVideoMode();
+            this.x = var3.getViewportX();
+            this.y = var3.getViewportY();
+            this.width = var5.getWidth();
+            this.height = var5.getHeight();
+            GLFW.glfwSetWindowAttrib(this.handle, 131077, 0);
+            GLFW.glfwSetWindowMonitor(this.handle, 0L, this.x, this.y, this.width, this.height, -1);
             if (var2) {
-               GLFW.glfwSetWindowAttrib(this.field_5187, 131077, 0);
+               GLFW.glfwSetWindowAttrib(this.handle, 131077, 0);
             }
 
             this.efn$borderless = true;
-            var1.cancel();
+            callbackInfo.cancel();
          }
       } else {
          if (this.efn$borderless) {
@@ -92,11 +92,11 @@ public abstract class MixinBorderlessWindow implements BorderlessFullscreen.Swit
    @Unique
    private void efn$leaveBorderless() {
       this.efn$borderless = false;
-      GLFW.glfwSetWindowAttrib(this.field_5187, 131077, 1);
-      this.field_5183 = this.field_5175;
-      this.field_5198 = this.field_5185;
-      this.field_5182 = this.field_5174;
-      this.field_5197 = this.field_5184;
+      GLFW.glfwSetWindowAttrib(this.handle, 131077, 1);
+      this.x = this.windowedX;
+      this.y = this.windowedY;
+      this.width = this.windowedWidth;
+      this.height = this.windowedHeight;
    }
 
    @Override
@@ -106,6 +106,6 @@ public abstract class MixinBorderlessWindow implements BorderlessFullscreen.Swit
 
    @Override
    public void efn$reapplyMode() {
-      this.field_5177 = !this.field_5191;
+      this.currentFullscreen = !this.fullscreen;
    }
 }

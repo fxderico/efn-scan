@@ -11,9 +11,9 @@ public abstract class CancellableEvent extends Event {
    public CancellableEvent() {
    }
 
-   public final void setCancelled(boolean var1) {
+   public final void setCancelled(boolean bl) {
       if (!this.postStage) {
-         this.cancelled = var1;
+         this.cancelled = bl;
       }
    }
 

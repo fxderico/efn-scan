@@ -34,42 +34,42 @@ public final class PearlTrajectorySimulator {
    private PearlTrajectorySimulator() {
    }
 
-   public static PearlTrajectorySimulator.SimulationResult simulate(World var0, ClientPlayerEntity var1, float var2) {
-      Vec3d var3 = var1.method_5836(var2);
-      Vec3d var4 = new Vec3d(var3.field_1352, var3.field_1351 - 0.1, var3.field_1350);
-      Vec3d var5 = var1.method_5828(var2).method_1021(EnderPearlItem.field_55033);
-      Vec3d var6 = var1.method_60478();
-      var5 = var5.method_1031(var6.field_1352, var1.method_24828() ? 0.0 : var6.field_1351, var6.field_1350);
-      return simulate(var0, var4, var5, var1, null);
+   public static PearlTrajectorySimulator.SimulationResult simulate(World world, ClientPlayerEntity clientPlayerEntity, float f) {
+      Vec3d var3 = clientPlayerEntity.getCameraPosVec(f);
+      Vec3d var4 = new Vec3d(var3.x, var3.y - 0.1, var3.z);
+      Vec3d var5 = clientPlayerEntity.getRotationVec(f).multiply(EnderPearlItem.POWER);
+      Vec3d var6 = clientPlayerEntity.getMovement();
+      var5 = var5.add(var6.x, clientPlayerEntity.isOnGround() ? 0.0 : var6.y, var6.z);
+      return simulate(world, var4, var5, clientPlayerEntity, null);
    }
 
-   public static PearlTrajectorySimulator.SimulationResult simulate(World var0, ProjectileEntity var1) {
-      return simulate(var0, var1.method_73189(), var1.method_18798(), var1, var1.method_24921());
+   public static PearlTrajectorySimulator.SimulationResult simulate(World world, ProjectileEntity projectileEntity) {
+      return simulate(world, projectileEntity.getEntityPos(), projectileEntity.getVelocity(), projectileEntity, projectileEntity.getOwner());
    }
 
-   public static PearlTrajectorySimulator.SimulationResult simulate(World var0, Vec3d var1, Vec3d var2, Entity var3, Entity var4) {
+   public static PearlTrajectorySimulator.SimulationResult simulate(World world, Vec3d vec3d, Vec3d vec3d2, Entity entity, Entity entity2) {
       ArrayList var5 = new ArrayList(64);
-      var5.add(var1);
-      Vec3d var6 = var1;
+      var5.add(vec3d);
+      Vec3d var6 = vec3d;
       BlockHitResult var7 = null;
       Entity var8 = null;
       int var9 = 0;
 
       while (var9 < 300) {
          var9++;
-         Vec3d var16 = var2.method_1031(0.0, -0.03, 0.0);
-         Vec3d var11 = var6.method_1019(var2 = var16.method_1021(isInWater(var0, var6) ? 0.800000011920929 : 0.9900000095367432));
-         BlockHitResult var12 = var0.method_17742(new RaycastContext(var6, var11, ShapeType.field_17558, FluidHandling.field_1348, var3));
-         Vec3d var13 = var12.method_17783() != Type.field_1333 ? var12.method_17784() : var11;
-         Entity var14 = firstEntityOnSegment(var0, var6, var13, var3, var4);
+         Vec3d var16 = vec3d2.add(0.0, -0.03, 0.0);
+         Vec3d var11 = var6.add(vec3d2 = var16.multiply(isInWater(world, var6) ? 0.800000011920929 : 0.9900000095367432));
+         BlockHitResult var12 = world.raycast(new RaycastContext(var6, var11, ShapeType.COLLIDER, FluidHandling.NONE, entity));
+         Vec3d var13 = var12.getType() != Type.MISS ? var12.getPos() : var11;
+         Entity var14 = firstEntityOnSegment(world, var6, var13, entity, entity2);
          if (var14 != null) {
-            Vec3d var15 = var14.method_5829().method_1014(0.3).method_992(var6, var13).orElse(var13);
+            Vec3d var15 = var14.getBoundingBox().expand(0.3).raycast(var6, var13).orElse(var13);
             var5.add(var15);
             var8 = var14;
             break;
          }
 
-         if (var12 instanceof BlockHitResult && var12.method_17783() != Type.field_1333) {
+         if (var12 instanceof BlockHitResult && var12.getType() != Type.MISS) {
             var5.add(var13);
             var7 = var12;
             break;
@@ -77,7 +77,7 @@ public final class PearlTrajectorySimulator {
 
          var6 = var11;
          var5.add(var11);
-         if (var11.field_1351 < var0.method_31607() - 64) {
+         if (var11.y < world.getBottomY() - 64) {
             break;
          }
       }
@@ -85,17 +85,17 @@ public final class PearlTrajectorySimulator {
       return new PearlTrajectorySimulator.SimulationResult(List.copyOf(var5), (Vec3d)var5.getLast(), var7, var8, var9);
    }
 
-   private static Entity firstEntityOnSegment(World var0, Vec3d var1, Vec3d var2, Entity var3, Entity var4) {
-      Box var5 = new Box(var1, var2).method_1014(1.0);
+   private static Entity firstEntityOnSegment(World world, Vec3d vec3d, Vec3d vec3d2, Entity entity, Entity entity2) {
+      Box var5 = new Box(vec3d, vec3d2).expand(1.0);
       Entity var6 = null;
       double var7 = 1.7976931348623157E308;
 
-      for (Entity var10 : var0.method_8333(var3, var5, PearlTrajectorySimulator::canHit)) {
+      for (Entity var10 : world.getOtherEntities(entity, var5, PearlTrajectorySimulator::canHit)) {
          double var11;
          Optional var13;
-         if (var10 != var4
-            && !(var13 = var10.method_5829().method_1014(0.3).method_992(var1, var2)).isEmpty()
-            && (var11 = var1.method_1025((Vec3d)var13.get())) < var7) {
+         if (var10 != entity2
+            && !(var13 = var10.getBoundingBox().expand(0.3).raycast(vec3d, vec3d2)).isEmpty()
+            && (var11 = vec3d.squaredDistanceTo((Vec3d)var13.get())) < var7) {
             var7 = var11;
             var6 = var10;
          }
@@ -104,16 +104,16 @@ public final class PearlTrajectorySimulator {
       return var6;
    }
 
-   private static boolean canHit(Entity var0) {
-      return EntityPredicates.field_6155.test(var0) && var0.method_5863() && !(var0 instanceof ClientPlayerEntity);
+   private static boolean canHit(Entity entity) {
+      return EntityPredicates.EXCEPT_SPECTATOR.test(entity) && entity.canHit() && !(entity instanceof ClientPlayerEntity);
    }
 
-   private static boolean isInWater(World var0, Vec3d var1) {
-      return var0.method_8316(BlockPos.method_49638(var1)).method_15767(FluidTags.field_15517);
+   private static boolean isInWater(World world, Vec3d vec3d) {
+      return world.getFluidState(BlockPos.ofFloored(vec3d)).isIn(FluidTags.WATER);
    }
 
-   public static boolean isHoldingPearl(ClientPlayerEntity var0) {
-      return var0.method_6047().method_31574(Items.field_8634) || var0.method_6079().method_31574(Items.field_8634);
+   public static boolean isHoldingPearl(ClientPlayerEntity clientPlayerEntity) {
+      return clientPlayerEntity.getMainHandStack().isOf(Items.ENDER_PEARL) || clientPlayerEntity.getOffHandStack().isOf(Items.ENDER_PEARL);
    }
 
    @Environment(EnvType.CLIENT)

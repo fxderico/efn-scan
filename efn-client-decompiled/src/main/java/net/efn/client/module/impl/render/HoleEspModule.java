@@ -117,7 +117,7 @@ public class HoleEspModule extends ClientModule {
             this.sMinStairHeight,
             this.sMaxStairHeight
          )
-         .forEach(var1 -> var1.onChange(this::resetScan));
+         .forEach(setting -> setting.onChange(this::resetScan));
    }
 
    @Override
@@ -142,34 +142,34 @@ public class HoleEspModule extends ClientModule {
    }
 
    @EventHandler
-   public void onTick(TickEvent var1) {
-      MinecraftClient var3 = MinecraftClient.method_1551();
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var3 = MinecraftClient.getInstance();
       boolean var4 = PerformanceModule.optimizationsEnabled();
-      if (this.lastOptimized != var4 || this.sessionLevel != var3.field_1687) {
+      if (this.lastOptimized != var4 || this.sessionLevel != var3.world) {
          this.resetScan();
       }
 
       this.lastOptimized = var4;
-      this.sessionLevel = var3.field_1687;
-      if (var3.field_1687 != null && var3.field_1724 != null) {
-         int var5 = var3.field_1724.method_31477() >> 4;
-         int var6 = var3.field_1724.method_31479() >> 4;
-         long var7 = ChunkPos.method_8331(var5, var6);
+      this.sessionLevel = var3.world;
+      if (var3.world != null && var3.player != null) {
+         int var5 = var3.player.getBlockX() >> 4;
+         int var6 = var3.player.getBlockZ() >> 4;
+         long var7 = ChunkPos.toLong(var5, var6);
          int var9 = this.scanRadius(var3);
          boolean var10 = isFastTravel(var3);
          boolean var2 = ++this.refreshTicks >= (var10 ? 5 : 20);
          if (var7 != this.lastPlayerChunk || var2) {
             this.refreshTicks = 0;
             this.lastPlayerChunk = var7;
-            this.chunkCache.keySet().removeIf(var3x -> {
-               int var4x = chunkX(var3x);
-               int var5x = chunkZ(var3x);
+            this.chunkCache.keySet().removeIf(long_ -> {
+               int var4x = chunkX(long_);
+               int var5x = chunkZ(long_);
                return Math.abs(var4x - var5) > var9 || Math.abs(var5x - var6) > var9;
             });
             ArrayList var12 = new ArrayList();
-            Vec3d var13 = var3.field_1724.method_18798();
-            double var14 = var13.field_1352;
-            double var16 = var13.field_1350;
+            Vec3d var13 = var3.player.getVelocity();
+            double var14 = var13.x;
+            double var16 = var13.z;
             double var18 = Math.sqrt(var14 * var14 + var16 * var16);
             if (var18 > 1.0E-4) {
                var14 /= var18;
@@ -178,11 +178,11 @@ public class HoleEspModule extends ClientModule {
 
             for (int var20 = var5 - var9; var20 <= var5 + var9; var20++) {
                for (int var21 = var6 - var9; var21 <= var6 + var9; var21++) {
-                  long var22 = ChunkPos.method_8331(var20, var21);
+                  long var22 = ChunkPos.toLong(var20, var21);
                   if (!this.chunkCache.containsKey(var22)
                      && !this.queued.contains(var22)
                      && (this.activeScan == null || this.activeScan.key != var22)
-                     && var3.field_1687.method_2935().method_12123(var20, var21)) {
+                     && var3.world.getChunkManager().isChunkLoaded(var20, var21)) {
                      int var24 = var20 - var5;
                      int var25 = var21 - var6;
                      long var26 = (var24 * var24 + var25 * var25) * 1024L;
@@ -192,7 +192,7 @@ public class HoleEspModule extends ClientModule {
                }
             }
 
-            var12.sort(Comparator.comparingLong(var0 -> var0[1]));
+            var12.sort(Comparator.comparingLong(ls -> ls[1]));
 
             for (long[] var40 : var12) {
                this.scanQueue.add(var40[0]);
@@ -211,14 +211,14 @@ public class HoleEspModule extends ClientModule {
 
                while (var39 < var33 && System.nanoTime() < var36) {
                   if (this.activeScan != null) {
-                     if (!this.activeScan.validFor(var3.field_1687, var5, var6, var9)) {
-                        int var42 = this.activeScan.chunk.method_12004().field_9181;
-                        int var44 = this.activeScan.chunk.method_12004().field_9180;
+                     if (!this.activeScan.validFor(var3.world, var5, var6, var9)) {
+                        int var42 = this.activeScan.chunk.getPos().x;
+                        int var44 = this.activeScan.chunk.getPos().z;
                         long var45 = this.activeScan.key;
                         this.activeScan = null;
                         if (Math.abs((long)var42 - var5) <= var9
                            && Math.abs((long)var44 - var6) <= var9
-                           && var3.field_1687.method_2935().method_12123(var42, var44)
+                           && var3.world.getChunkManager().isChunkLoaded(var42, var44)
                            && this.queued.add(var45)) {
                            this.scanQueue.add(var45);
                         }
@@ -236,8 +236,8 @@ public class HoleEspModule extends ClientModule {
                      this.queued.remove(var41);
                      int var43 = chunkX(var41);
                      int var23 = chunkZ(var41);
-                     if (var3.field_1687.method_2935().method_12123(var43, var23)) {
-                        this.scanChunk(var3.field_1687, var43, var23, var41);
+                     if (var3.world.getChunkManager().isChunkLoaded(var43, var23)) {
+                        this.scanChunk(var3.world, var43, var23, var41);
                      }
 
                      if (this.activeScan == null) {
@@ -255,20 +255,20 @@ public class HoleEspModule extends ClientModule {
    }
 
    @EventHandler
-   public void onPacketApplied(PacketAppliedEvent var1) {
-      if (var1.packet instanceof ChunkDataS2CPacket var3) {
-         this.invalidateAround(var3.method_11523(), var3.method_11524());
+   public void onPacketApplied(PacketAppliedEvent packetAppliedEvent) {
+      if (packetAppliedEvent.packet instanceof ChunkDataS2CPacket var3) {
+         this.invalidateAround(var3.getChunkX(), var3.getChunkZ());
       }
    }
 
-   private void invalidateAround(int var1, int var2) {
-      MinecraftClient var3 = MinecraftClient.method_1551();
-      if (var3.field_1724 != null) {
+   private void invalidateAround(int i, int j) {
+      MinecraftClient var3 = MinecraftClient.getInstance();
+      if (var3.player != null) {
          int var4 = this.scanRadius(var3) + 1;
-         if (Math.abs((long)var1 - (var3.field_1724.method_31477() >> 4)) <= var4 && Math.abs((long)var2 - (var3.field_1724.method_31479() >> 4)) <= var4) {
-            for (int var5 = var1 - 1; var5 <= var1 + 1; var5++) {
-               for (int var6 = var2 - 1; var6 <= var2 + 1; var6++) {
-                  long var7 = ChunkPos.method_8331(var5, var6);
+         if (Math.abs((long)i - (var3.player.getBlockX() >> 4)) <= var4 && Math.abs((long)j - (var3.player.getBlockZ() >> 4)) <= var4) {
+            for (int var5 = i - 1; var5 <= i + 1; var5++) {
+               for (int var6 = j - 1; var6 <= j + 1; var6++) {
+                  long var7 = ChunkPos.toLong(var5, var6);
                   boolean var9 = this.chunkCache.containsKey(var7);
                   if (this.activeScan != null && this.activeScan.key == var7) {
                      this.activeScan = null;
@@ -287,21 +287,21 @@ public class HoleEspModule extends ClientModule {
    }
 
    @EventHandler
-   public void onBlockUpdate(BlockUpdateEvent var1) {
-      if (var1.pos != null) {
-         this.invalidateAround(var1.pos.method_10263() >> 4, var1.pos.method_10260() >> 4);
+   public void onBlockUpdate(BlockUpdateEvent blockUpdateEvent) {
+      if (blockUpdateEvent.pos != null) {
+         this.invalidateAround(blockUpdateEvent.pos.getX() >> 4, blockUpdateEvent.pos.getZ() >> 4);
       }
    }
 
    @EventHandler
-   public void onRender3D(Render3DEvent var1) {
-      MinecraftClient var3 = MinecraftClient.method_1551();
-      if (var3.field_1724 != null) {
+   public void onRender3D(Render3DEvent render3DEvent) {
+      MinecraftClient var3 = MinecraftClient.getInstance();
+      if (var3.player != null) {
          boolean var4 = this.sFill == null || this.sFill.value().get();
          boolean var2 = this.sOutline == null || this.sOutline.value().get();
          if (var4 || var2) {
-            int var6 = var3.field_1724.method_31477() >> 4;
-            int var7 = var3.field_1724.method_31479() >> 4;
+            int var6 = var3.player.getBlockX() >> 4;
+            int var7 = var3.player.getBlockZ() >> 4;
             int var8 = this.scanRadius(var3);
             float var9 = value(this.sLineWidth, 1.5F);
             int var10 = 0;
@@ -315,13 +315,13 @@ public class HoleEspModule extends ClientModule {
                      }
 
                      DrawStyle var17 = !var4
-                        ? DrawStyle.method_75536(this.lineColor(var16.type()), var9)
+                        ? DrawStyle.stroked(this.lineColor(var16.type()), var9)
                         : (
                            !var2
-                              ? DrawStyle.method_75539(this.fillColor(var16.type()))
-                              : DrawStyle.method_75537(this.lineColor(var16.type()), var9, this.fillColor(var16.type()))
+                              ? DrawStyle.filled(this.fillColor(var16.type()))
+                              : DrawStyle.filledAndStroked(this.lineColor(var16.type()), var9, this.fillColor(var16.type()))
                         );
-                     GizmoDrawing.method_75541(var16.box(), var17).method_75533();
+                     GizmoDrawing.box(var16.box(), var17).ignoreOcclusion();
                   }
                }
             }
@@ -329,32 +329,32 @@ public class HoleEspModule extends ClientModule {
       }
    }
 
-   private void scanChunk(ClientWorld var1, int var2, int var3, long var4) {
-      WorldChunk var7 = var1.method_2935().method_21730(var2, var3);
+   private void scanChunk(ClientWorld clientWorld, int i, int j, long l) {
+      WorldChunk var7 = clientWorld.getChunkManager().getWorldChunk(i, j);
       if (var7 != null) {
-         int var8 = var2 << 4;
-         int var9 = var3 << 4;
-         int var10 = var1.method_8597().comp_651();
-         int var11 = var10 + var7.method_12006().length * 16;
+         int var8 = i << 4;
+         int var9 = j << 4;
+         int var10 = clientWorld.getDimension().minY();
+         int var11 = var10 + var7.getSectionArray().length * 16;
          int var12 = Math.min(var11 - 1, var10 + Math.round(value(this.sMinYOffset, 0.0F)));
          int var13 = Math.max(var12 + 1, var11 - Math.round(value(this.sMaxYOffset, 0.0F)));
          HoleEspModule.Mode var14 = this.currentMode();
          boolean var6 = this.sAirOnly != null && this.sAirOnly.value().get();
          if (var14.holes() && !var14.tunnels() && !var14.stairs()) {
             if (PerformanceModule.optimizationsEnabled()) {
-               this.activeScan = new HoleEspModule.FastHoleScan(this, var7, var4, var8, var9, var12, var13);
+               this.activeScan = new HoleEspModule.FastHoleScan(this, var7, l, var8, var9, var12, var13);
             } else {
-               this.storeHits(var4, this.holeHits(var1, var8, var9, var12, var13));
+               this.storeHits(l, this.holeHits(clientWorld, var8, var9, var12, var13));
             }
          } else {
-            Object var16 = var14.holes() ? this.holeHits(var1, var8, var9, var12, var13) : new ArrayList();
+            Object var16 = var14.holes() ? this.holeHits(clientWorld, var8, var9, var12, var13) : new ArrayList();
             HashSet var17 = new HashSet();
             Mutable var18 = new Mutable();
-            ChunkSection[] var19 = var7.method_12006();
+            ChunkSection[] var19 = var7.getSectionArray();
 
             for (int var20 = 0; var20 < var19.length; var20++) {
                ChunkSection var21 = var19[var20];
-               if (var21 != null && !var21.method_38292()) {
+               if (var21 != null && !var21.isEmpty()) {
                   int var22 = var10 + var20 * 16;
 
                   for (int var23 = 0; var23 < 16; var23++) {
@@ -364,18 +364,18 @@ public class HoleEspModule extends ClientModule {
                            for (int var26 = 0; var26 < 16; var26++) {
                               int var27 = var8 + var26;
                               int var28 = var9 + var25;
-                              var18.method_10103(var27, var24, var28);
-                              if (isPassable(var1, var18, var6)) {
+                              var18.set(var27, var24, var28);
+                              if (isPassable(clientWorld, var18, var6)) {
                                  if (var14.tunnels()) {
-                                    this.checkTunnelStarts(var1, var18, var6, (List<HoleEspModule.Hit>)var16, var17);
+                                    this.checkTunnelStarts(clientWorld, var18, var6, (List<HoleEspModule.Hit>)var16, var17);
                                  }
 
                                  if (var14.stairs()) {
-                                    this.checkStaircaseStarts(var1, var18, var6, (List<HoleEspModule.Hit>)var16, var17);
+                                    this.checkStaircaseStarts(clientWorld, var18, var6, (List<HoleEspModule.Hit>)var16, var17);
                                  }
 
                                  if (var16.size() >= 1024) {
-                                    this.chunkCache.put(var4, List.copyOf((Collection<? extends HoleEspModule.Hit>)var16));
+                                    this.chunkCache.put(l, List.copyOf((Collection<? extends HoleEspModule.Hit>)var16));
                                     return;
                                  }
                               }
@@ -386,19 +386,19 @@ public class HoleEspModule extends ClientModule {
                }
             }
 
-            this.storeHits(var4, (List<HoleEspModule.Hit>)var16);
+            this.storeHits(l, (List<HoleEspModule.Hit>)var16);
          }
       }
    }
 
-   private void storeHits(long var1, List<HoleEspModule.Hit> var3) {
-      this.chunkCache.put(var1, List.copyOf(var3));
+   private void storeHits(long l, List<HoleEspModule.Hit> list) {
+      this.chunkCache.put(l, List.copyOf(list));
    }
 
-   private List<HoleEspModule.Hit> holeHits(ClientWorld var1, int var2, int var3, int var4, int var5) {
+   private List<HoleEspModule.Hit> holeHits(ClientWorld clientWorld, int i, int j, int k, int l) {
       ArrayList var6 = new ArrayList();
-      int var7 = var4 - 1;
-      int var8 = var5 - var7 + 1;
+      int var7 = k - 1;
+      int var8 = l - var7 + 1;
       if (var8 <= 1) {
          return var6;
       } else {
@@ -413,8 +413,8 @@ public class HoleEspModule extends ClientModule {
                int var15 = var13 + (var14 + 1) * 20;
 
                for (int var16 = -1; var16 <= 18; var16++) {
-                  var10.method_10103(var2 + var16, var12, var3 + var14);
-                  var9[var15 + var16 + 1] = isOpen(var1, var10);
+                  var10.set(i + var16, var12, j + var14);
+                  var9[var15 + var16 + 1] = isOpen(clientWorld, var10);
                }
             }
          }
@@ -423,116 +423,110 @@ public class HoleEspModule extends ClientModule {
          HashSet var18 = new HashSet();
 
          for (int var19 = 0; var19 < 256 && var6.size() < 1024; var19++) {
-            shaftsInColumn(var9, var19 & 15, var19 >> 4, var7, var4, var5, var17, var2, var3, var6, var18);
+            shaftsInColumn(var9, var19 & 15, var19 >> 4, var7, k, l, var17, i, j, var6, var18);
          }
 
          return var6;
       }
    }
 
-   private static void shaftsInColumn(
-      boolean[] var0, int var1, int var2, int var3, int var4, int var5, int var6, int var7, int var8, List<HoleEspModule.Hit> var9, Set<String> var10
-   ) {
-      int var11 = var7 + var1;
-      int var12 = var8 + var2;
+   private static void shaftsInColumn(boolean[] bls, int i, int j, int k, int l, int m, int n, int o, int p, List<HoleEspModule.Hit> list, Set<String> set) {
+      int var11 = o + i;
+      int var12 = p + j;
       int var13 = 0;
       int var14 = 0;
       int var15 = 0;
 
-      for (int var16 = var4; var16 <= var5; var16++) {
-         boolean var17 = var16 < var5;
-         var13 = var17 && walled1x1(var0, var16, var1, var2, var3) ? ++var13 : endShaft(var13, var16, var6, var9, var10, var11, var12, 1, 1, 0);
-         var14 = var17 && walled3x1X(var0, var16, var1, var2, var3) ? ++var14 : endShaft(var14, var16, var6, var9, var10, var11, var12, 3, 1, 1);
-         if (var17 && walled3x1Z(var0, var16, var1, var2, var3)) {
+      for (int var16 = l; var16 <= m; var16++) {
+         boolean var17 = var16 < m;
+         var13 = var17 && walled1x1(bls, var16, i, j, k) ? ++var13 : endShaft(var13, var16, n, list, set, var11, var12, 1, 1, 0);
+         var14 = var17 && walled3x1X(bls, var16, i, j, k) ? ++var14 : endShaft(var14, var16, n, list, set, var11, var12, 3, 1, 1);
+         if (var17 && walled3x1Z(bls, var16, i, j, k)) {
             var15++;
          } else {
-            var15 = endShaft(var15, var16, var6, var9, var10, var11, var12, 1, 3, 1);
+            var15 = endShaft(var15, var16, n, list, set, var11, var12, 1, 3, 1);
          }
       }
    }
 
-   private static int endShaft(int var0, int var1, int var2, List<HoleEspModule.Hit> var3, Set<String> var4, int var5, int var6, int var7, int var8, int var9) {
-      if (var0 >= var2) {
-         addHit(var3, var4, new Box(var5, var1 - var0, var6, var5 + var7, var1, var6 + var8), var9);
+   private static int endShaft(int i, int j, int k, List<HoleEspModule.Hit> list, Set<String> set, int l, int m, int n, int o, int p) {
+      if (i >= k) {
+         addHit(list, set, new Box(l, j - i, m, l + n, j, m + o), p);
       }
 
       return 0;
    }
 
-   private static boolean walled1x1(boolean[] var0, int var1, int var2, int var3, int var4) {
-      return grid(var0, var1, var2, var3, var4)
-         && !grid(var0, var1, var2 - 1, var3, var4)
-         && !grid(var0, var1, var2 + 1, var3, var4)
-         && !grid(var0, var1, var2, var3 - 1, var4)
-         && !grid(var0, var1, var2, var3 + 1, var4);
+   private static boolean walled1x1(boolean[] bls, int i, int j, int k, int l) {
+      return grid(bls, i, j, k, l) && !grid(bls, i, j - 1, k, l) && !grid(bls, i, j + 1, k, l) && !grid(bls, i, j, k - 1, l) && !grid(bls, i, j, k + 1, l);
    }
 
-   private static boolean walled3x1X(boolean[] var0, int var1, int var2, int var3, int var4) {
-      return grid(var0, var1, var2, var3, var4)
-         && grid(var0, var1, var2 + 1, var3, var4)
-         && grid(var0, var1, var2 + 2, var3, var4)
-         && !grid(var0, var1, var2 - 1, var3, var4)
-         && !grid(var0, var1, var2 + 3, var3, var4)
-         && !grid(var0, var1, var2, var3 - 1, var4)
-         && !grid(var0, var1, var2, var3 + 1, var4)
-         && !grid(var0, var1, var2 + 1, var3 - 1, var4)
-         && !grid(var0, var1, var2 + 1, var3 + 1, var4)
-         && !grid(var0, var1, var2 + 2, var3 - 1, var4)
-         && !grid(var0, var1, var2 + 2, var3 + 1, var4);
+   private static boolean walled3x1X(boolean[] bls, int i, int j, int k, int l) {
+      return grid(bls, i, j, k, l)
+         && grid(bls, i, j + 1, k, l)
+         && grid(bls, i, j + 2, k, l)
+         && !grid(bls, i, j - 1, k, l)
+         && !grid(bls, i, j + 3, k, l)
+         && !grid(bls, i, j, k - 1, l)
+         && !grid(bls, i, j, k + 1, l)
+         && !grid(bls, i, j + 1, k - 1, l)
+         && !grid(bls, i, j + 1, k + 1, l)
+         && !grid(bls, i, j + 2, k - 1, l)
+         && !grid(bls, i, j + 2, k + 1, l);
    }
 
-   private static boolean walled3x1Z(boolean[] var0, int var1, int var2, int var3, int var4) {
-      return grid(var0, var1, var2, var3, var4)
-         && grid(var0, var1, var2, var3 + 1, var4)
-         && grid(var0, var1, var2, var3 + 2, var4)
-         && !grid(var0, var1, var2, var3 - 1, var4)
-         && !grid(var0, var1, var2, var3 + 3, var4)
-         && !grid(var0, var1, var2 - 1, var3, var4)
-         && !grid(var0, var1, var2 + 1, var3, var4)
-         && !grid(var0, var1, var2 - 1, var3 + 1, var4)
-         && !grid(var0, var1, var2 + 1, var3 + 1, var4)
-         && !grid(var0, var1, var2 - 1, var3 + 2, var4)
-         && !grid(var0, var1, var2 + 1, var3 + 2, var4);
+   private static boolean walled3x1Z(boolean[] bls, int i, int j, int k, int l) {
+      return grid(bls, i, j, k, l)
+         && grid(bls, i, j, k + 1, l)
+         && grid(bls, i, j, k + 2, l)
+         && !grid(bls, i, j, k - 1, l)
+         && !grid(bls, i, j, k + 3, l)
+         && !grid(bls, i, j - 1, k, l)
+         && !grid(bls, i, j + 1, k, l)
+         && !grid(bls, i, j - 1, k + 1, l)
+         && !grid(bls, i, j + 1, k + 1, l)
+         && !grid(bls, i, j - 1, k + 2, l)
+         && !grid(bls, i, j + 1, k + 2, l);
    }
 
-   private static boolean grid(boolean[] var0, int var1, int var2, int var3, int var4) {
-      int var5 = var1 - var4;
-      return var0[var5 * 20 * 20 + (var3 + 1) * 20 + var2 + 1];
+   private static boolean grid(boolean[] bls, int i, int j, int k, int l) {
+      int var5 = i - l;
+      return bls[var5 * 20 * 20 + (k + 1) * 20 + j + 1];
    }
 
-   private void checkTunnelStarts(ClientWorld var1, BlockPos var2, boolean var3, List<HoleEspModule.Hit> var4, Set<String> var5) {
+   private void checkTunnelStarts(ClientWorld clientWorld, BlockPos blockPos, boolean bl, List<HoleEspModule.Hit> list, Set<String> set) {
       int var6 = Math.round(value(this.sMinTunnelLength, 3.0F));
 
       for (int[] var10 : HORIZONTAL_DIRS) {
-         Mutable var11 = new Mutable(var2.method_10263() - var10[0], var2.method_10264(), var2.method_10260() - var10[1]);
-         if (!this.isTunnelSection(var1, var11, var10, var3)) {
-            Mutable var12 = new Mutable(var2.method_10263(), var2.method_10264(), var2.method_10260());
+         Mutable var11 = new Mutable(blockPos.getX() - var10[0], blockPos.getY(), blockPos.getZ() - var10[1]);
+         if (!this.isTunnelSection(clientWorld, var11, var10, bl)) {
+            Mutable var12 = new Mutable(blockPos.getX(), blockPos.getY(), blockPos.getZ());
             BlockPos var13 = null;
             BlockPos var14 = null;
             int var15 = 0;
             int var16 = 0;
-            if (this.isTunnelSection(var1, var12, var10, var3)) {
-               var13 = var12.method_10062();
+            if (this.isTunnelSection(clientWorld, var12, var10, bl)) {
+               var13 = var12.toImmutable();
             }
 
-            while (this.isTunnelSection(var1, var12, var10, var3)) {
-               var16 = Math.max(var16, this.getTunnelHeight(var1, var12, var3));
-               var14 = var12.method_10062();
-               var12.method_10100(var10[0], 0, var10[1]);
+            while (this.isTunnelSection(clientWorld, var12, var10, bl)) {
+               var16 = Math.max(var16, this.getTunnelHeight(clientWorld, var12, bl));
+               var14 = var12.toImmutable();
+               var12.move(var10[0], 0, var10[1]);
                var15++;
             }
 
             if (var13 != null && var14 != null && var15 >= var6) {
                addHit(
-                  var4,
-                  var5,
+                  list,
+                  set,
                   new Box(
-                     Math.min(var13.method_10263(), var14.method_10263()),
-                     var13.method_10264(),
-                     Math.min(var13.method_10260(), var14.method_10260()),
-                     Math.max(var13.method_10263(), var14.method_10263()) + 1,
-                     var13.method_10264() + var16,
-                     Math.max(var13.method_10260(), var14.method_10260()) + 1
+                     Math.min(var13.getX(), var14.getX()),
+                     var13.getY(),
+                     Math.min(var13.getZ(), var14.getZ()),
+                     Math.max(var13.getX(), var14.getX()) + 1,
+                     var13.getY() + var16,
+                     Math.max(var13.getZ(), var14.getZ()) + 1
                   ),
                   2
                );
@@ -541,54 +535,45 @@ public class HoleEspModule extends ClientModule {
       }
    }
 
-   private void checkStaircaseStarts(ClientWorld var1, BlockPos var2, boolean var3, List<HoleEspModule.Hit> var4, Set<String> var5) {
+   private void checkStaircaseStarts(ClientWorld clientWorld, BlockPos blockPos, boolean bl, List<HoleEspModule.Hit> list, Set<String> set) {
       int var6 = Math.round(value(this.sMinStairLength, 3.0F));
 
       for (int[] var10 : HORIZONTAL_DIRS) {
-         Mutable var11 = new Mutable(var2.method_10263() - var10[0], var2.method_10264() - 1, var2.method_10260() - var10[1]);
-         if (!this.isStaircaseSection(var1, var11, var10, var3)) {
-            Mutable var12 = new Mutable(var2.method_10263(), var2.method_10264(), var2.method_10260());
+         Mutable var11 = new Mutable(blockPos.getX() - var10[0], blockPos.getY() - 1, blockPos.getZ() - var10[1]);
+         if (!this.isStaircaseSection(clientWorld, var11, var10, bl)) {
+            Mutable var12 = new Mutable(blockPos.getX(), blockPos.getY(), blockPos.getZ());
             int var13 = 0;
 
             ArrayList var14;
-            for (var14 = new ArrayList(); this.isStaircaseSection(var1, var12, var10, var3); var13++) {
-               int var15 = this.getStaircaseHeight(var1, var12, var3);
-               var14.add(
-                  new Box(
-                     var12.method_10263(),
-                     var12.method_10264(),
-                     var12.method_10260(),
-                     var12.method_10263() + 1,
-                     var12.method_10264() + var15,
-                     var12.method_10260() + 1
-                  )
-               );
-               var12.method_10100(var10[0], 1, var10[1]);
+            for (var14 = new ArrayList(); this.isStaircaseSection(clientWorld, var12, var10, bl); var13++) {
+               int var15 = this.getStaircaseHeight(clientWorld, var12, bl);
+               var14.add(new Box(var12.getX(), var12.getY(), var12.getZ(), var12.getX() + 1, var12.getY() + var15, var12.getZ() + 1));
+               var12.move(var10[0], 1, var10[1]);
             }
 
             if (var13 >= var6) {
                for (Box var16 : var14) {
-                  addHit(var4, var5, var16, 3);
+                  addHit(list, set, var16, 3);
                }
             }
          }
       }
    }
 
-   private boolean isTunnelSection(ClientWorld var1, BlockPos var2, int[] var3, boolean var4) {
-      int var5 = this.getTunnelHeight(var1, var2, var4);
+   private boolean isTunnelSection(ClientWorld clientWorld, BlockPos blockPos, int[] is, boolean bl) {
+      int var5 = this.getTunnelHeight(clientWorld, blockPos, bl);
       if (var5 >= Math.round(value(this.sMinTunnelHeight, 2.0F)) && var5 <= Math.round(value(this.sMaxTunnelHeight, 3.0F))) {
-         if (!isPassable(var1, var2.method_10263(), var2.method_10264() - 1, var2.method_10260(), var4)
-            && !isPassable(var1, var2.method_10263(), var2.method_10264() + var5, var2.method_10260(), var4)) {
-            boolean var6 = var3[0] != 0;
+         if (!isPassable(clientWorld, blockPos.getX(), blockPos.getY() - 1, blockPos.getZ(), bl)
+            && !isPassable(clientWorld, blockPos.getX(), blockPos.getY() + var5, blockPos.getZ(), bl)) {
+            boolean var6 = is[0] != 0;
 
             for (int var7 = 0; var7 < var5; var7++) {
-               int var8 = var2.method_10264() + var7;
+               int var8 = blockPos.getY() + var7;
                if (var6
-                  ? isPassable(var1, var2.method_10263(), var8, var2.method_10260() - 1, var4)
-                     || isPassable(var1, var2.method_10263(), var8, var2.method_10260() + 1, var4)
-                  : isPassable(var1, var2.method_10263() - 1, var8, var2.method_10260(), var4)
-                     || isPassable(var1, var2.method_10263() + 1, var8, var2.method_10260(), var4)) {
+                  ? isPassable(clientWorld, blockPos.getX(), var8, blockPos.getZ() - 1, bl)
+                     || isPassable(clientWorld, blockPos.getX(), var8, blockPos.getZ() + 1, bl)
+                  : isPassable(clientWorld, blockPos.getX() - 1, var8, blockPos.getZ(), bl)
+                     || isPassable(clientWorld, blockPos.getX() + 1, var8, blockPos.getZ(), bl)) {
                   return false;
                }
             }
@@ -602,20 +587,20 @@ public class HoleEspModule extends ClientModule {
       }
    }
 
-   private boolean isStaircaseSection(ClientWorld var1, BlockPos var2, int[] var3, boolean var4) {
-      int var5 = this.getStaircaseHeight(var1, var2, var4);
+   private boolean isStaircaseSection(ClientWorld clientWorld, BlockPos blockPos, int[] is, boolean bl) {
+      int var5 = this.getStaircaseHeight(clientWorld, blockPos, bl);
       if (var5 >= Math.round(value(this.sMinStairHeight, 3.0F)) && var5 <= Math.round(value(this.sMaxStairHeight, 5.0F))) {
-         if (!isPassable(var1, var2.method_10263(), var2.method_10264() - 1, var2.method_10260(), var4)
-            && !isPassable(var1, var2.method_10263(), var2.method_10264() + var5, var2.method_10260(), var4)) {
-            boolean var6 = var3[0] != 0;
+         if (!isPassable(clientWorld, blockPos.getX(), blockPos.getY() - 1, blockPos.getZ(), bl)
+            && !isPassable(clientWorld, blockPos.getX(), blockPos.getY() + var5, blockPos.getZ(), bl)) {
+            boolean var6 = is[0] != 0;
 
             for (int var7 = 0; var7 < var5; var7++) {
-               int var8 = var2.method_10264() + var7;
+               int var8 = blockPos.getY() + var7;
                if (var6
-                  ? isPassable(var1, var2.method_10263(), var8, var2.method_10260() - 1, var4)
-                     || isPassable(var1, var2.method_10263(), var8, var2.method_10260() + 1, var4)
-                  : isPassable(var1, var2.method_10263() - 1, var8, var2.method_10260(), var4)
-                     || isPassable(var1, var2.method_10263() + 1, var8, var2.method_10260(), var4)) {
+                  ? isPassable(clientWorld, blockPos.getX(), var8, blockPos.getZ() - 1, bl)
+                     || isPassable(clientWorld, blockPos.getX(), var8, blockPos.getZ() + 1, bl)
+                  : isPassable(clientWorld, blockPos.getX() - 1, var8, blockPos.getZ(), bl)
+                     || isPassable(clientWorld, blockPos.getX() + 1, var8, blockPos.getZ(), bl)) {
                   return false;
                }
             }
@@ -629,71 +614,59 @@ public class HoleEspModule extends ClientModule {
       }
    }
 
-   private int getTunnelHeight(ClientWorld var1, BlockPos var2, boolean var3) {
+   private int getTunnelHeight(ClientWorld clientWorld, BlockPos blockPos, boolean bl) {
       int var5 = Math.round(value(this.sMaxTunnelHeight, 3.0F));
       int var4 = 0;
 
-      while (var4 < var5 && isPassable(var1, var2.method_10263(), var2.method_10264() + var4, var2.method_10260(), var3)) {
+      while (var4 < var5 && isPassable(clientWorld, blockPos.getX(), blockPos.getY() + var4, blockPos.getZ(), bl)) {
          var4++;
       }
 
       return var4;
    }
 
-   private int getStaircaseHeight(ClientWorld var1, BlockPos var2, boolean var3) {
+   private int getStaircaseHeight(ClientWorld clientWorld, BlockPos blockPos, boolean bl) {
       int var5 = Math.round(value(this.sMaxStairHeight, 5.0F));
       int var4 = 0;
 
-      while (var4 < var5 && isPassable(var1, var2.method_10263(), var2.method_10264() + var4, var2.method_10260(), var3)) {
+      while (var4 < var5 && isPassable(clientWorld, blockPos.getX(), blockPos.getY() + var4, blockPos.getZ(), bl)) {
          var4++;
       }
 
       return var4;
    }
 
-   private static boolean isOpen(ClientWorld var0, BlockPos var1) {
-      BlockState var2 = var0.method_8320(var1);
-      return var2.method_26215() || var2.method_26220(var0, var1).method_1110();
+   private static boolean isOpen(ClientWorld clientWorld, BlockPos blockPos) {
+      BlockState var2 = clientWorld.getBlockState(blockPos);
+      return var2.isAir() || var2.getCollisionShape(clientWorld, blockPos).isEmpty();
    }
 
-   private static boolean isPassable(ClientWorld var0, int var1, int var2, int var3, boolean var4) {
-      return isPassable(var0, PASSABLE_POS.get().method_10103(var1, var2, var3), var4);
+   private static boolean isPassable(ClientWorld clientWorld, int i, int j, int k, boolean bl) {
+      return isPassable(clientWorld, PASSABLE_POS.get().set(i, j, k), bl);
    }
 
-   private static boolean isPassable(ClientWorld var0, BlockPos var1, boolean var2) {
-      BlockState var3 = var0.method_8320(var1);
-      if (var3.method_26215()) {
+   private static boolean isPassable(ClientWorld clientWorld, BlockPos blockPos, boolean bl) {
+      BlockState var3 = clientWorld.getBlockState(blockPos);
+      if (var3.isAir()) {
          return true;
-      } else if (var2) {
+      } else if (bl) {
          return false;
       } else {
-         VoxelShape var4 = var3.method_26220(var0, var1);
-         return var4.method_1110() || !VoxelShapes.method_1077().equals(var4);
+         VoxelShape var4 = var3.getCollisionShape(clientWorld, blockPos);
+         return var4.isEmpty() || !VoxelShapes.fullCube().equals(var4);
       }
    }
 
-   private static void addHit(List<HoleEspModule.Hit> var0, Set<String> var1, Box var2, int var3) {
-      String var4 = var3
-         + ":"
-         + var2.field_1323
-         + ","
-         + var2.field_1322
-         + ","
-         + var2.field_1321
-         + ","
-         + var2.field_1320
-         + ","
-         + var2.field_1325
-         + ","
-         + var2.field_1324;
-      if (var1.add(var4)) {
-         for (HoleEspModule.Hit var6 : var0) {
-            if (var6.type() == var3 && var6.box().method_994(var2)) {
+   private static void addHit(List<HoleEspModule.Hit> list, Set<String> set, Box box, int i) {
+      String var4 = i + ":" + box.minX + "," + box.minY + "," + box.minZ + "," + box.maxX + "," + box.maxY + "," + box.maxZ;
+      if (set.add(var4)) {
+         for (HoleEspModule.Hit var6 : list) {
+            if (var6.type() == i && var6.box().intersects(box)) {
                return;
             }
          }
 
-         var0.add(new HoleEspModule.Hit(var2, var3));
+         list.add(new HoleEspModule.Hit(box, i));
       }
    }
 
@@ -711,8 +684,8 @@ public class HoleEspModule extends ClientModule {
       };
    }
 
-   private int lineColor(int var1) {
-      return switch (var1) {
+   private int lineColor(int i) {
+      return switch (i) {
          case 1 -> color(this.sHole3Line, 1610589440);
          case 2 -> color(this.sTunnelLine, 1593835775);
          case 3 -> color(this.sStairLine, 1610547455);
@@ -720,8 +693,8 @@ public class HoleEspModule extends ClientModule {
       };
    }
 
-   private int fillColor(int var1) {
-      return switch (var1) {
+   private int fillColor(int i) {
+      return switch (i) {
          case 1 -> color(this.sHole3Fill, 520070400);
          case 2 -> color(this.sTunnelFill, 503316735);
          case 3 -> color(this.sStairFill, 520028415);
@@ -729,18 +702,18 @@ public class HoleEspModule extends ClientModule {
       };
    }
 
-   private static int chunkX(long var0) {
-      return (int)var0;
+   private static int chunkX(long l) {
+      return (int)l;
    }
 
-   private static int chunkZ(long var0) {
-      return (int)(var0 >> 32);
+   private static int chunkZ(long l) {
+      return (int)(l >> 32);
    }
 
-   private int scanRadius(MinecraftClient var1) {
-      int var2 = (Integer)var1.field_1690.method_42503().method_41753();
+   private int scanRadius(MinecraftClient minecraftClient) {
+      int var2 = minecraftClient.options.getViewDistance().getValue();
       float var3 = value(this.sScanRadius, 4.0F);
-      if (isFastTravel(var1)) {
+      if (isFastTravel(minecraftClient)) {
          var3 = Math.max(var3, 12.0F);
       }
 
@@ -748,22 +721,22 @@ public class HoleEspModule extends ClientModule {
       return Math.min(var2, var4);
    }
 
-   private static boolean isFastTravel(MinecraftClient var0) {
-      if (var0.field_1724 == null) {
+   private static boolean isFastTravel(MinecraftClient minecraftClient) {
+      if (minecraftClient.player == null) {
          return false;
       } else {
-         Vec3d var1 = var0.field_1724.method_18798();
-         double var2 = var1.field_1352 * var1.field_1352 + var1.field_1350 * var1.field_1350;
-         return var0.field_1724.method_6128() || var2 > 0.18;
+         Vec3d var1 = minecraftClient.player.getVelocity();
+         double var2 = var1.x * var1.x + var1.z * var1.z;
+         return minecraftClient.player.isGliding() || var2 > 0.18;
       }
    }
 
-   private static float value(NumberSetting var0, float var1) {
-      return var0 == null ? var1 : var0.value()[0];
+   private static float value(NumberSetting numberSetting, float f) {
+      return numberSetting == null ? f : numberSetting.value()[0];
    }
 
-   private static int color(ColorSetting var0, int var1) {
-      return var0 == null ? var1 : var0.argb();
+   private static int color(ColorSetting colorSetting, int i) {
+      return colorSetting == null ? i : colorSetting.argb();
    }
 
    @Environment(EnvType.CLIENT)
@@ -786,38 +759,37 @@ public class HoleEspModule extends ClientModule {
       int row;
       int column;
 
-      FastHoleScan(HoleEspModule nullx, WorldChunk nullxx, long nullxxx, int nullxxxx, int nullxxxxx, int nullxxxxxx, int nullxxxxxxx) {
-         this.chunk = nullxx;
-         this.level = nullx.sessionLevel;
-         this.key = nullxxx;
-         this.baseX = nullxxxx;
-         this.baseZ = nullxxxxx;
-         this.minY = nullxxxxxx;
-         this.maxY = nullxxxxxxx;
-         this.gridMinY = nullxxxxxx - 1;
-         this.yCount = nullxxxxxxx - this.gridMinY + 1;
-         this.minDepth = Math.round(HoleEspModule.value(nullx.sMinHoleDepth, 4.0F));
+      FastHoleScan(HoleEspModule holeEspModule2, WorldChunk worldChunk, long l, int i, int j, int k, int m) {
+         this.chunk = worldChunk;
+         this.level = holeEspModule2.sessionLevel;
+         this.key = l;
+         this.baseX = i;
+         this.baseZ = j;
+         this.minY = k;
+         this.maxY = m;
+         this.gridMinY = k - 1;
+         this.yCount = m - this.gridMinY + 1;
+         this.minDepth = Math.round(HoleEspModule.value(holeEspModule2.sMinHoleDepth, 4.0F));
          int var10 = Math.max(0, this.yCount) * 20 * 20;
-         if (nullx.passableBuffer.length < var10) {
-            nullx.passableBuffer = new boolean[var10];
+         if (holeEspModule2.passableBuffer.length < var10) {
+            holeEspModule2.passableBuffer = new boolean[var10];
          }
 
-         this.passable = nullx.passableBuffer;
+         this.passable = holeEspModule2.passableBuffer;
 
          for (int var11 = -1; var11 <= 1; var11++) {
             for (int var12 = -1; var12 <= 1; var12++) {
-               this.neighbors[(var11 + 1) * 3 + var12 + 1] = this.level.method_2935().method_21730((nullxxxx >> 4) + var11, (nullxxxxx >> 4) + var12);
+               this.neighbors[(var11 + 1) * 3 + var12 + 1] = this.level.getChunkManager().getWorldChunk((i >> 4) + var11, (j >> 4) + var12);
             }
          }
       }
 
-      boolean validFor(ClientWorld var1, int var2, int var3, int var4) {
-         if (var1 == this.level
-            && Math.abs((long)this.chunk.method_12004().field_9181 - var2) <= var4
-            && Math.abs((long)this.chunk.method_12004().field_9180 - var3) <= var4) {
+      boolean validFor(ClientWorld clientWorld, int i, int j, int k) {
+         if (clientWorld == this.level && Math.abs((long)this.chunk.getPos().x - i) <= k && Math.abs((long)this.chunk.getPos().z - j) <= k) {
             for (int var5 = -1; var5 <= 1; var5++) {
                for (int var6 = -1; var6 <= 1; var6++) {
-                  if (this.neighbors[(var5 + 1) * 3 + var6 + 1] != this.level.method_2935().method_21730((this.baseX >> 4) + var5, (this.baseZ >> 4) + var6)) {
+                  if (this.neighbors[(var5 + 1) * 3 + var6 + 1]
+                     != this.level.getChunkManager().getWorldChunk((this.baseX >> 4) + var5, (this.baseZ >> 4) + var6)) {
                      return false;
                   }
                }
@@ -840,8 +812,8 @@ public class HoleEspModule extends ClientModule {
                int var4 = var7 + (var3 + 1) * 20;
 
                for (int var5 = -1; var5 <= 18; var5++) {
-                  this.pos.method_10103(this.baseX + var5, var6, this.baseZ + var3);
-                  this.passable[var4 + var5 + 1] = HoleEspModule.isOpen(this.level, (BlockPos)this.pos);
+                  this.pos.set(this.baseX + var5, var6, this.baseZ + var3);
+                  this.passable[var4 + var5 + 1] = HoleEspModule.isOpen(this.level, this.pos);
                }
             }
 

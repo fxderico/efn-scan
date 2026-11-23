@@ -22,23 +22,23 @@ final class KnifeMesh {
    private final float shineFrom;
    private final float shineTo;
 
-   private KnifeMesh(float[] var1, float[] var2, byte[] var3, float[] var4, int var5, float var6, float var7) {
-      this.pos = var1;
-      this.normal = var2;
-      this.material = var3;
-      this.tone = var4;
-      this.quads = var5;
-      this.shineFrom = var6;
-      this.shineTo = var7;
+   private KnifeMesh(float[] fs, float[] gs, byte[] bs, float[] hs, int i, float f, float g) {
+      this.pos = fs;
+      this.normal = gs;
+      this.material = bs;
+      this.tone = hs;
+      this.quads = i;
+      this.shineFrom = f;
+      this.shineTo = g;
    }
 
-   void emit(Entry var1, VertexConsumer var2, int[] var3, int var4, KnifeMesh.Shine var5) {
-      boolean var6 = var5.gain() > 0.004F;
+   void emit(Entry entry, VertexConsumer vertexConsumer, int[] is, int i, KnifeMesh.Shine shine) {
+      boolean var6 = shine.gain() > 0.004F;
 
       for (int var7 = 0; var7 < this.quads; var7++) {
          byte var8 = this.material[var7];
-         int var9 = var3[var8];
-         boolean var10 = var6 && (var5.tail() > 0.0F ? KnifeMaterial.blade(var8) : KnifeMaterial.metallic(var8));
+         int var9 = is[var8];
+         boolean var10 = var6 && (shine.tail() > 0.0F ? KnifeMaterial.blade(var8) : KnifeMaterial.metallic(var8));
          float var11 = this.normal[var7 * 3];
          float var12 = this.normal[var7 * 3 + 1];
          float var13 = this.normal[var7 * 3 + 2];
@@ -50,23 +50,23 @@ final class KnifeMesh {
             float var18 = this.pos[var15 + 2];
             float var19 = this.tone[var7];
             if (var10) {
-               var19 += var5.gain() * 1.5F * this.profile(var16, var5);
+               var19 += shine.gain() * 1.5F * this.profile(var16, shine);
             }
 
-            var2.method_56824(var1, var16, var17, var18)
-               .method_39415(tint(var9, var19))
-               .method_22913((var16 + var18) * 0.09F, var17 * 0.09F)
-               .method_22922(OverlayTexture.field_21444)
-               .method_60803(var4)
-               .method_60831(var1, var11, var12, var13);
+            vertexConsumer.vertex(entry, var16, var17, var18)
+               .color(tint(var9, var19))
+               .texture((var16 + var18) * 0.09F, var17 * 0.09F)
+               .overlay(OverlayTexture.DEFAULT_UV)
+               .light(i)
+               .normal(entry, var11, var12, var13);
          }
       }
    }
 
-   void emitGlow(Entry var1, VertexConsumer var2, int var3, KnifeMesh.Shine var4) {
-      int var5 = var3 >> 16 & 0xFF;
-      int var6 = var3 >> 8 & 0xFF;
-      int var7 = var3 & 0xFF;
+   void emitGlow(Entry entry, VertexConsumer vertexConsumer, int i, KnifeMesh.Shine shine) {
+      int var5 = i >> 16 & 0xFF;
+      int var6 = i >> 8 & 0xFF;
+      int var7 = i & 0xFF;
       float[] var8 = new float[4];
 
       for (int var9 = 0; var9 < this.quads; var9++) {
@@ -74,7 +74,7 @@ final class KnifeMesh {
             float var10 = 0.0F;
 
             for (int var11 = 0; var11 < 4; var11++) {
-               var8[var11] = Math.min(1.0F, var4.gain() * 0.85F * this.profile(this.pos[var9 * 12 + var11 * 3], var4));
+               var8[var11] = Math.min(1.0F, shine.gain() * 0.85F * this.profile(this.pos[var9 * 12 + var11 * 3], shine));
                var10 = Math.max(var10, var8[var11]);
             }
 
@@ -85,41 +85,41 @@ final class KnifeMesh {
 
                for (int var14 = 0; var14 < 4; var14++) {
                   int var15 = var9 * 12 + var14 * 3;
-                  var2.method_56824(var1, this.pos[var15], this.pos[var15 + 1], this.pos[var15 + 2])
-                     .method_1336(var5, var6, var7, Math.round(var8[var14] * 255.0F))
-                     .method_22913(0.5F, 0.5F)
-                     .method_22922(OverlayTexture.field_21444)
-                     .method_60803(15728880)
-                     .method_60831(var1, var16, var12, var13);
+                  vertexConsumer.vertex(entry, this.pos[var15], this.pos[var15 + 1], this.pos[var15 + 2])
+                     .color(var5, var6, var7, Math.round(var8[var14] * 255.0F))
+                     .texture(0.5F, 0.5F)
+                     .overlay(OverlayTexture.DEFAULT_UV)
+                     .light(15728880)
+                     .normal(entry, var16, var12, var13);
                }
             }
          }
       }
    }
 
-   private float profile(float var1, KnifeMesh.Shine var2) {
-      float var3 = var1 - (this.shineFrom + (this.shineTo - this.shineFrom) * var2.at());
-      if (var2.tail() <= 0.0F) {
+   private float profile(float f, KnifeMesh.Shine shine) {
+      float var3 = f - (this.shineFrom + (this.shineTo - this.shineFrom) * shine.at());
+      if (shine.tail() <= 0.0F) {
          float var5 = var3 / 2.6F;
          return (float)Math.exp(-var5 * var5);
       } else if (var3 > 0.0F) {
          float var4 = var3 / 1.5F;
          return (float)Math.exp(-var4 * var4);
       } else {
-         return (float)Math.exp(var3 / var2.tail());
+         return (float)Math.exp(var3 / shine.tail());
       }
    }
 
-   private static int tint(int var0, float var1) {
-      int var2 = var0 >> 16 & 0xFF;
-      int var3 = var0 >> 8 & 0xFF;
-      int var4 = var0 & 0xFF;
-      if (var1 <= 1.0F) {
-         var2 = (int)(var2 * var1);
-         var3 = (int)(var3 * var1);
-         var4 = (int)(var4 * var1);
+   private static int tint(int i, float f) {
+      int var2 = i >> 16 & 0xFF;
+      int var3 = i >> 8 & 0xFF;
+      int var4 = i & 0xFF;
+      if (f <= 1.0F) {
+         var2 = (int)(var2 * f);
+         var3 = (int)(var3 * f);
+         var4 = (int)(var4 * f);
       } else {
-         float var5 = Math.min(1.0F, var1 - 1.0F);
+         float var5 = Math.min(1.0F, f - 1.0F);
          var2 += (int)((255 - var2) * var5);
          var3 += (int)((255 - var3) * var5);
          var4 += (int)((255 - var4) * var5);
@@ -148,28 +148,28 @@ final class KnifeMesh {
       Voxels() {
       }
 
-      void set(int var1, int var2, int var3, int var4) {
-         this.set(var1, var2, var3, var4, 1.0F);
+      void set(int i, int j, int k, int l) {
+         this.set(i, j, k, l, 1.0F);
       }
 
-      void set(int var1, int var2, int var3, int var4, float var5) {
-         int var6 = index(var1, var2, var3);
-         this.cells[var6] = (byte)(var4 + 1);
-         this.shade[var6] = var5;
+      void set(int i, int j, int k, int l, float f) {
+         int var6 = index(i, j, k);
+         this.cells[var6] = (byte)(l + 1);
+         this.shade[var6] = f;
       }
 
-      void clear(int var1, int var2, int var3) {
-         this.cells[index(var1, var2, var3)] = 0;
+      void clear(int i, int j, int k) {
+         this.cells[index(i, j, k)] = 0;
       }
 
-      boolean filled(int var1, int var2, int var3) {
-         int var4 = var1 + 64;
-         int var5 = var2 + 32;
-         int var6 = var3 + 8;
+      boolean filled(int i, int j, int k) {
+         int var4 = i + 64;
+         int var5 = j + 32;
+         int var6 = k + 8;
          return var4 >= 0 && var5 >= 0 && var6 >= 0 && var4 < 128 && var5 < 64 && var6 < 16 ? this.cells[(var4 * 64 + var5) * 16 + var6] != 0 : false;
       }
 
-      KnifeMesh mesh(float var1, float var2) {
+      KnifeMesh mesh(float f, float g) {
          short var3 = 256;
          float[] var4 = new float[var3 * 12];
          float[] var5 = new float[var3 * 3];
@@ -209,42 +209,40 @@ final class KnifeMesh {
             }
          }
 
-         return new KnifeMesh(
-            Arrays.copyOf(var4, var8 * 12), Arrays.copyOf(var5, var8 * 3), Arrays.copyOf(var6, var8), Arrays.copyOf(var7, var8), var8, var1, var2
-         );
+         return new KnifeMesh(Arrays.copyOf(var4, var8 * 12), Arrays.copyOf(var5, var8 * 3), Arrays.copyOf(var6, var8), Arrays.copyOf(var7, var8), var8, f, g);
       }
 
-      private static void face(float[] var0, int var1, int var2, int var3, int var4, int[] var5) {
-         float var6 = var2;
-         float var7 = var2 + 1;
-         float var8 = var3;
-         float var9 = var3 + 1;
-         float var10 = var4;
-         float var11 = var4 + 1;
-         float[] var12 = var5[0] == 1
+      private static void face(float[] fs, int i, int j, int k, int l, int[] is) {
+         float var6 = j;
+         float var7 = j + 1;
+         float var8 = k;
+         float var9 = k + 1;
+         float var10 = l;
+         float var11 = l + 1;
+         float[] var12 = is[0] == 1
             ? new float[]{var7, var8, var11, var7, var8, var10, var7, var9, var10, var7, var9, var11}
             : (
-               var5[0] == -1
+               is[0] == -1
                   ? new float[]{var6, var8, var10, var6, var8, var11, var6, var9, var11, var6, var9, var10}
                   : (
-                     var5[1] == 1
+                     is[1] == 1
                         ? new float[]{var6, var9, var11, var7, var9, var11, var7, var9, var10, var6, var9, var10}
                         : (
-                           var5[1] == -1
+                           is[1] == -1
                               ? new float[]{var6, var8, var10, var7, var8, var10, var7, var8, var11, var6, var8, var11}
                               : (
-                                 var5[2] == 1
+                                 is[2] == 1
                                     ? new float[]{var6, var8, var11, var7, var8, var11, var7, var9, var11, var6, var9, var11}
                                     : new float[]{var7, var8, var10, var6, var8, var10, var6, var9, var10, var7, var9, var10}
                               )
                         )
                   )
             );
-         System.arraycopy(var12, 0, var0, var1, 12);
+         System.arraycopy(var12, 0, fs, i, 12);
       }
 
-      private static int index(int var0, int var1, int var2) {
-         return ((var0 + 64) * 64 + var1 + 32) * 16 + var2 + 8;
+      private static int index(int i, int j, int k) {
+         return ((i + 64) * 64 + j + 32) * 16 + k + 8;
       }
    }
 }

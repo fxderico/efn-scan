@@ -10,9 +10,9 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Environment(EnvType.CLIENT)
 @Mixin({ItemRenderState.class})
 public interface AccessorHandItemRenderState {
-   @Accessor("field_55340")
+   @Accessor("layers")
    LayerRenderState[] efn$handLayers();
 
-   @Accessor("field_55339")
+   @Accessor("layerCount")
    int efn$handLayerCount();
 }

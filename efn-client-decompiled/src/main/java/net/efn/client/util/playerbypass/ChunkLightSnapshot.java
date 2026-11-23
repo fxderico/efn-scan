@@ -11,10 +11,10 @@ public final class ChunkLightSnapshot {
    public final int bottomSectionY;
    public final LightSectionStatus[] sky;
 
-   public ChunkLightSnapshot(int var1, int var2) {
-      this.sectionCount = var1;
-      this.bottomSectionY = var2;
-      this.sky = new LightSectionStatus[var1 + 2];
+   public ChunkLightSnapshot(int i, int j) {
+      this.sectionCount = i;
+      this.bottomSectionY = j;
+      this.sky = new LightSectionStatus[i + 2];
       Arrays.fill(this.sky, LightSectionStatus.UNKNOWN);
    }
 
@@ -28,7 +28,7 @@ public final class ChunkLightSnapshot {
       return false;
    }
 
-   static boolean candidate(int var0, int var1) {
-      return (var1 + var0 - 1) * 16 + 15 < 62;
+   static boolean candidate(int i, int j) {
+      return (j + i - 1) * 16 + 15 < 62;
    }
 }

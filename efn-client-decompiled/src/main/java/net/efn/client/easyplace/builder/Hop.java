@@ -32,18 +32,18 @@ final class Hop {
    private boolean centered;
    private int ticks;
 
-   Hop(BlockPos var1) {
-      this(var1, false, false);
+   Hop(BlockPos blockPos) {
+      this(blockPos, false, false);
    }
 
-   Hop(BlockPos var1, boolean var2) {
-      this(var1, var2, false);
+   Hop(BlockPos blockPos, boolean bl) {
+      this(blockPos, bl, false);
    }
 
-   Hop(BlockPos var1, boolean var2, boolean var3) {
-      this.spot = var1;
-      this.through = var2;
-      this.leap = var3;
+   Hop(BlockPos blockPos, boolean bl, boolean bl2) {
+      this.spot = blockPos;
+      this.through = bl;
+      this.leap = bl2;
    }
 
    BlockPos spot() {
@@ -67,18 +67,18 @@ final class Hop {
       return this;
    }
 
-   static BlockPos spot(ClientWorld var0, ClientPlayerEntity var1, Predicate<BlockPos> var2) {
-      if (!var1.method_24828()) {
+   static BlockPos spot(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, Predicate<BlockPos> predicate) {
+      if (!clientPlayerEntity.isOnGround()) {
          return null;
       } else {
-         BlockPos var3 = var1.method_24515();
-         double var4 = Walker.floorOr(var0, var3);
+         BlockPos var3 = clientPlayerEntity.getBlockPos();
+         double var4 = Walker.floorOr(clientWorld, var3);
          BlockPos var6 = null;
          double var7 = 0.45;
 
-         for (BlockPos var10 : Walker.steps(var0, var3)) {
-            double var11 = Walker.floor(var0, var10) - var4;
-            if (var11 > var7 && !var2.test(var10)) {
+         for (BlockPos var10 : Walker.steps(clientWorld, var3)) {
+            double var11 = Walker.floor(clientWorld, var10) - var4;
+            if (var11 > var7 && !predicate.test(var10)) {
                var7 = var11;
                var6 = var10;
             }
@@ -88,69 +88,69 @@ final class Hop {
       }
    }
 
-   Hop.Result tick(MinecraftClient var1) {
+   Hop.Result tick(MinecraftClient minecraftClient) {
       float var3 = 0.0F;
       boolean var4 = false;
-      ClientPlayerEntity var5 = var1.field_1724;
+      ClientPlayerEntity var5 = minecraftClient.player;
       if (var5 == null) {
          return Hop.Result.FAILED;
       } else {
          if (this.from == null) {
-            this.from = var5.method_24515();
+            this.from = var5.getBlockPos();
          }
 
-         if (Double.isNaN(this.floor) && var1.field_1687 != null) {
-            this.floor = Walker.floorOr(var1.field_1687, this.spot);
+         if (Double.isNaN(this.floor) && minecraftClient.world != null) {
+            this.floor = Walker.floorOr(minecraftClient.world, this.spot);
          }
 
-         Vec3d var2 = var5.method_73189();
-         var1.field_1690.field_1832.method_23481(this.careful);
-         double var6 = this.spot.method_10263() + 0.5 - var2.field_1352;
-         double var8 = this.spot.method_10260() + 0.5 - var2.field_1350;
+         Vec3d var2 = var5.getEntityPos();
+         minecraftClient.options.sneakKey.setPressed(this.careful);
+         double var6 = this.spot.getX() + 0.5 - var2.x;
+         double var8 = this.spot.getZ() + 0.5 - var2.z;
          double var10 = this.through ? 0.35 : 0.12;
          boolean var12 = Math.abs(var6) < var10 && Math.abs(var8) < var10;
-         boolean var13 = this.through || var5.method_18798().method_37268() < 0.0025;
-         boolean var14 = var2.field_1351 < this.floor + 0.55;
-         if (var12 && var13 && var14 && var5.method_24828() && var2.field_1351 >= this.floor - 0.05) {
+         boolean var13 = this.through || var5.getVelocity().horizontalLengthSquared() < 0.0025;
+         boolean var14 = var2.y < this.floor + 0.55;
+         if (var12 && var13 && var14 && var5.isOnGround() && var2.y >= this.floor - 0.05) {
             if (!this.through) {
-               this.release(var1);
+               this.release(minecraftClient);
             }
 
             return Hop.Result.DONE;
          } else if (++this.ticks > 60) {
-            this.release(var1);
+            this.release(minecraftClient);
             return Hop.Result.FAILED;
-         } else if (var1.field_1687 != null && var5.method_24828() && this.intoHole(var1.field_1687, var5, var2)) {
-            var1.field_1690.field_1894.method_23481(false);
-            var1.field_1690.field_1867.method_23481(false);
-            var1.field_1690.field_1903.method_23481(false);
-            var1.field_1690.field_1832.method_23481(true);
+         } else if (minecraftClient.world != null && var5.isOnGround() && this.intoHole(minecraftClient.world, var5, var2)) {
+            minecraftClient.options.forwardKey.setPressed(false);
+            minecraftClient.options.sprintKey.setPressed(false);
+            minecraftClient.options.jumpKey.setPressed(false);
+            minecraftClient.options.sneakKey.setPressed(true);
             return Hop.Result.RUNNING;
          } else {
             if (!this.centered) {
-               double var15 = this.from.method_10263() + 0.5 - var2.field_1352;
-               double var17 = this.from.method_10260() + 0.5 - var2.field_1350;
-               double var19 = this.spot.method_10263() != this.from.method_10263() ? Math.abs(var17) : Math.abs(var15);
-               boolean var21 = this.floor - var2.field_1351 <= 0.55 && var19 < 0.25;
-               if (!var21 && (!(Math.abs(var15) < 0.15) || !(Math.abs(var17) < 0.15)) && (var5.method_24828() || this.ticks <= 10)) {
-                  var3 = Aim.turn(var1, (float)Math.toDegrees(Math.atan2(-var15, var17)), var5.method_36455(), 22.0F);
-                  var1.field_1690.field_1894.method_23481(var3 < 30.0F);
-                  var1.field_1690.field_1903.method_23481(false);
+               double var15 = this.from.getX() + 0.5 - var2.x;
+               double var17 = this.from.getZ() + 0.5 - var2.z;
+               double var19 = this.spot.getX() != this.from.getX() ? Math.abs(var17) : Math.abs(var15);
+               boolean var21 = this.floor - var2.y <= 0.55 && var19 < 0.25;
+               if (!var21 && (!(Math.abs(var15) < 0.15) || !(Math.abs(var17) < 0.15)) && (var5.isOnGround() || this.ticks <= 10)) {
+                  var3 = Aim.turn(minecraftClient, (float)Math.toDegrees(Math.atan2(-var15, var17)), var5.getPitch(), 22.0F);
+                  minecraftClient.options.forwardKey.setPressed(var3 < 30.0F);
+                  minecraftClient.options.jumpKey.setPressed(false);
                   return Hop.Result.RUNNING;
                }
 
                this.centered = true;
             }
 
-            var3 = Aim.turn(var1, (float)Math.toDegrees(Math.atan2(-var6, var8)), var5.method_36455(), 22.0F);
-            boolean var26 = var5.method_18798().method_37268() > 4.0E-4;
-            var1.field_1690.field_1867.method_23481(this.sprint && !var12 && var3 < 10.0F);
+            var3 = Aim.turn(minecraftClient, (float)Math.toDegrees(Math.atan2(-var6, var8)), var5.getPitch(), 22.0F);
+            boolean var26 = var5.getVelocity().horizontalLengthSquared() > 4.0E-4;
+            minecraftClient.options.sprintKey.setPressed(this.sprint && !var12 && var3 < 10.0F);
             var4 = (!var12 || !var14) && (this.through || Math.hypot(var6, var8) > 0.3 || !var26 || !var14);
             if (this.slow) {
-               boolean var16 = var5.method_24828() && var2.field_1351 < this.floor + 0.05 && Math.hypot(var6, var8) < 0.45;
+               boolean var16 = var5.isOnGround() && var2.y < this.floor + 0.05 && Math.hypot(var6, var8) < 0.45;
                boolean var27;
                if (var4) {
-                  double var18 = var5.method_18798().method_37267();
+                  double var18 = var5.getVelocity().horizontalLength();
                   double var20 = var16 ? 0.03 : 0.08;
                   var27 = var18 < var20;
                } else {
@@ -160,47 +160,44 @@ final class Hop {
                var4 = var27;
             }
 
-            var1.field_1690.field_1894.method_23481(var4 && var3 < 30.0F);
-            double var25 = (var2.field_1352 - (this.from.method_10263() + 0.5)) * Integer.signum(this.spot.method_10263() - this.from.method_10263())
-               + (var2.field_1350 - (this.from.method_10260() + 0.5)) * Integer.signum(this.spot.method_10260() - this.from.method_10260());
-            boolean var7 = var1.field_1724.field_5976
+            minecraftClient.options.forwardKey.setPressed(var4 && var3 < 30.0F);
+            double var25 = (var2.x - (this.from.getX() + 0.5)) * Integer.signum(this.spot.getX() - this.from.getX())
+               + (var2.z - (this.from.getZ() + 0.5)) * Integer.signum(this.spot.getZ() - this.from.getZ());
+            boolean var7 = minecraftClient.player.horizontalCollision
                || var25 > 0.15
-               || this.spot.method_10263() == this.from.method_10263() && this.spot.method_10260() == this.from.method_10260();
-            var1.field_1690
-               .field_1903
-               .method_23481(
-                  var1.field_1724.method_24828() && this.floor - var2.field_1351 > 0.55 && var7
-                     || this.leap && var1.field_1724.method_24828() && var25 > 0.3 && var25 < 1.0
+               || this.spot.getX() == this.from.getX() && this.spot.getZ() == this.from.getZ();
+            minecraftClient.options
+               .jumpKey
+               .setPressed(
+                  minecraftClient.player.isOnGround() && this.floor - var2.y > 0.55 && var7
+                     || this.leap && minecraftClient.player.isOnGround() && var25 > 0.3 && var25 < 1.0
                );
             return Hop.Result.RUNNING;
          }
       }
    }
 
-   private boolean intoHole(ClientWorld var1, ClientPlayerEntity var2, Vec3d var3) {
-      Vec3d var4 = var2.method_18798();
-      double var5 = var4.method_37267();
+   private boolean intoHole(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, Vec3d vec3d) {
+      Vec3d var4 = clientPlayerEntity.getVelocity();
+      double var5 = var4.horizontalLength();
       if (var5 < 0.02) {
          return false;
       } else {
          double var7 = var5 * 1.3 + 0.35;
-         BlockPos var9 = BlockPos.method_49637(
-            var3.field_1352 + var4.field_1352 / var5 * var7, var3.field_1351 + 0.01, var3.field_1350 + var4.field_1350 / var5 * var7
-         );
-         BlockPos var10 = var2.method_24515();
-         return (var9.method_10263() != this.spot.method_10263() || var9.method_10260() != this.spot.method_10260())
-               && (var9.method_10263() != var10.method_10263() || var9.method_10260() != var10.method_10260())
-            ? Walker.dropAt(var1, var9) > 3
+         BlockPos var9 = BlockPos.ofFloored(vec3d.x + var4.x / var5 * var7, vec3d.y + 0.01, vec3d.z + var4.z / var5 * var7);
+         BlockPos var10 = clientPlayerEntity.getBlockPos();
+         return (var9.getX() != this.spot.getX() || var9.getZ() != this.spot.getZ()) && (var9.getX() != var10.getX() || var9.getZ() != var10.getZ())
+            ? Walker.dropAt(clientWorld, var9) > 3
             : false;
       }
    }
 
-   void release(MinecraftClient var1) {
-      var1.field_1690.field_1894.method_23481(false);
-      var1.field_1690.field_1903.method_23481(false);
-      var1.field_1690.field_1867.method_23481(false);
+   void release(MinecraftClient minecraftClient) {
+      minecraftClient.options.forwardKey.setPressed(false);
+      minecraftClient.options.jumpKey.setPressed(false);
+      minecraftClient.options.sprintKey.setPressed(false);
       if (this.careful) {
-         var1.field_1690.field_1832.method_23481(false);
+         minecraftClient.options.sneakKey.setPressed(false);
       }
    }
 

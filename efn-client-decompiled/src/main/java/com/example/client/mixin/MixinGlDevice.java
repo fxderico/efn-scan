@@ -15,10 +15,10 @@ public class MixinGlDevice {
    }
 
    @Redirect(
-      method = {"method_68813"},
+      method = {"create"},
       at = {@At(
          value = "FIELD",
-         target = "Lnet/minecraft/class_10865;field_58039:Z",
+         target = "Lnet/minecraft/client/gl/GlBackend;allowGlArbDirectAccess:Z",
          opcode = 178
       )}
    )

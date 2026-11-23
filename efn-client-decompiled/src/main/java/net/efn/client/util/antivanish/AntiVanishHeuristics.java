@@ -9,8 +9,8 @@ public final class AntiVanishHeuristics {
    private AntiVanishHeuristics() {
    }
 
-   public static boolean suspiciousSound(String var0) {
-      String var1 = path(var0);
+   public static boolean suspiciousSound(String string) {
+      String var1 = path(string);
       return var1.contains("chest.open")
          || var1.contains("chest.close")
          || var1.contains("chest.locked")
@@ -26,17 +26,17 @@ public final class AntiVanishHeuristics {
          || var1.contains("lever.click");
    }
 
-   public static boolean suspiciousParticle(String var0) {
-      String var1 = path(var0);
+   public static boolean suspiciousParticle(String string) {
+      String var1 = path(string);
       return var1.contains("crit") || var1.contains("enchanted_hit") || var1.contains("damage_indicator") || var1.contains("smoke") || var1.equals("block");
    }
 
-   public static String path(String var0) {
-      if (var0 == null) {
+   public static String path(String string) {
+      if (string == null) {
          return "unknown";
       } else {
-         int var1 = var0.indexOf(58);
-         return (var1 >= 0 && var1 + 1 < var0.length() ? var0.substring(var1 + 1) : var0).toLowerCase(Locale.ROOT);
+         int var1 = string.indexOf(58);
+         return (var1 >= 0 && var1 + 1 < string.length() ? string.substring(var1 + 1) : string).toLowerCase(Locale.ROOT);
       }
    }
 }

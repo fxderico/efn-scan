@@ -16,16 +16,16 @@ public abstract class SpeedMode {
    protected double distance;
    protected double speed;
 
-   protected SpeedMode(SpeedModule var1) {
-      this.settings = var1;
+   protected SpeedMode(SpeedModule speedModule) {
+      this.settings = speedModule;
       this.reset();
    }
 
-   public void onTick(ClientPlayerEntity var1) {
+   public void onTick(ClientPlayerEntity clientPlayerEntity) {
    }
 
-   public Vec3d onMove(ClientPlayerEntity var1, Vec3d var2) {
-      return var2;
+   public Vec3d onMove(ClientPlayerEntity clientPlayerEntity, Vec3d vec3d) {
+      return vec3d;
    }
 
    public void onRubberband() {
@@ -38,16 +38,16 @@ public abstract class SpeedMode {
    public void onDeactivate() {
    }
 
-   protected double getDefaultSpeed(ClientPlayerEntity var1) {
+   protected double getDefaultSpeed(ClientPlayerEntity clientPlayerEntity) {
       double var3 = 0.2873;
-      StatusEffectInstance var5 = var1.method_6112(StatusEffects.field_5904);
+      StatusEffectInstance var5 = clientPlayerEntity.getStatusEffect(StatusEffects.SPEED);
       if (var5 != null) {
-         var3 *= 1.0 + 0.2 * (var5.method_5578() + 1);
+         var3 *= 1.0 + 0.2 * (var5.getAmplifier() + 1);
       }
 
       StatusEffectInstance var2;
-      if ((var2 = var1.method_6112(StatusEffects.field_5909)) != null) {
-         var3 /= 1.0 + 0.2 * (var2.method_5578() + 1);
+      if ((var2 = clientPlayerEntity.getStatusEffect(StatusEffects.SLOWNESS)) != null) {
+         var3 /= 1.0 + 0.2 * (var2.getAmplifier() + 1);
       }
 
       return var3;
@@ -59,12 +59,12 @@ public abstract class SpeedMode {
       this.speed = 0.2873;
    }
 
-   protected double getHop(ClientPlayerEntity var1, double var2) {
-      StatusEffectInstance var4 = var1.method_6112(StatusEffects.field_5913);
+   protected double getHop(ClientPlayerEntity clientPlayerEntity, double d) {
+      StatusEffectInstance var4 = clientPlayerEntity.getStatusEffect(StatusEffects.JUMP_BOOST);
       if (var4 != null) {
-         var2 += (var4.method_5578() + 1) * 0.1F;
+         d += (var4.getAmplifier() + 1) * 0.1F;
       }
 
-      return var2;
+      return d;
    }
 }

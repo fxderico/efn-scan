@@ -47,7 +47,7 @@ public final class CrystalOptimizerModule extends ClientModule {
    private boolean attackSent;
    private EndCrystalEntity pendingRemoval;
    private final CrystalOptimizerModule.AttackProbe attackProbe = new CrystalOptimizerModule.AttackProbe();
-   private final Int2ObjectMap<CrystalOptimizerModule.Ghost> ghosts = new Int2ObjectOpenHashMap();
+   private final Int2ObjectMap<CrystalOptimizerModule.Ghost> ghosts = new Int2ObjectOpenHashMap<>();
    private final IntSet stubborn = new IntOpenHashSet();
    private final IntSet serverRemoved = new IntOpenHashSet();
 
@@ -62,12 +62,9 @@ public final class CrystalOptimizerModule extends ClientModule {
 
    @Override
    protected void onDisable() {
-      ClientWorld var1 = MinecraftClient.method_1551().field_1687;
+      ClientWorld var1 = MinecraftClient.getInstance().world;
       if (var1 != null && var1 == this.trackedLevel) {
-         ObjectIterator var2 = this.ghosts.values().iterator();
-
-         while (var2.hasNext()) {
-            CrystalOptimizerModule.Ghost var3 = (CrystalOptimizerModule.Ghost)var2.next();
+         for (CrystalOptimizerModule.Ghost var3 : this.ghosts.values()) {
             revive(var1, var3.crystal());
          }
       }
@@ -78,11 +75,11 @@ public final class CrystalOptimizerModule extends ClientModule {
    @EventHandler(
       priority = EventPriority.HIGHEST
    )
-   public void onTick(TickEvent var1) {
+   public void onTick(TickEvent tickEvent) {
       this.attackSent = false;
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientPlayerEntity var3 = var2.field_1724;
-      ClientWorld var4 = var2.field_1687;
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientPlayerEntity var3 = var2.player;
+      ClientWorld var4 = var2.world;
       if (var3 != null && var4 != null) {
          if (var3 != this.trackedPlayer || var4 != this.trackedLevel) {
             this.reset();
@@ -90,15 +87,15 @@ public final class CrystalOptimizerModule extends ClientModule {
             this.trackedLevel = var4;
          }
 
-         if (this.pendingRemoval != null && !this.pendingRemoval.method_31481()) {
-            var4.method_2945(this.pendingRemoval.method_5628(), RemovalReason.field_26999);
-            this.ghosts.put(this.pendingRemoval.method_5628(), new CrystalOptimizerModule.Ghost(this.pendingRemoval, this.ticks));
+         if (this.pendingRemoval != null && !this.pendingRemoval.isRemoved()) {
+            var4.removeEntity(this.pendingRemoval.getId(), RemovalReason.DISCARDED);
+            this.ghosts.put(this.pendingRemoval.getId(), new CrystalOptimizerModule.Ghost(this.pendingRemoval, this.ticks));
          }
 
          this.pendingRemoval = null;
          this.ticks++;
-         this.serverRemoved.removeIf(var1x -> var4.method_8469(var1x) == null);
-         this.sample(var3.method_6047());
+         this.serverRemoved.removeIf(i -> var4.getEntityById(i) == null);
+         this.sample(var3.getMainHandStack());
          this.restoreGhosts(var2, var3, var4);
       } else {
          if (this.trackedPlayer != null || this.sampleCount > 0) {
@@ -108,19 +105,19 @@ public final class CrystalOptimizerModule extends ClientModule {
    }
 
    @EventHandler
-   public void onPacketReceive(PacketReceiveEvent var1) {
-      if (var1.packet instanceof EntitiesDestroyS2CPacket var2) {
-         IntListIterator var3 = var2.method_36548().iterator();
+   public void onPacketReceive(PacketReceiveEvent packetReceiveEvent) {
+      if (packetReceiveEvent.packet instanceof EntitiesDestroyS2CPacket var2) {
+         IntListIterator var3 = var2.getEntityIds().iterator();
 
          while (var3.hasNext()) {
             int var4 = var3.next();
             this.ghosts.remove(var4);
             this.stubborn.remove(var4);
-            if (this.pendingRemoval != null && this.pendingRemoval.method_5628() == var4) {
+            if (this.pendingRemoval != null && this.pendingRemoval.getId() == var4) {
                this.pendingRemoval = null;
             }
 
-            if (this.trackedLevel != null && this.trackedLevel.method_8469(var4) instanceof EndCrystalEntity) {
+            if (this.trackedLevel != null && this.trackedLevel.getEntityById(var4) instanceof EndCrystalEntity) {
                this.serverRemoved.add(var4);
             }
          }
@@ -130,15 +127,15 @@ public final class CrystalOptimizerModule extends ClientModule {
    @EventHandler(
       priority = EventPriority.LOWEST
    )
-   public void onPacketSend(PacketSendEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      if (var2.method_18854()) {
-         if (var1.packet instanceof PlayerInteractEntityC2SPacket var4) {
+   public void onPacketSend(PacketSendEvent packetSendEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      if (var2.isOnThread()) {
+         if (packetSendEvent.packet instanceof PlayerInteractEntityC2SPacket var4) {
             this.attackSent = this.attackProbe.isAttack(var4);
-         } else if (var1.packet instanceof UpdateSelectedSlotC2SPacket var7) {
-            ClientPlayerEntity var5 = var2.field_1724;
-            if (var5 != null && var5 == this.trackedPlayer && PlayerInventory.method_7380(var7.method_12442())) {
-               this.sample(var5.method_31548().method_5438(var7.method_12442()));
+         } else if (packetSendEvent.packet instanceof UpdateSelectedSlotC2SPacket var7) {
+            ClientPlayerEntity var5 = var2.player;
+            if (var5 != null && var5 == this.trackedPlayer && PlayerInventory.isValidHotbarIndex(var7.getSelectedSlot())) {
+               this.sample(var5.getInventory().getStack(var7.getSelectedSlot()));
             }
          }
       }
@@ -147,20 +144,18 @@ public final class CrystalOptimizerModule extends ClientModule {
    @EventHandler(
       priority = EventPriority.LOWEST
    )
-   public void onAttack(PlayerAttackEntityEvent var1) {
+   public void onAttack(PlayerAttackEntityEvent playerAttackEntityEvent) {
       boolean var3 = this.attackSent;
       this.attackSent = false;
       if (var3) {
-         Entity var2 = var1.target;
-         if (var1.target instanceof EndCrystalEntity) {
+         Entity var2 = playerAttackEntityEvent.target;
+         if (playerAttackEntityEvent.target instanceof EndCrystalEntity) {
             EndCrystalEntity var4 = (EndCrystalEntity)var2;
-            MinecraftClient var5 = MinecraftClient.method_1551();
-            ClientPlayerEntity var6 = var5.field_1724;
-            ClientWorld var7 = var5.field_1687;
-            if (var6 != null && var7 != null && var6 == this.trackedPlayer && var4.method_73183() == var7) {
-               if (!this.stubborn.contains(var4.method_5628())
-                  && !this.serverRemoved.contains(var4.method_5628())
-                  && this.breaksOnServer(var5, var6, var7, var4)) {
+            MinecraftClient var5 = MinecraftClient.getInstance();
+            ClientPlayerEntity var6 = var5.player;
+            ClientWorld var7 = var5.world;
+            if (var6 != null && var7 != null && var6 == this.trackedPlayer && var4.getEntityWorld() == var7) {
+               if (!this.stubborn.contains(var4.getId()) && !this.serverRemoved.contains(var4.getId()) && this.breaksOnServer(var5, var6, var7, var4)) {
                   this.pendingRemoval = var4;
                   return;
                }
@@ -173,46 +168,50 @@ public final class CrystalOptimizerModule extends ClientModule {
       }
    }
 
-   private void restoreGhosts(MinecraftClient var1, ClientPlayerEntity var2, ClientWorld var3) {
+   private void restoreGhosts(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, ClientWorld clientWorld) {
       if (!this.ghosts.isEmpty()) {
-         int var4 = Crystals.confirmWindow(var1, var2);
+         int var4 = Crystals.confirmWindow(minecraftClient, clientPlayerEntity);
          ObjectIterator var5 = this.ghosts.values().iterator();
 
          while (var5.hasNext()) {
             CrystalOptimizerModule.Ghost var6 = (CrystalOptimizerModule.Ghost)var5.next();
             if (this.ticks - var6.removedAt() > var4) {
                var5.remove();
-               if (revive(var3, var6.crystal())) {
-                  this.stubborn.add(var6.crystal().method_5628());
+               if (revive(clientWorld, var6.crystal())) {
+                  this.stubborn.add(var6.crystal().getId());
                }
             }
          }
       }
    }
 
-   private static boolean revive(ClientWorld var0, EndCrystalEntity var1) {
-      if (var0.method_8469(var1.method_5628()) != null) {
+   private static boolean revive(ClientWorld clientWorld, EndCrystalEntity endCrystalEntity) {
+      if (clientWorld.getEntityById(endCrystalEntity.getId()) != null) {
          return false;
       } else {
-         EndCrystalEntity var2 = new EndCrystalEntity(var0, var1.method_23317(), var1.method_23318(), var1.method_23321());
-         var2.method_5838(var1.method_5628());
-         var2.method_5826(var1.method_5667());
-         var2.method_6839(var1.method_6836());
-         var0.method_53875(var2);
+         EndCrystalEntity var2 = new EndCrystalEntity(clientWorld, endCrystalEntity.getX(), endCrystalEntity.getY(), endCrystalEntity.getZ());
+         var2.setId(endCrystalEntity.getId());
+         var2.setUuid(endCrystalEntity.getUuid());
+         var2.setShowBottom(endCrystalEntity.shouldShowBottom());
+         clientWorld.addEntity(var2);
          return true;
       }
    }
 
-   private boolean breaksOnServer(MinecraftClient var1, ClientPlayerEntity var2, ClientWorld var3, EndCrystalEntity var4) {
-      if (var4.method_31481()) {
+   private boolean breaksOnServer(
+      MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, ClientWorld clientWorld, EndCrystalEntity endCrystalEntity
+   ) {
+      if (endCrystalEntity.isRemoved()) {
          return false;
-      } else if (!var2.method_7325() && !var2.method_29504() && !var2.method_6123()) {
-         ItemStack var5 = var2.method_6047();
-         if (var5.method_45435(var3.method_45162()) && !var2.method_75202(var5, 0)) {
-            if (!var3.method_8621().method_11952(var4.method_24515())) {
+      } else if (!clientPlayerEntity.isSpectator() && !clientPlayerEntity.isDead() && !clientPlayerEntity.isUsingRiptide()) {
+         ItemStack var5 = clientPlayerEntity.getMainHandStack();
+         if (var5.isItemEnabled(clientWorld.getEnabledFeatures()) && !clientPlayerEntity.isBelowMinimumAttackCharge(var5, 0)) {
+            if (!clientWorld.getWorldBorder().contains(endCrystalEntity.getBlockPos())) {
                return false;
             } else {
-               return !var2.method_76729(var4.method_5829(), 0.0) ? false : Crystals.enchantsAddDamage(var5) || this.recentHandsDealDamage(var1, var2, var5);
+               return !clientPlayerEntity.canAttackEntityIn(endCrystalEntity.getBoundingBox(), 0.0)
+                  ? false
+                  : Crystals.enchantsAddDamage(var5) || this.recentHandsDealDamage(minecraftClient, clientPlayerEntity, var5);
             }
          } else {
             return false;
@@ -222,20 +221,20 @@ public final class CrystalOptimizerModule extends ClientModule {
       }
    }
 
-   private boolean recentHandsDealDamage(MinecraftClient var1, ClientPlayerEntity var2, ItemStack var3) {
-      if (!Crystals.dealsDamage(var2, var3)) {
+   private boolean recentHandsDealDamage(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, ItemStack itemStack) {
+      if (!Crystals.dealsDamage(clientPlayerEntity, itemStack)) {
          return false;
       } else {
-         int var6 = Crystals.confirmWindow(var1, var2);
+         int var6 = Crystals.confirmWindow(minecraftClient, clientPlayerEntity);
          boolean var7 = this.ticks - this.trackedSince >= var6;
-         ItemStack var8 = var3;
+         ItemStack var8 = itemStack;
 
          int var4;
          int var5;
          for (var5 = 0; var5 < this.sampleCount && this.ticks - this.sampleTicks[var4 = Math.floorMod(this.sampleCursor - 1 - var5, 64)] <= var6; var5++) {
             ItemStack var9 = this.heldSamples[var4];
             if (var9 != var8) {
-               if (!Crystals.dealsDamage(var2, var9)) {
+               if (!Crystals.dealsDamage(clientPlayerEntity, var9)) {
                   return false;
                }
 
@@ -247,12 +246,12 @@ public final class CrystalOptimizerModule extends ClientModule {
             var7 = false;
          }
 
-         return var7 || Crystals.dealsDamage(var2, ItemStack.field_8037);
+         return var7 || Crystals.dealsDamage(clientPlayerEntity, ItemStack.EMPTY);
       }
    }
 
-   private void sample(ItemStack var1) {
-      this.heldSamples[this.sampleCursor] = var1;
+   private void sample(ItemStack itemStack) {
+      this.heldSamples[this.sampleCursor] = itemStack;
       this.sampleTicks[this.sampleCursor] = this.ticks;
       this.sampleCursor = (this.sampleCursor + 1) % 64;
       if (this.sampleCount < 64) {
@@ -281,19 +280,22 @@ public final class CrystalOptimizerModule extends ClientModule {
       private AttackProbe() {
       }
 
-      boolean isAttack(PlayerInteractEntityC2SPacket var1) {
+      boolean isAttack(PlayerInteractEntityC2SPacket playerInteractEntityC2SPacket) {
          this.attack = false;
-         var1.method_34209(this);
+         playerInteractEntityC2SPacket.handle(this);
          return this.attack;
       }
 
-      public void method_34219(Hand var1) {
+      @Override
+      public void interact(Hand hand) {
       }
 
-      public void method_34220(Hand var1, Vec3d var2) {
+      @Override
+      public void interactAt(Hand hand, Vec3d pos) {
       }
 
-      public void method_34218() {
+      @Override
+      public void attack() {
          this.attack = true;
       }
    }

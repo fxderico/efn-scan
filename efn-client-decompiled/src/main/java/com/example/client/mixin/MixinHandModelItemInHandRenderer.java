@@ -20,40 +20,52 @@ public abstract class MixinHandModelItemInHandRenderer {
    }
 
    @WrapOperation(
-      method = {"method_3219", "method_3216"},
+      method = {"renderArmHoldingItem", "renderArm"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_1007;method_4220(Lnet/minecraft/class_4587;Lnet/minecraft/class_11659;ILnet/minecraft/class_2960;Z)V"
+         target = "Lnet/minecraft/client/render/entity/PlayerEntityRenderer;renderRightArm(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;ILnet/minecraft/util/Identifier;Z)V"
       )}
    )
    private void efn$longRightArm(
-      PlayerEntityRenderer<?> var1, MatrixStack var2, OrderedRenderCommandQueue var3, int var4, Identifier var5, boolean var6, Operation<Void> var7
+      PlayerEntityRenderer<?> playerEntityRenderer,
+      MatrixStack matrixStack,
+      OrderedRenderCommandQueue orderedRenderCommandQueue,
+      int i,
+      Identifier identifier,
+      boolean bl,
+      Operation<Void> operation
    ) {
-      var7.call(new Object[]{var1, var2, var3, var4, var5, var6});
+      operation.call(playerEntityRenderer, matrixStack, orderedRenderCommandQueue, i, identifier, bl);
       if (HandModelModule.active != null) {
-         var2.method_22903();
-         HandModelModule.shoulder(var2, true, var1);
-         var7.call(new Object[]{var1, var2, var3, var4, var5, var6});
-         var2.method_22909();
+         matrixStack.push();
+         HandModelModule.shoulder(matrixStack, true, playerEntityRenderer);
+         operation.call(playerEntityRenderer, matrixStack, orderedRenderCommandQueue, i, identifier, bl);
+         matrixStack.pop();
       }
    }
 
    @WrapOperation(
-      method = {"method_3219", "method_3216"},
+      method = {"renderArmHoldingItem", "renderArm"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_1007;method_4221(Lnet/minecraft/class_4587;Lnet/minecraft/class_11659;ILnet/minecraft/class_2960;Z)V"
+         target = "Lnet/minecraft/client/render/entity/PlayerEntityRenderer;renderLeftArm(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;ILnet/minecraft/util/Identifier;Z)V"
       )}
    )
    private void efn$longLeftArm(
-      PlayerEntityRenderer<?> var1, MatrixStack var2, OrderedRenderCommandQueue var3, int var4, Identifier var5, boolean var6, Operation<Void> var7
+      PlayerEntityRenderer<?> playerEntityRenderer,
+      MatrixStack matrixStack,
+      OrderedRenderCommandQueue orderedRenderCommandQueue,
+      int i,
+      Identifier identifier,
+      boolean bl,
+      Operation<Void> operation
    ) {
-      var7.call(new Object[]{var1, var2, var3, var4, var5, var6});
+      operation.call(playerEntityRenderer, matrixStack, orderedRenderCommandQueue, i, identifier, bl);
       if (HandModelModule.active != null) {
-         var2.method_22903();
-         HandModelModule.shoulder(var2, false, var1);
-         var7.call(new Object[]{var1, var2, var3, var4, var5, var6});
-         var2.method_22909();
+         matrixStack.push();
+         HandModelModule.shoulder(matrixStack, false, playerEntityRenderer);
+         operation.call(playerEntityRenderer, matrixStack, orderedRenderCommandQueue, i, identifier, bl);
+         matrixStack.pop();
       }
    }
 }

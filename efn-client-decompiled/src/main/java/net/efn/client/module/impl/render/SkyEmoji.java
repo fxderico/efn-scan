@@ -67,14 +67,14 @@ enum SkyEmoji {
    private final Set<String> words;
    private final Set<String> stems;
 
-   private SkyEmoji(Set<String> nullxx, Set<String> nullxxx) {
-      this.words = nullxx;
-      this.stems = nullxxx;
+   private SkyEmoji(Set<String> set, Set<String> set2) {
+      this.words = set;
+      this.stems = set2;
    }
 
-   static SkyEmoji.Match match(String var0) {
+   static SkyEmoji.Match match(String string) {
       for (String[] var4 : PHRASES) {
-         Matcher var5 = Pattern.compile(Pattern.quote(var4[0]), 66).matcher(var0);
+         Matcher var5 = Pattern.compile(Pattern.quote(var4[0]), 66).matcher(string);
          if (var5.find()) {
             int var6 = var5.start() + var4[0].indexOf(var4[1]);
             return new SkyEmoji.Match(BROKEN_HEART, var6, var6 + var4[1].length());
@@ -83,7 +83,7 @@ enum SkyEmoji {
 
       ArrayList var13 = new ArrayList();
       ArrayList var14 = new ArrayList();
-      Matcher var15 = WORD.matcher(var0);
+      Matcher var15 = WORD.matcher(string);
 
       while (var15.find()) {
          var13.add(new int[]{var15.start(), var15.end()});
@@ -182,18 +182,18 @@ enum SkyEmoji {
       }
    }
 
-   private void face(Graphics2D var1) {
+   private void face(Graphics2D graphics2D) {
       if (this == DEVIL) {
-         horns(var1);
+         horns(graphics2D);
       }
 
-      sphere(var1, 96.0F, 100.0F, 72.0F);
+      sphere(graphics2D, 96.0F, 100.0F, 72.0F);
       switch (this) {
          case KISS:
-            closedEye(var1, 72.0F, 92.0F, 13.0F, true);
-            eye(var1, 120.0F, 90.0F, 11.0F, 14.0F, 0.0F, 0.0F);
-            kissLips(var1, 102.0F, 128.0F);
-            heart(var1, 150.0F, 62.0F, 12.0F, false);
+            closedEye(graphics2D, 72.0F, 92.0F, 13.0F, true);
+            eye(graphics2D, 120.0F, 90.0F, 11.0F, 14.0F, 0.0F, 0.0F);
+            kissLips(graphics2D, 102.0F, 128.0F);
+            heart(graphics2D, 150.0F, 62.0F, 12.0F, false);
             break;
          case HUG:
          case SHY:
@@ -201,274 +201,271 @@ enum SkyEmoji {
          case STAR:
          case MOON:
          default:
-            eye(var1, 72.0F, 92.0F, 11.0F, 14.0F, 0.0F, 0.0F);
-            eye(var1, 120.0F, 92.0F, 11.0F, 14.0F, 0.0F, 0.0F);
+            eye(graphics2D, 72.0F, 92.0F, 11.0F, 14.0F, 0.0F, 0.0F);
+            eye(graphics2D, 120.0F, 92.0F, 11.0F, 14.0F, 0.0F, 0.0F);
             break;
          case LOVE:
-            heart(var1, 70.0F, 90.0F, 20.0F, false);
-            heart(var1, 122.0F, 90.0F, 20.0F, false);
-            openSmile(var1, 96.0F, 122.0F, 30.0F, 18.0F, true);
+            heart(graphics2D, 70.0F, 90.0F, 20.0F, false);
+            heart(graphics2D, 122.0F, 90.0F, 20.0F, false);
+            openSmile(graphics2D, 96.0F, 122.0F, 30.0F, 18.0F, true);
             break;
          case CRY:
-            tears(var1, 72.0F, 98.0F);
-            tears(var1, 120.0F, 98.0F);
-            closedEye(var1, 72.0F, 92.0F, 13.0F, false);
-            closedEye(var1, 120.0F, 92.0F, 13.0F, false);
-            brows(var1, 72.0F, 72.0F, 120.0F, 72.0F, -0.35F);
-            openFrown(var1, 96.0F, 134.0F, 22.0F, 13.0F);
+            tears(graphics2D, 72.0F, 98.0F);
+            tears(graphics2D, 120.0F, 98.0F);
+            closedEye(graphics2D, 72.0F, 92.0F, 13.0F, false);
+            closedEye(graphics2D, 120.0F, 92.0F, 13.0F, false);
+            brows(graphics2D, 72.0F, 72.0F, 120.0F, 72.0F, -0.35F);
+            openFrown(graphics2D, 96.0F, 134.0F, 22.0F, 13.0F);
             break;
          case SAD:
-            droopyEye(var1, 72.0F, 94.0F);
-            droopyEye(var1, 120.0F, 94.0F);
-            brows(var1, 72.0F, 74.0F, 120.0F, 74.0F, -0.3F);
-            frown(var1, 96.0F, 134.0F, 18.0F);
-            drop(var1, 62.0F, 118.0F, 7.0F);
+            droopyEye(graphics2D, 72.0F, 94.0F);
+            droopyEye(graphics2D, 120.0F, 94.0F);
+            brows(graphics2D, 72.0F, 74.0F, 120.0F, 74.0F, -0.3F);
+            frown(graphics2D, 96.0F, 134.0F, 18.0F);
+            drop(graphics2D, 62.0F, 118.0F, 7.0F);
             break;
          case LAUGH:
-            happyEye(var1, 72.0F, 90.0F);
-            happyEye(var1, 120.0F, 90.0F);
-            laughMouth(var1, 96.0F, 120.0F);
-            drop(var1, 44.0F, 98.0F, 8.0F);
-            drop(var1, 148.0F, 98.0F, 8.0F);
+            happyEye(graphics2D, 72.0F, 90.0F);
+            happyEye(graphics2D, 120.0F, 90.0F);
+            laughMouth(graphics2D, 96.0F, 120.0F);
+            drop(graphics2D, 44.0F, 98.0F, 8.0F);
+            drop(graphics2D, 148.0F, 98.0F, 8.0F);
             break;
          case DEVIL:
-            eye(var1, 72.0F, 94.0F, 11.0F, 9.0F, 0.2F, 0.0F);
-            eye(var1, 120.0F, 94.0F, 11.0F, 9.0F, -0.2F, 0.0F);
-            brows(var1, 72.0F, 78.0F, 120.0F, 78.0F, 0.45F);
-            smirk(var1, 96.0F, 126.0F, true);
+            eye(graphics2D, 72.0F, 94.0F, 11.0F, 9.0F, 0.2F, 0.0F);
+            eye(graphics2D, 120.0F, 94.0F, 11.0F, 9.0F, -0.2F, 0.0F);
+            brows(graphics2D, 72.0F, 78.0F, 120.0F, 78.0F, 0.45F);
+            smirk(graphics2D, 96.0F, 126.0F, true);
             break;
          case ANGRY:
-            eye(var1, 72.0F, 96.0F, 11.0F, 9.0F, 0.15F, 0.0F);
-            eye(var1, 120.0F, 96.0F, 11.0F, 9.0F, -0.15F, 0.0F);
-            brows(var1, 72.0F, 78.0F, 120.0F, 78.0F, 0.6F);
-            teeth(var1, 96.0F, 130.0F);
-            vein(var1, 146.0F, 56.0F);
+            eye(graphics2D, 72.0F, 96.0F, 11.0F, 9.0F, 0.15F, 0.0F);
+            eye(graphics2D, 120.0F, 96.0F, 11.0F, 9.0F, -0.15F, 0.0F);
+            brows(graphics2D, 72.0F, 78.0F, 120.0F, 78.0F, 0.6F);
+            teeth(graphics2D, 96.0F, 130.0F);
+            vein(graphics2D, 146.0F, 56.0F);
             break;
          case SHOCK:
-            eye(var1, 72.0F, 90.0F, 15.0F, 18.0F, 0.0F, 0.0F);
-            eye(var1, 120.0F, 90.0F, 15.0F, 18.0F, 0.0F, 0.0F);
-            brows(var1, 72.0F, 64.0F, 120.0F, 64.0F, -0.15F);
-            ring(var1, 96.0F, 134.0F, 13.0F, 16.0F);
+            eye(graphics2D, 72.0F, 90.0F, 15.0F, 18.0F, 0.0F, 0.0F);
+            eye(graphics2D, 120.0F, 90.0F, 15.0F, 18.0F, 0.0F, 0.0F);
+            brows(graphics2D, 72.0F, 64.0F, 120.0F, 64.0F, -0.15F);
+            ring(graphics2D, 96.0F, 134.0F, 13.0F, 16.0F);
             break;
          case COOL:
-            shades(var1);
-            smirk(var1, 98.0F, 128.0F, false);
+            shades(graphics2D);
+            smirk(graphics2D, 98.0F, 128.0F, false);
             break;
          case MONEY:
-            dollarEyes(var1);
-            openSmile(var1, 96.0F, 122.0F, 30.0F, 18.0F, false);
-            banknoteTongue(var1, 96.0F, 138.0F);
+            dollarEyes(graphics2D);
+            openSmile(graphics2D, 96.0F, 122.0F, 30.0F, 18.0F, false);
+            banknoteTongue(graphics2D, 96.0F, 138.0F);
             break;
          case SLEEP:
-            closedEye(var1, 72.0F, 94.0F, 13.0F, true);
-            closedEye(var1, 120.0F, 94.0F, 13.0F, true);
-            ring(var1, 96.0F, 130.0F, 6.0F, 7.0F);
-            zz(var1);
+            closedEye(graphics2D, 72.0F, 94.0F, 13.0F, true);
+            closedEye(graphics2D, 120.0F, 94.0F, 13.0F, true);
+            ring(graphics2D, 96.0F, 130.0F, 6.0F, 7.0F);
+            zz(graphics2D);
       }
    }
 
-   private static void sphere(Graphics2D var0, float var1, float var2, float var3) {
+   private static void sphere(Graphics2D graphics2D, float f, float g, float h) {
       for (int var4 = 6; var4 >= 1; var4--) {
          float var5 = var4 * 2.2F;
-         var0.setColor(new Color(0, 10, 40, 12));
-         var0.fill(new Float(var1 - var3 - var5 * 0.5F, var2 - var3 + 6.0F - var5 * 0.3F, (var3 + var5 * 0.5F) * 2.0F, (var3 + var5 * 0.4F) * 2.0F));
+         graphics2D.setColor(new Color(0, 10, 40, 12));
+         graphics2D.fill(new Float(f - h - var5 * 0.5F, g - h + 6.0F - var5 * 0.3F, (h + var5 * 0.5F) * 2.0F, (h + var5 * 0.4F) * 2.0F));
       }
 
-      Float var6 = new Float(var1 - var3, var2 - var3, var3 * 2.0F, var3 * 2.0F);
-      var0.setPaint(
+      Float var6 = new Float(f - h, g - h, h * 2.0F, h * 2.0F);
+      graphics2D.setPaint(
          new RadialGradientPaint(
-            new java.awt.geom.Point2D.Float(var1 - var3 * 0.35F, var2 - var3 * 0.45F),
-            var3 * 1.55F,
+            new java.awt.geom.Point2D.Float(f - h * 0.35F, g - h * 0.45F),
+            h * 1.55F,
             new float[]{0.0F, 0.35F, 0.75F, 1.0F},
             new Color[]{new Color(11132159), new Color(4101621), new Color(1791689), new Color(798078)}
          )
       );
-      var0.fill(var6);
-      var0.setPaint(
+      graphics2D.fill(var6);
+      graphics2D.setPaint(
          new RadialGradientPaint(
-            new java.awt.geom.Point2D.Float(var1, var2 + var3 * 0.9F),
-            var3 * 1.1F,
-            new float[]{0.0F, 1.0F},
-            new Color[]{new Color(7327999), new Color(7327999, true)}
+            new java.awt.geom.Point2D.Float(f, g + h * 0.9F), h * 1.1F, new float[]{0.0F, 1.0F}, new Color[]{new Color(7327999), new Color(7327999, true)}
          )
       );
-      var0.fill(var6);
-      var0.setStroke(new BasicStroke(2.5F));
-      var0.setColor(new Color(666222));
-      var0.draw(var6);
-      AffineTransform var7 = var0.getTransform();
-      var0.rotate(-0.5, var1 - var3 * 0.42F, var2 - var3 * 0.55F);
-      var0.setPaint(new GradientPaint(0.0F, var2 - var3 * 0.8F, new Color(255, 255, 255, 190), 0.0F, var2 - var3 * 0.25F, new Color(255, 255, 255, 0)));
-      var0.fill(new Float(var1 - var3 * 0.75F, var2 - var3 * 0.8F, var3 * 0.7F, var3 * 0.42F));
-      var0.setTransform(var7);
+      graphics2D.fill(var6);
+      graphics2D.setStroke(new BasicStroke(2.5F));
+      graphics2D.setColor(new Color(666222));
+      graphics2D.draw(var6);
+      AffineTransform var7 = graphics2D.getTransform();
+      graphics2D.rotate(-0.5, f - h * 0.42F, g - h * 0.55F);
+      graphics2D.setPaint(new GradientPaint(0.0F, g - h * 0.8F, new Color(255, 255, 255, 190), 0.0F, g - h * 0.25F, new Color(255, 255, 255, 0)));
+      graphics2D.fill(new Float(f - h * 0.75F, g - h * 0.8F, h * 0.7F, h * 0.42F));
+      graphics2D.setTransform(var7);
    }
 
-   private static void eye(Graphics2D var0, float var1, float var2, float var3, float var4, float var5, float var6) {
-      AffineTransform var7 = var0.getTransform();
-      var0.rotate(var5, var1, var2);
-      var0.setColor(Color.WHITE);
-      var0.fill(new Float(var1 - var3, var2 - var4, var3 * 2.0F, var4 * 2.0F));
-      var0.setColor(INK);
-      float var8 = Math.min(var3, var4) * 0.62F;
-      var0.fill(new Float(var1 - var8 + var6, var2 - var8 + var4 * 0.15F, var8 * 2.0F, var8 * 2.0F));
-      var0.setColor(Color.WHITE);
-      var0.fill(new Float(var1 - var8 * 0.25F + var6, var2 - var8 * 0.55F + var4 * 0.15F, var8 * 0.6F, var8 * 0.6F));
-      var0.setTransform(var7);
+   private static void eye(Graphics2D graphics2D, float f, float g, float h, float i, float j, float k) {
+      AffineTransform var7 = graphics2D.getTransform();
+      graphics2D.rotate(j, f, g);
+      graphics2D.setColor(Color.WHITE);
+      graphics2D.fill(new Float(f - h, g - i, h * 2.0F, i * 2.0F));
+      graphics2D.setColor(INK);
+      float var8 = Math.min(h, i) * 0.62F;
+      graphics2D.fill(new Float(f - var8 + k, g - var8 + i * 0.15F, var8 * 2.0F, var8 * 2.0F));
+      graphics2D.setColor(Color.WHITE);
+      graphics2D.fill(new Float(f - var8 * 0.25F + k, g - var8 * 0.55F + i * 0.15F, var8 * 0.6F, var8 * 0.6F));
+      graphics2D.setTransform(var7);
    }
 
-   private static void closedEye(Graphics2D var0, float var1, float var2, float var3, boolean var4) {
-      var0.setColor(INK);
-      var0.setStroke(new BasicStroke(5.0F, 1, 1));
-      float var5 = var4 ? 8.0F : -8.0F;
-      var0.draw(new java.awt.geom.QuadCurve2D.Float(var1 - var3, var2, var1, var2 + var5, var1 + var3, var2));
+   private static void closedEye(Graphics2D graphics2D, float f, float g, float h, boolean bl) {
+      graphics2D.setColor(INK);
+      graphics2D.setStroke(new BasicStroke(5.0F, 1, 1));
+      float var5 = bl ? 8.0F : -8.0F;
+      graphics2D.draw(new java.awt.geom.QuadCurve2D.Float(f - h, g, f, g + var5, f + h, g));
    }
 
-   private static void happyEye(Graphics2D var0, float var1, float var2) {
-      var0.setColor(INK);
-      var0.setStroke(new BasicStroke(6.0F, 1, 1));
-      var0.draw(new java.awt.geom.QuadCurve2D.Float(var1 - 13.0F, var2 + 6.0F, var1, var2 - 14.0F, var1 + 13.0F, var2 + 6.0F));
+   private static void happyEye(Graphics2D graphics2D, float f, float g) {
+      graphics2D.setColor(INK);
+      graphics2D.setStroke(new BasicStroke(6.0F, 1, 1));
+      graphics2D.draw(new java.awt.geom.QuadCurve2D.Float(f - 13.0F, g + 6.0F, f, g - 14.0F, f + 13.0F, g + 6.0F));
    }
 
-   private static void droopyEye(Graphics2D var0, float var1, float var2) {
-      Area var3 = new Area(new Float(var1 - 11.0F, var2 - 13.0F, 22.0F, 26.0F));
-      var3.subtract(new Area(new Float(var1 - 16.0F, var2 - 26.0F, 32.0F, 22.0F)));
-      var0.setColor(Color.WHITE);
-      var0.fill(var3);
-      var0.setColor(INK);
-      var0.fill(new Float(var1 - 6.0F, var2 - 2.0F, 12.0F, 12.0F));
-      var0.setStroke(new BasicStroke(3.5F, 1, 1));
-      var0.draw(new java.awt.geom.QuadCurve2D.Float(var1 - 12.0F, var2 - 5.0F, var1, var2 - 1.0F, var1 + 12.0F, var2 - 5.0F));
+   private static void droopyEye(Graphics2D graphics2D, float f, float g) {
+      Area var3 = new Area(new Float(f - 11.0F, g - 13.0F, 22.0F, 26.0F));
+      var3.subtract(new Area(new Float(f - 16.0F, g - 26.0F, 32.0F, 22.0F)));
+      graphics2D.setColor(Color.WHITE);
+      graphics2D.fill(var3);
+      graphics2D.setColor(INK);
+      graphics2D.fill(new Float(f - 6.0F, g - 2.0F, 12.0F, 12.0F));
+      graphics2D.setStroke(new BasicStroke(3.5F, 1, 1));
+      graphics2D.draw(new java.awt.geom.QuadCurve2D.Float(f - 12.0F, g - 5.0F, f, g - 1.0F, f + 12.0F, g - 5.0F));
    }
 
-   private static void brows(Graphics2D var0, float var1, float var2, float var3, float var4, float var5) {
-      var0.setColor(INK);
-      var0.setStroke(new BasicStroke(6.0F, 1, 1));
+   private static void brows(Graphics2D graphics2D, float f, float g, float h, float i, float j) {
+      graphics2D.setColor(INK);
+      graphics2D.setStroke(new BasicStroke(6.0F, 1, 1));
       float var6 = 12.0F;
-      float var7 = 12.0F * var5;
-      var0.draw(new java.awt.geom.QuadCurve2D.Float(var1 - var6, var2 - var7, var1, var2 - 3.0F, var1 + var6, var2 + var7));
-      var0.draw(new java.awt.geom.QuadCurve2D.Float(var3 - var6, var4 + var7, var3, var4 - 3.0F, var3 + var6, var4 - var7));
+      float var7 = 12.0F * j;
+      graphics2D.draw(new java.awt.geom.QuadCurve2D.Float(f - var6, g - var7, f, g - 3.0F, f + var6, g + var7));
+      graphics2D.draw(new java.awt.geom.QuadCurve2D.Float(h - var6, i + var7, h, i - 3.0F, h + var6, i - var7));
    }
 
-   private static void openSmile(Graphics2D var0, float var1, float var2, float var3, float var4, boolean var5) {
+   private static void openSmile(Graphics2D graphics2D, float f, float g, float h, float i, boolean bl) {
       GeneralPath var6 = new GeneralPath();
-      var6.moveTo(var1 - var3, var2);
-      var6.quadTo(var1, var2 + var4 * 2.2F, var1 + var3, var2);
-      var6.quadTo(var1, var2 + var4 * 0.4F, var1 - var3, var2);
+      var6.moveTo(f - h, g);
+      var6.quadTo(f, g + i * 2.2F, f + h, g);
+      var6.quadTo(f, g + i * 0.4F, f - h, g);
       var6.closePath();
-      var0.setColor(new Color(2755102));
-      var0.fill(var6);
-      if (var5) {
-         Shape var7 = var0.getClip();
-         var0.clip(var6);
-         var0.setColor(new Color(16740241));
-         var0.fill(new Float(var1 - var3 * 0.5F, var2 + var4 * 0.7F, var3, var4 * 1.4F));
-         var0.setClip(var7);
+      graphics2D.setColor(new Color(2755102));
+      graphics2D.fill(var6);
+      if (bl) {
+         Shape var7 = graphics2D.getClip();
+         graphics2D.clip(var6);
+         graphics2D.setColor(new Color(16740241));
+         graphics2D.fill(new Float(f - h * 0.5F, g + i * 0.7F, h, i * 1.4F));
+         graphics2D.setClip(var7);
       }
 
-      var0.setColor(INK);
-      var0.setStroke(new BasicStroke(3.0F, 1, 1));
-      var0.draw(var6);
+      graphics2D.setColor(INK);
+      graphics2D.setStroke(new BasicStroke(3.0F, 1, 1));
+      graphics2D.draw(var6);
    }
 
-   private static void openFrown(Graphics2D var0, float var1, float var2, float var3, float var4) {
+   private static void openFrown(Graphics2D graphics2D, float f, float g, float h, float i) {
       GeneralPath var5 = new GeneralPath();
-      var5.moveTo(var1 - var3, var2 + var4 * 0.6F);
-      var5.quadTo(var1, var2 - var4 * 1.4F, var1 + var3, var2 + var4 * 0.6F);
-      var5.quadTo(var1, var2 + var4 * 0.2F, var1 - var3, var2 + var4 * 0.6F);
+      var5.moveTo(f - h, g + i * 0.6F);
+      var5.quadTo(f, g - i * 1.4F, f + h, g + i * 0.6F);
+      var5.quadTo(f, g + i * 0.2F, f - h, g + i * 0.6F);
       var5.closePath();
-      var0.setColor(new Color(2755102));
-      var0.fill(var5);
-      var0.setColor(INK);
-      var0.setStroke(new BasicStroke(3.0F, 1, 1));
-      var0.draw(var5);
+      graphics2D.setColor(new Color(2755102));
+      graphics2D.fill(var5);
+      graphics2D.setColor(INK);
+      graphics2D.setStroke(new BasicStroke(3.0F, 1, 1));
+      graphics2D.draw(var5);
    }
 
-   private static void frown(Graphics2D var0, float var1, float var2, float var3) {
-      var0.setColor(INK);
-      var0.setStroke(new BasicStroke(6.0F, 1, 1));
-      var0.draw(new java.awt.geom.QuadCurve2D.Float(var1 - var3, var2 + 4.0F, var1, var2 - 10.0F, var1 + var3, var2 + 4.0F));
+   private static void frown(Graphics2D graphics2D, float f, float g, float h) {
+      graphics2D.setColor(INK);
+      graphics2D.setStroke(new BasicStroke(6.0F, 1, 1));
+      graphics2D.draw(new java.awt.geom.QuadCurve2D.Float(f - h, g + 4.0F, f, g - 10.0F, f + h, g + 4.0F));
    }
 
-   private static void smirk(Graphics2D var0, float var1, float var2, boolean var3) {
-      var0.setColor(INK);
-      var0.setStroke(new BasicStroke(6.0F, 1, 1));
-      float var4 = var3 ? 30.0F : 22.0F;
+   private static void smirk(Graphics2D graphics2D, float f, float g, boolean bl) {
+      graphics2D.setColor(INK);
+      graphics2D.setStroke(new BasicStroke(6.0F, 1, 1));
+      float var4 = bl ? 30.0F : 22.0F;
       GeneralPath var5 = new GeneralPath();
-      var5.moveTo(var1 - var4, var2 - 2.0F);
-      var5.curveTo(var1 - var4 * 0.3F, var2 + 10.0F, var1 + var4 * 0.5F, var2 + 8.0F, var1 + var4, var2 - 10.0F);
-      var0.draw(var5);
+      var5.moveTo(f - var4, g - 2.0F);
+      var5.curveTo(f - var4 * 0.3F, g + 10.0F, f + var4 * 0.5F, g + 8.0F, f + var4, g - 10.0F);
+      graphics2D.draw(var5);
    }
 
-   private static void laughMouth(Graphics2D var0, float var1, float var2) {
+   private static void laughMouth(Graphics2D graphics2D, float f, float g) {
       GeneralPath var3 = new GeneralPath();
-      var3.moveTo(var1 - 34.0F, var2 - 4.0F);
-      var3.lineTo(var1 + 34.0F, var2 - 4.0F);
-      var3.quadTo(var1 + 30.0F, var2 + 38.0F, var1, var2 + 38.0F);
-      var3.quadTo(var1 - 30.0F, var2 + 38.0F, var1 - 34.0F, var2 - 4.0F);
+      var3.moveTo(f - 34.0F, g - 4.0F);
+      var3.lineTo(f + 34.0F, g - 4.0F);
+      var3.quadTo(f + 30.0F, g + 38.0F, f, g + 38.0F);
+      var3.quadTo(f - 30.0F, g + 38.0F, f - 34.0F, g - 4.0F);
       var3.closePath();
-      var0.setColor(new Color(2755102));
-      var0.fill(var3);
-      Shape var4 = var0.getClip();
-      var0.clip(var3);
-      var0.setColor(Color.WHITE);
-      var0.fill(new java.awt.geom.RoundRectangle2D.Float(var1 - 34.0F, var2 - 6.0F, 68.0F, 13.0F, 6.0F, 6.0F));
-      var0.setColor(new Color(16740241));
-      var0.fill(new Float(var1 - 18.0F, var2 + 18.0F, 36.0F, 26.0F));
-      var0.setClip(var4);
-      var0.setColor(INK);
-      var0.setStroke(new BasicStroke(3.0F, 1, 1));
-      var0.draw(var3);
+      graphics2D.setColor(new Color(2755102));
+      graphics2D.fill(var3);
+      Shape var4 = graphics2D.getClip();
+      graphics2D.clip(var3);
+      graphics2D.setColor(Color.WHITE);
+      graphics2D.fill(new java.awt.geom.RoundRectangle2D.Float(f - 34.0F, g - 6.0F, 68.0F, 13.0F, 6.0F, 6.0F));
+      graphics2D.setColor(new Color(16740241));
+      graphics2D.fill(new Float(f - 18.0F, g + 18.0F, 36.0F, 26.0F));
+      graphics2D.setClip(var4);
+      graphics2D.setColor(INK);
+      graphics2D.setStroke(new BasicStroke(3.0F, 1, 1));
+      graphics2D.draw(var3);
    }
 
-   private static void teeth(Graphics2D var0, float var1, float var2) {
-      java.awt.geom.RoundRectangle2D.Float var3 = new java.awt.geom.RoundRectangle2D.Float(var1 - 26.0F, var2 - 10.0F, 52.0F, 20.0F, 12.0F, 12.0F);
-      var0.setColor(Color.WHITE);
-      var0.fill(var3);
-      var0.setColor(INK);
-      var0.setStroke(new BasicStroke(2.5F));
-      var0.draw(var3);
-      var0.drawLine((int)(var1 - 26.0F), (int)var2, (int)(var1 + 26.0F), (int)var2);
+   private static void teeth(Graphics2D graphics2D, float f, float g) {
+      java.awt.geom.RoundRectangle2D.Float var3 = new java.awt.geom.RoundRectangle2D.Float(f - 26.0F, g - 10.0F, 52.0F, 20.0F, 12.0F, 12.0F);
+      graphics2D.setColor(Color.WHITE);
+      graphics2D.fill(var3);
+      graphics2D.setColor(INK);
+      graphics2D.setStroke(new BasicStroke(2.5F));
+      graphics2D.draw(var3);
+      graphics2D.drawLine((int)(f - 26.0F), (int)g, (int)(f + 26.0F), (int)g);
 
       for (int var4 = -2; var4 <= 2; var4++) {
-         var0.drawLine((int)(var1 + var4 * 9.0F), (int)(var2 - 10.0F), (int)(var1 + var4 * 9.0F), (int)(var2 + 10.0F));
+         graphics2D.drawLine((int)(f + var4 * 9.0F), (int)(g - 10.0F), (int)(f + var4 * 9.0F), (int)(g + 10.0F));
       }
    }
 
-   private static void ring(Graphics2D var0, float var1, float var2, float var3, float var4) {
-      var0.setColor(new Color(2755102));
-      var0.fill(new Float(var1 - var3, var2 - var4, var3 * 2.0F, var4 * 2.0F));
-      var0.setColor(INK);
-      var0.setStroke(new BasicStroke(3.0F));
-      var0.draw(new Float(var1 - var3, var2 - var4, var3 * 2.0F, var4 * 2.0F));
+   private static void ring(Graphics2D graphics2D, float f, float g, float h, float i) {
+      graphics2D.setColor(new Color(2755102));
+      graphics2D.fill(new Float(f - h, g - i, h * 2.0F, i * 2.0F));
+      graphics2D.setColor(INK);
+      graphics2D.setStroke(new BasicStroke(3.0F));
+      graphics2D.draw(new Float(f - h, g - i, h * 2.0F, i * 2.0F));
    }
 
-   private static void kissLips(Graphics2D var0, float var1, float var2) {
-      var0.setColor(INK);
-      var0.setStroke(new BasicStroke(5.5F, 1, 1));
+   private static void kissLips(Graphics2D graphics2D, float f, float g) {
+      graphics2D.setColor(INK);
+      graphics2D.setStroke(new BasicStroke(5.5F, 1, 1));
       GeneralPath var3 = new GeneralPath();
-      var3.moveTo(var1 - 6.0F, var2 - 12.0F);
-      var3.quadTo(var1 + 10.0F, var2 - 10.0F, var1 + 2.0F, var2 - 2.0F);
-      var3.quadTo(var1 + 12.0F, var2 + 4.0F, var1 - 6.0F, var2 + 10.0F);
-      var0.draw(var3);
+      var3.moveTo(f - 6.0F, g - 12.0F);
+      var3.quadTo(f + 10.0F, g - 10.0F, f + 2.0F, g - 2.0F);
+      var3.quadTo(f + 12.0F, g + 4.0F, f - 6.0F, g + 10.0F);
+      graphics2D.draw(var3);
    }
 
-   private static void tears(Graphics2D var0, float var1, float var2) {
-      var0.setPaint(new GradientPaint(0.0F, var2, new Color(13235199), 0.0F, var2 + 70.0F, new Color(5227519)));
-      var0.fill(new java.awt.geom.RoundRectangle2D.Float(var1 - 7.0F, var2, 14.0F, 66.0F, 14.0F, 14.0F));
+   private static void tears(Graphics2D graphics2D, float f, float g) {
+      graphics2D.setPaint(new GradientPaint(0.0F, g, new Color(13235199), 0.0F, g + 70.0F, new Color(5227519)));
+      graphics2D.fill(new java.awt.geom.RoundRectangle2D.Float(f - 7.0F, g, 14.0F, 66.0F, 14.0F, 14.0F));
    }
 
-   private static void drop(Graphics2D var0, float var1, float var2, float var3) {
+   private static void drop(Graphics2D graphics2D, float f, float g, float h) {
       GeneralPath var4 = new GeneralPath();
-      var4.moveTo(var1, var2 - var3 * 2.2F);
-      var4.curveTo(var1 + var3 * 1.2F, var2 - var3 * 0.6F, var1 + var3, var2 + var3, var1, var2 + var3);
-      var4.curveTo(var1 - var3, var2 + var3, var1 - var3 * 1.2F, var2 - var3 * 0.6F, var1, var2 - var3 * 2.2F);
-      var0.setColor(TEAR);
-      var0.fill(var4);
-      var0.setColor(new Color(255, 255, 255, 200));
-      var0.fill(new Float(var1 - var3 * 0.45F, var2 - var3 * 0.4F, var3 * 0.5F, var3 * 0.6F));
+      var4.moveTo(f, g - h * 2.2F);
+      var4.curveTo(f + h * 1.2F, g - h * 0.6F, f + h, g + h, f, g + h);
+      var4.curveTo(f - h, g + h, f - h * 1.2F, g - h * 0.6F, f, g - h * 2.2F);
+      graphics2D.setColor(TEAR);
+      graphics2D.fill(var4);
+      graphics2D.setColor(new Color(255, 255, 255, 200));
+      graphics2D.fill(new Float(f - h * 0.45F, g - h * 0.4F, h * 0.5F, h * 0.6F));
    }
 
-   private static void shades(Graphics2D var0) {
+   private static void shades(Graphics2D graphics2D) {
       GeneralPath var1 = new GeneralPath();
       var1.moveTo(42.0F, 80.0F);
       var1.lineTo(90.0F, 80.0F);
@@ -477,53 +474,53 @@ enum SkyEmoji {
       var1.closePath();
       GeneralPath var2 = (GeneralPath)var1.clone();
       var2.transform(AffineTransform.getTranslateInstance(60.0, 0.0));
-      var0.setColor(new Color(724764));
-      var0.fill(var1);
-      var0.fill(var2);
-      var0.setStroke(new BasicStroke(6.0F, 1, 1));
-      var0.draw(new java.awt.geom.Line2D.Float(88.0F, 84.0F, 104.0F, 84.0F));
-      var0.setColor(new Color(255, 255, 255, 120));
-      var0.setStroke(new BasicStroke(4.0F, 1, 1));
-      var0.drawLine(52, 86, 62, 96);
-      var0.drawLine(112, 86, 122, 96);
+      graphics2D.setColor(new Color(724764));
+      graphics2D.fill(var1);
+      graphics2D.fill(var2);
+      graphics2D.setStroke(new BasicStroke(6.0F, 1, 1));
+      graphics2D.draw(new java.awt.geom.Line2D.Float(88.0F, 84.0F, 104.0F, 84.0F));
+      graphics2D.setColor(new Color(255, 255, 255, 120));
+      graphics2D.setStroke(new BasicStroke(4.0F, 1, 1));
+      graphics2D.drawLine(52, 86, 62, 96);
+      graphics2D.drawLine(112, 86, 122, 96);
    }
 
-   private static void dollarEyes(Graphics2D var0) {
-      var0.setFont(new Font("SansSerif", 1, 40));
-      var0.setColor(new Color(2347360));
-      var0.drawString("$", 60, 106);
-      var0.drawString("$", 108, 106);
+   private static void dollarEyes(Graphics2D graphics2D) {
+      graphics2D.setFont(new Font("SansSerif", 1, 40));
+      graphics2D.setColor(new Color(2347360));
+      graphics2D.drawString("$", 60, 106);
+      graphics2D.drawString("$", 108, 106);
    }
 
-   private static void banknoteTongue(Graphics2D var0, float var1, float var2) {
-      var0.setColor(new Color(4054148));
-      var0.fill(new java.awt.geom.RoundRectangle2D.Float(var1 - 14.0F, var2 - 4.0F, 28.0F, 26.0F, 6.0F, 6.0F));
-      var0.setColor(new Color(2002510));
-      var0.setStroke(new BasicStroke(2.0F));
-      var0.draw(new java.awt.geom.RoundRectangle2D.Float(var1 - 14.0F, var2 - 4.0F, 28.0F, 26.0F, 6.0F, 6.0F));
+   private static void banknoteTongue(Graphics2D graphics2D, float f, float g) {
+      graphics2D.setColor(new Color(4054148));
+      graphics2D.fill(new java.awt.geom.RoundRectangle2D.Float(f - 14.0F, g - 4.0F, 28.0F, 26.0F, 6.0F, 6.0F));
+      graphics2D.setColor(new Color(2002510));
+      graphics2D.setStroke(new BasicStroke(2.0F));
+      graphics2D.draw(new java.awt.geom.RoundRectangle2D.Float(f - 14.0F, g - 4.0F, 28.0F, 26.0F, 6.0F, 6.0F));
    }
 
-   private static void zz(Graphics2D var0) {
-      var0.setColor(Color.WHITE);
-      var0.setFont(new Font("SansSerif", 1, 30));
-      var0.drawString("Z", 140, 52);
-      var0.setFont(new Font("SansSerif", 1, 20));
-      var0.drawString("z", 162, 30);
+   private static void zz(Graphics2D graphics2D) {
+      graphics2D.setColor(Color.WHITE);
+      graphics2D.setFont(new Font("SansSerif", 1, 30));
+      graphics2D.drawString("Z", 140, 52);
+      graphics2D.setFont(new Font("SansSerif", 1, 20));
+      graphics2D.drawString("z", 162, 30);
    }
 
-   private static void vein(Graphics2D var0, float var1, float var2) {
-      var0.setColor(RED);
-      var0.setStroke(new BasicStroke(5.0F, 1, 1));
+   private static void vein(Graphics2D graphics2D, float f, float g) {
+      graphics2D.setColor(RED);
+      graphics2D.setStroke(new BasicStroke(5.0F, 1, 1));
 
       for (int var3 = 0; var3 < 4; var3++) {
-         AffineTransform var4 = var0.getTransform();
-         var0.rotate(var3 * 3.141592653589793 / 2.0, var1, var2);
-         var0.draw(new java.awt.geom.QuadCurve2D.Float(var1 - 4.0F, var2 - 14.0F, var1 - 4.0F, var2 - 4.0F, var1 - 14.0F, var2 - 4.0F));
-         var0.setTransform(var4);
+         AffineTransform var4 = graphics2D.getTransform();
+         graphics2D.rotate(var3 * 3.141592653589793 / 2.0, f, g);
+         graphics2D.draw(new java.awt.geom.QuadCurve2D.Float(f - 4.0F, g - 14.0F, f - 4.0F, g - 4.0F, f - 14.0F, g - 4.0F));
+         graphics2D.setTransform(var4);
       }
    }
 
-   private static void horns(Graphics2D var0) {
+   private static void horns(Graphics2D graphics2D) {
       for (byte var1 = -1; var1 <= 1; var1 += 2) {
          GeneralPath var2 = new GeneralPath();
          float var3 = 96.0F + var1 * 40.0F;
@@ -531,52 +528,52 @@ enum SkyEmoji {
          var2.quadTo(var3 + var1 * 12.0F, 34.0F, var3 + var1 * 18.0F, 10.0F);
          var2.quadTo(var3 + var1 * 26.0F, 40.0F, var3 + var1 * 14.0F, 62.0F);
          var2.closePath();
-         var0.setPaint(new GradientPaint(0.0F, 10.0F, new Color(14183423), 0.0F, 62.0F, new Color(6954936)));
-         var0.fill(var2);
-         var0.setColor(new Color(4001138));
-         var0.setStroke(new BasicStroke(2.5F));
-         var0.draw(var2);
+         graphics2D.setPaint(new GradientPaint(0.0F, 10.0F, new Color(14183423), 0.0F, 62.0F, new Color(6954936)));
+         graphics2D.fill(var2);
+         graphics2D.setColor(new Color(4001138));
+         graphics2D.setStroke(new BasicStroke(2.5F));
+         graphics2D.draw(var2);
       }
    }
 
-   private static Shape heartShape(float var0, float var1, float var2) {
+   private static Shape heartShape(float f, float g, float h) {
       GeneralPath var3 = new GeneralPath();
-      var3.moveTo(var0, var1 + var2 * 0.95F);
-      var3.curveTo(var0 - var2 * 1.35F, var1 + var2 * 0.05F, var0 - var2 * 1.1F, var1 - var2 * 1.05F, var0, var1 - var2 * 0.45F);
-      var3.curveTo(var0 + var2 * 1.1F, var1 - var2 * 1.05F, var0 + var2 * 1.35F, var1 + var2 * 0.05F, var0, var1 + var2 * 0.95F);
+      var3.moveTo(f, g + h * 0.95F);
+      var3.curveTo(f - h * 1.35F, g + h * 0.05F, f - h * 1.1F, g - h * 1.05F, f, g - h * 0.45F);
+      var3.curveTo(f + h * 1.1F, g - h * 1.05F, f + h * 1.35F, g + h * 0.05F, f, g + h * 0.95F);
       var3.closePath();
       return var3;
    }
 
-   private static void heart(Graphics2D var0, float var1, float var2, float var3, boolean var4) {
-      Shape var5 = heartShape(var1, var2, var3);
-      SkyEmoji.HeartPaint var6 = new SkyEmoji.HeartPaint(var1, var2, var3);
-      if (!var4) {
-         var6.fill(var0, var5);
+   private static void heart(Graphics2D graphics2D, float f, float g, float h, boolean bl) {
+      Shape var5 = heartShape(f, g, h);
+      SkyEmoji.HeartPaint var6 = new SkyEmoji.HeartPaint(f, g, h);
+      if (!bl) {
+         var6.fill(graphics2D, var5);
       } else {
          GeneralPath var7 = new GeneralPath();
-         var7.moveTo(var1, var2 - var3);
-         var7.lineTo(var1 - var3 * 0.18F, var2 - var3 * 0.2F);
-         var7.lineTo(var1 + var3 * 0.15F, var2 + var3 * 0.15F);
-         var7.lineTo(var1 - var3 * 0.1F, var2 + var3 * 0.6F);
-         var7.lineTo(var1, var2 + var3 * 1.2F);
-         var7.lineTo(var1 - var3 * 2.0F, var2 + var3 * 1.2F);
-         var7.lineTo(var1 - var3 * 2.0F, var2 - var3 * 1.2F);
+         var7.moveTo(f, g - h);
+         var7.lineTo(f - h * 0.18F, g - h * 0.2F);
+         var7.lineTo(f + h * 0.15F, g + h * 0.15F);
+         var7.lineTo(f - h * 0.1F, g + h * 0.6F);
+         var7.lineTo(f, g + h * 1.2F);
+         var7.lineTo(f - h * 2.0F, g + h * 1.2F);
+         var7.lineTo(f - h * 2.0F, g - h * 1.2F);
          var7.closePath();
          Area var8 = new Area(var5);
          var8.intersect(new Area(var7));
          Area var9 = new Area(var5);
          var9.subtract(new Area(var7));
-         var8.transform(AffineTransform.getRotateInstance(-0.1, var1, var2 + var3));
+         var8.transform(AffineTransform.getRotateInstance(-0.1, f, g + h));
          var8.transform(AffineTransform.getTranslateInstance(-5.0, 0.0));
-         var9.transform(AffineTransform.getRotateInstance(0.1, var1, var2 + var3));
+         var9.transform(AffineTransform.getRotateInstance(0.1, f, g + h));
          var9.transform(AffineTransform.getTranslateInstance(5.0, 0.0));
-         var6.fill(var0, var8);
-         var6.fill(var0, var9);
+         var6.fill(graphics2D, var8);
+         var6.fill(graphics2D, var9);
       }
    }
 
-   private static void flame(Graphics2D var0) {
+   private static void flame(Graphics2D graphics2D) {
       GeneralPath var1 = new GeneralPath();
       var1.moveTo(96.0F, 176.0F);
       var1.curveTo(40.0F, 176.0F, 30.0F, 122.0F, 58.0F, 86.0F);
@@ -585,11 +582,11 @@ enum SkyEmoji {
       var1.curveTo(112.0F, 58.0F, 150.0F, 76.0F, 152.0F, 120.0F);
       var1.curveTo(154.0F, 156.0F, 130.0F, 176.0F, 96.0F, 176.0F);
       var1.closePath();
-      var0.setPaint(new GradientPaint(0.0F, 16.0F, new Color(8382719), 0.0F, 176.0F, new Color(1791689)));
-      var0.fill(var1);
-      var0.setColor(new Color(666222));
-      var0.setStroke(new BasicStroke(2.5F));
-      var0.draw(var1);
+      graphics2D.setPaint(new GradientPaint(0.0F, 16.0F, new Color(8382719), 0.0F, 176.0F, new Color(1791689)));
+      graphics2D.fill(var1);
+      graphics2D.setColor(new Color(666222));
+      graphics2D.setStroke(new BasicStroke(2.5F));
+      graphics2D.draw(var1);
       GeneralPath var2 = new GeneralPath();
       var2.moveTo(98.0F, 168.0F);
       var2.curveTo(70.0F, 168.0F, 66.0F, 136.0F, 82.0F, 116.0F);
@@ -598,11 +595,11 @@ enum SkyEmoji {
       var2.curveTo(118.0F, 104.0F, 132.0F, 118.0F, 128.0F, 142.0F);
       var2.curveTo(126.0F, 160.0F, 114.0F, 168.0F, 98.0F, 168.0F);
       var2.closePath();
-      var0.setPaint(new GradientPaint(0.0F, 76.0F, Color.WHITE, 0.0F, 168.0F, new Color(11132159)));
-      var0.fill(var2);
+      graphics2D.setPaint(new GradientPaint(0.0F, 76.0F, Color.WHITE, 0.0F, 168.0F, new Color(11132159)));
+      graphics2D.fill(var2);
    }
 
-   private static void star(Graphics2D var0) {
+   private static void star(Graphics2D graphics2D) {
       GeneralPath var1 = new GeneralPath();
 
       for (int var2 = 0; var2 < 10; var2++) {
@@ -618,7 +615,7 @@ enum SkyEmoji {
       }
 
       var1.closePath();
-      var0.setPaint(
+      graphics2D.setPaint(
          new RadialGradientPaint(
             new java.awt.geom.Point2D.Float(80.0F, 80.0F),
             100.0F,
@@ -627,67 +624,67 @@ enum SkyEmoji {
             CycleMethod.NO_CYCLE
          )
       );
-      var0.fill(var1);
-      var0.setColor(new Color(9064202));
-      var0.setStroke(new BasicStroke(2.5F, 1, 1));
-      var0.draw(var1);
-      var0.setColor(new Color(255, 255, 255, 170));
-      var0.fill(new Float(72.0F, 62.0F, 22.0F, 12.0F));
+      graphics2D.fill(var1);
+      graphics2D.setColor(new Color(9064202));
+      graphics2D.setStroke(new BasicStroke(2.5F, 1, 1));
+      graphics2D.draw(var1);
+      graphics2D.setColor(new Color(255, 255, 255, 170));
+      graphics2D.fill(new Float(72.0F, 62.0F, 22.0F, 12.0F));
    }
 
-   private static void moon(Graphics2D var0) {
+   private static void moon(Graphics2D graphics2D) {
       Area var1 = new Area(new Float(30.0F, 26.0F, 140.0F, 140.0F));
       var1.subtract(new Area(new Float(70.0F, 8.0F, 130.0F, 130.0F)));
-      var0.setPaint(
+      graphics2D.setPaint(
          new RadialGradientPaint(
             new java.awt.geom.Point2D.Float(60.0F, 70.0F), 120.0F, new float[]{0.0F, 1.0F}, new Color[]{new Color(16775112), new Color(15909198)}
          )
       );
-      var0.fill(var1);
-      var0.setColor(new Color(10119954));
-      var0.setStroke(new BasicStroke(2.5F));
-      var0.draw(var1);
-      var0.setColor(new Color(16775112));
-      sparkle(var0, 150.0F, 140.0F, 12.0F);
-      sparkle(var0, 168.0F, 104.0F, 7.0F);
+      graphics2D.fill(var1);
+      graphics2D.setColor(new Color(10119954));
+      graphics2D.setStroke(new BasicStroke(2.5F));
+      graphics2D.draw(var1);
+      graphics2D.setColor(new Color(16775112));
+      sparkle(graphics2D, 150.0F, 140.0F, 12.0F);
+      sparkle(graphics2D, 168.0F, 104.0F, 7.0F);
    }
 
-   private static void sparkle(Graphics2D var0, float var1, float var2, float var3) {
+   private static void sparkle(Graphics2D graphics2D, float f, float g, float h) {
       GeneralPath var4 = new GeneralPath();
-      var4.moveTo(var1, var2 - var3);
-      var4.quadTo(var1, var2, var1 + var3, var2);
-      var4.quadTo(var1, var2, var1, var2 + var3);
-      var4.quadTo(var1, var2, var1 - var3, var2);
-      var4.quadTo(var1, var2, var1, var2 - var3);
-      var0.fill(var4);
+      var4.moveTo(f, g - h);
+      var4.quadTo(f, g, f + h, g);
+      var4.quadTo(f, g, f, g + h);
+      var4.quadTo(f, g, f - h, g);
+      var4.quadTo(f, g, f, g - h);
+      graphics2D.fill(var4);
    }
 
-   private static void notes(Graphics2D var0) {
-      var0.setPaint(new GradientPaint(0.0F, 30.0F, new Color(9425919), 0.0F, 170.0F, new Color(1791689)));
-      var0.fill(new Float(36.0F, 132.0F, 44.0F, 32.0F));
-      var0.fill(new Float(112.0F, 116.0F, 44.0F, 32.0F));
-      var0.fill(new java.awt.geom.Rectangle2D.Float(70.0F, 42.0F, 10.0F, 104.0F));
-      var0.fill(new java.awt.geom.Rectangle2D.Float(146.0F, 26.0F, 10.0F, 104.0F));
+   private static void notes(Graphics2D graphics2D) {
+      graphics2D.setPaint(new GradientPaint(0.0F, 30.0F, new Color(9425919), 0.0F, 170.0F, new Color(1791689)));
+      graphics2D.fill(new Float(36.0F, 132.0F, 44.0F, 32.0F));
+      graphics2D.fill(new Float(112.0F, 116.0F, 44.0F, 32.0F));
+      graphics2D.fill(new java.awt.geom.Rectangle2D.Float(70.0F, 42.0F, 10.0F, 104.0F));
+      graphics2D.fill(new java.awt.geom.Rectangle2D.Float(146.0F, 26.0F, 10.0F, 104.0F));
       GeneralPath var1 = new GeneralPath();
       var1.moveTo(70.0F, 42.0F);
       var1.lineTo(156.0F, 26.0F);
       var1.lineTo(156.0F, 50.0F);
       var1.lineTo(70.0F, 66.0F);
       var1.closePath();
-      var0.fill(var1);
-      var0.setColor(new Color(666222));
-      var0.setStroke(new BasicStroke(2.5F));
-      var0.draw(new Float(36.0F, 132.0F, 44.0F, 32.0F));
-      var0.draw(new Float(112.0F, 116.0F, 44.0F, 32.0F));
-      var0.setColor(new Color(255, 255, 255, 160));
-      var0.fill(new Float(46.0F, 138.0F, 14.0F, 8.0F));
-      var0.fill(new Float(122.0F, 122.0F, 14.0F, 8.0F));
+      graphics2D.fill(var1);
+      graphics2D.setColor(new Color(666222));
+      graphics2D.setStroke(new BasicStroke(2.5F));
+      graphics2D.draw(new Float(36.0F, 132.0F, 44.0F, 32.0F));
+      graphics2D.draw(new Float(112.0F, 116.0F, 44.0F, 32.0F));
+      graphics2D.setColor(new Color(255, 255, 255, 160));
+      graphics2D.fill(new Float(46.0F, 138.0F, 14.0F, 8.0F));
+      graphics2D.fill(new Float(122.0F, 122.0F, 14.0F, 8.0F));
    }
 
    @Environment(EnvType.CLIENT)
    private record HeartPaint(float cx, float cy, float r) {
-      void fill(Graphics2D var1, Shape var2) {
-         var1.setPaint(
+      void fill(Graphics2D graphics2D, Shape shape) {
+         graphics2D.setPaint(
             new RadialGradientPaint(
                new java.awt.geom.Point2D.Float(this.cx - this.r * 0.4F, this.cy - this.r * 0.5F),
                this.r * 1.7F,
@@ -695,15 +692,15 @@ enum SkyEmoji {
                new Color[]{new Color(16752050), new Color(16726876), new Color(11014190)}
             )
          );
-         var1.fill(var2);
-         var1.setColor(new Color(7211552));
-         var1.setStroke(new BasicStroke(Math.max(1.5F, this.r * 0.05F)));
-         var1.draw(var2);
-         Shape var3 = var1.getClip();
-         var1.clip(var2);
-         var1.setColor(new Color(255, 255, 255, 150));
-         var1.fill(new Float(this.cx - this.r * 0.85F, this.cy - this.r * 0.75F, this.r * 0.55F, this.r * 0.35F));
-         var1.setClip(var3);
+         graphics2D.fill(shape);
+         graphics2D.setColor(new Color(7211552));
+         graphics2D.setStroke(new BasicStroke(Math.max(1.5F, this.r * 0.05F)));
+         graphics2D.draw(shape);
+         Shape var3 = graphics2D.getClip();
+         graphics2D.clip(shape);
+         graphics2D.setColor(new Color(255, 255, 255, 150));
+         graphics2D.fill(new Float(this.cx - this.r * 0.85F, this.cy - this.r * 0.75F, this.r * 0.55F, this.r * 0.35F));
+         graphics2D.setClip(var3);
       }
    }
 

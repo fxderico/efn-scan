@@ -13,8 +13,8 @@ import net.fabricmc.api.Environment;
 @Environment(EnvType.CLIENT)
 final class ModuleListRows {
    private static final float SNAP = 0.005F;
-   private static final Comparator<ModuleListRows.Row> WIDEST_FIRST = Comparator.<ModuleListRows.Row>comparingDouble(var0 -> -var0.nameW)
-      .thenComparing(var0 -> var0.module.name());
+   private static final Comparator<ModuleListRows.Row> WIDEST_FIRST = Comparator.<ModuleListRows.Row>comparingDouble(row -> -row.nameW)
+      .thenComparing(row -> row.module.name());
    private static final Comparator<ModuleListRows.Row> WIDEST_LAST = WIDEST_FIRST.reversed();
    private final List<ModuleListRows.Row> rows = new ArrayList<>();
    private final List<ModuleListRows.Row> view = Collections.unmodifiableList(this.rows);
@@ -27,23 +27,23 @@ final class ModuleListRows {
    ModuleListRows() {
    }
 
-   void update(List<ClientModule> var1, boolean var2, float var3) {
+   void update(List<ClientModule> list, boolean bl, float f) {
       long var4 = ModuleRevision.current();
-      if (var1 != this.seenEnabled || var4 != this.seenRevision || var2 != this.seenEditMode) {
-         this.seenEnabled = var1;
+      if (list != this.seenEnabled || var4 != this.seenRevision || bl != this.seenEditMode) {
+         this.seenEnabled = list;
          this.seenRevision = var4;
-         this.seenEditMode = var2;
-         this.rows.removeIf(var2x -> !listed(var2x.module, var2) || var2x.module.isEnabled() && !var1.contains(var2x.module));
+         this.seenEditMode = bl;
+         this.rows.removeIf(row -> !listed(row.module, bl) || row.module.isEnabled() && !list.contains(row.module));
 
-         for (ClientModule var7 : var1) {
-            if (listed(var7, var2) && !this.hasRow(var7)) {
+         for (ClientModule var7 : list) {
+            if (listed(var7, bl) && !this.hasRow(var7)) {
                this.rows.add(new ModuleListRows.Row(var7));
                this.unsorted = true;
             }
          }
       }
 
-      float var12 = 1.0F - (float)Math.exp(-12.0F * var3);
+      float var12 = 1.0F - (float)Math.exp(-12.0F * f);
 
       for (int var13 = this.rows.size() - 1; var13 >= 0; var13--) {
          ModuleListRows.Row var9 = this.rows.get(var13);
@@ -62,33 +62,33 @@ final class ModuleListRows {
       }
    }
 
-   <F> List<ModuleListRows.Row> ordered(F var1, int var2, ModuleListRows.TextWidth<F> var3, boolean var4) {
+   <F> List<ModuleListRows.Row> ordered(F object, int i, ModuleListRows.TextWidth<F> textWidth, boolean bl) {
       for (int var5 = 0; var5 < this.rows.size(); var5++) {
          ModuleListRows.Row var6 = this.rows.get(var5);
-         if (var6.measuredPx != var2 || var6.measuredFont != var1) {
-            var6.nameW = var3.of(var1, var2, var6.module.name());
-            var6.measuredFont = var1;
-            var6.measuredPx = var2;
+         if (var6.measuredPx != i || var6.measuredFont != object) {
+            var6.nameW = textWidth.of(object, i, var6.module.name());
+            var6.measuredFont = object;
+            var6.measuredPx = i;
             this.unsorted = true;
          }
       }
 
-      if (this.unsorted || var4 != this.sortedBottomFirst) {
-         this.rows.sort(var4 ? WIDEST_LAST : WIDEST_FIRST);
+      if (this.unsorted || bl != this.sortedBottomFirst) {
+         this.rows.sort(bl ? WIDEST_LAST : WIDEST_FIRST);
          this.unsorted = false;
-         this.sortedBottomFirst = var4;
+         this.sortedBottomFirst = bl;
       }
 
       return this.view;
    }
 
-   private static boolean listed(ClientModule var0, boolean var1) {
-      return var0.category() != ModuleCategory.CLIENT && (var1 || var0.showInHud() == null || var0.showInHud().get());
+   private static boolean listed(ClientModule clientModule, boolean bl) {
+      return clientModule.category() != ModuleCategory.CLIENT && (bl || clientModule.showInHud() == null || clientModule.showInHud().get());
    }
 
-   private boolean hasRow(ClientModule var1) {
+   private boolean hasRow(ClientModule clientModule) {
       for (int var2 = 0; var2 < this.rows.size(); var2++) {
-         if (this.rows.get(var2).module == var1) {
+         if (this.rows.get(var2).module == clientModule) {
             return true;
          }
       }
@@ -104,8 +104,8 @@ final class ModuleListRows {
       private Object measuredFont;
       private int measuredPx = -1;
 
-      private Row(ClientModule var1) {
-         this.module = var1;
+      private Row(ClientModule clientModule) {
+         this.module = clientModule;
       }
 
       ClientModule module() {
@@ -124,6 +124,6 @@ final class ModuleListRows {
    @FunctionalInterface
    @Environment(EnvType.CLIENT)
    interface TextWidth<F> {
-      float of(F var1, int var2, String var3);
+      float of(F object, int i, String string);
    }
 }

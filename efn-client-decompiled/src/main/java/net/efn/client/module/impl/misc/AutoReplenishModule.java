@@ -53,7 +53,7 @@ public final class AutoReplenishModule extends ClientModule {
    private int waitTicks;
    private int lastSelectedSlot = -1;
    private int activeSlot = -1;
-   private ItemStack activeReference = ItemStack.field_8037;
+   private ItemStack activeReference = ItemStack.EMPTY;
    private boolean wasScreenOpen;
 
    public AutoReplenishModule() {
@@ -76,10 +76,10 @@ public final class AutoReplenishModule extends ClientModule {
    @EventHandler(
       priority = EventPriority.LOWEST
    )
-   public void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientPlayerEntity var3 = var2.field_1724;
-      if (var3 != null && var2.field_1761 != null) {
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientPlayerEntity var3 = var2.player;
+      if (var3 != null && var2.interactionManager != null) {
          if (var3 != this.trackedPlayer) {
             this.resync(var3);
          }
@@ -93,19 +93,19 @@ public final class AutoReplenishModule extends ClientModule {
             for (int var4 = 0; var4 < 3; var4++) {
                switch (this.stage) {
                   case 0:
-                     if (var2.field_1755 != null && !(var2.field_1755 instanceof InventoryScreen)) {
+                     if (var2.currentScreen != null && !(var2.currentScreen instanceof InventoryScreen)) {
                         return;
                      }
 
-                     if (var3.method_56992() || AutoInvTotemModule.busy()) {
+                     if (var3.isInCreativeMode() || AutoInvTotemModule.busy()) {
                         return;
                      }
 
-                     if (this.isMovingFast(var3) || ((AccessorLocalPlayer)var3).efn$lastSentInput().comp_3164()) {
+                     if (this.isMovingFast(var3) || ((AccessorLocalPlayer)var3).efn$lastSentInput().sneak()) {
                         return;
                      }
 
-                     if (var3.method_6115() || var2.field_1761.method_2923()) {
+                     if (var3.isUsingItem() || var2.interactionManager.isBreakingBlock()) {
                         return;
                      }
 
@@ -120,18 +120,18 @@ public final class AutoReplenishModule extends ClientModule {
 
                      this.activeSlot = var11;
                      this.activeReference = this.pendingRefill[var11];
-                     this.pendingRefill[var11] = ItemStack.field_8037;
-                     this.wasScreenOpen = var2.field_1755 instanceof InventoryScreen;
+                     this.pendingRefill[var11] = ItemStack.EMPTY;
+                     this.wasScreenOpen = var2.currentScreen instanceof InventoryScreen;
                      this.stage = this.wasScreenOpen ? 2 : 1;
                      break;
                   case 1:
-                     var2.method_1507(new InventoryScreen(var3));
+                     var2.setScreen(new InventoryScreen(var3));
                      this.stage = 2;
                      this.delayTimer = HumanInventoryTiming.openGuiDelayTicks();
                      return;
                   case 2:
-                     if (!(var2.field_1755 instanceof InventoryScreen var8)) {
-                        if (this.activeSlot >= 0 && !this.activeReference.method_7960() && this.pendingRefill[this.activeSlot].method_7960()) {
+                     if (!(var2.currentScreen instanceof InventoryScreen var8)) {
+                        if (this.activeSlot >= 0 && !this.activeReference.isEmpty() && this.pendingRefill[this.activeSlot].isEmpty()) {
                            this.pendingRefill[this.activeSlot] = this.activeReference;
                         }
 
@@ -144,24 +144,23 @@ public final class AutoReplenishModule extends ClientModule {
                         return;
                      }
 
-                     if (!var6 && this.activeSlot >= 0 && this.pendingRefill[this.activeSlot].method_7960()) {
+                     if (!var6 && this.activeSlot >= 0 && this.pendingRefill[this.activeSlot].isEmpty()) {
                         this.pendingRefill[this.activeSlot] = this.activeReference;
                      }
 
                      Slot var5;
-                     if (var6 && this.stillNeedsRefill(var3) && (var5 = this.findSourceSlot(var8.method_17577(), var3)) != null) {
+                     if (var6 && this.stillNeedsRefill(var3) && (var5 = this.findSourceSlot(var8.getScreenHandler(), var3)) != null) {
                         int var10 = this.activeSlot == 9 ? 40 : this.activeSlot;
-                        ((AccessorElytraFlyMultiPlayerGameMode)var2.field_1761).efn$elytraFlySyncSelected();
-                        var2.field_1761
-                           .method_2906(((PlayerScreenHandler)var8.method_17577()).field_7763, var5.field_7874, var10, SlotActionType.field_7791, var3);
+                        ((AccessorElytraFlyMultiPlayerGameMode)var2.interactionManager).efn$elytraFlySyncSelected();
+                        var2.interactionManager.clickSlot(var8.getScreenHandler().syncId, var5.id, var10, SlotActionType.SWAP, var3);
                      }
 
                      this.stage = 3;
                      this.delayTimer = HumanInventoryTiming.closeGuiDelayTicks();
                      return;
                   case 3:
-                     if (!this.wasScreenOpen && var2.field_1755 instanceof InventoryScreen) {
-                        var2.field_1724.method_7346();
+                     if (!this.wasScreenOpen && var2.currentScreen instanceof InventoryScreen) {
+                        var2.player.closeHandledScreen();
                      }
 
                      this.resetJob();
@@ -174,47 +173,47 @@ public final class AutoReplenishModule extends ClientModule {
       }
    }
 
-   private void refillNow(MinecraftClient var1, ClientPlayerEntity var2) {
-      if (var1.field_1755 == null && !var2.method_56992() && !var2.method_6115()) {
-         if (AutoInvTotemModule.clickSafe(var2) && !AutoInvTotemModule.busy()) {
-            int var3 = this.nextPending(var2);
+   private void refillNow(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      if (minecraftClient.currentScreen == null && !clientPlayerEntity.isInCreativeMode() && !clientPlayerEntity.isUsingItem()) {
+         if (AutoInvTotemModule.clickSafe(clientPlayerEntity) && !AutoInvTotemModule.busy()) {
+            int var3 = this.nextPending(clientPlayerEntity);
             if (var3 >= 0) {
                this.activeSlot = var3;
                this.activeReference = this.pendingRefill[var3];
-               this.pendingRefill[var3] = ItemStack.field_8037;
-               PlayerScreenHandler var4 = var2.field_7498;
-               Slot var5 = this.findSourceSlot(var4, var2);
-               if (var5 != null && var4.method_34255().method_7960()) {
+               this.pendingRefill[var3] = ItemStack.EMPTY;
+               PlayerScreenHandler var4 = clientPlayerEntity.playerScreenHandler;
+               Slot var5 = this.findSourceSlot(var4, clientPlayerEntity);
+               if (var5 != null && var4.getCursorStack().isEmpty()) {
                   int var6 = this.activeSlot == 9 ? 40 : this.activeSlot;
-                  ((AccessorElytraFlyMultiPlayerGameMode)var1.field_1761).efn$elytraFlySyncSelected();
-                  var1.field_1761.method_2906(var4.field_7763, var5.field_7874, var6, SlotActionType.field_7791, var2);
+                  ((AccessorElytraFlyMultiPlayerGameMode)minecraftClient.interactionManager).efn$elytraFlySyncSelected();
+                  minecraftClient.interactionManager.clickSlot(var4.syncId, var5.id, var6, SlotActionType.SWAP, clientPlayerEntity);
                   this.delayTimer = this.delay.getInt();
                }
 
                this.activeSlot = -1;
-               this.activeReference = ItemStack.field_8037;
+               this.activeReference = ItemStack.EMPTY;
             }
          }
       }
    }
 
-   private void resync(ClientPlayerEntity var1) {
-      this.trackedPlayer = var1;
+   private void resync(ClientPlayerEntity clientPlayerEntity) {
+      this.trackedPlayer = clientPlayerEntity;
 
       for (int var2 = 0; var2 < 10; var2++) {
-         ItemStack var3 = var2 == 9 ? var1.method_6079() : var1.method_31548().method_5438(var2);
-         this.lastKnown[var2] = var3.method_7972();
-         this.pendingRefill[var2] = ItemStack.field_8037;
+         ItemStack var3 = var2 == 9 ? clientPlayerEntity.getOffHandStack() : clientPlayerEntity.getInventory().getStack(var2);
+         this.lastKnown[var2] = var3.copy();
+         this.pendingRefill[var2] = ItemStack.EMPTY;
       }
 
       this.resetJob();
    }
 
-   private void updateTracking(MinecraftClient var1, ClientPlayerEntity var2) {
-      boolean var3 = this.stage == 0 && var1.field_1755 instanceof HandledScreen;
-      boolean var4 = var2.method_56992();
+   private void updateTracking(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      boolean var3 = this.stage == 0 && minecraftClient.currentScreen instanceof HandledScreen;
+      boolean var4 = clientPlayerEntity.isInCreativeMode();
       boolean var5 = false;
-      int var6 = var2.method_31548().method_67532();
+      int var6 = clientPlayerEntity.getInventory().getSelectedSlot();
       if (var6 != this.lastSelectedSlot) {
          this.lastSelectedSlot = var6;
          var5 = true;
@@ -222,36 +221,36 @@ public final class AutoReplenishModule extends ClientModule {
 
       for (int var7 = 0; var7 < 10; var7++) {
          if (var7 == 9 && !this.offhand.get()) {
-            this.lastKnown[var7] = var2.method_6079().method_7972();
-            this.pendingRefill[var7] = ItemStack.field_8037;
+            this.lastKnown[var7] = clientPlayerEntity.getOffHandStack().copy();
+            this.pendingRefill[var7] = ItemStack.EMPTY;
          } else {
             ItemStack var9 = this.lastKnown[var7];
-            ItemStack var10 = var7 == 9 ? var2.method_6079() : var2.method_31548().method_5438(var7);
-            if (!ItemStack.method_7973(var9, var10)) {
+            ItemStack var10 = var7 == 9 ? clientPlayerEntity.getOffHandStack() : clientPlayerEntity.getInventory().getStack(var7);
+            if (!ItemStack.areEqual(var9, var10)) {
                var5 = true;
             }
 
-            this.lastKnown[var7] = var10.method_7972();
-            if (var10.method_31574(Items.field_8288) || var9.method_31574(Items.field_8288)) {
-               this.pendingRefill[var7] = ItemStack.field_8037;
+            this.lastKnown[var7] = var10.copy();
+            if (var10.isOf(Items.TOTEM_OF_UNDYING) || var9.isOf(Items.TOTEM_OF_UNDYING)) {
+               this.pendingRefill[var7] = ItemStack.EMPTY;
             } else if (var4) {
-               this.pendingRefill[var7] = ItemStack.field_8037;
+               this.pendingRefill[var7] = ItemStack.EMPTY;
             } else if (!var3) {
-               boolean var8 = var9.method_7960() || var10.method_7909() == var9.method_7909();
-               if (var10.method_7960() && !var9.method_7960()) {
-                  this.pendingRefill[var7] = var9.method_7972();
-               } else if (!var9.method_7960() && !var9.method_7946() && !var8) {
-                  this.pendingRefill[var7] = var9.method_7972();
-               } else if (!var10.method_7946()
-                  || var10.method_7960()
+               boolean var8 = var9.isEmpty() || var10.getItem() == var9.getItem();
+               if (var10.isEmpty() && !var9.isEmpty()) {
+                  this.pendingRefill[var7] = var9.copy();
+               } else if (!var9.isEmpty() && !var9.isStackable() && !var8) {
+                  this.pendingRefill[var7] = var9.copy();
+               } else if (!var10.isStackable()
+                  || var10.isEmpty()
                   || !var8
-                  || var10.method_7947() > this.threshold.getInt()
-                  || !this.pendingRefill[var7].method_7960() && this.pendingRefill[var7].method_7909() != var10.method_7909()) {
-                  if (!var10.method_7960() && var10.method_7947() > this.threshold.getInt()) {
-                     this.pendingRefill[var7] = ItemStack.field_8037;
+                  || var10.getCount() > this.threshold.getInt()
+                  || !this.pendingRefill[var7].isEmpty() && this.pendingRefill[var7].getItem() != var10.getItem()) {
+                  if (!var10.isEmpty() && var10.getCount() > this.threshold.getInt()) {
+                     this.pendingRefill[var7] = ItemStack.EMPTY;
                   }
                } else {
-                  this.pendingRefill[var7] = var10.method_7972();
+                  this.pendingRefill[var7] = var10.copy();
                }
             }
          }
@@ -260,9 +259,9 @@ public final class AutoReplenishModule extends ClientModule {
       this.quietTicks = var5 ? 0 : Math.min(this.quietTicks + 1, 1000);
    }
 
-   private int nextPending(ClientPlayerEntity var1) {
+   private int nextPending(ClientPlayerEntity clientPlayerEntity) {
       for (int var2 = 0; var2 < 10; var2++) {
-         if (!this.pendingRefill[var2].method_7960() && this.hasSource(var1, var2, this.pendingRefill[var2])) {
+         if (!this.pendingRefill[var2].isEmpty() && this.hasSource(clientPlayerEntity, var2, this.pendingRefill[var2])) {
             return var2;
          }
       }
@@ -270,20 +269,20 @@ public final class AutoReplenishModule extends ClientModule {
       return -1;
    }
 
-   private boolean stillNeedsRefill(ClientPlayerEntity var1) {
-      ItemStack var2 = this.activeSlot == 9 ? var1.method_6079() : var1.method_31548().method_5438(this.activeSlot);
-      if (var2.method_7960()) {
+   private boolean stillNeedsRefill(ClientPlayerEntity clientPlayerEntity) {
+      ItemStack var2 = this.activeSlot == 9 ? clientPlayerEntity.getOffHandStack() : clientPlayerEntity.getInventory().getStack(this.activeSlot);
+      if (var2.isEmpty()) {
          return true;
       } else {
-         return var2.method_7909() != this.activeReference.method_7909() ? true : var2.method_7946() && var2.method_7947() <= this.threshold.getInt();
+         return var2.getItem() != this.activeReference.getItem() ? true : var2.isStackable() && var2.getCount() <= this.threshold.getInt();
       }
    }
 
-   private boolean hasSource(ClientPlayerEntity var1, int var2, ItemStack var3) {
-      ItemStack var4 = var2 == 9 ? var1.method_6079() : var1.method_31548().method_5438(var2);
+   private boolean hasSource(ClientPlayerEntity clientPlayerEntity, int i, ItemStack itemStack) {
+      ItemStack var4 = i == 9 ? clientPlayerEntity.getOffHandStack() : clientPlayerEntity.getInventory().getStack(i);
 
       for (int var5 = 9; var5 <= 35; var5++) {
-         if (isViableSource(var1.method_31548().method_5438(var5), var4, var3)) {
+         if (isViableSource(clientPlayerEntity.getInventory().getStack(var5), var4, itemStack)) {
             return true;
          }
       }
@@ -291,46 +290,48 @@ public final class AutoReplenishModule extends ClientModule {
       return false;
    }
 
-   private Slot findSourceSlot(ScreenHandler var1, ClientPlayerEntity var2) {
-      ItemStack var3 = this.activeSlot == 9 ? var2.method_6079() : var2.method_31548().method_5438(this.activeSlot);
-      int var4 = ItemStack.method_7984(var3, this.activeReference) ? var3.method_7947() : 0;
+   private Slot findSourceSlot(ScreenHandler screenHandler, ClientPlayerEntity clientPlayerEntity) {
+      ItemStack var3 = this.activeSlot == 9 ? clientPlayerEntity.getOffHandStack() : clientPlayerEntity.getInventory().getStack(this.activeSlot);
+      int var4 = ItemStack.areItemsEqual(var3, this.activeReference) ? var3.getCount() : 0;
       Slot var5 = null;
 
-      for (Slot var7 : var1.field_7761) {
+      for (Slot var7 : screenHandler.slots) {
          ItemStack var8;
-         if (var7.field_7874 >= 9 && var7.field_7874 <= 35 && matchesReference(var8 = var7.method_7677(), this.activeReference) && var8.method_7947() > var4) {
+         if (var7.id >= 9 && var7.id <= 35 && matchesReference(var8 = var7.getStack(), this.activeReference) && var8.getCount() > var4) {
             var5 = var7;
-            var4 = var8.method_7947();
+            var4 = var8.getCount();
          }
       }
 
       return var5;
    }
 
-   private static boolean isViableSource(ItemStack var0, ItemStack var1, ItemStack var2) {
-      int var3 = ItemStack.method_7984(var1, var2) ? var1.method_7947() : 0;
-      return matchesReference(var0, var2) && var0.method_7947() > var3;
+   private static boolean isViableSource(ItemStack itemStack, ItemStack itemStack2, ItemStack itemStack3) {
+      int var3 = ItemStack.areItemsEqual(itemStack2, itemStack3) ? itemStack2.getCount() : 0;
+      return matchesReference(itemStack, itemStack3) && itemStack.getCount() > var3;
    }
 
-   private static boolean matchesReference(ItemStack var0, ItemStack var1) {
-      if (var0.method_7960()) {
+   private static boolean matchesReference(ItemStack itemStack, ItemStack itemStack2) {
+      if (itemStack.isEmpty()) {
          return false;
       } else {
-         return var1.method_7946() ? ItemStack.method_31577(var0, var1) : ItemStack.method_75222(var0, var1, var0x -> var0x == DataComponentTypes.field_49629);
+         return itemStack2.isStackable()
+            ? ItemStack.areItemsAndComponentsEqual(itemStack, itemStack2)
+            : ItemStack.shouldSkipHandAnimationOnSwap(itemStack, itemStack2, componentType -> componentType == DataComponentTypes.DAMAGE);
       }
    }
 
-   private boolean isMovingFast(ClientPlayerEntity var1) {
-      if (var1.method_5624()) {
+   private boolean isMovingFast(ClientPlayerEntity clientPlayerEntity) {
+      if (clientPlayerEntity.isSprinting()) {
          return true;
-      } else if (var1.method_5765()) {
-         Entity var4 = var1.method_5668();
-         double var5 = var4.method_23317() - var4.field_6014;
+      } else if (clientPlayerEntity.hasVehicle()) {
+         Entity var4 = clientPlayerEntity.getRootVehicle();
+         double var5 = var4.getX() - var4.lastX;
          double var7;
-         return var5 * var5 + (var7 = var4.method_23321() - var4.field_5969) * var7 > 0.06;
+         return var5 * var5 + (var7 = var4.getZ() - var4.lastZ) * var7 > 0.06;
       } else {
-         Vec3d var2 = var1.method_18798();
-         return var2.field_1352 * var2.field_1352 + var2.field_1350 * var2.field_1350 > 0.06;
+         Vec3d var2 = clientPlayerEntity.getVelocity();
+         return var2.x * var2.x + var2.z * var2.z > 0.06;
       }
    }
 
@@ -339,7 +340,7 @@ public final class AutoReplenishModule extends ClientModule {
       this.delayTimer = 0;
       this.waitTicks = 0;
       this.activeSlot = -1;
-      this.activeReference = ItemStack.field_8037;
+      this.activeReference = ItemStack.EMPTY;
       this.wasScreenOpen = false;
    }
 }

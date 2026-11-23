@@ -65,8 +65,8 @@ public final class SpamModule extends ClientModule {
    }
 
    public static void onGameLeft() {
-      MinecraftClient var0 = MinecraftClient.method_1551();
-      if (!var0.method_18854()) {
+      MinecraftClient var0 = MinecraftClient.getInstance();
+      if (!var0.isOnThread()) {
          var0.execute(SpamModule::onGameLeft);
       } else {
          SpamModule var1 = active;
@@ -77,8 +77,8 @@ public final class SpamModule extends ClientModule {
    }
 
    public static void onDisconnectedScreen() {
-      MinecraftClient var0 = MinecraftClient.method_1551();
-      if (!var0.method_18854()) {
+      MinecraftClient var0 = MinecraftClient.getInstance();
+      if (!var0.isOnThread()) {
          var0.execute(SpamModule::onDisconnectedScreen);
       } else {
          SpamModule var1 = active;
@@ -98,10 +98,10 @@ public final class SpamModule extends ClientModule {
       }
    }
 
-   private void onPostTick(TickEvent var1) {
-      MinecraftClient var3 = MinecraftClient.method_1551();
-      ClientPlayerEntity var4 = var3.field_1724;
-      if (var4 != null && var3.field_1687 != null) {
+   private void onPostTick(TickEvent tickEvent) {
+      MinecraftClient var3 = MinecraftClient.getInstance();
+      ClientPlayerEntity var4 = var3.player;
+      if (var4 != null && var3.world != null) {
          if (this.resetPending) {
             this.resetPending = false;
             this.timer = this.delay.getInt();
@@ -146,7 +146,7 @@ public final class SpamModule extends ClientModule {
 
                   int var7 = this.splitNum * var9;
                   int var8 = Math.min(var7 + var9, this.text.length());
-                  sendPlayerMsg(var3, var4.field_3944, this.text.substring(var7, var8));
+                  sendPlayerMsg(var3, var4.networkHandler, this.text.substring(var7, var8));
                   this.splitNum = (this.splitNum + 1) % var10;
                   this.timer = this.autoSplitDelay.getInt();
                   if (this.splitNum == 0) {
@@ -158,7 +158,7 @@ public final class SpamModule extends ClientModule {
                      this.text = this.text.substring(0, 256);
                   }
 
-                  sendPlayerMsg(var3, var4.field_3944, this.text);
+                  sendPlayerMsg(var3, var4.networkHandler, this.text);
                   this.timer = this.delay.getInt();
                   this.text = null;
                }
@@ -167,12 +167,12 @@ public final class SpamModule extends ClientModule {
       }
    }
 
-   private static void sendPlayerMsg(MinecraftClient var0, ClientPlayNetworkHandler var1, String var2) {
-      var0.field_1705.method_1743().method_1803(var2);
-      if (var2.startsWith("/")) {
-         var1.method_45730(var2.substring(1));
+   private static void sendPlayerMsg(MinecraftClient minecraftClient, ClientPlayNetworkHandler clientPlayNetworkHandler, String string) {
+      minecraftClient.inGameHud.getChatHud().addToMessageHistory(string);
+      if (string.startsWith("/")) {
+         clientPlayNetworkHandler.sendChatCommand(string.substring(1));
       } else {
-         var1.method_45729(var2);
+         clientPlayNetworkHandler.sendChatMessage(string);
       }
    }
 }

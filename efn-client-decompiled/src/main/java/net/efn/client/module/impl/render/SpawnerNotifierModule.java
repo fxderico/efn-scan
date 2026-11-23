@@ -31,18 +31,18 @@ public final class SpawnerNotifierModule extends ClientModule implements ChunkSc
    private final BooleanSetting sSound = this.addSetting("sound", new BooleanSetting("Sound", true));
    private final BooleanSetting sRender = this.addSetting("render", new BooleanSetting("Render", true));
    private final ColorSetting sColor = this.addSetting("color", new ColorSetting("Color", -587246251));
-   private final EspStyle style = new EspStyle((var1, var2) -> (S)this.addSetting(var1, var2), "Outline", 0.1F, 256.0F);
+   private final EspStyle style = new EspStyle((string, setting) -> (S)this.addSetting(string, setting), "Outline", 0.1F, 256.0F);
    private final BlockLayer layer = new BlockLayer(new BlockLayer.Palette() {
       @Override
-      public int color(Object var1) {
+      public int color(Object object) {
          return SpawnerNotifierModule.this.sColor.argb();
       }
 
       @Override
-      public int tracerColor(Object var1) {
+      public int tracerColor(Object object) {
          return 0;
       }
-   }, () -> MinecraftClient.method_1551().field_1687 == null ? null : MinecraftClient.method_1551().field_1687.method_27983());
+   }, () -> MinecraftClient.getInstance().world == null ? null : MinecraftClient.getInstance().world.getRegistryKey());
    private final LongOpenHashSet notified = new LongOpenHashSet();
 
    public SpawnerNotifierModule() {
@@ -63,21 +63,21 @@ public final class SpawnerNotifierModule extends ClientModule implements ChunkSc
    }
 
    @Override
-   public boolean wants(BlockState var1) {
-      return var1.method_27852(Blocks.field_10260);
+   public boolean wants(BlockState blockState) {
+      return blockState.isOf(Blocks.SPAWNER);
    }
 
    @Override
-   public void found(long var1, BlockState var3) {
-      this.layer.put(var1, "Spawner");
-      if (this.notified.add(var1)) {
-         this.notify(BlockPos.method_10092(var1));
+   public void found(long l, BlockState blockState) {
+      this.layer.put(l, "Spawner");
+      if (this.notified.add(l)) {
+         this.notify(BlockPos.fromLong(l));
       }
    }
 
    @Override
-   public void removed(long var1) {
-      this.layer.remove(var1);
+   public void removed(long l) {
+      this.layer.remove(l);
    }
 
    @Override
@@ -87,48 +87,48 @@ public final class SpawnerNotifierModule extends ClientModule implements ChunkSc
    }
 
    @Override
-   public void chunkScanned(long var1, LongPredicate var3) {
-      this.layer.retainChunk(var1, var3);
+   public void chunkScanned(long l, LongPredicate longPredicate) {
+      this.layer.retainChunk(l, longPredicate);
    }
 
-   private void notify(BlockPos var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
+   private void notify(BlockPos blockPos) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
       if (this.notificationsOn()) {
-         ModuleChat.send(this, foundMessage(var2, var1));
+         ModuleChat.send(this, foundMessage(var2, blockPos));
       }
 
-      if (this.sSound.get() && var2.field_1724 != null && var2.field_1687 != null) {
-         var2.method_1483().method_4873(PositionedSoundInstance.method_4757(EfnClientMod.SPAWNER_NOTIFY_SOUND, 1.0F, 1.0F));
+      if (this.sSound.get() && var2.player != null && var2.world != null) {
+         var2.getSoundManager().play(PositionedSoundInstance.ui(EfnClientMod.SPAWNER_NOTIFY_SOUND, 1.0F, 1.0F));
       }
    }
 
-   private static ModuleChat.Body foundMessage(MinecraftClient var0, BlockPos var1) {
-      String var2 = entityName(var0, var1);
+   private static ModuleChat.Body foundMessage(MinecraftClient minecraftClient, BlockPos blockPos) {
+      String var2 = entityName(minecraftClient, blockPos);
       ModuleChat.Body var3 = var2 == null ? ModuleChat.body().warn("Unknown") : ModuleChat.body().name(var2);
-      var3.text(" spawner ").good("found").text(" at ").coords(var1.method_10263(), var1.method_10264(), var1.method_10260());
-      if (var0.field_1724 != null) {
-         long var4 = Math.round(var0.field_1724.method_73189().method_1022(Vec3d.method_24953(var1)));
+      var3.text(" spawner ").good("found").text(" at ").coords(blockPos.getX(), blockPos.getY(), blockPos.getZ());
+      if (minecraftClient.player != null) {
+         long var4 = Math.round(minecraftClient.player.getEntityPos().distanceTo(Vec3d.ofCenter(blockPos)));
          var3.text(" (").value(var4 + "m").text(")");
       }
 
       return var3;
    }
 
-   private static String entityName(MinecraftClient var0, BlockPos var1) {
+   private static String entityName(MinecraftClient minecraftClient, BlockPos blockPos) {
       BlockEntity var2;
-      if (var0.field_1687 != null && (var2 = var0.field_1687.method_8321(var1)) instanceof MobSpawnerBlockEntity) {
+      if (minecraftClient.world != null && (var2 = minecraftClient.world.getBlockEntity(blockPos)) instanceof MobSpawnerBlockEntity) {
          MobSpawnerBlockEntity var3 = (MobSpawnerBlockEntity)var2;
-         Entity var4 = var3.method_11390().method_8283(var0.field_1687, var1);
-         return var4 == null ? null : var4.method_5864().method_5897().getString();
+         Entity var4 = var3.getLogic().getRenderedEntity(minecraftClient.world, blockPos);
+         return var4 == null ? null : var4.getType().getName().getString();
       } else {
          return null;
       }
    }
 
    @EventHandler
-   public void onRender3D(Render3DEvent var1) {
+   public void onRender3D(Render3DEvent render3DEvent) {
       if (this.sRender.get()) {
-         this.layer.render(var1, this.style);
+         this.layer.render(render3DEvent, this.style);
       }
    }
 }

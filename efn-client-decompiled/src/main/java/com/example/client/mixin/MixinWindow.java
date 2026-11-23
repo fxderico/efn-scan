@@ -19,13 +19,13 @@ public abstract class MixinWindow {
    }
 
    @Shadow
-   public abstract long method_4490();
+   public abstract long getHandle();
 
    @Inject(
-      method = {"method_4491"},
+      method = {"setIcon"},
       at = {@At("TAIL")}
    )
-   private void efn$setIcon(ResourcePack var1, Icons var2, CallbackInfo var3) {
-      WindowIcon.apply(this.method_4490());
+   private void efn$setIcon(ResourcePack resourcePack, Icons icons, CallbackInfo callbackInfo) {
+      WindowIcon.apply(this.getHandle());
    }
 }

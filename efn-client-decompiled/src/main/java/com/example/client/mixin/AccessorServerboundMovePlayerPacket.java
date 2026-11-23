@@ -11,10 +11,10 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin({PlayerMoveC2SPacket.class})
 public interface AccessorServerboundMovePlayerPacket {
    @Mutable
-   @Accessor("field_12886")
-   void efn$setY(double var1);
+   @Accessor("y")
+   void efn$setY(double d);
 
    @Mutable
-   @Accessor("field_29179")
-   void efn$setOnGround(boolean var1);
+   @Accessor("onGround")
+   void efn$setOnGround(boolean bl);
 }

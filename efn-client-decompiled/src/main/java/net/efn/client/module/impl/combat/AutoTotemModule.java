@@ -42,60 +42,65 @@ public final class AutoTotemModule extends ClientModule {
    private static AutoTotemModule instance;
    private final NumberSetting refillDelay = this.addSetting("refill-delay", new NumberSetting("Refill Delay", 3.0F, 1.0F, 10.0F).step(1.0F));
    private final BooleanSetting useHotbar = this.addSetting("use-hotbar-totems", new BooleanSetting("Use Hotbar Totems", false));
-   private final OffhandRefill refill = new OffhandRefill(new OffhandRefill.Driver() {
-      @Override
-      public boolean needsTotem() {
-         return AutoTotemModule.player().method_6079().method_7960();
-      }
-
-      @Override
-      public boolean canInteract() {
-         MinecraftClient var1 = MinecraftClient.method_1551();
-         ClientPlayerEntity var2 = var1.field_1724;
-         return var1.field_1761.method_2920() == GameMode.field_9215 && var2.field_7512 == var2.field_7498 && var2.field_7498.method_34255().method_7960();
-      }
-
-      @Override
-      public int findSource() {
-         return AutoTotemModule.this.findSource(AutoTotemModule.player().method_31548());
-      }
-
-      @Override
-      public boolean validSource(int var1) {
-         ClientPlayerEntity var2 = AutoTotemModule.player();
-         if (!AutoTotemModule.isSource(var2.method_31548(), var1, AutoTotemModule.this.useHotbar.get())) {
-            return false;
-         } else {
-            Slot var3 = var2.field_7498.method_7611(AutoTotemModule.menuSlot(var1));
-            return var3.field_7871 == var2.method_31548() && var3.method_34266() == var1 && var3.method_7674(var2);
+   private final OffhandRefill refill = new OffhandRefill(
+      new OffhandRefill.Driver() {
+         @Override
+         public boolean needsTotem() {
+            return AutoTotemModule.player().getOffHandStack().isEmpty();
          }
-      }
 
-      @Override
-      public void swap(int var1) {
-         MinecraftClient var2 = MinecraftClient.method_1551();
-         ClientPlayerEntity var3 = var2.field_1724;
-         var2.field_1761.method_2906(var3.field_7498.field_7763, AutoTotemModule.menuSlot(var1), 40, SlotActionType.field_7791, var3);
-         AutoTotemModule.this.previousSource = var1;
-      }
+         @Override
+         public boolean canInteract() {
+            MinecraftClient var1 = MinecraftClient.getInstance();
+            ClientPlayerEntity var2 = var1.player;
+            return var1.interactionManager.getCurrentGameMode() == GameMode.SURVIVAL
+               && var2.currentScreenHandler == var2.playerScreenHandler
+               && var2.playerScreenHandler.getCursorStack().isEmpty();
+         }
 
-      @Override
-      public int containerId() {
-         return AutoTotemModule.player().field_7498.field_7763;
-      }
+         @Override
+         public int findSource() {
+            return AutoTotemModule.this.findSource(AutoTotemModule.player().getInventory());
+         }
 
-      @Override
-      public int stateId() {
-         return AutoTotemModule.player().field_7498.method_37421();
-      }
+         @Override
+         public boolean validSource(int i) {
+            ClientPlayerEntity var2 = AutoTotemModule.player();
+            if (!AutoTotemModule.isSource(var2.getInventory(), i, AutoTotemModule.this.useHotbar.get())) {
+               return false;
+            } else {
+               Slot var3 = var2.playerScreenHandler.getSlot(AutoTotemModule.menuSlot(i));
+               return var3.inventory == var2.getInventory() && var3.getIndex() == i && var3.canTakeItems(var2);
+            }
+         }
 
-      @Override
-      public int latencyMillis() {
-         ClientPlayNetworkHandler var1 = MinecraftClient.method_1551().method_1562();
-         PlayerListEntry var2 = var1 == null ? null : var1.method_2871(AutoTotemModule.player().method_5667());
-         return var2 == null ? 0 : var2.method_2959();
-      }
-   }, ThreadLocalRandom.current());
+         @Override
+         public void swap(int i) {
+            MinecraftClient var2 = MinecraftClient.getInstance();
+            ClientPlayerEntity var3 = var2.player;
+            var2.interactionManager.clickSlot(var3.playerScreenHandler.syncId, AutoTotemModule.menuSlot(i), 40, SlotActionType.SWAP, var3);
+            AutoTotemModule.this.previousSource = i;
+         }
+
+         @Override
+         public int containerId() {
+            return AutoTotemModule.player().playerScreenHandler.syncId;
+         }
+
+         @Override
+         public int stateId() {
+            return AutoTotemModule.player().playerScreenHandler.getRevision();
+         }
+
+         @Override
+         public int latencyMillis() {
+            ClientPlayNetworkHandler var1 = MinecraftClient.getInstance().getNetworkHandler();
+            PlayerListEntry var2 = var1 == null ? null : var1.getPlayerListEntry(AutoTotemModule.player().getUuid());
+            return var2 == null ? 0 : var2.getLatency();
+         }
+      },
+      ThreadLocalRandom.current()
+   );
    private int previousSource = -1;
 
    public AutoTotemModule() {
@@ -114,9 +119,9 @@ public final class AutoTotemModule extends ClientModule {
 
    public static boolean busy() {
       AutoTotemModule var0 = instance;
-      ClientPlayerEntity var1 = MinecraftClient.method_1551().field_1724;
-      return var0 != null && var0.isEnabled() && var1 != null && !var1.method_7325() && !var1.method_56992()
-         ? var0.refill.busy() || var1.method_6079().method_7960() && var0.findSource(var1.method_31548()) >= 0
+      ClientPlayerEntity var1 = MinecraftClient.getInstance().player;
+      return var0 != null && var0.isEnabled() && var1 != null && !var1.isSpectator() && !var1.isInCreativeMode()
+         ? var0.refill.busy() || var1.getOffHandStack().isEmpty() && var0.findSource(var1.getInventory()) >= 0
          : false;
    }
 
@@ -138,61 +143,59 @@ public final class AutoTotemModule extends ClientModule {
    @EventHandler(
       stage = Stage.POST
    )
-   public void onTick(TickEvent var1) {
+   public void onTick(TickEvent tickEvent) {
       this.update();
    }
 
    @EventHandler
-   public void onRender2D(Render2DEvent var1) {
+   public void onRender2D(Render2DEvent render2DEvent) {
       this.update();
    }
 
    @EventHandler
-   public void onPacketApplied(PacketAppliedEvent var1) {
-      MinecraftClient var3 = MinecraftClient.method_1551();
-      if (var3.field_1687 != null && var3.field_1724 != null) {
-         Packet var4 = var1.packet;
+   public void onPacketApplied(PacketAppliedEvent packetAppliedEvent) {
+      MinecraftClient var3 = MinecraftClient.getInstance();
+      if (var3.world != null && var3.player != null) {
+         Packet var4 = packetAppliedEvent.packet;
          EntityStatusS2CPacket var2;
-         if (var4 instanceof EntityStatusS2CPacket
-            && (var2 = (EntityStatusS2CPacket)var4).method_11470() == 35
-            && var2.method_11469(var3.field_1687) == var3.field_1724) {
+         if (var4 instanceof EntityStatusS2CPacket && (var2 = (EntityStatusS2CPacket)var4).getStatus() == 35 && var2.getEntity(var3.world) == var3.player) {
             this.reset();
          }
       }
    }
 
    @EventHandler
-   public void onPacketReceiveNetty(PacketReceiveNettyEvent var1) {
+   public void onPacketReceiveNetty(PacketReceiveNettyEvent packetReceiveNettyEvent) {
       long var2 = System.nanoTime();
-      if (var1.packet instanceof SetPlayerInventoryS2CPacket var5) {
-         if (var5.comp_2891() == 40) {
-            this.observe(-1, -1, offhand(var5.comp_2892()), var2);
+      if (packetReceiveNettyEvent.packet instanceof SetPlayerInventoryS2CPacket var5) {
+         if (var5.slot() == 40) {
+            this.observe(-1, -1, offhand(var5.contents()), var2);
          }
-      } else if (var1.packet instanceof ScreenHandlerSlotUpdateS2CPacket var8) {
-         if (var8.method_11450() == 45) {
-            this.observe(var8.method_11452(), var8.method_37439(), offhand(var8.method_11449()), var2);
+      } else if (packetReceiveNettyEvent.packet instanceof ScreenHandlerSlotUpdateS2CPacket var8) {
+         if (var8.getSlot() == 45) {
+            this.observe(var8.getSyncId(), var8.getRevision(), offhand(var8.getStack()), var2);
          }
       } else {
-         Packet var7 = var1.packet;
+         Packet var7 = packetReceiveNettyEvent.packet;
          InventoryS2CPacket var9;
-         if (var7 instanceof InventoryS2CPacket && (var9 = (InventoryS2CPacket)var7).comp_3839().size() > 45) {
-            this.observe(var9.comp_3837(), var9.comp_3838(), offhand((ItemStack)var9.comp_3839().get(45)), var2);
+         if (var7 instanceof InventoryS2CPacket && (var9 = (InventoryS2CPacket)var7).contents().size() > 45) {
+            this.observe(var9.syncId(), var9.revision(), offhand(var9.contents().get(45)), var2);
          }
       }
    }
 
-   private void observe(int var1, int var2, OffhandRefill.Offhand var3, long var4) {
-      MinecraftClient.method_1551().execute(() -> {
+   private void observe(int i, int j, OffhandRefill.Offhand offhand, long l) {
+      MinecraftClient.getInstance().execute(() -> {
          if (this.isEnabled()) {
-            this.refill.observe(var1, var2, var3, var4);
+            this.refill.observe(i, j, offhand, l);
          }
       });
    }
 
    private void update() {
-      MinecraftClient var1 = MinecraftClient.method_1551();
-      ClientPlayerEntity var2 = var1.field_1724;
-      if (var1.field_1687 != null && var2 != null && var1.field_1761 != null && var2.method_5805() && !var2.method_31481() && !(var2.method_6032() <= 0.0F)) {
+      MinecraftClient var1 = MinecraftClient.getInstance();
+      ClientPlayerEntity var2 = var1.player;
+      if (var1.world != null && var2 != null && var1.interactionManager != null && var2.isAlive() && !var2.isRemoved() && !(var2.getHealth() <= 0.0F)) {
          this.refill.step(System.nanoTime(), this.refillDelay.getInt());
       } else {
          this.reset();
@@ -204,13 +207,13 @@ public final class AutoTotemModule extends ClientModule {
       this.previousSource = -1;
    }
 
-   private int findSource(PlayerInventory var1) {
+   private int findSource(PlayerInventory playerInventory) {
       ThreadLocalRandom var3 = ThreadLocalRandom.current();
       if (this.useHotbar.get()) {
          ArrayList var4 = new ArrayList();
 
          for (int var2 = 0; var2 < 9; var2++) {
-            if (isSource(var1, var2, true)) {
+            if (isSource(playerInventory, var2, true)) {
                var4.add(var2);
             }
          }
@@ -223,7 +226,7 @@ public final class AutoTotemModule extends ClientModule {
       ArrayList var7 = new ArrayList();
 
       for (int var6 = 9; var6 < 36; var6++) {
-         if (isSource(var1, var6, false)) {
+         if (isSource(playerInventory, var6, false)) {
             var7.add(var6);
          }
       }
@@ -232,31 +235,31 @@ public final class AutoTotemModule extends ClientModule {
          return -1;
       } else {
          int var5 = this.previousSource >= 9 && this.previousSource < 36 ? this.previousSource - 9 : var3.nextInt(27);
-         var7.sort(Comparator.comparingInt(var1x -> {
-            int var2x = var1x - 9;
+         var7.sort(Comparator.comparingInt(integer -> {
+            int var2x = integer - 9;
             return Math.abs(var2x % 9 - var5 % 9) + Math.abs(var2x / 9 - var5 / 9);
          }));
          return (Integer)var7.get(var3.nextInt(Math.min(3, var7.size())));
       }
    }
 
-   private static boolean isSource(PlayerInventory var0, int var1, boolean var2) {
-      return var1 >= (var2 ? 0 : 9) && var1 < 36 && var0.method_5438(var1).method_31574(Items.field_8288);
+   private static boolean isSource(PlayerInventory playerInventory, int i, boolean bl) {
+      return i >= (bl ? 0 : 9) && i < 36 && playerInventory.getStack(i).isOf(Items.TOTEM_OF_UNDYING);
    }
 
-   private static int menuSlot(int var0) {
-      return var0 < 9 ? var0 + 36 : var0;
+   private static int menuSlot(int i) {
+      return i < 9 ? i + 36 : i;
    }
 
-   private static OffhandRefill.Offhand offhand(ItemStack var0) {
-      if (var0.method_7960()) {
+   private static OffhandRefill.Offhand offhand(ItemStack itemStack) {
+      if (itemStack.isEmpty()) {
          return OffhandRefill.Offhand.EMPTY;
       } else {
-         return var0.method_31574(Items.field_8288) ? OffhandRefill.Offhand.TOTEM : OffhandRefill.Offhand.OTHER;
+         return itemStack.isOf(Items.TOTEM_OF_UNDYING) ? OffhandRefill.Offhand.TOTEM : OffhandRefill.Offhand.OTHER;
       }
    }
 
    private static ClientPlayerEntity player() {
-      return MinecraftClient.method_1551().field_1724;
+      return MinecraftClient.getInstance().player;
    }
 }

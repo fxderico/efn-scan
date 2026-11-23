@@ -60,13 +60,14 @@ final class MicrosoftLogin {
       }
    }
 
-   static MicrosoftLogin.MsaToken awaitApproval(MicrosoftLogin.DeviceCode var0) throws InterruptedException {
-      long var1 = var0.intervalMs();
+   static MicrosoftLogin.MsaToken awaitApproval(MicrosoftLogin.DeviceCode deviceCode) throws InterruptedException {
+      long var1 = deviceCode.intervalMs();
 
-      while (System.currentTimeMillis() < var0.expiresAtMs()) {
+      while (System.currentTimeMillis() < deviceCode.expiresAtMs()) {
          Thread.sleep(var1);
          AuthHttp.Reply var3 = AuthHttp.postForm(
-            "https://login.live.com/oauth20_token.srf", Map.of("client_id", "00000000402b5328", "grant_type", "device_code", "device_code", var0.deviceCode())
+            "https://login.live.com/oauth20_token.srf",
+            Map.of("client_id", "00000000402b5328", "grant_type", "device_code", "device_code", deviceCode.deviceCode())
          );
          if (var3.ok()) {
             return token(var3);
@@ -92,10 +93,10 @@ final class MicrosoftLogin {
       throw new AccountException("The Microsoft sign-in code expired - try again");
    }
 
-   static MicrosoftLogin.MsaToken refresh(String var0) throws InterruptedException {
+   static MicrosoftLogin.MsaToken refresh(String string) throws InterruptedException {
       AuthHttp.Reply var1 = AuthHttp.postForm(
          "https://login.live.com/oauth20_token.srf",
-         Map.of("client_id", "00000000402b5328", "scope", "service::user.auth.xboxlive.com::MBI_SSL", "grant_type", "refresh_token", "refresh_token", var0)
+         Map.of("client_id", "00000000402b5328", "scope", "service::user.auth.xboxlive.com::MBI_SSL", "grant_type", "refresh_token", "refresh_token", string)
       );
       if (var1.ok()) {
          return token(var1);
@@ -106,7 +107,7 @@ final class MicrosoftLogin {
       }
    }
 
-   static Credentials minecraft(MicrosoftLogin.MsaToken var0) throws InterruptedException {
+   static Credentials minecraft(MicrosoftLogin.MsaToken msaToken) throws InterruptedException {
       KeyPair var1 = newProofKey();
       JsonObject var2 = new JsonObject();
       var2.addProperty("DeviceType", "Win32");
@@ -124,7 +125,7 @@ final class MicrosoftLogin {
          var6.addProperty("Sandbox", "RETAIL");
          var6.addProperty("UseModernGamertag", true);
          var6.addProperty("AppId", "00000000402b5328");
-         var6.addProperty("AccessToken", "t=" + var0.accessToken());
+         var6.addProperty("AccessToken", "t=" + msaToken.accessToken());
          var6.addProperty("DeviceToken", var5);
          var6.add("ProofKey", jwk((ECPublicKey)var1.getPublic()));
          var6.addProperty("RelyingParty", "rp://api.minecraftservices.com/");
@@ -146,7 +147,7 @@ final class MicrosoftLogin {
                   String var15 = var14.text("name");
                   String var16 = var14.text("id");
                   if (var14.ok() && var15 != null && var16 != null) {
-                     return new Credentials(var15, UndashedUuid.fromStringLenient(var16), var13, var0.refreshToken());
+                     return new Credentials(var15, UndashedUuid.fromStringLenient(var16), var13, msaToken.refreshToken());
                   } else {
                      throw new AccountException("Couldn't load the Minecraft profile: " + servicesError(var14));
                   }
@@ -162,9 +163,9 @@ final class MicrosoftLogin {
       }
    }
 
-   private static MicrosoftLogin.MsaToken token(AuthHttp.Reply var0) {
-      String var1 = var0.text("access_token");
-      String var2 = var0.text("refresh_token");
+   private static MicrosoftLogin.MsaToken token(AuthHttp.Reply reply) {
+      String var1 = reply.text("access_token");
+      String var2 = reply.text("refresh_token");
       if (var1 != null && var2 != null) {
          return new MicrosoftLogin.MsaToken(var1, var2);
       } else {
@@ -172,8 +173,8 @@ final class MicrosoftLogin {
       }
    }
 
-   private static String userHash(JsonObject var0) {
-      JsonObject var3 = AuthHttp.object(var0, "DisplayClaims");
+   private static String userHash(JsonObject jsonObject) {
+      JsonObject var3 = AuthHttp.object(jsonObject, "DisplayClaims");
       JsonElement var2 = var3 == null ? null : var3.get("xui");
       JsonArray var1;
       return var2 instanceof JsonArray && !(var1 = (JsonArray)var2).isEmpty() && var1.get(0).isJsonObject()
@@ -191,14 +192,14 @@ final class MicrosoftLogin {
       }
    }
 
-   private static AuthHttp.Reply signedPost(String var0, JsonObject var1, KeyPair var2, Map<String, String> var3) throws InterruptedException {
-      String var4 = var1.toString();
-      HashMap var5 = new HashMap(var3);
-      var5.put("Signature", signature(URI.create(var0).getPath(), var4, var2.getPrivate()));
-      return AuthHttp.postJson(var0, var4, var5);
+   private static AuthHttp.Reply signedPost(String string, JsonObject jsonObject, KeyPair keyPair, Map<String, String> map) throws InterruptedException {
+      String var4 = jsonObject.toString();
+      HashMap var5 = new HashMap(map);
+      var5.put("Signature", signature(URI.create(string).getPath(), var4, keyPair.getPrivate()));
+      return AuthHttp.postJson(string, var4, var5);
    }
 
-   private static String signature(String var0, String var1, PrivateKey var2) {
+   private static String signature(String string, String string2, PrivateKey privateKey) {
       long var3 = (Instant.now().getEpochSecond() + 11644473600L) * 10000000L;
 
       try {
@@ -210,13 +211,13 @@ final class MicrosoftLogin {
          var6.writeByte(0);
          var6.write("POST".getBytes(StandardCharsets.UTF_8));
          var6.writeByte(0);
-         var6.write(var0.getBytes(StandardCharsets.UTF_8));
+         var6.write(string.getBytes(StandardCharsets.UTF_8));
          var6.writeByte(0);
          var6.writeByte(0);
-         var6.write(var1.getBytes(StandardCharsets.UTF_8));
+         var6.write(string2.getBytes(StandardCharsets.UTF_8));
          var6.writeByte(0);
          Signature var7 = Signature.getInstance("SHA256withECDSAinP1363Format");
-         var7.initSign(var2);
+         var7.initSign(privateKey);
          var7.update(var5.toByteArray());
          ByteArrayOutputStream var8 = new ByteArrayOutputStream();
          DataOutputStream var9 = new DataOutputStream(var8);
@@ -229,48 +230,48 @@ final class MicrosoftLogin {
       }
    }
 
-   private static JsonObject jwk(ECPublicKey var0) {
+   private static JsonObject jwk(ECPublicKey eCPublicKey) {
       JsonObject var1 = new JsonObject();
       var1.addProperty("kty", "EC");
       var1.addProperty("alg", "ES256");
       var1.addProperty("crv", "P-256");
       var1.addProperty("use", "sig");
-      var1.addProperty("x", coordinate(var0.getW().getAffineX()));
-      var1.addProperty("y", coordinate(var0.getW().getAffineY()));
+      var1.addProperty("x", coordinate(eCPublicKey.getW().getAffineX()));
+      var1.addProperty("y", coordinate(eCPublicKey.getW().getAffineY()));
       return var1;
    }
 
-   private static String coordinate(BigInteger var0) {
-      byte[] var1 = var0.toByteArray();
+   private static String coordinate(BigInteger bigInteger) {
+      byte[] var1 = bigInteger.toByteArray();
       byte[] var2 = new byte[32];
       int var3 = Math.min(var1.length, var2.length);
       System.arraycopy(var1, var1.length - var3, var2, var2.length - var3, var3);
       return Base64.getUrlEncoder().withoutPadding().encodeToString(var2);
    }
 
-   private static String liveError(AuthHttp.Reply var0) {
-      String var1 = var0.text("error_description");
+   private static String liveError(AuthHttp.Reply reply) {
+      String var1 = reply.text("error_description");
       if (var1 != null) {
          return var1;
       } else {
-         String var2 = var0.text("error");
-         return var2 != null ? var2 : "HTTP " + var0.status();
+         String var2 = reply.text("error");
+         return var2 != null ? var2 : "HTTP " + reply.status();
       }
    }
 
-   private static String servicesError(AuthHttp.Reply var0) {
-      String var1 = var0.text("errorMessage");
-      return var1 != null ? var1 : "HTTP " + var0.status();
+   private static String servicesError(AuthHttp.Reply reply) {
+      String var1 = reply.text("errorMessage");
+      return var1 != null ? var1 : "HTTP " + reply.status();
    }
 
-   private static AccountException xboxError(AuthHttp.Reply var0) {
-      String var3 = var0.text("XErr");
+   private static AccountException xboxError(AuthHttp.Reply reply) {
+      String var3 = reply.text("XErr");
       if (var3 == null) {
-         var3 = var0.headers().firstValue("X-Err").orElse(null);
+         var3 = reply.headers().firstValue("X-Err").orElse(null);
       }
 
       if (var3 == null) {
-         return new AccountException("Xbox Live sign-in failed (HTTP " + var0.status() + ")");
+         return new AccountException("Xbox Live sign-in failed (HTTP " + reply.status() + ")");
       } else {
          long var1;
          try {

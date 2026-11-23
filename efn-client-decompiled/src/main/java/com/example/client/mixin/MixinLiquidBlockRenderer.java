@@ -17,22 +17,22 @@ public abstract class MixinLiquidBlockRenderer {
    }
 
    @ModifyArg(
-      method = {"method_23072"},
+      method = {"vertex"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_4588;method_22915(FFFF)Lnet/minecraft/class_4588;"
+         target = "Lnet/minecraft/client/render/VertexConsumer;color(FFFF)Lnet/minecraft/client/render/VertexConsumer;"
       )},
       index = 3
    )
-   private float efn$xrayFluidAlpha(float var1) {
-      return XrayModule.active == null ? var1 : var1 * XrayModule.CURRENT_ALPHA.get()[0];
+   private float efn$xrayFluidAlpha(float f) {
+      return XrayModule.active == null ? f : f * XrayModule.CURRENT_ALPHA.get()[0];
    }
 
    @ModifyReturnValue(
-      method = {"method_3343"},
+      method = {"getLight"},
       at = {@At("RETURN")}
    )
-   private int efn$pinkWaterGlow(int var1) {
-      return PinkWater.light(var1);
+   private int efn$pinkWaterGlow(int i) {
+      return PinkWater.light(i);
    }
 }

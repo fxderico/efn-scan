@@ -23,35 +23,25 @@ public enum UiFont {
    private final float capRatio;
    private final float lift;
 
-   private UiFont(
-      String nullxx,
-      String nullxxx,
-      String nullxxxx,
-      float nullxxxxx,
-      int nullxxxxxx,
-      int nullxxxxxxx,
-      boolean nullxxxxxxxx,
-      float nullxxxxxxxxx,
-      float nullxxxxxxxxxx
-   ) {
-      this.label = nullxx;
-      this.regular = nullxxx;
-      this.strong = nullxxxx;
-      this.scale = nullxxxxx;
-      this.step = nullxxxxxx;
-      this.minSteps = nullxxxxxxx;
-      this.emSized = nullxxxxxxxx;
-      this.capRatio = nullxxxxxxxxx;
-      this.lift = nullxxxxxxxxxx;
+   private UiFont(String string2, String string3, String string4, float f, int j, int k, boolean bl, float g, float h) {
+      this.label = string2;
+      this.regular = string3;
+      this.strong = string4;
+      this.scale = f;
+      this.step = j;
+      this.minSteps = k;
+      this.emSized = bl;
+      this.capRatio = g;
+      this.lift = h;
    }
 
    public static String[] labels() {
-      return Arrays.stream(values()).map(var0 -> var0.label).toArray(String[]::new);
+      return Arrays.stream(values()).map(uiFont -> uiFont.label).toArray(String[]::new);
    }
 
-   public static UiFont of(String var0) {
+   public static UiFont of(String string) {
       for (UiFont var4 : values()) {
-         if (var4.label.equals(var0)) {
+         if (var4.label.equals(string)) {
             return var4;
          }
       }
@@ -59,16 +49,16 @@ public enum UiFont {
       return GEIST;
    }
 
-   String resource(boolean var1) {
-      return "/assets/efn/fonts/" + (var1 ? this.strong : this.regular);
+   String resource(boolean bl) {
+      return "/assets/efn/fonts/" + (bl ? this.strong : this.regular);
    }
 
    boolean pixel() {
       return this.step > 0;
    }
 
-   float size(float var1) {
-      float var2 = var1 * this.scale;
+   float size(float f) {
+      float var2 = f * this.scale;
       return !this.pixel() ? Math.round(var2) : this.step * Math.max(this.minSteps, Math.round(var2 / this.step));
    }
 
@@ -81,11 +71,11 @@ public enum UiFont {
       }
    }
 
-   float offsetY(float var1) {
-      return -Math.round(this.lift * var1);
+   float offsetY(float f) {
+      return -Math.round(this.lift * f);
    }
 
-   float fallbackSize(float var1) {
-      return Math.round(var1 * this.capRatio / GEIST.capRatio);
+   float fallbackSize(float f) {
+      return Math.round(f * this.capRatio / GEIST.capRatio);
    }
 }

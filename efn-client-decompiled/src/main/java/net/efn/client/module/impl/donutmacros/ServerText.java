@@ -26,11 +26,11 @@ final class ServerText {
    private ServerText() {
    }
 
-   static String normalize(String var0) {
-      if (var0 == null) {
+   static String normalize(String string) {
+      if (string == null) {
          return "";
       } else {
-         String var1 = FORMATTING.matcher(var0).replaceAll("");
+         String var1 = FORMATTING.matcher(string).replaceAll("");
          StringBuilder var2 = new StringBuilder(var1.length());
 
          for (int var3 = 0; var3 < var1.length(); var3++) {
@@ -50,12 +50,12 @@ final class ServerText {
       }
    }
 
-   static String normalize(Text var0) {
-      return var0 == null ? "" : normalize(var0.getString());
+   static String normalize(Text text) {
+      return text == null ? "" : normalize(text.getString());
    }
 
-   static String key(String var0) {
-      String var1 = normalize(var0);
+   static String key(String string) {
+      String var1 = normalize(string);
       StringBuilder var2 = new StringBuilder(var1.length());
 
       for (int var3 = 0; var3 < var1.length(); var3++) {
@@ -68,21 +68,21 @@ final class ServerText {
       return var2.toString();
    }
 
-   static long parseMoney(String var0) {
-      if (var0 == null) {
+   static long parseMoney(String string) {
+      if (string == null) {
          return -1L;
       } else {
-         Matcher var1 = MONEY_EXACT.matcher(var0.trim().toLowerCase(Locale.ROOT));
+         Matcher var1 = MONEY_EXACT.matcher(string.trim().toLowerCase(Locale.ROOT));
          return !var1.matches() ? -1L : Math.round(scale(var1.group(1), var1.group(2)));
       }
    }
 
-   static List<Double> moneyAll(String var0) {
+   static List<Double> moneyAll(String string) {
       ArrayList var1 = new ArrayList();
-      if (var0 == null) {
+      if (string == null) {
          return var1;
       } else {
-         Matcher var2 = MONEY_ANY.matcher(normalize(var0));
+         Matcher var2 = MONEY_ANY.matcher(normalize(string));
 
          while (var2.find()) {
             double var3 = scale(var2.group(1), var2.group(2));
@@ -95,12 +95,12 @@ final class ServerText {
       }
    }
 
-   static List<Double> dollars(String var0) {
+   static List<Double> dollars(String string) {
       ArrayList var1 = new ArrayList();
-      if (var0 == null) {
+      if (string == null) {
          return var1;
       } else {
-         Matcher var2 = DOLLARS.matcher(normalize(var0));
+         Matcher var2 = DOLLARS.matcher(normalize(string));
 
          while (var2.find()) {
             double var3 = scale(var2.group(1), var2.group(2));
@@ -113,10 +113,10 @@ final class ServerText {
       }
    }
 
-   static double askingPrice(List<String> var0) {
+   static double askingPrice(List<String> list) {
       double var1 = -1.0;
 
-      for (String var4 : var0) {
+      for (String var4 : list) {
          String var5 = normalize(var4);
          boolean var6 = false;
 
@@ -139,12 +139,12 @@ final class ServerText {
       return var1;
    }
 
-   static double askingPrice(ItemStack var0) {
-      return askingPrice(lore(var0));
+   static double askingPrice(ItemStack itemStack) {
+      return askingPrice(lore(itemStack));
    }
 
-   static String moneyToken(String var0) {
-      Matcher var1 = MONEY_ANY.matcher(normalize(var0));
+   static String moneyToken(String string) {
+      Matcher var1 = MONEY_ANY.matcher(normalize(string));
       if (!var1.find()) {
          return null;
       } else {
@@ -153,8 +153,8 @@ final class ServerText {
       }
    }
 
-   static double displayStep(String var0) {
-      Matcher var1 = MONEY_ANY.matcher(normalize(var0));
+   static double displayStep(String string) {
+      Matcher var1 = MONEY_ANY.matcher(normalize(string));
       if (!var1.find()) {
          return 1.0;
       } else {
@@ -165,18 +165,18 @@ final class ServerText {
       }
    }
 
-   private static double scale(String var0, String var1) {
+   private static double scale(String string, String string2) {
       double var2;
       try {
-         var2 = Double.parseDouble(var0.replace(",", ""));
+         var2 = Double.parseDouble(string.replace(",", ""));
       } catch (NumberFormatException var6) {
          return -1.0;
       }
 
-      if (var1 == null) {
+      if (string2 == null) {
          return var2;
       } else {
-         return switch (var1) {
+         return switch (string2) {
             case "k" -> var2 * 1000.0;
             case "m" -> var2 * 1000000.0;
             case "b" -> var2 * 1.0E9;
@@ -185,35 +185,35 @@ final class ServerText {
       }
    }
 
-   static String exactMoney(long var0) {
-      if (var0 >= 1000000000L && var0 % 1000000000L == 0L) {
-         return var0 / 1000000000L + "b";
-      } else if (var0 >= 1000000L && var0 % 1000000L == 0L) {
-         return var0 / 1000000L + "m";
-      } else if (var0 >= 1000000L && var0 % 100000L == 0L) {
-         return var0 / 1000000L + "." + var0 % 1000000L / 100000L + "m";
+   static String exactMoney(long l) {
+      if (l >= 1000000000L && l % 1000000000L == 0L) {
+         return l / 1000000000L + "b";
+      } else if (l >= 1000000L && l % 1000000L == 0L) {
+         return l / 1000000L + "m";
+      } else if (l >= 1000000L && l % 100000L == 0L) {
+         return l / 1000000L + "." + l % 1000000L / 100000L + "m";
       } else {
-         return var0 >= 1000L && var0 % 1000L == 0L ? var0 / 1000L + "k" : Long.toString(var0);
+         return l >= 1000L && l % 1000L == 0L ? l / 1000L + "k" : Long.toString(l);
       }
    }
 
-   static String shortMoney(double var0) {
-      if (var0 >= 1.0E9) {
-         return trim(var0 / 1.0E9) + "b";
-      } else if (var0 >= 1000000.0) {
-         return trim(var0 / 1000000.0) + "m";
+   static String shortMoney(double d) {
+      if (d >= 1.0E9) {
+         return trim(d / 1.0E9) + "b";
+      } else if (d >= 1000000.0) {
+         return trim(d / 1000000.0) + "m";
       } else {
-         return var0 >= 1000.0 ? trim(var0 / 1000.0) + "k" : Long.toString(Math.round(var0));
+         return d >= 1000.0 ? trim(d / 1000.0) + "k" : Long.toString(Math.round(d));
       }
    }
 
-   private static String trim(double var0) {
-      String var2 = String.format(Locale.ROOT, "%.2f", var0);
+   private static String trim(double d) {
+      String var2 = String.format(Locale.ROOT, "%.2f", d);
       return var2.contains(".") ? var2.replaceAll("0+$", "").replaceAll("\\.$", "") : var2;
    }
 
-   static int roman(String var0) {
-      String var1 = normalize(var0);
+   static int roman(String string) {
+      String var1 = normalize(string);
 
       for (int var2 = 0; var2 < ROMAN.length; var2++) {
          if (ROMAN[var2].equals(var1)) {
@@ -224,24 +224,24 @@ final class ServerText {
       return 0;
    }
 
-   static String withoutRoman(String var0) {
-      String var1 = normalize(var0);
+   static String withoutRoman(String string) {
+      String var1 = normalize(string);
       int var2 = var1.lastIndexOf(32);
       return var2 > 0 && roman(var1.substring(var2 + 1)) > 0 ? var1.substring(0, var2) : var1;
    }
 
-   static List<String> lore(ItemStack var0) {
+   static List<String> lore(ItemStack itemStack) {
       ArrayList var1 = new ArrayList();
 
-      for (Text var3 : ((LoreComponent)var0.method_58695(DataComponentTypes.field_49632, LoreComponent.field_49340)).comp_2400()) {
+      for (Text var3 : itemStack.getOrDefault(DataComponentTypes.LORE, LoreComponent.DEFAULT).lines()) {
          var1.add(var3.getString());
       }
 
       return var1;
    }
 
-   static double listingPrice(ItemStack var0) {
-      List var1 = lore(var0);
+   static double listingPrice(ItemStack itemStack) {
+      List var1 = lore(itemStack);
 
       for (String var3 : var1) {
          String var4 = withoutBullet(normalize(var3));
@@ -269,18 +269,18 @@ final class ServerText {
       return var10;
    }
 
-   private static String withoutBullet(String var0) {
+   private static String withoutBullet(String string) {
       int var1 = 0;
 
-      while (var1 < var0.length() && !Character.isLetterOrDigit(var0.charAt(var1))) {
+      while (var1 < string.length() && !Character.isLetterOrDigit(string.charAt(var1))) {
          var1++;
       }
 
-      return var0.substring(var1);
+      return string.substring(var1);
    }
 
-   static double orderPrice(ItemStack var0) {
-      List var1 = lore(var0);
+   static double orderPrice(ItemStack itemStack) {
+      List var1 = lore(itemStack);
       double var2 = -1.0;
 
       for (String var5 : var1) {

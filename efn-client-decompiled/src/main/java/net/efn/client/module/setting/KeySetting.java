@@ -10,18 +10,18 @@ import net.fabricmc.api.Environment;
 public final class KeySetting extends Setting {
    private int value;
 
-   public KeySetting(String var1, int var2) {
-      super(var1);
-      this.value = var2;
+   public KeySetting(String string, int i) {
+      super(string);
+      this.value = i;
    }
 
    public int value() {
       return this.value;
    }
 
-   public void setValue(int var1) {
-      if (this.value != var1) {
-         this.value = var1;
+   public void setValue(int i) {
+      if (this.value != i) {
+         this.value = i;
          this.notifyChanged();
       }
    }
@@ -32,10 +32,10 @@ public final class KeySetting extends Setting {
    }
 
    @Override
-   protected void deserializeValue(JsonElement var1) {
-      if (var1 != null && var1.isJsonPrimitive()) {
+   protected void deserializeValue(JsonElement jsonElement) {
+      if (jsonElement != null && jsonElement.isJsonPrimitive()) {
          try {
-            int var2 = var1.getAsInt();
+            int var2 = jsonElement.getAsInt();
             if (var2 == -1 || ModuleKeybinds.isBindable(var2)) {
                this.value = var2;
             }

@@ -35,112 +35,112 @@ public final class HudDraw {
    private HudDraw() {
    }
 
-   public static int col(int var0, float var1) {
-      int var2 = Math.round((var0 >>> 24 & 0xFF) * Math.max(0.0F, Math.min(1.0F, var1)));
-      return GuiPalette.abgr(var2 << 24 | var0 & 16777215);
+   public static int col(int i, float f) {
+      int var2 = Math.round((i >>> 24 & 0xFF) * Math.max(0.0F, Math.min(1.0F, f)));
+      return GuiPalette.abgr(var2 << 24 | i & 16777215);
    }
 
-   public static int mix(int var0, int var1, float var2) {
-      var2 = Math.max(0.0F, Math.min(1.0F, var2));
-      int var3 = Math.round((var0 >>> 24 & 0xFF) + ((var1 >>> 24 & 0xFF) - (var0 >>> 24 & 0xFF)) * var2);
-      int var4 = Math.round((var0 >> 16 & 0xFF) + ((var1 >> 16 & 0xFF) - (var0 >> 16 & 0xFF)) * var2);
-      int var5 = Math.round((var0 >> 8 & 0xFF) + ((var1 >> 8 & 0xFF) - (var0 >> 8 & 0xFF)) * var2);
-      int var6 = Math.round((var0 & 0xFF) + ((var1 & 0xFF) - (var0 & 0xFF)) * var2);
+   public static int mix(int i, int j, float f) {
+      f = Math.max(0.0F, Math.min(1.0F, f));
+      int var3 = Math.round((i >>> 24 & 0xFF) + ((j >>> 24 & 0xFF) - (i >>> 24 & 0xFF)) * f);
+      int var4 = Math.round((i >> 16 & 0xFF) + ((j >> 16 & 0xFF) - (i >> 16 & 0xFF)) * f);
+      int var5 = Math.round((i >> 8 & 0xFF) + ((j >> 8 & 0xFF) - (i >> 8 & 0xFF)) * f);
+      int var6 = Math.round((i & 0xFF) + ((j & 0xFF) - (i & 0xFF)) * f);
       return var3 << 24 | var4 << 16 | var5 << 8 | var6;
    }
 
-   public static void glow(ImDrawList var0, float var1, float var2, float var3, int var4, float var5) {
+   public static void glow(ImDrawList imDrawList, float f, float g, float h, int i, float j) {
       byte var6 = 18;
 
       for (int var7 = 0; var7 < var6; var7++) {
          float var8 = 1.0F - (float)var7 / var6;
-         var0.addCircleFilled(var1, var2, var3 * var8, col(var4, var5 / var6 * 2.2F), 48);
+         imDrawList.addCircleFilled(f, g, h * var8, col(i, j / var6 * 2.2F), 48);
       }
    }
 
-   public static void sunDisk(ImDrawList var0, float var1, float var2, float var3, float var4, float var5, float var6) {
-      glow(var0, var1, var2, var3 * 1.9F, -1466054, 0.16F * var6);
-      var0.addCircleFilled(var1, var2, var3, col(-14018806, 0.55F * var6), 96);
-      var0.addCircle(var1, var2, var3, col(-15408912, 0.55F * var6), 96, Math.max(1.0F, 1.4F * var5));
-      var0.addCircle(var1, var2, var3 * 0.93F, col(-15408912, 0.22F * var6), 96, Math.max(1.0F, var5));
+   public static void sunDisk(ImDrawList imDrawList, float f, float g, float h, float i, float j, float k) {
+      glow(imDrawList, f, g, h * 1.9F, -1466054, 0.16F * k);
+      imDrawList.addCircleFilled(f, g, h, col(-14018806, 0.55F * k), 96);
+      imDrawList.addCircle(f, g, h, col(-15408912, 0.55F * k), 96, Math.max(1.0F, 1.4F * j));
+      imDrawList.addCircle(f, g, h * 0.93F, col(-15408912, 0.22F * k), 96, Math.max(1.0F, j));
       byte var7 = 48;
 
       for (int var8 = 0; var8 < var7; var8++) {
-         float var9 = var4 + (float)(var8 * 3.141592653589793 * 2.0 / var7);
-         float var10 = var3 * 1.07F;
-         float var11 = var3 * (var8 % 2 == 0 ? 1.34F : 1.2F);
+         float var9 = i + (float)(var8 * 3.141592653589793 * 2.0 / var7);
+         float var10 = h * 1.07F;
+         float var11 = h * (var8 % 2 == 0 ? 1.34F : 1.2F);
          float var12 = (float)Math.cos(var9);
          float var13 = (float)Math.sin(var9);
-         var0.addLine(
-            var1 + var12 * var10,
-            var2 + var13 * var10,
-            var1 + var12 * var11,
-            var2 + var13 * var11,
-            col(-15408912, (var8 % 2 == 0 ? 0.28F : 0.16F) * var6),
-            Math.max(1.0F, 1.3F * var5)
+         imDrawList.addLine(
+            f + var12 * var10,
+            g + var13 * var10,
+            f + var12 * var11,
+            g + var13 * var11,
+            col(-15408912, (var8 % 2 == 0 ? 0.28F : 0.16F) * k),
+            Math.max(1.0F, 1.3F * j)
          );
       }
    }
 
-   public static void text(ImDrawList var0, ImFont var1, float var2, float var3, String var4, int var5) {
-      if (var1 != null) {
-         var0.addText(var1, Math.round(var1.getFontSize()), var2, var3, var5, var4);
+   public static void text(ImDrawList imDrawList, ImFont imFont, float f, float g, String string, int i) {
+      if (imFont != null) {
+         imDrawList.addText(imFont, Math.round(imFont.getFontSize()), f, g, i, string);
       } else {
-         var0.addText(var2, var3, var5, var4);
+         imDrawList.addText(f, g, i, string);
       }
    }
 
-   public static float textWidth(ImFont var0, String var1) {
-      return var0 == null ? var1.length() * 7.0F : var0.calcTextSizeAX(var0.getFontSize(), 3.4028235E38F, 0.0F, var1);
+   public static float textWidth(ImFont imFont, String string) {
+      return imFont == null ? string.length() * 7.0F : imFont.calcTextSizeAX(imFont.getFontSize(), 3.4028235E38F, 0.0F, string);
    }
 
-   public static float spacedWidth(ImFont var0, String var1, float var2) {
+   public static float spacedWidth(ImFont imFont, String string, float f) {
       float var3 = 0.0F;
 
-      for (int var4 = 0; var4 < var1.length(); var4++) {
-         var3 += textWidth(var0, String.valueOf(var1.charAt(var4)));
+      for (int var4 = 0; var4 < string.length(); var4++) {
+         var3 += textWidth(imFont, String.valueOf(string.charAt(var4)));
       }
 
-      return var3 + var2 * Math.max(0, var1.length() - 1);
+      return var3 + f * Math.max(0, string.length() - 1);
    }
 
-   public static void drawSpaced(ImDrawList var0, ImFont var1, float var2, float var3, String var4, float var5, int var6, float var7, boolean var8) {
-      float var9 = var2 - spacedWidth(var1, var4, var5) * 0.5F;
+   public static void drawSpaced(ImDrawList imDrawList, ImFont imFont, float f, float g, String string, float h, int i, float j, boolean bl) {
+      float var9 = f - spacedWidth(imFont, string, h) * 0.5F;
 
-      for (int var10 = 0; var10 < var4.length(); var10++) {
-         String var11 = String.valueOf(var4.charAt(var10));
-         if (var8) {
-            text(var0, var1, var9 + 1.0F, var3 + 1.0F, var11, col(-16777216, 0.7F * var7));
+      for (int var10 = 0; var10 < string.length(); var10++) {
+         String var11 = String.valueOf(string.charAt(var10));
+         if (bl) {
+            text(imDrawList, imFont, var9 + 1.0F, g + 1.0F, var11, col(-16777216, 0.7F * j));
          }
 
-         text(var0, var1, var9, var3, var11, col(var6, var7));
-         var9 += textWidth(var1, var11) + var5;
+         text(imDrawList, imFont, var9, g, var11, col(i, j));
+         var9 += textWidth(imFont, var11) + h;
       }
    }
 
-   public static ThemeImages.Texture texture(String var0) {
-      if (TEXTURES.containsKey(var0)) {
-         return TEXTURES.get(var0);
+   public static ThemeImages.Texture texture(String string) {
+      if (TEXTURES.containsKey(string)) {
+         return TEXTURES.get(string);
       } else {
          ThemeImages.Texture var1 = null;
 
-         try (InputStream var2 = HudDraw.class.getResourceAsStream(var0)) {
+         try (InputStream var2 = HudDraw.class.getResourceAsStream(string)) {
             if (var2 != null) {
-               var1 = ThemeImages.decode(var2.readAllBytes(), var0, false);
+               var1 = ThemeImages.decode(var2.readAllBytes(), string, false);
             } else {
-               LOGGER.warn("[EFN+] Missing texture {}", var0);
+               LOGGER.warn("[EFN+] Missing texture {}", string);
             }
          } catch (RuntimeException | IOException var7) {
-            LOGGER.warn("[EFN+] Failed to load {}", var0, var7);
+            LOGGER.warn("[EFN+] Failed to load {}", string, var7);
          }
 
-         TEXTURES.put(var0, var1);
+         TEXTURES.put(string, var1);
          return var1;
       }
    }
 
-   public static float intro(float var0, float var1) {
-      float var2 = Math.max(0.0F, Math.min(1.0F, (var0 - var1) / 0.6F));
+   public static float intro(float f, float g) {
+      float var2 = Math.max(0.0F, Math.min(1.0F, (f - g) / 0.6F));
       float var3 = 1.0F - var2;
       return 1.0F - var3 * var3 * var3;
    }

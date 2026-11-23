@@ -13,22 +13,22 @@ public final class ModuleToggleEvent extends Event {
    public final ClientModule module;
    public final boolean enabled;
 
-   private ModuleToggleEvent(ClientModule var1, boolean var2) {
-      this.module = var1;
-      this.enabled = var2;
+   private ModuleToggleEvent(ClientModule clientModule, boolean bl) {
+      this.module = clientModule;
+      this.enabled = bl;
    }
 
-   public static void dispatch(ClientModule var0) {
+   public static void dispatch(ClientModule clientModule) {
       if (silentDepth <= 0 && TYPE.hasPreListeners()) {
-         TYPE.dispatch(new ModuleToggleEvent(var0, var0.isEnabled()));
+         TYPE.dispatch(new ModuleToggleEvent(clientModule, clientModule.isEnabled()));
       }
    }
 
-   public static void silently(Runnable var0) {
+   public static void silently(Runnable runnable) {
       silentDepth++;
 
       try {
-         var0.run();
+         runnable.run();
       } finally {
          silentDepth--;
       }

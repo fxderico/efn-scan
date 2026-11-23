@@ -16,7 +16,7 @@ public final class InstallNotice {
    private InstallNotice() {
    }
 
-   public static void main(String[] var0) {
+   public static void main(String[] strings) {
       if (GraphicsEnvironment.isHeadless()) {
          System.out.println("EFN Client is a Fabric mod for Minecraft 1.21.11.\nPut this file in your mods folder and start the game with Fabric Loader.");
       } else {

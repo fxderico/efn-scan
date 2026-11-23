@@ -40,23 +40,23 @@ public final class WeatherNotifierModule extends ClientModule {
       this.level = null;
    }
 
-   private void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientWorld var3 = var2.field_1687;
+   private void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientWorld var3 = var2.world;
       if (var3 != this.level) {
          this.level = var3;
          this.raining = false;
          this.changedTicks = 0;
       }
 
-      if (var3 != null && !(var2.field_1755 instanceof LevelLoadingScreen)) {
-         if (var3.method_8419() == this.raining) {
+      if (var3 != null && !(var2.currentScreen instanceof LevelLoadingScreen)) {
+         if (var3.isRaining() == this.raining) {
             this.changedTicks = 0;
          } else if (++this.changedTicks >= 20) {
             this.raining = !this.raining;
             this.changedTicks = 0;
             if (this.raining) {
-               var2.method_1566().method_1999(new WeatherNotifierModule.WeatherToast(this.sound.get()));
+               var2.getToastManager().add(new WeatherNotifierModule.WeatherToast(this.sound.get()));
             }
          }
       } else {
@@ -66,11 +66,11 @@ public final class WeatherNotifierModule extends ClientModule {
 
    @Environment(EnvType.CLIENT)
    public static final class WeatherToast extends ChallengeToast {
-      private static final Text TITLE = Text.method_43470("Weather Changed!");
-      private static final Text MESSAGE = Text.method_43470("It started raining.");
+      private static final Text TITLE = Text.literal("Weather Changed!");
+      private static final Text MESSAGE = Text.literal("It started raining.");
 
-      WeatherToast(boolean var1) {
-         super(new ItemStack(Items.field_8547), TITLE, MESSAGE, var1);
+      WeatherToast(boolean bl) {
+         super(new ItemStack(Items.TRIDENT), TITLE, MESSAGE, bl);
       }
    }
 }

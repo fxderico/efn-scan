@@ -14,21 +14,21 @@ public final class BlockAcks {
    private BlockAcks() {
    }
 
-   public static void acked(int var0) {
-      ClientWorld var1 = MinecraftClient.method_1551().field_1687;
+   public static void acked(int i) {
+      ClientWorld var1 = MinecraftClient.getInstance().world;
       if (var1 != level) {
          level = var1;
          lastAcked = -1;
       }
 
-      lastAcked = Math.max(lastAcked, var0);
+      lastAcked = Math.max(lastAcked, i);
    }
 
-   public static int lastSent(ClientWorld var0) {
-      return ((AccessorClientLevel)var0).easyplace$predictions().method_41942();
+   public static int lastSent(ClientWorld clientWorld) {
+      return ((AccessorClientLevel)clientWorld).easyplace$predictions().getSequence();
    }
 
-   public static boolean answered(ClientWorld var0, int var1) {
-      return var0 == level && lastAcked >= var1;
+   public static boolean answered(ClientWorld clientWorld, int i) {
+      return clientWorld == level && lastAcked >= i;
    }
 }

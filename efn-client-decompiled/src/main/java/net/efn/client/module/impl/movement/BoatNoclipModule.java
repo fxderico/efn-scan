@@ -103,17 +103,17 @@ public final class BoatNoclipModule extends ClientModule {
       active = null;
       EntityControlVehicleHook.refresh();
       if (FreecamModule.active == null) {
-         MinecraftClient.method_1551().field_1730 = true;
+         MinecraftClient.getInstance().chunkCullingEnabled = true;
       }
 
       this.antiKicker.stop();
       this.releaseBoat();
    }
 
-   private void onPreTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientPlayerEntity var3 = var2.field_1724;
-      if (this.noclipBoat != null && (var3 == null || var3.method_5854() != this.noclipBoat)) {
+   private void onPreTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientPlayerEntity var3 = var2.player;
+      if (this.noclipBoat != null && (var3 == null || var3.getVehicle() != this.noclipBoat)) {
          this.releaseBoat();
       }
 
@@ -121,22 +121,23 @@ public final class BoatNoclipModule extends ClientModule {
       this.updateCulling(var2);
    }
 
-   private void updateCulling(MinecraftClient var1) {
-      if (FreecamModule.active == null && var1.field_1687 != null) {
-         boolean var2 = this.noclipBoat != null && var1.field_1687.method_8320(var1.field_1773.method_19418().method_19328()).method_26216();
-         var1.field_1730 = !var2;
+   private void updateCulling(MinecraftClient minecraftClient) {
+      if (FreecamModule.active == null && minecraftClient.world != null) {
+         boolean var2 = this.noclipBoat != null
+            && minecraftClient.world.getBlockState(minecraftClient.gameRenderer.getCamera().getBlockPos()).isOpaqueFullCube();
+         minecraftClient.chunkCullingEnabled = !var2;
       }
    }
 
-   private void onPacketSend(PacketSendEvent var1) {
+   private void onPacketSend(PacketSendEvent packetSendEvent) {
       if (this.antiKick.get()) {
-         Packet var2 = var1.packet;
-         if (var1.packet instanceof VehicleMoveC2SPacket) {
+         Packet var2 = packetSendEvent.packet;
+         if (packetSendEvent.packet instanceof VehicleMoveC2SPacket) {
             VehicleMoveC2SPacket var3 = (VehicleMoveC2SPacket)var2;
             if (this.sendingStops) {
                this.antiKicker.observe(var3);
             } else if (this.antiKicker.onPacketSend(var3, this.delay.getInt())) {
-               var1.setCancelled(true);
+               packetSendEvent.setCancelled(true);
             }
 
             return;
@@ -147,7 +148,7 @@ public final class BoatNoclipModule extends ClientModule {
    public void onVehicleSetback() {
       this.antiKicker.forget();
       if (this.noclipBoat != null) {
-         this.serverPos = this.noclipBoat.method_73189();
+         this.serverPos = this.noclipBoat.getEntityPos();
       }
 
       this.cautionCap = 0.5;
@@ -155,7 +156,7 @@ public final class BoatNoclipModule extends ClientModule {
 
    private void releaseBoat() {
       if (this.noclipBoat != null) {
-         this.noclipBoat.field_5960 = false;
+         this.noclipBoat.noClip = false;
       }
 
       this.noclipBoat = null;
@@ -165,54 +166,54 @@ public final class BoatNoclipModule extends ClientModule {
       this.burst = 4.0;
    }
 
-   public Vec3d boatMovement(AbstractBoatEntity var1, ClientPlayerEntity var2) {
-      if (this.noclipBoat != var1) {
+   public Vec3d boatMovement(AbstractBoatEntity abstractBoatEntity, ClientPlayerEntity clientPlayerEntity) {
+      if (this.noclipBoat != abstractBoatEntity) {
          this.releaseBoat();
-         this.noclipBoat = var1;
+         this.noclipBoat = abstractBoatEntity;
       }
 
-      var1.field_5960 = true;
-      forceServerBroadcast(var1);
-      double var3 = this.serverBudget(var1);
+      abstractBoatEntity.noClip = true;
+      forceServerBroadcast(abstractBoatEntity);
+      double var3 = this.serverBudget(abstractBoatEntity);
       if (this.antiKick.get() && this.antiKicker.isHolding()) {
-         return Vec3d.field_1353;
+         return Vec3d.ZERO;
       } else {
          var3 = Math.min(var3, this.cautionCap);
          this.cautionCap *= 1.25;
-         double var5 = isInsideBlock(var1, var2) ? this.speedInsideBlocks.get() : this.speed.get();
-         Vec3d var7 = EntityControlVehicleHook.horizontalVelocity(var2, var5);
-         MinecraftClient var8 = MinecraftClient.method_1551();
+         double var5 = isInsideBlock(abstractBoatEntity, clientPlayerEntity) ? this.speedInsideBlocks.get() : this.speed.get();
+         Vec3d var7 = EntityControlVehicleHook.horizontalVelocity(clientPlayerEntity, var5);
+         MinecraftClient var8 = MinecraftClient.getInstance();
          double var9 = 0.0;
-         if (EntityControlVehicleHook.isPhysicallyDown(var8.field_1690.field_1903)) {
+         if (EntityControlVehicleHook.isPhysicallyDown(var8.options.jumpKey)) {
             var9 += this.verticalSpeed.get() / 20.0;
          }
 
          double var16;
          double var17;
-         var9 = EntityControlVehicleHook.isPhysicallyDown(var8.field_1690.field_1867)
+         var9 = EntityControlVehicleHook.isPhysicallyDown(var8.options.sprintKey)
             ? (var16 = var9 - this.verticalSpeed.get() / 20.0)
             : (var17 = var9 - this.fallSpeed.get() / 20.0);
-         Vec3d var11 = new Vec3d(var7.field_1352, var9, var7.field_1350);
-         double var12 = var11.method_1033();
+         Vec3d var11 = new Vec3d(var7.x, var9, var7.z);
+         double var12 = var11.length();
          if (var12 > var3) {
-            var11 = var11.method_1021(var3 / var12);
+            var11 = var11.multiply(var3 / var12);
          }
 
-         Vec3d var14 = this.planMove(var1, var11);
-         this.lastMoveLength = var14.method_1033();
+         Vec3d var14 = this.planMove(abstractBoatEntity, var11);
+         this.lastMoveLength = var14.length();
          return var14;
       }
    }
 
-   private static void forceServerBroadcast(AbstractBoatEntity var0) {
-      ClientPlayNetworkHandler var1 = MinecraftClient.method_1551().method_1562();
+   private static void forceServerBroadcast(AbstractBoatEntity abstractBoatEntity) {
+      ClientPlayNetworkHandler var1 = MinecraftClient.getInstance().getNetworkHandler();
       if (var1 != null) {
-         var1.method_52787(new BoatPaddleStateC2SPacket(!var0.method_64491(0), var0.method_64491(1)));
+         var1.sendPacket(new BoatPaddleStateC2SPacket(!abstractBoatEntity.isPaddleMoving(0), abstractBoatEntity.isPaddleMoving(1)));
       }
    }
 
-   private double serverBudget(AbstractBoatEntity var1) {
-      Vec3d var2 = var1.method_43389().method_60933();
+   private double serverBudget(AbstractBoatEntity abstractBoatEntity) {
+      Vec3d var2 = abstractBoatEntity.getTrackedPosition().getPos();
       if (!var2.equals(this.lastBase)) {
          this.burst = Math.max(this.burst, (double)(this.sinceBase + 1));
          this.sinceBase = 0;
@@ -225,24 +226,24 @@ public final class BoatNoclipModule extends ClientModule {
          }
 
          if (++this.staleTicks >= 40) {
-            this.serverPos = var1.method_73189();
+            this.serverPos = abstractBoatEntity.getEntityPos();
          }
       }
 
       this.burst = Math.max(2.0, this.burst - 0.025);
       if (this.serverPos == null) {
-         this.serverPos = var1.method_73189();
+         this.serverPos = abstractBoatEntity.getEntityPos();
       }
 
-      double var3 = var1.method_73189().method_1022(this.serverPos);
+      double var3 = abstractBoatEntity.getEntityPos().distanceTo(this.serverPos);
       return Math.max(0.0, Math.min(19.0 / this.burst, 28.5 - var3));
    }
 
-   private Vec3d planMove(AbstractBoatEntity var1, Vec3d var2) {
+   private Vec3d planMove(AbstractBoatEntity abstractBoatEntity, Vec3d vec3d) {
       Vec3d var7;
-      Vec3d var8 = var7 = var1.method_73189();
-      Vec3d var9 = var2;
-      List var10 = this.lavaProtection.get() ? nearbyLava(var1, var2) : List.of();
+      Vec3d var8 = var7 = abstractBoatEntity.getEntityPos();
+      Vec3d var9 = vec3d;
+      List var10 = this.lavaProtection.get() ? nearbyLava(abstractBoatEntity, vec3d) : List.of();
       ArrayList var11 = new ArrayList();
 
       Vec3d var3;
@@ -250,45 +251,45 @@ public final class BoatNoclipModule extends ClientModule {
       double var5;
       while (
          var11.size() < 16
-            && var9.method_1027() > 1.0E-8
-            && !((var5 = allowedFraction(var1, var8, var4 = var9.method_1021(Math.min(1.0, 1.0 / var9.method_1033())))) <= 0.0)
-            && !reachesUnloadedChunk(var1, var8, var3 = var4.method_1021(var5))
-            && (var10.isEmpty() || !approachesLava(var1, var8, var3, var10))
+            && var9.lengthSquared() > 1.0E-8
+            && !((var5 = allowedFraction(abstractBoatEntity, var8, var4 = var9.multiply(Math.min(1.0, 1.0 / var9.length())))) <= 0.0)
+            && !reachesUnloadedChunk(abstractBoatEntity, var8, var3 = var4.multiply(var5))
+            && (var10.isEmpty() || !approachesLava(abstractBoatEntity, var8, var3, var10))
       ) {
-         var8 = var8.method_1019(var3);
-         var9 = var9.method_1020(var3);
+         var8 = var8.add(var3);
+         var9 = var9.subtract(var3);
          var11.add(var8);
       }
 
-      ClientPlayNetworkHandler var12 = MinecraftClient.method_1551().method_1562();
+      ClientPlayNetworkHandler var12 = MinecraftClient.getInstance().getNetworkHandler();
       if (var12 != null) {
          this.sendingStops = true;
 
          try {
             for (int var13 = 0; var13 < var11.size() - 1; var13++) {
-               var12.method_52787(new VehicleMoveC2SPacket((Vec3d)var11.get(var13), var1.method_36454(), var1.method_36455(), false));
+               var12.sendPacket(new VehicleMoveC2SPacket((Vec3d)var11.get(var13), abstractBoatEntity.getYaw(), abstractBoatEntity.getPitch(), false));
             }
          } finally {
             this.sendingStops = false;
          }
       }
 
-      return var8.method_1020(var7);
+      return var8.subtract(var7);
    }
 
-   private static List<Box> nearbyLava(AbstractBoatEntity var0, Vec3d var1) {
-      Box var2 = var0.method_5829().method_18804(var1).method_1014(4.0);
+   private static List<Box> nearbyLava(AbstractBoatEntity abstractBoatEntity, Vec3d vec3d) {
+      Box var2 = abstractBoatEntity.getBoundingBox().stretch(vec3d).expand(4.0);
       ArrayList var3 = new ArrayList();
 
-      for (BlockPos var5 : BlockPos.method_10094(
-         MathHelper.method_15357(var2.field_1323),
-         MathHelper.method_15357(var2.field_1322),
-         MathHelper.method_15357(var2.field_1321),
-         MathHelper.method_15357(var2.field_1320),
-         MathHelper.method_15357(var2.field_1325),
-         MathHelper.method_15357(var2.field_1324)
+      for (BlockPos var5 : BlockPos.iterate(
+         MathHelper.floor(var2.minX),
+         MathHelper.floor(var2.minY),
+         MathHelper.floor(var2.minZ),
+         MathHelper.floor(var2.maxX),
+         MathHelper.floor(var2.maxY),
+         MathHelper.floor(var2.maxZ)
       )) {
-         if (var0.method_73183().method_8316(var5).method_15767(FluidTags.field_15518)) {
+         if (abstractBoatEntity.getEntityWorld().getFluidState(var5).isIn(FluidTags.LAVA)) {
             var3.add(new Box(var5));
          }
       }
@@ -296,31 +297,31 @@ public final class BoatNoclipModule extends ClientModule {
       return var3;
    }
 
-   private static boolean approachesLava(AbstractBoatEntity var0, Vec3d var1, Vec3d var2, List<Box> var3) {
-      Box var4 = var0.method_5829().method_997(var1.method_1020(var0.method_73189()));
-      double var5 = distanceTo(var4.method_997(var2), var3);
-      return var5 < 3.0 && var5 < distanceTo(var4, var3);
+   private static boolean approachesLava(AbstractBoatEntity abstractBoatEntity, Vec3d vec3d, Vec3d vec3d2, List<Box> list) {
+      Box var4 = abstractBoatEntity.getBoundingBox().offset(vec3d.subtract(abstractBoatEntity.getEntityPos()));
+      double var5 = distanceTo(var4.offset(vec3d2), list);
+      return var5 < 3.0 && var5 < distanceTo(var4, list);
    }
 
-   private static double distanceTo(Box var0, List<Box> var1) {
+   private static double distanceTo(Box box, List<Box> list) {
       double var2 = 1.7976931348623157E308;
 
-      for (Box var5 : var1) {
-         double var6 = Math.max(0.0, Math.max(var5.field_1323 - var0.field_1320, var0.field_1323 - var5.field_1320));
-         double var8 = Math.max(0.0, Math.max(var5.field_1322 - var0.field_1325, var0.field_1322 - var5.field_1325));
-         double var10 = Math.max(0.0, Math.max(var5.field_1321 - var0.field_1324, var0.field_1321 - var5.field_1324));
+      for (Box var5 : list) {
+         double var6 = Math.max(0.0, Math.max(var5.minX - box.maxX, box.minX - var5.maxX));
+         double var8 = Math.max(0.0, Math.max(var5.minY - box.maxY, box.minY - var5.maxY));
+         double var10 = Math.max(0.0, Math.max(var5.minZ - box.maxZ, box.minZ - var5.maxZ));
          var2 = Math.min(var2, var6 * var6 + var8 * var8 + var10 * var10);
       }
 
       return Math.sqrt(var2);
    }
 
-   private static boolean reachesUnloadedChunk(AbstractBoatEntity var0, Vec3d var1, Vec3d var2) {
-      Box var3 = var0.method_5829().method_997(var1.method_1020(var0.method_73189())).method_18804(var2);
+   private static boolean reachesUnloadedChunk(AbstractBoatEntity abstractBoatEntity, Vec3d vec3d, Vec3d vec3d2) {
+      Box var3 = abstractBoatEntity.getBoundingBox().offset(vec3d.subtract(abstractBoatEntity.getEntityPos())).stretch(vec3d2);
 
-      for (int var4 = ChunkSectionPos.method_42615(var3.field_1323); var4 <= ChunkSectionPos.method_42615(var3.field_1320); var4++) {
-         for (int var5 = ChunkSectionPos.method_42615(var3.field_1321); var5 <= ChunkSectionPos.method_42615(var3.field_1324); var5++) {
-            if (!var0.method_73183().method_8398().method_12123(var4, var5)) {
+      for (int var4 = ChunkSectionPos.getSectionCoordFloored(var3.minX); var4 <= ChunkSectionPos.getSectionCoordFloored(var3.maxX); var4++) {
+         for (int var5 = ChunkSectionPos.getSectionCoordFloored(var3.minZ); var5 <= ChunkSectionPos.getSectionCoordFloored(var3.maxZ); var5++) {
+            if (!abstractBoatEntity.getEntityWorld().getChunkManager().isChunkLoaded(var4, var5)) {
                return true;
             }
          }
@@ -329,10 +330,10 @@ public final class BoatNoclipModule extends ClientModule {
       return false;
    }
 
-   private static double allowedFraction(AbstractBoatEntity var0, Vec3d var1, Vec3d var2) {
-      Box var4 = var0.method_5829().method_997(var1.method_1020(var0.method_73189()));
+   private static double allowedFraction(AbstractBoatEntity abstractBoatEntity, Vec3d vec3d, Vec3d vec3d2) {
+      Box var4 = abstractBoatEntity.getBoundingBox().offset(vec3d.subtract(abstractBoatEntity.getEntityPos()));
       List var3;
-      if (replayMiss(var0, var4, var2, var3 = serverEntityShapes(var0, var4.method_18804(var2))) <= 0.24) {
+      if (replayMiss(abstractBoatEntity, var4, vec3d2, var3 = serverEntityShapes(abstractBoatEntity, var4.stretch(vec3d2))) <= 0.24) {
          return 1.0;
       } else {
          double var5 = 0.0;
@@ -340,7 +341,7 @@ public final class BoatNoclipModule extends ClientModule {
 
          for (int var9 = 0; var9 < 12; var9++) {
             double var10 = (var5 + var7) / 2.0;
-            if (replayMiss(var0, var4, var2.method_1021(var10), var3) <= 0.24) {
+            if (replayMiss(abstractBoatEntity, var4, vec3d2.multiply(var10), var3) <= 0.24) {
                var5 = var10;
             } else {
                var7 = var10;
@@ -351,55 +352,59 @@ public final class BoatNoclipModule extends ClientModule {
       }
    }
 
-   private static double replayMiss(AbstractBoatEntity var0, Box var1, Vec3d var2, List<VoxelShape> var3) {
-      Vec3d var4 = Entity.method_20736(var0, var2, var1, var0.method_73183(), var3);
-      return Math.hypot(var2.field_1352 - var4.field_1352, var2.field_1350 - var4.field_1350);
+   private static double replayMiss(AbstractBoatEntity abstractBoatEntity, Box box, Vec3d vec3d, List<VoxelShape> list) {
+      Vec3d var4 = Entity.adjustMovementForCollisions(abstractBoatEntity, vec3d, box, abstractBoatEntity.getEntityWorld(), list);
+      return Math.hypot(vec3d.x - var4.x, vec3d.z - var4.z);
    }
 
-   private static List<VoxelShape> serverEntityShapes(AbstractBoatEntity var0, Box var1) {
+   private static List<VoxelShape> serverEntityShapes(AbstractBoatEntity abstractBoatEntity, Box box) {
       ArrayList var2 = new ArrayList();
 
-      for (Entity var4 : var0.method_73183().method_8333(var0, var1.method_1014(1.0E-7), EntityPredicates.field_6155)) {
-         if (AbstractBoatEntity.method_64486(var0, var4)) {
-            var2.add(VoxelShapes.method_1078(var4.method_5829()));
+      for (Entity var4 : abstractBoatEntity.getEntityWorld().getOtherEntities(abstractBoatEntity, box.expand(1.0E-7), EntityPredicates.EXCEPT_SPECTATOR)) {
+         if (AbstractBoatEntity.canCollide(abstractBoatEntity, var4)) {
+            var2.add(VoxelShapes.cuboid(var4.getBoundingBox()));
          }
       }
 
       return var2;
    }
 
-   public static boolean hidesWallOverlay(PlayerEntity var0) {
-      return active != null && var0.method_5854() instanceof AbstractBoatEntity;
+   public static boolean hidesWallOverlay(PlayerEntity playerEntity) {
+      return active != null && playerEntity.getVehicle() instanceof AbstractBoatEntity;
    }
 
-   private static boolean isInsideBlock(AbstractBoatEntity var0, ClientPlayerEntity var1) {
-      ClientWorld var2 = MinecraftClient.method_1551().field_1687;
+   private static boolean isInsideBlock(AbstractBoatEntity abstractBoatEntity, ClientPlayerEntity clientPlayerEntity) {
+      ClientWorld var2 = MinecraftClient.getInstance().world;
       if (var2 == null) {
          return false;
       } else {
-         Box var3 = var0.method_5829();
-         Box var4 = var3.method_1002(0.0, 0.05, 0.0).method_1009(0.5, 0.0, 0.5);
-         int var5 = MathHelper.method_15357(var4.field_1320);
-         int var6 = MathHelper.method_15357(var4.field_1325);
-         int var7 = MathHelper.method_15357(var4.field_1324);
+         Box var3 = abstractBoatEntity.getBoundingBox();
+         Box var4 = var3.shrink(0.0, 0.05, 0.0).expand(0.5, 0.0, 0.5);
+         int var5 = MathHelper.floor(var4.maxX);
+         int var6 = MathHelper.floor(var4.maxY);
+         int var7 = MathHelper.floor(var4.maxZ);
          Mutable var8 = new Mutable();
 
-         for (int var9 = MathHelper.method_15357(var4.field_1323); var9 <= var5; var9++) {
-            for (int var10 = MathHelper.method_15357(var4.field_1322); var10 <= var6; var10++) {
-               for (int var11 = MathHelper.method_15357(var4.field_1321); var11 <= var7; var11++) {
-                  BlockState var13 = var2.method_8320(var8.method_10103(var9, var10, var11));
+         for (int var9 = MathHelper.floor(var4.minX); var9 <= var5; var9++) {
+            for (int var10 = MathHelper.floor(var4.minY); var10 <= var6; var10++) {
+               for (int var11 = MathHelper.floor(var4.minZ); var11 <= var7; var11++) {
+                  BlockState var13 = var2.getBlockState(var8.set(var9, var10, var11));
                   VoxelShape var12;
-                  if (!var13.method_26215()
-                     && !(var12 = var13.method_26194(var2, var8, ShapeContext.method_16194())).method_1110()
-                     && var3.method_994(var12.method_1107().method_996(var8))) {
+                  if (!var13.isAir()
+                     && !(var12 = var13.getCollisionShape(var2, var8, ShapeContext.absent())).isEmpty()
+                     && var3.intersects(var12.getBoundingBox().offset(var8))) {
                      return true;
                   }
                }
             }
          }
 
-         for (Entity var15 : var2.method_8335(var0, var4)) {
-            if (var15 != var1 && !var15.method_5626(var0) && !var0.method_5626(var15) && var15.method_5805() && var15.method_5829().method_994(var4)) {
+         for (Entity var15 : var2.getOtherEntities(abstractBoatEntity, var4)) {
+            if (var15 != clientPlayerEntity
+               && !var15.hasPassenger(abstractBoatEntity)
+               && !abstractBoatEntity.hasPassenger(var15)
+               && var15.isAlive()
+               && var15.getBoundingBox().intersects(var4)) {
                return true;
             }
          }

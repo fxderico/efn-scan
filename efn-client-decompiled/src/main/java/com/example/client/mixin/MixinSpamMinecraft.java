@@ -17,27 +17,27 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin({MinecraftClient.class})
 public abstract class MixinSpamMinecraft {
    @Shadow
-   public ClientWorld field_1687;
+   public ClientWorld world;
 
    public MixinSpamMinecraft() {
    }
 
    @Inject(
-      method = {"method_18096"},
+      method = {"disconnect"},
       at = {@At("HEAD")}
    )
-   private void efn$spamGameLeft(Screen var1, boolean var2, boolean var3, CallbackInfo var4) {
-      if (SpamModule.active != null && this.field_1687 != null) {
+   private void efn$spamGameLeft(Screen screen, boolean bl, boolean bl2, CallbackInfo callbackInfo) {
+      if (SpamModule.active != null && this.world != null) {
          SpamModule.onGameLeft();
       }
    }
 
    @Inject(
-      method = {"method_1507"},
+      method = {"setScreen"},
       at = {@At("HEAD")}
    )
-   private void efn$spamDisconnectedScreen(Screen var1, CallbackInfo var2) {
-      if (SpamModule.active != null && this.field_1687 != null && var1 instanceof DisconnectedScreen) {
+   private void efn$spamDisconnectedScreen(Screen screen, CallbackInfo callbackInfo) {
+      if (SpamModule.active != null && this.world != null && screen instanceof DisconnectedScreen) {
          SpamModule.onDisconnectedScreen();
       }
    }

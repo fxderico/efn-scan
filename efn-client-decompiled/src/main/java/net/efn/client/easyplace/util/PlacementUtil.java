@@ -21,48 +21,48 @@ public final class PlacementUtil {
    private PlacementUtil() {
    }
 
-   public static Vec3d faceCenterCursor(BlockPos var0, Direction var1) {
-      return var0.method_46558().method_1031(var1.method_10148() * 0.5, var1.method_10164() * 0.5, var1.method_10165() * 0.5);
+   public static Vec3d faceCenterCursor(BlockPos blockPos, Direction direction) {
+      return blockPos.toCenterPos().add(direction.getOffsetX() * 0.5, direction.getOffsetY() * 0.5, direction.getOffsetZ() * 0.5);
    }
 
-   public static float[] calcRotation(Vec3d var0, Vec3d var1) {
-      double var2 = var1.field_1352 - var0.field_1352;
-      double var4 = var1.field_1351 - var0.field_1351;
-      double var6 = var1.field_1350 - var0.field_1350;
+   public static float[] calcRotation(Vec3d vec3d, Vec3d vec3d2) {
+      double var2 = vec3d2.x - vec3d.x;
+      double var4 = vec3d2.y - vec3d.y;
+      double var6 = vec3d2.z - vec3d.z;
       double var8 = Math.sqrt(var2 * var2 + var6 * var6);
       float var10 = (float)Math.toDegrees(Math.atan2(-var2, var6));
       float var11 = (float)Math.toDegrees(-Math.atan2(var4, var8));
-      return new float[]{MathHelper.method_15393(var10), MathHelper.method_15363(var11, -90.0F, 90.0F)};
+      return new float[]{MathHelper.wrapDegrees(var10), MathHelper.clamp(var11, -90.0F, 90.0F)};
    }
 
-   public static BlockHitResult rayTraceTowards(PlayerEntity var0, float var1, float var2, double var3) {
-      return rayTraceFrom(var0, getEyePos(var0), var1, var2, var3);
+   public static BlockHitResult rayTraceTowards(PlayerEntity playerEntity, float f, float g, double d) {
+      return rayTraceFrom(playerEntity, getEyePos(playerEntity), f, g, d);
    }
 
-   public static BlockHitResult rayTraceFrom(PlayerEntity var0, Vec3d var1, float var2, float var3, double var4) {
-      ClientWorld var6 = MinecraftClient.method_1551().field_1687;
+   public static BlockHitResult rayTraceFrom(PlayerEntity playerEntity, Vec3d vec3d, float f, float g, double d) {
+      ClientWorld var6 = MinecraftClient.getInstance().world;
       if (var6 == null) {
          return null;
       } else {
-         double var7 = Math.toRadians(var2);
-         double var9 = Math.cos(Math.toRadians(var3));
-         double var11 = Math.sin(Math.toRadians(var3));
+         double var7 = Math.toRadians(f);
+         double var9 = Math.cos(Math.toRadians(g));
+         double var11 = Math.sin(Math.toRadians(g));
          Vec3d var13 = new Vec3d(-Math.sin(var7) * var9, -var11, Math.cos(var7) * var9);
-         Vec3d var14 = var1.method_1019(var13.method_1021(var4));
-         return var6.method_17742(new RaycastContext(var1, var14, ShapeType.field_17559, FluidHandling.field_1348, var0));
+         Vec3d var14 = vec3d.add(var13.multiply(d));
+         return var6.raycast(new RaycastContext(vec3d, var14, ShapeType.OUTLINE, FluidHandling.NONE, playerEntity));
       }
    }
 
-   public static Vec3d getEyePos(PlayerEntity var0) {
-      return new Vec3d(var0.method_23317(), var0.method_23320(), var0.method_23321());
+   public static Vec3d getEyePos(PlayerEntity playerEntity) {
+      return new Vec3d(playerEntity.getX(), playerEntity.getEyeY(), playerEntity.getZ());
    }
 
-   public static Direction getClickFace(Direction var0) {
-      return var0.method_10153();
+   public static Direction getClickFace(Direction direction) {
+      return direction.getOpposite();
    }
 
-   public static Direction getPlaceSide(BlockPos var0, Vec3d var1) {
-      ClientWorld var2 = MinecraftClient.method_1551().field_1687;
+   public static Direction getPlaceSide(BlockPos blockPos, Vec3d vec3d) {
+      ClientWorld var2 = MinecraftClient.getInstance().world;
       if (var2 == null) {
          return null;
       } else {
@@ -70,11 +70,11 @@ public final class PlacementUtil {
          double var4 = -1.7976931348623157E308;
 
          for (Direction var9 : Direction.values()) {
-            BlockPos var10 = var0.method_10093(var9);
-            BlockState var11 = var2.method_8320(var10);
-            if (!var11.method_26215() && !var11.method_26220(var2, var10).method_1110()) {
-               Vec3d var12 = var1.method_1020(var10.method_46558());
-               double var13 = var12.field_1352 * var9.method_10148() + var12.field_1351 * var9.method_10164() + var12.field_1350 * var9.method_10165();
+            BlockPos var10 = blockPos.offset(var9);
+            BlockState var11 = var2.getBlockState(var10);
+            if (!var11.isAir() && !var11.getCollisionShape(var2, var10).isEmpty()) {
+               Vec3d var12 = vec3d.subtract(var10.toCenterPos());
+               double var13 = var12.x * var9.getOffsetX() + var12.y * var9.getOffsetY() + var12.z * var9.getOffsetZ();
                if (var13 > var4) {
                   var4 = var13;
                   var3 = var9;
@@ -86,21 +86,20 @@ public final class PlacementUtil {
       }
    }
 
-   public static boolean faceMatchesAxis(BlockState var0, Direction var1) {
-      return !var0.method_28498(Properties.field_12496) || var0.method_11654(Properties.field_12496) == var1.method_10166();
+   public static boolean faceMatchesAxis(BlockState blockState, Direction direction) {
+      return !blockState.contains(Properties.AXIS) || blockState.get(Properties.AXIS) == direction.getAxis();
    }
 
-   public static boolean isFaceVisibleToEye(BlockPos var0, Direction var1, Vec3d var2) {
+   public static boolean isFaceVisibleToEye(BlockPos blockPos, Direction direction, Vec3d vec3d) {
       double var3 = 0.05;
 
-      return switch (var1) {
-         case field_11043 -> var2.field_1350 < var0.method_10260() - 0.05;
-         case field_11035 -> var2.field_1350 > var0.method_10260() + 1.0 + 0.05;
-         case field_11039 -> var2.field_1352 < var0.method_10263() - 0.05;
-         case field_11034 -> var2.field_1352 > var0.method_10263() + 1.0 + 0.05;
-         case field_11036 -> var2.field_1351 > var0.method_10264() + 1.0 + 0.05;
-         case field_11033 -> var2.field_1351 < var0.method_10264() - 0.05;
-         default -> throw new MatchException(null, null);
+      return switch (direction) {
+         case NORTH -> vec3d.z < blockPos.getZ() - 0.05;
+         case SOUTH -> vec3d.z > blockPos.getZ() + 1.0 + 0.05;
+         case WEST -> vec3d.x < blockPos.getX() - 0.05;
+         case EAST -> vec3d.x > blockPos.getX() + 1.0 + 0.05;
+         case UP -> vec3d.y > blockPos.getY() + 1.0 + 0.05;
+         case DOWN -> vec3d.y < blockPos.getY() - 0.05;
       };
    }
 }

@@ -13,19 +13,19 @@ public enum EventPriority {
 
    public final int value;
 
-   private EventPriority(int nullxx) {
-      this.value = nullxx;
+   private EventPriority(int j) {
+      this.value = j;
    }
 
-   public static EventPriority fromInt(int var0) {
-      if (var0 >= 75) {
+   public static EventPriority fromInt(int i) {
+      if (i >= 75) {
          return HIGHEST;
-      } else if (var0 >= 25) {
+      } else if (i >= 25) {
          return HIGH;
-      } else if (var0 >= -25) {
+      } else if (i >= -25) {
          return NORMAL;
       } else {
-         return var0 >= -75 ? LOW : LOWEST;
+         return i >= -75 ? LOW : LOWEST;
       }
    }
 }

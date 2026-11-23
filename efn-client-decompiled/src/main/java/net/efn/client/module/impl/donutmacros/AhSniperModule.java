@@ -58,8 +58,8 @@ public final class AhSniperModule extends ClientModule {
 
    @Override
    protected void onEnable() {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      if (var2.field_1724 != null && var2.method_1562() != null && var2.method_1548() != null) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      if (var2.player != null && var2.getNetworkHandler() != null && var2.getSession() != null) {
          long var3 = ServerText.parseMoney(this.maxPrice.get());
          if (var3 <= 0L) {
             this.say(ModuleChat.body().warn("Set Buy Below to a price like 50m."));
@@ -105,11 +105,11 @@ public final class AhSniperModule extends ClientModule {
                      this.requireConfirm.get(),
                      this.maxBuys.getInt(),
                      var8,
-                     var2.method_1548().method_1676()
+                     var2.getSession().getUsername()
                   );
-                  this.worker.start(var1::run, var2x -> {
-                     LOGGER.error("[EFN] AH Sniper stopped", var2x);
-                     this.say(ModuleChat.body().danger("Stopped").text(": " + var2x));
+                  this.worker.start(var1::run, throwable -> {
+                     LOGGER.error("[EFN] AH Sniper stopped", throwable);
+                     this.say(ModuleChat.body().danger("Stopped").text(": " + throwable));
                      this.stopFromBot(var1);
                   });
                }
@@ -121,9 +121,9 @@ public final class AhSniperModule extends ClientModule {
       }
    }
 
-   void stopFromBot(SniperBot var1) {
-      MinecraftClient.method_1551().execute(() -> {
-         if (this.bot == var1 && this.isEnabled()) {
+   void stopFromBot(SniperBot sniperBot) {
+      MinecraftClient.getInstance().execute(() -> {
+         if (this.bot == sniperBot && this.isEnabled()) {
             this.setEnabled(false);
          }
       });
@@ -134,11 +134,11 @@ public final class AhSniperModule extends ClientModule {
       SniperBot var1 = this.bot;
       this.bot = null;
       this.worker.stop();
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientPlayerEntity var3 = var2.field_1724;
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientPlayerEntity var3 = var2.player;
       if (var1 != null && var3 != null) {
-         if (var3.field_7512 != var3.field_7498) {
-            var3.method_7346();
+         if (var3.currentScreenHandler != var3.playerScreenHandler) {
+            var3.closeHandledScreen();
          } else {
             Dialogs.close(var2);
          }
@@ -148,18 +148,18 @@ public final class AhSniperModule extends ClientModule {
    }
 
    @EventHandler
-   public void onPacket(PacketReceiveNettyEvent var1) {
+   public void onPacket(PacketReceiveNettyEvent packetReceiveNettyEvent) {
       SniperBot var4 = this.bot;
       if (var4 != null) {
-         Packet var3 = var1.packet;
+         Packet var3 = packetReceiveNettyEvent.packet;
          GameMessageS2CPacket var2;
-         if (var1.packet instanceof GameMessageS2CPacket && (var2 = (GameMessageS2CPacket)var3).comp_763() != null) {
-            var4.onChat(var2.comp_763().getString());
+         if (packetReceiveNettyEvent.packet instanceof GameMessageS2CPacket && (var2 = (GameMessageS2CPacket)var3).content() != null) {
+            var4.onChat(var2.content().getString());
          }
       }
    }
 
-   private void say(ModuleChat.Body var1) {
-      ModuleChat.send(this, var1);
+   private void say(ModuleChat.Body body) {
+      ModuleChat.send(this, body);
    }
 }

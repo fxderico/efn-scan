@@ -37,25 +37,25 @@ public final class WTapRecodeModule extends ClientModule {
       this.taps = 0;
    }
 
-   public void beforeAttack(PlayerEntity var1, Entity var2) {
-      ClientPlayerEntity var3 = MinecraftClient.method_1551().field_1724;
-      this.sprintHit = var1 == var3
-         && var3.method_5624()
+   public void beforeAttack(PlayerEntity playerEntity, Entity entity) {
+      ClientPlayerEntity var3 = MinecraftClient.getInstance().player;
+      this.sprintHit = playerEntity == var3
+         && var3.isSprinting()
          && MeleeAttacks.charge(var3) > 0.9F
-         && var2 instanceof LivingEntity
-         && var3.field_3913.field_54155.comp_3159();
+         && entity instanceof LivingEntity
+         && var3.input.playerInput.forward();
    }
 
    public void afterAttack() {
       if (this.sprintHit) {
-         this.start(MinecraftClient.method_1551().field_1724);
+         this.start(MinecraftClient.getInstance().player);
       }
    }
 
    public void afterStab() {
-      ClientPlayerEntity var1 = MinecraftClient.method_1551().field_1724;
-      if (var1.method_5624() && var1.field_3913.field_54155.comp_3159()) {
-         if (MeleeAttacks.stabTarget(var1, var1x -> PiercingWeaponComponent.method_75244(var1, var1x)) != null) {
+      ClientPlayerEntity var1 = MinecraftClient.getInstance().player;
+      if (var1.isSprinting() && var1.input.playerInput.forward()) {
+         if (MeleeAttacks.stabTarget(var1, entity -> PiercingWeaponComponent.canHit(var1, entity)) != null) {
             this.start(var1);
          }
       }
@@ -64,20 +64,20 @@ public final class WTapRecodeModule extends ClientModule {
    @EventHandler(
       priority = EventPriority.HIGH
    )
-   public void onTick(TickEvent var1) {
-      ClientPlayerEntity var2 = MinecraftClient.method_1551().field_1724;
+   public void onTick(TickEvent tickEvent) {
+      ClientPlayerEntity var2 = MinecraftClient.getInstance().player;
       if (var2 == null) {
          this.taps = 0;
       } else {
-         if (this.taps > 0 && var2.field_6012 != this.tapTick) {
+         if (this.taps > 0 && var2.age != this.tapTick) {
             this.apply();
          }
       }
    }
 
-   private void start(ClientPlayerEntity var1) {
+   private void start(ClientPlayerEntity clientPlayerEntity) {
       this.taps = this.hold.getInt();
-      this.tapTick = var1.field_6012;
+      this.tapTick = clientPlayerEntity.age;
       this.apply();
    }
 

@@ -52,37 +52,37 @@ public final class AnchorGuard {
    private AnchorGuard() {
    }
 
-   public static AnchorGuard.Spot find(ClientWorld var0, ClientPlayerEntity var1, BlockPos var2, Vec3d var3) {
-      Vec3d var4 = Vec3d.method_24953(var2);
-      Box var5 = var1.method_5829();
+   public static AnchorGuard.Spot find(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, BlockPos blockPos, Vec3d vec3d) {
+      Vec3d var4 = Vec3d.ofCenter(blockPos);
+      Box var5 = clientPlayerEntity.getBoundingBox();
       List var6 = bodyPoints(var5);
       ArrayList var7 = new ArrayList(var6.size());
 
       for (Vec3d var9 : var6) {
-         BlockHitResult var10 = var0.method_17742(new RaycastContext(var9, var4, ShapeType.field_17558, FluidHandling.field_1348, var1));
-         if (var10.method_17783() == Type.field_1333 || var10.method_17777().equals(var2)) {
+         BlockHitResult var10 = clientWorld.raycast(new RaycastContext(var9, var4, ShapeType.COLLIDER, FluidHandling.NONE, clientPlayerEntity));
+         if (var10.getType() == Type.MISS || var10.getBlockPos().equals(blockPos)) {
             var7.add(var9);
          }
       }
 
-      BlockPos var17 = var1.method_24515();
+      BlockPos var17 = clientPlayerEntity.getBlockPos();
       if (var7.size() < Math.ceil(var6.size() * 0.15)) {
          return new AnchorGuard.Spot(var17, null, null, null);
       } else {
          int var18 = (int)Math.ceil(var7.size() * 0.15);
-         Vec3d var19 = var1.method_33571();
+         Vec3d var19 = clientPlayerEntity.getEyePos();
          LinkedHashSet var11 = new LinkedHashSet();
 
          for (int var12 = -1; var12 <= 1; var12++) {
             for (int var13 = -1; var13 <= 1; var13++) {
                if (var12 != 0 || var13 != 0) {
-                  var11.add(var17.method_10069(var12, 0, var13));
+                  var11.add(var17.add(var12, 0, var13));
                }
             }
          }
 
-         for (Direction var22 : net.minecraft.util.math.Direction.Type.field_11062) {
-            var11.add(var2.method_10093(var22));
+         for (Direction var22 : net.minecraft.util.math.Direction.Type.HORIZONTAL) {
+            var11.add(blockPos.offset(var22));
          }
 
          ArrayList var21 = new ArrayList(var11.size());
@@ -90,21 +90,21 @@ public final class AnchorGuard {
          for (BlockPos var14 : var11) {
             Box var16 = new Box(var14);
             int var15;
-            if (!var14.equals(var2) && !var16.method_994(var5) && !var16.method_992(var19, var3).isPresent() && (var15 = shade(var16, var4, var7)) >= var18) {
-               var21.add(new AnchorGuard.Cell(var14, var15, var16.method_1005().method_1025(var4)));
+            if (!var14.equals(blockPos) && !var16.intersects(var5) && !var16.raycast(var19, vec3d).isPresent() && (var15 = shade(var16, var4, var7)) >= var18) {
+               var21.add(new AnchorGuard.Cell(var14, var15, var16.getCenter().squaredDistanceTo(var4)));
             }
          }
 
          var21.sort(Comparator.comparingInt(AnchorGuard.Cell::shade).reversed().thenComparingDouble(AnchorGuard.Cell::distance));
 
          for (AnchorGuard.Cell var25 : var21) {
-            BlockState var27 = var0.method_8320(var25.pos());
+            BlockState var27 = clientWorld.getBlockState(var25.pos());
             AnchorGuard.Spot var26;
-            if (var27.method_45474()
+            if (var27.isReplaceable()
                && (
-                     var26 = var27.method_26218(var0, var25.pos()).method_1110()
-                        ? supportFor(var0, var1, var19, var25.pos())
-                        : direct(var0, var1, var19, var25.pos(), var27)
+                     var26 = var27.getOutlineShape(clientWorld, var25.pos()).isEmpty()
+                        ? supportFor(clientWorld, clientPlayerEntity, var19, var25.pos())
+                        : direct(clientWorld, clientPlayerEntity, var19, var25.pos(), var27)
                   )
                   != null) {
                return var26;
@@ -115,42 +115,42 @@ public final class AnchorGuard {
       }
    }
 
-   public static BlockHitResult hitAlong(ClientWorld var0, ClientPlayerEntity var1, Rotation var2, AnchorGuard.Spot var3) {
-      BlockHitResult var4 = trace(var0, var1, var2);
-      if (var4 == null || !var4.method_17777().equals(var3.support())) {
+   public static BlockHitResult hitAlong(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, Rotation rotation, AnchorGuard.Spot spot) {
+      BlockHitResult var4 = trace(clientWorld, clientPlayerEntity, rotation);
+      if (var4 == null || !var4.getBlockPos().equals(spot.support())) {
          return null;
-      } else if (var3.face() != null && var4.method_17780() != var3.face()) {
+      } else if (spot.face() != null && var4.getSide() != spot.face()) {
          return null;
       } else {
-         BlockPos var5 = Crystals.placedObsidian(var0, var1, var4, var0.method_8320(var3.support()));
-         return var3.pos().equals(var5) ? var4 : null;
+         BlockPos var5 = Crystals.placedObsidian(clientWorld, clientPlayerEntity, var4, clientWorld.getBlockState(spot.support()));
+         return spot.pos().equals(var5) ? var4 : null;
       }
    }
 
-   public static BlockHitResult anchorHit(ClientWorld var0, ClientPlayerEntity var1, BlockPos var2) {
+   public static BlockHitResult anchorHit(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, BlockPos blockPos) {
       Rotation var3 = ServerRotation.sent();
-      BlockHitResult var4 = var3 == null ? null : trace(var0, var1, var3);
-      return var4 != null && var4.method_17777().equals(var2) ? var4 : null;
+      BlockHitResult var4 = var3 == null ? null : trace(clientWorld, clientPlayerEntity, var3);
+      return var4 != null && var4.getBlockPos().equals(blockPos) ? var4 : null;
    }
 
-   public static boolean isGuardBlock(ItemStack var0) {
-      if (!(var0.method_7909() instanceof BlockItem var2)) {
+   public static boolean isGuardBlock(ItemStack itemStack) {
+      if (!(itemStack.getItem() instanceof BlockItem var2)) {
          return false;
       } else {
-         Block var3 = var2.method_7711();
-         return !(var3 instanceof BlockEntityProvider) && !(var3 instanceof FallingBlock) && var3 != Blocks.field_23152 && var3 != Blocks.field_10375
-            ? var3.method_9564().method_26234(EmptyBlockView.field_12294, BlockPos.field_10980)
+         Block var3 = var2.getBlock();
+         return !(var3 instanceof BlockEntityProvider) && !(var3 instanceof FallingBlock) && var3 != Blocks.RESPAWN_ANCHOR && var3 != Blocks.TNT
+            ? var3.getDefaultState().isFullCube(EmptyBlockView.INSTANCE, BlockPos.ORIGIN)
             : false;
       }
    }
 
-   public static int detonatorSlot(PlayerInventory var0) {
-      int var1 = Crystals.hotbarSlotOf(var0, Items.field_8288);
+   public static int detonatorSlot(PlayerInventory playerInventory) {
+      int var1 = Crystals.hotbarSlotOf(playerInventory, Items.TOTEM_OF_UNDYING);
       if (var1 != -1) {
          return var1;
       } else {
-         for (int var2 = 0; var2 < PlayerInventory.method_7368(); var2++) {
-            if (Crystals.isCombatItem(var0.method_5438(var2))) {
+         for (int var2 = 0; var2 < PlayerInventory.getHotbarSize(); var2++) {
+            if (Crystals.isCombatItem(playerInventory.getStack(var2))) {
                return var2;
             }
          }
@@ -159,31 +159,31 @@ public final class AnchorGuard {
       }
    }
 
-   public static int detonatorRoute(PlayerInventory var0, ItemStack var1) {
-      if (Crystals.isCombatItem(var1)) {
+   public static int detonatorRoute(PlayerInventory playerInventory, ItemStack itemStack) {
+      if (Crystals.isCombatItem(itemStack)) {
          return -2;
       } else {
-         int var2 = detonatorSlot(var0);
+         int var2 = detonatorSlot(playerInventory);
          return var2 == -1 ? -1 : var2;
       }
    }
 
-   public static Vec3d anchorAim(ClientWorld var0, ClientPlayerEntity var1, BlockPos var2) {
-      Vec3d var5 = var1.method_33571();
-      Box var6 = new Box(var2).method_1011(0.1);
+   public static Vec3d anchorAim(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, BlockPos blockPos) {
+      Vec3d var5 = clientPlayerEntity.getEyePos();
+      Box var6 = new Box(blockPos).contract(0.1);
       Rotation var7 = ServerRotation.sent();
       if (var7 != null) {
-         Vec3d var8 = Vec3d.method_1030(var7.pitch(), var7.yaw());
-         double var9 = var6.method_1005().method_1020(var5).method_1026(var8);
+         Vec3d var8 = Vec3d.fromPolar(var7.pitch(), var7.yaw());
+         double var9 = var6.getCenter().subtract(var5).dotProduct(var8);
          if (var9 > 0.0) {
-            Vec3d var11 = var5.method_1019(var8.method_1021(var9));
+            Vec3d var11 = var5.add(var8.multiply(var9));
             Vec3d var12 = new Vec3d(
-               MathHelper.method_15350(var11.field_1352, var6.field_1323, var6.field_1320),
-               MathHelper.method_15350(var11.field_1351, var6.field_1322, var6.field_1325),
-               MathHelper.method_15350(var11.field_1350, var6.field_1321, var6.field_1324)
+               MathHelper.clamp(var11.x, var6.minX, var6.maxX),
+               MathHelper.clamp(var11.y, var6.minY, var6.maxY),
+               MathHelper.clamp(var11.z, var6.minZ, var6.maxZ)
             );
-            BlockHitResult var13 = trace(var0, var1, ServerRotation.next(var1, RotationUtils.fromTo(var5, var12)));
-            if (var13 != null && var13.method_17777().equals(var2)) {
+            BlockHitResult var13 = trace(clientWorld, clientPlayerEntity, ServerRotation.next(clientPlayerEntity, RotationUtils.fromTo(var5, var12)));
+            if (var13 != null && var13.getBlockPos().equals(blockPos)) {
                return var12;
             }
          }
@@ -193,71 +193,73 @@ public final class AnchorGuard {
       BlockHitResult var4;
       return (
                   var4 = trace(
-                     var0,
-                     var1,
+                     clientWorld,
+                     clientPlayerEntity,
                      ServerRotation.next(
-                        var1,
+                        clientPlayerEntity,
                         RotationUtils.fromTo(
                            var5,
                            var3 = new Vec3d(
-                              MathHelper.method_15350(var5.field_1352, var6.field_1323, var6.field_1320),
-                              MathHelper.method_15350(var5.field_1351, var6.field_1322, var6.field_1325),
-                              MathHelper.method_15350(var5.field_1350, var6.field_1321, var6.field_1324)
+                              MathHelper.clamp(var5.x, var6.minX, var6.maxX),
+                              MathHelper.clamp(var5.y, var6.minY, var6.maxY),
+                              MathHelper.clamp(var5.z, var6.minZ, var6.maxZ)
                            )
                         )
                      )
                   )
                )
                != null
-            && var4.method_17777().equals(var2)
+            && var4.getBlockPos().equals(blockPos)
          ? var3
          : null;
    }
 
-   public static void click(MinecraftClient var0, ClientPlayerEntity var1, BlockHitResult var2) {
-      ItemStack var4 = var1.method_6047();
-      int var5 = var4.method_7947();
-      ActionResult var6 = var0.field_1761.method_2896(var1, Hand.field_5808, var2);
+   public static void click(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, BlockHitResult blockHitResult) {
+      ItemStack var4 = clientPlayerEntity.getMainHandStack();
+      int var5 = var4.getCount();
+      ActionResult var6 = minecraftClient.interactionManager.interactBlock(clientPlayerEntity, Hand.MAIN_HAND, blockHitResult);
       Success var3;
-      if (var6 instanceof Success && (var3 = (Success)var6).comp_2909() == SwingSource.field_52427) {
-         var1.method_6104(Hand.field_5808);
-         if (!var4.method_7960() && (var4.method_7947() != var5 || var1.method_56992())) {
-            var0.field_1773.field_4012.method_3215(Hand.field_5808);
+      if (var6 instanceof Success && (var3 = (Success)var6).swingSource() == SwingSource.CLIENT) {
+         clientPlayerEntity.swingHand(Hand.MAIN_HAND);
+         if (!var4.isEmpty() && (var4.getCount() != var5 || clientPlayerEntity.isInCreativeMode())) {
+            minecraftClient.gameRenderer.firstPersonRenderer.resetEquipProgress(Hand.MAIN_HAND);
          }
       }
 
-      MeleeAttacks.claimTick(var0);
+      MeleeAttacks.claimTick(minecraftClient);
    }
 
-   private static AnchorGuard.Spot direct(ClientWorld var0, ClientPlayerEntity var1, Vec3d var2, BlockPos var3, BlockState var4) {
-      AnchorGuard.Spot var5 = new AnchorGuard.Spot(var3, var3, null, var4.method_26218(var0, var3).method_1107().method_996(var3).method_1005());
-      Rotation var6 = ServerRotation.next(var1, RotationUtils.fromTo(var2, var5.aim()));
-      return hitAlong(var0, var1, var6, var5) != null ? var5 : null;
+   private static AnchorGuard.Spot direct(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, Vec3d vec3d, BlockPos blockPos, BlockState blockState) {
+      AnchorGuard.Spot var5 = new AnchorGuard.Spot(
+         blockPos, blockPos, null, blockState.getOutlineShape(clientWorld, blockPos).getBoundingBox().offset(blockPos).getCenter()
+      );
+      Rotation var6 = ServerRotation.next(clientPlayerEntity, RotationUtils.fromTo(vec3d, var5.aim()));
+      return hitAlong(clientWorld, clientPlayerEntity, var6, var5) != null ? var5 : null;
    }
 
-   public static AnchorGuard.Spot supportFor(ClientWorld var0, ClientPlayerEntity var1, Vec3d var2, BlockPos var3) {
+   public static AnchorGuard.Spot supportFor(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, Vec3d vec3d, BlockPos blockPos) {
       AnchorGuard.Spot var4 = null;
       double var5 = 1.7976931348623157E308;
 
       for (Direction var10 : Direction.values()) {
-         BlockPos var14 = var3.method_10093(var10);
-         BlockState var15 = var0.method_8320(var14);
+         BlockPos var14 = blockPos.offset(var10);
+         BlockState var15 = clientWorld.getBlockState(var14);
          VoxelShape var13;
-         if (!var15.method_45474() && !(var13 = var15.method_26218(var0, var14)).method_1110()) {
-            Direction var16 = var10.method_10153();
+         if (!var15.isReplaceable() && !(var13 = var15.getOutlineShape(clientWorld, var14)).isEmpty()) {
+            Direction var16 = var10.getOpposite();
             AnchorGuard.Spot var17 = null;
 
-            for (Vec3d var19 : faceAims(var13.method_1107().method_996(var14), var16)) {
-               AnchorGuard.Spot var20 = new AnchorGuard.Spot(var3, var14, var16, var19);
-               Rotation var21 = ServerRotation.next(var1, RotationUtils.fromTo(var2, var19));
-               if (hitAlong(var0, var1, var21, var20) != null) {
+            for (Vec3d var19 : faceAims(var13.getBoundingBox().offset(var14), var16)) {
+               AnchorGuard.Spot var20 = new AnchorGuard.Spot(blockPos, var14, var16, var19);
+               Rotation var21 = ServerRotation.next(clientPlayerEntity, RotationUtils.fromTo(vec3d, var19));
+               if (hitAlong(clientWorld, clientPlayerEntity, var21, var20) != null) {
                   var17 = var20;
                   break;
                }
             }
 
             if (var17 != null) {
-               double var11 = var10 == Direction.field_11033 ? -1.0 : var2.method_1025(var17.aim());
+               double var11 = var10 == Direction.DOWN ? -1.0 : vec3d.squaredDistanceTo(var17.aim());
                if (var11 < var5) {
                   var4 = var17;
                   var5 = var11;
@@ -269,42 +271,42 @@ public final class AnchorGuard {
       return var4;
    }
 
-   private static List<Vec3d> faceAims(Box var0, Direction var1) {
-      Axis var2 = var1.method_10166();
-      double var3 = var1.method_10171() == AxisDirection.field_11056 ? var0.method_990(var2) : var0.method_1001(var2);
-      Vec3d var5 = var0.method_1005().method_38499(var2, var3);
+   private static List<Vec3d> faceAims(Box box, Direction direction) {
+      Axis var2 = direction.getAxis();
+      double var3 = direction.getDirection() == AxisDirection.POSITIVE ? box.getMax(var2) : box.getMin(var2);
+      Vec3d var5 = box.getCenter().withAxis(var2, var3);
       ArrayList var6 = new ArrayList(5);
       var6.add(var5);
 
       for (Direction var10 : Direction.values()) {
-         Axis var11 = var10.method_10166();
+         Axis var11 = var10.getAxis();
          if (var11 != var2) {
-            var6.add(var5.method_43206(var10, (var0.method_990(var11) - var0.method_1001(var11)) * 0.3));
+            var6.add(var5.offset(var10, (box.getMax(var11) - box.getMin(var11)) * 0.3));
          }
       }
 
       return var6;
    }
 
-   public static BlockHitResult trace(ClientWorld var0, ClientPlayerEntity var1, Rotation var2) {
-      Vec3d var4 = var1.method_33571();
-      BlockHitResult var5 = var0.method_17742(
+   public static BlockHitResult trace(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, Rotation rotation) {
+      Vec3d var4 = clientPlayerEntity.getEyePos();
+      BlockHitResult var5 = clientWorld.raycast(
          new RaycastContext(
             var4,
-            var4.method_1019(Vec3d.method_1030(var2.pitch(), var2.yaw()).method_1021(var1.method_55754())),
-            ShapeType.field_17559,
-            FluidHandling.field_1348,
-            var1
+            var4.add(Vec3d.fromPolar(rotation.pitch(), rotation.yaw()).multiply(clientPlayerEntity.getBlockInteractionRange())),
+            ShapeType.OUTLINE,
+            FluidHandling.NONE,
+            clientPlayerEntity
          )
       );
-      return var5.method_17783() == Type.field_1332 ? var5 : null;
+      return var5.getType() == Type.BLOCK ? var5 : null;
    }
 
-   private static int shade(Box var0, Vec3d var1, List<Vec3d> var2) {
+   private static int shade(Box box, Vec3d vec3d, List<Vec3d> list) {
       int var3 = 0;
 
-      for (Vec3d var5 : var2) {
-         if (var0.method_992(var5, var1).isPresent()) {
+      for (Vec3d var5 : list) {
+         if (box.raycast(var5, vec3d).isPresent()) {
             var3++;
          }
       }
@@ -312,10 +314,10 @@ public final class AnchorGuard {
       return var3;
    }
 
-   private static List<Vec3d> bodyPoints(Box var0) {
-      double var1 = 1.0 / ((var0.field_1320 - var0.field_1323) * 2.0 + 1.0);
-      double var3 = 1.0 / ((var0.field_1325 - var0.field_1322) * 2.0 + 1.0);
-      double var5 = 1.0 / ((var0.field_1324 - var0.field_1321) * 2.0 + 1.0);
+   private static List<Vec3d> bodyPoints(Box box) {
+      double var1 = 1.0 / ((box.maxX - box.minX) * 2.0 + 1.0);
+      double var3 = 1.0 / ((box.maxY - box.minY) * 2.0 + 1.0);
+      double var5 = 1.0 / ((box.maxZ - box.minZ) * 2.0 + 1.0);
       double var7 = (1.0 - Math.floor(1.0 / var1) * var1) / 2.0;
       double var9 = (1.0 - Math.floor(1.0 / var5) * var5) / 2.0;
       ArrayList var11 = new ArrayList();
@@ -325,9 +327,9 @@ public final class AnchorGuard {
             for (double var16 = 0.0; var16 <= 1.0; var16 += var5) {
                var11.add(
                   new Vec3d(
-                     MathHelper.method_16436(var12, var0.field_1323, var0.field_1320) + var7,
-                     MathHelper.method_16436(var14, var0.field_1322, var0.field_1325),
-                     MathHelper.method_16436(var16, var0.field_1321, var0.field_1324) + var9
+                     MathHelper.lerp(var12, box.minX, box.maxX) + var7,
+                     MathHelper.lerp(var14, box.minY, box.maxY),
+                     MathHelper.lerp(var16, box.minZ, box.maxZ) + var9
                   )
                );
             }

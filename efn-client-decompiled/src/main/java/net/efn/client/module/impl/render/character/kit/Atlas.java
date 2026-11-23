@@ -19,11 +19,11 @@ final class Atlas {
    final int[][] mips;
    private final Map<Canvas, int[]> rects;
 
-   private Atlas(int var1, int var2, int[][] var3, Map<Canvas, int[]> var4) {
-      this.width = var1;
-      this.height = var2;
-      this.mips = var3;
-      this.rects = var4;
+   private Atlas(int i, int j, int[][] is, Map<Canvas, int[]> map) {
+      this.width = i;
+      this.height = j;
+      this.mips = is;
+      this.rects = map;
    }
 
    float whiteU() {
@@ -34,26 +34,26 @@ final class Atlas {
       return 8.0F / this.height;
    }
 
-   float u(Canvas var1, float var2) {
-      int[] var3 = this.rects.get(var1);
-      return (var3[0] + var2 * var3[2]) / this.width;
+   float u(Canvas canvas, float f) {
+      int[] var3 = this.rects.get(canvas);
+      return (var3[0] + f * var3[2]) / this.width;
    }
 
-   float v(Canvas var1, float var2) {
-      int[] var3 = this.rects.get(var1);
-      return (var3[1] + var2 * var3[3]) / this.height;
+   float v(Canvas canvas, float f) {
+      int[] var3 = this.rects.get(canvas);
+      return (var3[1] + f * var3[3]) / this.height;
    }
 
-   static Atlas pack(List<Canvas> var0) {
+   static Atlas pack(List<Canvas> list) {
       ArrayList var1 = new ArrayList();
 
-      for (Canvas var3 : var0) {
+      for (Canvas var3 : list) {
          if (!var1.contains(var3)) {
             var1.add(var3);
          }
       }
 
-      var1.sort((var0x, var1x) -> Integer.compare(var1x.height(), var0x.height()));
+      var1.sort((canvas, canvas2) -> Integer.compare(canvas2.height(), canvas.height()));
       long var14 = 484L;
       int var4 = 22;
 
@@ -97,17 +97,17 @@ final class Atlas {
       }
    }
 
-   private static Atlas render(int var0, int var1, List<Canvas> var2, Map<Canvas, int[]> var3) {
-      int[] var4 = new int[var0 * var1];
+   private static Atlas render(int i, int j, List<Canvas> list, Map<Canvas, int[]> map) {
+      int[] var4 = new int[i * j];
 
       for (int var5 = 0; var5 < 19; var5++) {
          for (int var6 = 0; var6 < 19; var6++) {
-            var4[var5 * var0 + var6] = -1;
+            var4[var5 * i + var6] = -1;
          }
       }
 
-      for (Canvas var14 : var2) {
-         int[] var7 = (int[])var3.get(var14);
+      for (Canvas var14 : list) {
+         int[] var7 = (int[])map.get(var14);
          int[] var8 = dilate(var14);
 
          for (int var9 = -3; var9 < var14.height() + 3; var9++) {
@@ -115,20 +115,20 @@ final class Atlas {
 
             for (int var11 = -3; var11 < var14.width() + 3; var11++) {
                int var12 = Math.max(0, Math.min(var14.width() - 1, var11));
-               var4[(var7[1] + var9) * var0 + var7[0] + var11] = var8[var10 * var14.width() + var12];
+               var4[(var7[1] + var9) * i + var7[0] + var11] = var8[var10 * var14.width() + var12];
             }
          }
       }
 
-      return new Atlas(var0, var1, mips(var4, var0, var1), var3);
+      return new Atlas(i, j, mips(var4, i, j), map);
    }
 
-   static int[][] mips(int[] var0, int var1, int var2) {
-      int var3 = Math.min(5, 1 + (31 - Integer.numberOfLeadingZeros(Math.min(var1, var2))));
+   static int[][] mips(int[] is, int i, int j) {
+      int var3 = Math.min(5, 1 + (31 - Integer.numberOfLeadingZeros(Math.min(i, j))));
       int[][] var4 = new int[var3][];
-      var4[0] = var0;
-      int var5 = var1;
-      int var6 = var2;
+      var4[0] = is;
+      int var5 = i;
+      int var6 = j;
 
       for (int var7 = 1; var7 < var3; var7++) {
          var4[var7] = down(var4[var7 - 1], var5, var6);
@@ -139,10 +139,10 @@ final class Atlas {
       return var4;
    }
 
-   private static int[] dilate(Canvas var0) {
-      int var1 = var0.width();
-      int var2 = var0.height();
-      int[] var3 = Arrays.copyOf(var0.pixels, var0.pixels.length);
+   private static int[] dilate(Canvas canvas) {
+      int var1 = canvas.width();
+      int var2 = canvas.height();
+      int[] var3 = Arrays.copyOf(canvas.pixels, canvas.pixels.length);
       boolean[] var4 = new boolean[var3.length];
 
       for (int var5 = 0; var5 < var3.length; var5++) {
@@ -189,9 +189,9 @@ final class Atlas {
       return var3;
    }
 
-   private static int[] down(int[] var0, int var1, int var2) {
-      int var3 = Math.max(1, var1 / 2);
-      int var4 = Math.max(1, var2 / 2);
+   private static int[] down(int[] is, int i, int j) {
+      int var3 = Math.max(1, i / 2);
+      int var4 = Math.max(1, j / 2);
       int[] var5 = new int[var3 * var4];
 
       for (int var6 = 0; var6 < var4; var6++) {
@@ -205,9 +205,9 @@ final class Atlas {
             float var17 = 0.0F;
 
             for (int var18 = 0; var18 < 4; var18++) {
-               int var19 = Math.min(var1 - 1, var7 * 2 + (var18 & 1));
-               int var20 = Math.min(var2 - 1, var6 * 2 + (var18 >> 1));
-               int var21 = var0[var20 * var1 + var19];
+               int var19 = Math.min(i - 1, var7 * 2 + (var18 & 1));
+               int var20 = Math.min(j - 1, var6 * 2 + (var18 >> 1));
+               int var21 = is[var20 * i + var19];
                float var22 = (var21 >>> 24) / 255.0F;
                var11 += var22;
                var12 += (var21 >> 16 & 0xFF) * var22;
@@ -239,10 +239,10 @@ final class Atlas {
       return var5;
    }
 
-   private static int pow2(int var0) {
+   private static int pow2(int i) {
       byte var1 = 16;
 
-      while (var1 < var0) {
+      while (var1 < i) {
          var1 <<= 1;
       }
 

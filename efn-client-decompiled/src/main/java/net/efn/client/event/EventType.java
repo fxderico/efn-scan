@@ -13,32 +13,32 @@ public class EventType<E extends Event> {
       this("unnamed");
    }
 
-   public EventType(String var1) {
-      this.name = var1;
+   public EventType(String string) {
+      this.name = string;
    }
 
    public final String name() {
       return this.name;
    }
 
-   public void register(ListenerHandle<E> var1) {
-      this.list.register(var1);
+   public void register(ListenerHandle<E> listenerHandle) {
+      this.list.register(listenerHandle);
    }
 
-   public void unregister(ListenerHandle<E> var1) {
-      this.list.unregister(var1);
+   public void unregister(ListenerHandle<E> listenerHandle) {
+      this.list.unregister(listenerHandle);
    }
 
-   public ListenerHandle<E> listen(Object var1, Consumer<E> var2) {
-      return this.listen(var1, Stage.PRE, EventPriority.NORMAL, var2);
+   public ListenerHandle<E> listen(Object object, Consumer<E> consumer) {
+      return this.listen(object, Stage.PRE, EventPriority.NORMAL, consumer);
    }
 
-   public ListenerHandle<E> listen(Object var1, EventPriority var2, Consumer<E> var3) {
-      return this.listen(var1, Stage.PRE, var2, var3);
+   public ListenerHandle<E> listen(Object object, EventPriority eventPriority, Consumer<E> consumer) {
+      return this.listen(object, Stage.PRE, eventPriority, consumer);
    }
 
-   public ListenerHandle<E> listen(Object var1, Stage var2, EventPriority var3, Consumer<E> var4) {
-      ListenerHandle var5 = new ListenerHandle<>(this, var2, var3, var1, var4);
+   public ListenerHandle<E> listen(Object object, Stage stage, EventPriority eventPriority, Consumer<E> consumer) {
+      ListenerHandle var5 = new ListenerHandle<>(this, stage, eventPriority, object, consumer);
       this.register(var5);
       return var5;
    }
@@ -55,15 +55,15 @@ public class EventType<E extends Event> {
       return this.hasPreListeners() || this.hasPostListeners();
    }
 
-   public final void dispatch(E var1) {
-      this.dispatchPre((E)var1);
+   public final void dispatch(E event) {
+      this.dispatchPre((E)event);
    }
 
-   public void dispatchPre(E var1) {
-      this.list.dispatchPre((E)var1);
+   public void dispatchPre(E event) {
+      this.list.dispatchPre((E)event);
    }
 
-   public void dispatchPost(E var1) {
-      this.list.dispatchPost((E)var1);
+   public void dispatchPost(E event) {
+      this.list.dispatchPost((E)event);
    }
 }

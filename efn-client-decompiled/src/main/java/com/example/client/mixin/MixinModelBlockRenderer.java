@@ -15,14 +15,14 @@ public abstract class MixinModelBlockRenderer {
    }
 
    @ModifyArg(
-      method = {"method_23073"},
+      method = {"renderQuad"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_4588;method_22920(Lnet/minecraft/class_4587$class_4665;Lnet/minecraft/class_777;[FFFFF[II)V"
+         target = "Lnet/minecraft/client/render/VertexConsumer;quad(Lnet/minecraft/client/util/math/MatrixStack$Entry;Lnet/minecraft/client/render/model/BakedQuad;[FFFFF[II)V"
       )},
       index = 6
    )
-   private float efn$xrayAlpha(float var1) {
-      return XrayModule.active == null ? var1 : var1 * XrayModule.CURRENT_ALPHA.get()[0];
+   private float efn$xrayAlpha(float f) {
+      return XrayModule.active == null ? f : f * XrayModule.CURRENT_ALPHA.get()[0];
    }
 }

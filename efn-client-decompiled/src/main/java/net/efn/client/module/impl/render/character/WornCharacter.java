@@ -14,10 +14,10 @@ public final class WornCharacter {
    final RenderLayer decal;
    final RenderLayer ghost;
 
-   WornCharacter(CharacterModel var1, Identifier var2) {
-      this.model = var1;
-      this.solid = RenderLayers.method_75982(var2);
-      this.decal = RenderLayers.method_76000(var2);
-      this.ghost = RenderLayers.method_75998(var2);
+   WornCharacter(CharacterModel characterModel, Identifier identifier) {
+      this.model = characterModel;
+      this.solid = RenderLayers.entitySolid(identifier);
+      this.decal = RenderLayers.entityTranslucent(identifier);
+      this.ghost = RenderLayers.itemEntityTranslucentCull(identifier);
    }
 }

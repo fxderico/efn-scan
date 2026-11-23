@@ -16,16 +16,16 @@ final class AtmosphereQuality {
       return MOBILE;
    }
 
-   static int skyWidth(int var0, int var1) {
-      return scaledSize(var0, Math.max(var0, var1));
+   static int skyWidth(int i, int j) {
+      return scaledSize(i, Math.max(i, j));
    }
 
-   static int skyHeight(int var0, int var1) {
-      return scaledSize(var1, Math.max(var0, var1));
+   static int skyHeight(int i, int j) {
+      return scaledSize(j, Math.max(i, j));
    }
 
-   private static int scaledSize(int var0, int var1) {
-      double var2 = Math.min(0.5, 640.0 / Math.max(1, var1));
-      return Math.max(1, (int)Math.round(var0 * var2));
+   private static int scaledSize(int i, int j) {
+      double var2 = Math.min(0.5, 640.0 / Math.max(1, j));
+      return Math.max(1, (int)Math.round(i * var2));
    }
 }

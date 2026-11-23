@@ -19,64 +19,64 @@ public final class Rig {
    public Rig() {
    }
 
-   public Rig scale(float var1) {
-      if (var1 > 0.05F && var1 < 8.0F) {
-         this.scale = var1;
+   public Rig scale(float f) {
+      if (f > 0.05F && f < 8.0F) {
+         this.scale = f;
          return this;
       } else {
          throw new IllegalArgumentException("scale must be between 0.05 and 8");
       }
    }
 
-   public Rig outline(int var1, float var2) {
-      this.outlineColor = var1;
-      this.outline = Math.max(0.0F, var2);
+   public Rig outline(int i, float f) {
+      this.outlineColor = i;
+      this.outline = Math.max(0.0F, f);
       return this;
    }
 
-   public Rig occlusion(float var1) {
-      this.occlusion = Math.max(0.0F, Math.min(1.0F, var1));
+   public Rig occlusion(float f) {
+      this.occlusion = Math.max(0.0F, Math.min(1.0F, f));
       return this;
    }
 
-   public Rig flatLight(float var1) {
-      this.flat = Math.max(0.0F, Math.min(1.0F, var1));
+   public Rig flatLight(float f) {
+      this.flat = Math.max(0.0F, Math.min(1.0F, f));
       return this;
    }
 
-   public Rig firstPersonArms(boolean var1) {
-      this.firstPersonArms = var1;
+   public Rig firstPersonArms(boolean bl) {
+      this.firstPersonArms = bl;
       return this;
    }
 
-   public Part part(Bone var1) {
-      Part var2 = this.bones[var1.ordinal()];
+   public Part part(Bone bone) {
+      Part var2 = this.bones[bone.ordinal()];
       if (var2 == null) {
-         this.bones[var1.ordinal()] = var2 = new Part(var1.name(), var1, null, false);
+         this.bones[bone.ordinal()] = var2 = new Part(bone.name(), bone, null, false);
       }
 
       return var2;
    }
 
-   public Part extra(String var1, Bone var2) {
-      return this.extra(var1, this.part(var2));
+   public Part extra(String string, Bone bone) {
+      return this.extra(string, this.part(bone));
    }
 
-   public Part extra(String var1, Part var2) {
-      if (var1 != null && !var1.isEmpty()) {
+   public Part extra(String string, Part part) {
+      if (string != null && !string.isEmpty()) {
          for (Part var4 : this.extras) {
-            if (var4.name.equals(var1)) {
-               throw new IllegalArgumentException("duplicate extra name: " + var1);
+            if (var4.name.equals(string)) {
+               throw new IllegalArgumentException("duplicate extra name: " + string);
             }
          }
 
          for (Bone var6 : Bone.values()) {
-            if (var6.name().equals(var1)) {
-               throw new IllegalArgumentException("extra name clashes with a bone: " + var1);
+            if (var6.name().equals(string)) {
+               throw new IllegalArgumentException("extra name clashes with a bone: " + string);
             }
          }
 
-         Part var8 = new Part(var1, var2.bone, var2, true);
+         Part var8 = new Part(string, part.bone, part, true);
          this.extras.add(var8);
          return var8;
       } else {

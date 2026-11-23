@@ -12,44 +12,44 @@ import net.minecraft.util.math.Box;
 public final class BlockBoxCache {
    private final int capacity;
    private final LongFunction<Box> factory;
-   private final Long2ObjectLinkedOpenHashMap<BlockBoxCache.Entry> boxes = new Long2ObjectLinkedOpenHashMap();
+   private final Long2ObjectLinkedOpenHashMap<BlockBoxCache.Entry> boxes = new Long2ObjectLinkedOpenHashMap<>();
    private float size = 0.0F / 0.0F;
    private long frame;
 
-   BlockBoxCache(int var1) {
-      this(var1, null);
+   BlockBoxCache(int i) {
+      this(i, null);
    }
 
-   public BlockBoxCache(int var1, LongFunction<Box> var2) {
-      this.capacity = Math.max(1, var1);
-      this.factory = var2;
+   public BlockBoxCache(int i, LongFunction<Box> longFunction) {
+      this.capacity = Math.max(1, i);
+      this.factory = longFunction;
    }
 
-   public void beginFrame(float var1) {
-      if (Float.floatToIntBits(this.size) != Float.floatToIntBits(var1)) {
+   public void beginFrame(float f) {
+      if (Float.floatToIntBits(this.size) != Float.floatToIntBits(f)) {
          this.boxes.clear();
-         this.size = var1;
+         this.size = f;
       }
 
       this.frame++;
    }
 
-   public Box box(long var1) {
-      BlockBoxCache.Entry var4 = (BlockBoxCache.Entry)this.boxes.getAndMoveToLast(var1);
+   public Box box(long l) {
+      BlockBoxCache.Entry var4 = this.boxes.getAndMoveToLast(l);
       if (var4 != null) {
          var4.frame = this.frame;
          return var4.box;
       } else {
-         Box var3 = this.factory == null ? BlockBoxHelper.scaledBlockBox(BlockPos.method_10092(var1), this.size) : this.factory.apply(var1);
+         Box var3 = this.factory == null ? BlockBoxHelper.scaledBlockBox(BlockPos.fromLong(l), this.size) : this.factory.apply(l);
          if (this.boxes.size() == this.capacity) {
-            if (((BlockBoxCache.Entry)this.boxes.get(this.boxes.firstLongKey())).frame == this.frame) {
+            if (this.boxes.get(this.boxes.firstLongKey()).frame == this.frame) {
                return var3;
             }
 
             this.boxes.removeFirst();
          }
 
-         this.boxes.put(var1, new BlockBoxCache.Entry(var3, this.frame));
+         this.boxes.put(l, new BlockBoxCache.Entry(var3, this.frame));
          return var3;
       }
    }
@@ -63,9 +63,9 @@ public final class BlockBoxCache {
       final Box box;
       long frame;
 
-      Entry(Box var1, long var2) {
-         this.box = var1;
-         this.frame = var2;
+      Entry(Box box, long l) {
+         this.box = box;
+         this.frame = l;
       }
    }
 }

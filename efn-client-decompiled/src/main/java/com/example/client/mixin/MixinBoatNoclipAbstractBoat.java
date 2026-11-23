@@ -16,15 +16,15 @@ public abstract class MixinBoatNoclipAbstractBoat {
    }
 
    @ModifyReturnValue(
-      method = {"method_30949"},
+      method = {"collidesWith"},
       at = {@At("RETURN")}
    )
-   private boolean efn$boatNoclipCollide(boolean var1) {
-      if (var1 && BoatNoclipModule.active != null) {
+   private boolean efn$boatNoclipCollide(boolean bl) {
+      if (bl && BoatNoclipModule.active != null) {
          AbstractBoatEntity var2 = (AbstractBoatEntity)this;
-         return !var2.method_73183().method_8608() || var2.method_5642() != MinecraftClient.method_1551().field_1724;
+         return !var2.getEntityWorld().isClient() || var2.getControllingPassenger() != MinecraftClient.getInstance().player;
       } else {
-         return var1;
+         return bl;
       }
    }
 }

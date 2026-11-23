@@ -44,14 +44,14 @@ public final class PanelStateStore {
       return INSTANCE;
    }
 
-   public synchronized boolean isCollapsed(ModuleCategory var1) {
+   public synchronized boolean isCollapsed(ModuleCategory moduleCategory) {
       this.ensureLoaded();
-      return this.collapsed.contains(var1.name());
+      return this.collapsed.contains(moduleCategory.name());
    }
 
-   public synchronized void setCollapsed(ModuleCategory var1, boolean var2) {
+   public synchronized void setCollapsed(ModuleCategory moduleCategory, boolean bl) {
       this.ensureLoaded();
-      boolean var3 = var2 ? this.collapsed.add(var1.name()) : this.collapsed.remove(var1.name());
+      boolean var3 = bl ? this.collapsed.add(moduleCategory.name()) : this.collapsed.remove(moduleCategory.name());
       if (var3) {
          this.save();
       }
@@ -60,14 +60,14 @@ public final class PanelStateStore {
    public synchronized Map<String, float[]> panelHomes() {
       this.ensureLoaded();
       HashMap var1 = new HashMap();
-      this.homes.forEach((var1x, var2) -> var1.put(var1x, (float[])var2.clone()));
+      this.homes.forEach((string, fs) -> var1.put(string, (float[])fs.clone()));
       return var1;
    }
 
-   public synchronized void setPanelHomes(Map<String, float[]> var1) {
+   public synchronized void setPanelHomes(Map<String, float[]> map) {
       this.ensureLoaded();
       this.homes.clear();
-      var1.forEach((var1x, var2) -> this.homes.put(var1x, (float[])var2.clone()));
+      map.forEach((string, fs) -> this.homes.put(string, (float[])fs.clone()));
       this.save();
    }
 
@@ -113,7 +113,7 @@ public final class PanelStateStore {
                   LOGGER.warn("[EFN] ClickGUI state version {} is newer than supported {}; skipping load", var3, 1);
                }
             } catch (RuntimeException | IOException var13) {
-               LOGGER.warn("[EFN] Failed to load the ClickGUI state; preserving the file", var13);
+               LOGGER.warn("[EFN] Failed to load the ClickGUI state; preserving the file", (Throwable)var13);
                this.collapsed.clear();
                this.homes.clear();
                this.readOnly = true;
@@ -134,11 +134,11 @@ public final class PanelStateStore {
 
          var1.add("collapsed", var2);
          JsonObject var13 = new JsonObject();
-         this.homes.forEach((var1x, var2x) -> {
+         this.homes.forEach((string, fs) -> {
             JsonArray var3 = new JsonArray();
-            var3.add(var2x[0]);
-            var3.add(var2x[1]);
-            var13.add(var1x, var3);
+            var3.add(fs[0]);
+            var3.add(fs[1]);
+            var13.add(string, var3);
          });
          var1.add("panels", var13);
          Path var14 = this.configPath();
@@ -148,7 +148,7 @@ public final class PanelStateStore {
             Path var5 = var14.resolveSibling(var14.getFileName().toString() + ".tmp");
 
             try (BufferedWriter var6 = Files.newBufferedWriter(var5)) {
-               GSON.toJson(var1, var6);
+               GSON.toJson((JsonElement)var1, var6);
             }
 
             try {
@@ -157,7 +157,7 @@ public final class PanelStateStore {
                Files.move(var5, var14, StandardCopyOption.REPLACE_EXISTING);
             }
          } catch (IOException var12) {
-            LOGGER.warn("[EFN] Failed to save the ClickGUI state", var12);
+            LOGGER.warn("[EFN] Failed to save the ClickGUI state", (Throwable)var12);
          }
       }
    }

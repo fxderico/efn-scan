@@ -30,21 +30,21 @@ public final class ShotView {
    public ShotView() {
    }
 
-   public void show(Box var1, int var2, float var3, float var4) {
+   public void show(Box box, int i, float f, float g) {
       long var5 = System.currentTimeMillis();
       if (!this.showing(var5)) {
-         this.from = var1;
+         this.from = box;
          this.movedAt = var5;
-      } else if (!var1.equals(this.to)) {
+      } else if (!box.equals(this.to)) {
          this.from = this.box(var5);
          this.movedAt = var5;
       }
 
-      this.to = var1;
+      this.to = box;
       this.shownAt = var5;
-      this.color = var2;
-      this.damage = var3;
-      this.selfDamage = var4;
+      this.color = i;
+      this.damage = f;
+      this.selfDamage = g;
    }
 
    public void clear() {
@@ -59,19 +59,19 @@ public final class ShotView {
       long var1 = System.currentTimeMillis();
       if (this.showing(var1)) {
          float var3 = this.alpha(var1);
-         GizmoDrawing.method_75541(this.box(var1), DrawStyle.method_75537(fade(this.color, var3), 1.5F, fade(this.color, var3 * 0.22F))).method_75533();
+         GizmoDrawing.box(this.box(var1), DrawStyle.filledAndStroked(fade(this.color, var3), 1.5F, fade(this.color, var3 * 0.22F))).ignoreOcclusion();
       }
    }
 
-   public void label(ImDrawList var1, float var2, float var3) {
+   public void label(ImDrawList imDrawList, float f, float g) {
       long var4 = System.currentTimeMillis();
       if (this.showing(var4)) {
          Box var6 = this.box(var4);
-         Vec3d var7 = new Vec3d(var6.method_1005().field_1352, var6.field_1325 + 0.25, var6.method_1005().field_1350);
-         float[] var8 = WorldLabel.project(MinecraftClient.method_1551(), var7, var2, var3);
+         Vec3d var7 = new Vec3d(var6.getCenter().x, var6.maxY + 0.25, var6.getCenter().z);
+         float[] var8 = WorldLabel.project(MinecraftClient.getInstance(), var7, f, g);
          if (var8 != null) {
             WorldLabel.drawText(
-               var1,
+               imDrawList,
                var8[0],
                var8[1],
                String.format(Locale.ROOT, "%.1f", this.damage),
@@ -82,22 +82,22 @@ public final class ShotView {
       }
    }
 
-   private boolean showing(long var1) {
-      return this.to != null && this.alpha(var1) > 0.0F;
+   private boolean showing(long l) {
+      return this.to != null && this.alpha(l) > 0.0F;
    }
 
-   private float alpha(long var1) {
-      long var3 = var1 - this.shownAt - 150L;
+   private float alpha(long l) {
+      long var3 = l - this.shownAt - 150L;
       return var3 <= 0L ? 1.0F : Math.max(0.0F, 1.0F - (float)var3 / 350.0F);
    }
 
-   private Box box(long var1) {
-      float var3 = Math.min(1.0F, (float)(var1 - this.movedAt) / 120.0F);
+   private Box box(long l) {
+      float var3 = Math.min(1.0F, (float)(l - this.movedAt) / 120.0F);
       float var4 = 1.0F - (1.0F - var3) * (1.0F - var3) * (1.0F - var3);
-      return new Box(this.from.method_61125().method_35590(this.to.method_61125(), var4), this.from.method_61126().method_35590(this.to.method_61126(), var4));
+      return new Box(this.from.getMinPos().lerp(this.to.getMinPos(), var4), this.from.getMaxPos().lerp(this.to.getMaxPos(), var4));
    }
 
-   private static int fade(int var0, float var1) {
-      return Math.round((var0 >>> 24) * var1) << 24 | var0 & 16777215;
+   private static int fade(int i, float f) {
+      return Math.round((i >>> 24) * f) << 24 | i & 16777215;
    }
 }

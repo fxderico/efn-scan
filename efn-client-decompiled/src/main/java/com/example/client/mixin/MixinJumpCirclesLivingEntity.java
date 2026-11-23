@@ -16,13 +16,13 @@ public abstract class MixinJumpCirclesLivingEntity {
    }
 
    @Inject(
-      method = {"method_6043"},
+      method = {"jump"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_1309;method_18800(DDD)V"
+         target = "Lnet/minecraft/entity/LivingEntity;setVelocity(DDD)V"
       )}
    )
-   private void efn$jumpCircle(CallbackInfo var1) {
+   private void efn$jumpCircle(CallbackInfo callbackInfo) {
       if (JumpCirclesModule.active != null) {
          JumpCirclesModule.onJump((LivingEntity)this);
       }

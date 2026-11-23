@@ -13,22 +13,22 @@ public final class ModeSetting extends Setting {
    private int selectedIndex;
    private String selected;
 
-   public ModeSetting(String var1, String var2, String... var3) {
-      super(var1);
-      this.modes = List.copyOf(Arrays.asList(var3));
-      this.select(Math.max(0, this.modes.indexOf(var2)));
+   public ModeSetting(String string, String string2, String... strings) {
+      super(string);
+      this.modes = List.copyOf(Arrays.asList(strings));
+      this.select(Math.max(0, this.modes.indexOf(string2)));
    }
 
    public String get() {
       return this.selected;
    }
 
-   public boolean is(String var1) {
-      return this.selected == var1 || this.selected.equals(var1);
+   public boolean is(String string) {
+      return this.selected == string || this.selected.equals(string);
    }
 
-   public void set(String var1) {
-      int var2 = this.modes.indexOf(var1);
+   public void set(String string) {
+      int var2 = this.modes.indexOf(string);
       if (var2 >= 0 && var2 != this.selectedIndex) {
          this.select(var2);
          this.notifyChanged();
@@ -43,9 +43,9 @@ public final class ModeSetting extends Setting {
       return this.modes;
    }
 
-   public void setModes(List<String> var1) {
-      if (!var1.isEmpty() && !var1.equals(this.modes)) {
-         this.modes = List.copyOf(var1);
+   public void setModes(List<String> list) {
+      if (!list.isEmpty() && !list.equals(this.modes)) {
+         this.modes = List.copyOf(list);
          int var2 = this.modes.indexOf(this.selected);
          if (var2 >= 0) {
             this.selectedIndex = var2;
@@ -63,9 +63,9 @@ public final class ModeSetting extends Setting {
       }
    }
 
-   private void select(int var1) {
-      this.selectedIndex = var1;
-      this.selected = this.modes.get(var1);
+   private void select(int i) {
+      this.selectedIndex = i;
+      this.selected = this.modes.get(i);
    }
 
    @Override
@@ -74,10 +74,10 @@ public final class ModeSetting extends Setting {
    }
 
    @Override
-   protected void deserializeValue(JsonElement var1) {
-      if (var1 != null && var1.isJsonPrimitive()) {
+   protected void deserializeValue(JsonElement jsonElement) {
+      if (jsonElement != null && jsonElement.isJsonPrimitive()) {
          try {
-            int var2 = this.modes.indexOf(var1.getAsString());
+            int var2 = this.modes.indexOf(jsonElement.getAsString());
             if (var2 >= 0) {
                this.select(var2);
             }

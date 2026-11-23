@@ -44,9 +44,9 @@ public final class EntityControlModule extends ClientModule {
       EntityControlVehicleHook.refresh();
    }
 
-   private void onPacketReceive(PacketReceiveNettyEvent var1) {
-      if (this.cancelServerPackets.get() && var1.packet instanceof VehicleMoveS2CPacket) {
-         var1.setCancelled(true);
+   private void onPacketReceive(PacketReceiveNettyEvent packetReceiveNettyEvent) {
+      if (this.cancelServerPackets.get() && packetReceiveNettyEvent.packet instanceof VehicleMoveS2CPacket) {
+         packetReceiveNettyEvent.setCancelled(true);
       }
    }
 
@@ -60,31 +60,31 @@ public final class EntityControlModule extends ClientModule {
       return var0 != null && var0.maxJump.get();
    }
 
-   public boolean locksYaw(Entity var1) {
-      return this.lockYaw.get() && this.isTarget(var1);
+   public boolean locksYaw(Entity entity) {
+      return this.lockYaw.get() && this.isTarget(entity);
    }
 
-   private boolean isTarget(Entity var1) {
-      if (var1 instanceof AbstractBoatEntity) {
+   private boolean isTarget(Entity entity) {
+      if (entity instanceof AbstractBoatEntity) {
          return this.boats.get();
       } else {
-         EntityType var2 = var1.method_5864();
-         if (var2 == EntityType.field_6139
-            || var2 == EntityType.field_6067
-            || var2 == EntityType.field_6057
-            || var2 == EntityType.field_6075
-            || var2 == EntityType.field_6048) {
+         EntityType var2 = entity.getType();
+         if (var2 == EntityType.HORSE
+            || var2 == EntityType.DONKEY
+            || var2 == EntityType.MULE
+            || var2 == EntityType.SKELETON_HORSE
+            || var2 == EntityType.ZOMBIE_HORSE) {
             return this.horses.get();
-         } else if (var2 == EntityType.field_40116 || var2 == EntityType.field_64132) {
+         } else if (var2 == EntityType.CAMEL || var2 == EntityType.CAMEL_HUSK) {
             return this.camels.get();
-         } else if (var2 == EntityType.field_6093) {
+         } else if (var2 == EntityType.PIG) {
             return this.pigs.get();
-         } else if (var2 == EntityType.field_23214) {
+         } else if (var2 == EntityType.STRIDER) {
             return this.striders.get();
-         } else if (var2 == EntityType.field_63289 || var2 == EntityType.field_63290) {
+         } else if (var2 == EntityType.NAUTILUS || var2 == EntityType.ZOMBIE_NAUTILUS) {
             return this.nautiluses.get();
          } else {
-            return var2 == EntityType.field_59668 ? this.happyGhasts.get() : false;
+            return var2 == EntityType.HAPPY_GHAST ? this.happyGhasts.get() : false;
          }
       }
    }

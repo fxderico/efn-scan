@@ -21,30 +21,30 @@ public abstract class MixinPlayer {
    }
 
    @Inject(
-      method = {"method_7324"},
+      method = {"attack"},
       at = {@At("HEAD")}
    )
-   private void efn$onAttack(Entity var1, CallbackInfo var2) {
-      if (this == MinecraftClient.method_1551().field_1724) {
-         PlayerAttackEntityEvent.dispatch(var1);
+   private void efn$onAttack(Entity entity, CallbackInfo callbackInfo) {
+      if (this == MinecraftClient.getInstance().player) {
+         PlayerAttackEntityEvent.dispatch(entity);
       }
    }
 
    @ModifyReturnValue(
-      method = {"method_49484"},
+      method = {"getOffGroundSpeed"},
       at = {@At("RETURN")}
    )
-   private float efn$flySpeed(float var1) {
+   private float efn$flySpeed(float f) {
       FlyModule var2 = FlyModule.active;
       if (var2 == null) {
-         return var1;
+         return f;
       } else {
-         ClientPlayerEntity var3 = MinecraftClient.method_1551().field_1724;
+         ClientPlayerEntity var3 = MinecraftClient.getInstance().player;
          if (var3 != null && this == var3) {
             float var4 = var2.getOffGroundSpeed(var3);
-            return var4 != -1.0F ? var4 : var1;
+            return var4 != -1.0F ? var4 : f;
          } else {
-            return var1;
+            return f;
          }
       }
    }

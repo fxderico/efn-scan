@@ -32,22 +32,22 @@ final class BlockUser {
    private int rounds;
    private boolean lever;
 
-   private BlockUser(BlockPos var1, BlockState var2, boolean[] var3) {
-      this.pos = var1;
-      this.expected = var2;
-      this.disabledSlots = var3;
+   private BlockUser(BlockPos blockPos, BlockState blockState, boolean[] bls) {
+      this.pos = blockPos;
+      this.expected = blockState;
+      this.disabledSlots = bls;
    }
 
-   static BlockUser adjust(BlockPos var0, BlockState var1) {
-      return new BlockUser(var0, var1, null);
+   static BlockUser adjust(BlockPos blockPos, BlockState blockState) {
+      return new BlockUser(blockPos, blockState, null);
    }
 
-   static BlockUser crafter(BlockPos var0, boolean[] var1) {
-      return new BlockUser(var0, null, var1);
+   static BlockUser crafter(BlockPos blockPos, boolean[] bls) {
+      return new BlockUser(blockPos, null, bls);
    }
 
-   static BlockUser lever(BlockPos var0, BlockState var1) {
-      BlockUser var2 = new BlockUser(var0, var1, null);
+   static BlockUser lever(BlockPos blockPos, BlockState blockState) {
+      BlockUser var2 = new BlockUser(blockPos, blockState, null);
       var2.lever = true;
       return var2;
    }
@@ -60,17 +60,17 @@ final class BlockUser {
       return this.disabledSlots != null;
    }
 
-   BlockUser.Result tick(MinecraftClient var1) {
-      ClientPlayerEntity var2 = var1.field_1724;
-      if (var2 != null && var1.field_1687 != null && var1.field_1761 != null) {
+   BlockUser.Result tick(MinecraftClient minecraftClient) {
+      ClientPlayerEntity var2 = minecraftClient.player;
+      if (var2 != null && minecraftClient.world != null && minecraftClient.interactionManager != null) {
          this.phaseTicks++;
-         BlockState var3 = var1.field_1687.method_8320(this.pos);
+         BlockState var3 = minecraftClient.world.getBlockState(this.pos);
          if (this.lever) {
-            if (!var3.method_28498(Properties.field_12484)) {
+            if (!var3.contains(Properties.POWERED)) {
                return BlockUser.Result.FAILED;
             }
 
-            if (var3.method_11654(Properties.field_12484) == this.expected.method_11654(Properties.field_12484)) {
+            if (var3.get(Properties.POWERED) == this.expected.get(Properties.POWERED)) {
                return BlockUser.Result.DONE;
             }
          } else if (this.disabledSlots == null && StateRules.done(var3, this.expected)) {
@@ -79,11 +79,11 @@ final class BlockUser {
 
          switch (this.phase) {
             case 0:
-               if (var2.method_5715() || var2.field_7512 != var2.field_7498) {
+               if (var2.isSneaking() || var2.currentScreenHandler != var2.playerScreenHandler) {
                   return BlockUser.Result.RUNNING;
                }
 
-               this.shot = Aim.at(var1, this.pos);
+               this.shot = Aim.at(minecraftClient, this.pos);
                if (this.shot == null) {
                   return BlockUser.Result.FAILED;
                }
@@ -92,14 +92,14 @@ final class BlockUser {
                this.next(1);
                break;
             case 1:
-               Aim.turn(var1, this.shot.yaw(), this.shot.pitch(), 22.0F);
+               Aim.turn(minecraftClient, this.shot.yaw(), this.shot.pitch(), 22.0F);
                if (Aim.looking(var2, this.shot.yaw(), this.shot.pitch()) && this.phaseTicks >= 2) {
-                  this.before = var1.field_1687.method_8320(this.pos);
-                  if (!var1.field_1761.method_2896(var2, Hand.field_5808, this.shot.hit()).method_23665()) {
+                  this.before = minecraftClient.world.getBlockState(this.pos);
+                  if (!minecraftClient.interactionManager.interactBlock(var2, Hand.MAIN_HAND, this.shot.hit()).isAccepted()) {
                      return BlockUser.Result.FAILED;
                   }
 
-                  var2.method_6104(Hand.field_5808);
+                  var2.swingHand(Hand.MAIN_HAND);
                   this.clicks++;
                   this.next(this.disabledSlots == null ? 2 : 3);
                   break;
@@ -111,7 +111,7 @@ final class BlockUser {
 
                return BlockUser.Result.RUNNING;
             case 2:
-               if (!var1.field_1687.method_8320(this.pos).equals(this.before) || this.phaseTicks > 12) {
+               if (!minecraftClient.world.getBlockState(this.pos).equals(this.before) || this.phaseTicks > 12) {
                   if (this.clicks >= 30) {
                      return BlockUser.Result.FAILED;
                   }
@@ -120,24 +120,24 @@ final class BlockUser {
                }
                break;
             case 3:
-               if (var2.field_7512 instanceof CrafterScreenHandler && this.phaseTicks >= 4) {
+               if (var2.currentScreenHandler instanceof CrafterScreenHandler && this.phaseTicks >= 4) {
                   this.next(4);
                } else if (this.phaseTicks > 40) {
                   return BlockUser.Result.FAILED;
                }
                break;
             case 4:
-               if (!(var2.field_7512 instanceof CrafterScreenHandler var10)) {
+               if (!(var2.currentScreenHandler instanceof CrafterScreenHandler var10)) {
                   return BlockUser.Result.FAILED;
                }
 
                boolean var11 = false;
 
                for (int var7 = 0; var7 < 9; var7++) {
-                  if (var10.method_54461(var7) != this.disabledSlots[var7] && !var10.method_7611(var7).method_7681()) {
+                  if (var10.isSlotDisabled(var7) != this.disabledSlots[var7] && !var10.getSlot(var7).hasStack()) {
                      boolean var8 = !this.disabledSlots[var7];
-                     var10.method_54458(var7, var8);
-                     var1.field_1761.method_54634(var7, var10.field_7763, var8);
+                     var10.setSlotEnabled(var7, var8);
+                     minecraftClient.interactionManager.slotChangedState(var7, var10.syncId, var8);
                      var11 = true;
                   }
                }
@@ -150,10 +150,10 @@ final class BlockUser {
                }
                break;
             case 6:
-               ScreenHandler var5 = var2.field_7512;
+               ScreenHandler var5 = var2.currentScreenHandler;
                CrafterScreenHandler var4;
                boolean var6 = var5 instanceof CrafterScreenHandler && this.matches(var4 = (CrafterScreenHandler)var5);
-               var2.method_7346();
+               var2.closeHandledScreen();
                if (var6) {
                   return BlockUser.Result.DONE;
                }
@@ -174,39 +174,39 @@ final class BlockUser {
       }
    }
 
-   void close(MinecraftClient var1) {
-      ClientPlayerEntity var2 = var1.field_1724;
-      if (var2 != null && this.disabledSlots != null && var2.field_7512 instanceof CrafterScreenHandler) {
-         var2.method_7346();
+   void close(MinecraftClient minecraftClient) {
+      ClientPlayerEntity var2 = minecraftClient.player;
+      if (var2 != null && this.disabledSlots != null && var2.currentScreenHandler instanceof CrafterScreenHandler) {
+         var2.closeHandledScreen();
       }
    }
 
-   private static void emptyHand(ClientPlayerEntity var0) {
-      PlayerInventory var1 = var0.method_31548();
-      if (var1.method_5438(var1.method_67532()).method_7909() instanceof BlockItem) {
+   private static void emptyHand(ClientPlayerEntity clientPlayerEntity) {
+      PlayerInventory var1 = clientPlayerEntity.getInventory();
+      if (var1.getStack(var1.getSelectedSlot()).getItem() instanceof BlockItem) {
          int var2 = -1;
 
          for (int var3 = 0; var3 < 9; var3++) {
-            ItemStack var4 = var1.method_5438(var3);
-            if (var4.method_7960()) {
-               var1.method_61496(var3);
+            ItemStack var4 = var1.getStack(var3);
+            if (var4.isEmpty()) {
+               var1.setSelectedSlot(var3);
                return;
             }
 
-            if (var2 < 0 && !(var4.method_7909() instanceof BlockItem)) {
+            if (var2 < 0 && !(var4.getItem() instanceof BlockItem)) {
                var2 = var3;
             }
          }
 
          if (var2 >= 0) {
-            var1.method_61496(var2);
+            var1.setSelectedSlot(var2);
          }
       }
    }
 
-   private boolean matches(CrafterScreenHandler var1) {
+   private boolean matches(CrafterScreenHandler crafterScreenHandler) {
       for (int var2 = 0; var2 < 9; var2++) {
-         if (var1.method_54461(var2) != this.disabledSlots[var2]) {
+         if (crafterScreenHandler.isSlotDisabled(var2) != this.disabledSlots[var2]) {
             return false;
          }
       }
@@ -214,8 +214,8 @@ final class BlockUser {
       return true;
    }
 
-   private void next(int var1) {
-      this.phase = var1;
+   private void next(int i) {
+      this.phase = i;
       this.phaseTicks = 0;
    }
 

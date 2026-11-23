@@ -36,7 +36,7 @@ public final class SneakModule extends ClientModule {
    }
 
    private static boolean isFlying() {
-      ClientPlayerEntity var0 = MinecraftClient.method_1551().field_1724;
-      return var0 == null || var0.method_31549().field_7479;
+      ClientPlayerEntity var0 = MinecraftClient.getInstance().player;
+      return var0 == null || var0.getAbilities().flying;
    }
 }

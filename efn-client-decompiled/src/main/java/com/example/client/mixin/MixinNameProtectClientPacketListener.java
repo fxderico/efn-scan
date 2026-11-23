@@ -19,21 +19,21 @@ public abstract class MixinNameProtectClientPacketListener {
    }
 
    @Inject(
-      method = {"method_11113"},
+      method = {"onPlayerList"},
       at = {@At("TAIL")}
    )
-   private void efn$nameProtectPlayerList(PlayerListS2CPacket var1, CallbackInfo var2) {
-      NameProtectModule.onPlayerInfoApplied(var1);
+   private void efn$nameProtectPlayerList(PlayerListS2CPacket playerListS2CPacket, CallbackInfo callbackInfo) {
+      NameProtectModule.onPlayerInfoApplied(playerListS2CPacket);
    }
 
    @ModifyExpressionValue(
-      method = {"method_34075"},
+      method = {"onDeathMessage"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_5892;comp_2276()Lnet/minecraft/class_2561;"
+         target = "Lnet/minecraft/network/packet/s2c/play/DeathMessageS2CPacket;message()Lnet/minecraft/text/Text;"
       )}
    )
-   private Text efn$nameProtectDeathMessage(Text var1) {
-      return NameProtectModule.protect(var1);
+   private Text efn$nameProtectDeathMessage(Text text) {
+      return NameProtectModule.protect(text);
    }
 }

@@ -70,10 +70,10 @@ public final class ItemIcons {
    private static final int CHECK_SIDE = 32;
    static final int AUDIT_FRAMES = 30;
    private static final ItemIcons.Cell BLANK = new ItemIcons.Cell();
-   private static final Int2ObjectOpenHashMap<ItemIcons.Sheet> SHEETS = new Int2ObjectOpenHashMap();
+   private static final Int2ObjectOpenHashMap<ItemIcons.Sheet> SHEETS = new Int2ObjectOpenHashMap<>();
    private static final List<ItemIcons.Sheet> RETIRED = new ArrayList<>();
-   private static final Reference2ObjectOpenHashMap<Item, ItemStack> PLAIN = new Reference2ObjectOpenHashMap();
-   private static final ReferenceOpenHashSet<Item> BROKEN = new ReferenceOpenHashSet();
+   private static final Reference2ObjectOpenHashMap<Item, ItemStack> PLAIN = new Reference2ObjectOpenHashMap<>();
+   private static final ReferenceOpenHashSet<Item> BROKEN = new ReferenceOpenHashSet<>();
    private static final ItemLook MODEL = new ItemLook();
    private static final int[] VIEWPORT = new int[4];
    private static GpuTexture depth;
@@ -96,43 +96,43 @@ public final class ItemIcons {
    private ItemIcons() {
    }
 
-   static float pixels(float var0) {
-      float var1 = var0 < 16.0F ? Math.round(var0) : 16.0F * (float)Math.floor(var0 / 16.0F + 0.25F);
+   static float pixels(float f) {
+      float var1 = f < 16.0F ? Math.round(f) : 16.0F * (float)Math.floor(f / 16.0F + 0.25F);
       return Math.max(8.0F, Math.min(96.0F, var1));
    }
 
-   static void draw(ImDrawList var0, Item var1, float var2, float var3, float var4, float var5) {
-      if (var1 != null && var1 != Items.field_8162) {
-         ItemStack var6 = (ItemStack)PLAIN.get(var1);
+   static void draw(ImDrawList imDrawList, Item item, float f, float g, float h, float i) {
+      if (item != null && item != Items.AIR) {
+         ItemStack var6 = PLAIN.get(item);
          if (var6 == null) {
-            var6 = var1.method_7854();
-            PLAIN.put(var1, var6);
+            var6 = item.getDefaultStack();
+            PLAIN.put(item, var6);
          }
 
-         draw(var0, var6, var2, var3, var4, var5);
+         draw(imDrawList, var6, f, g, h, i);
       }
    }
 
-   public static void draw(ImDrawList var0, ItemStack var1, float var2, float var3, float var4, float var5) {
-      if (var1 != null && !var1.method_7960() && !(var5 <= 0.004F)) {
+   public static void draw(ImDrawList imDrawList, ItemStack itemStack, float f, float g, float h, float i) {
+      if (itemStack != null && !itemStack.isEmpty() && !(i <= 0.004F)) {
          startFrame();
-         int var7 = (int)pixels(var4);
-         float var8 = Math.round(var2);
-         float var9 = Math.round(var3);
+         int var7 = (int)pixels(h);
+         float var8 = Math.round(f);
+         float var9 = Math.round(g);
 
          ItemIcons.Cell var6;
          try {
-            var6 = cell(var1, var7);
+            var6 = cell(itemStack, var7);
          } finally {
-            MODEL.method_65605();
+            MODEL.clear();
          }
 
          if (var6 != null) {
             if (var6.texture == 0) {
                float var10 = Math.max(1.0F, var7 * 0.18F);
-               var0.addRectFilled(var8 + 1.0F, var9 + 1.0F, var8 + var7 - 1.0F, var9 + var7 - 1.0F, HudChrome.scaleAlpha(452984831, var5), var10);
+               imDrawList.addRectFilled(var8 + 1.0F, var9 + 1.0F, var8 + var7 - 1.0F, var9 + var7 - 1.0F, HudChrome.scaleAlpha(452984831, i), var10);
             } else {
-               var0.addImage(var6.texture, var8, var9, var8 + var7, var9 + var7, var6.u0, var6.v0, var6.u1, var6.v1, HudChrome.scaleAlpha(-1, var5));
+               imDrawList.addImage(var6.texture, var8, var9, var8 + var7, var9 + var7, var6.u0, var6.v0, var6.u1, var6.v1, HudChrome.scaleAlpha(-1, i));
             }
          }
       }
@@ -165,10 +165,8 @@ public final class ItemIcons {
             }
          } else {
             itemAtlas = var7;
-            ObjectIterator var5 = SHEETS.values().iterator();
 
-            while (var5.hasNext()) {
-               ItemIcons.Sheet var6 = (ItemIcons.Sheet)var5.next();
+            for (ItemIcons.Sheet var6 : SHEETS.values()) {
                var6.release();
             }
 
@@ -188,10 +186,7 @@ public final class ItemIcons {
          var0 = true;
       }
 
-      ObjectIterator var1 = SHEETS.values().iterator();
-
-      while (var1.hasNext()) {
-         ItemIcons.Sheet var2 = (ItemIcons.Sheet)var1.next();
+      for (ItemIcons.Sheet var2 : SHEETS.values()) {
          var0 |= var2.color != null && !alive(var2.color);
       }
 
@@ -204,22 +199,22 @@ public final class ItemIcons {
 
    private static GpuTexture currentAtlas() {
       try {
-         return MinecraftClient.method_1551().method_72703().method_73025(Atlases.field_64477).method_68004();
+         return MinecraftClient.getInstance().getAtlasManager().getAtlasTexture(Atlases.ITEMS).getGlTexture();
       } catch (RuntimeException var1) {
          return null;
       }
    }
 
-   private static ItemIcons.Cell cell(ItemStack var0, int var1) {
-      ItemIcons.Sheet var2 = sheet(var1);
+   private static ItemIcons.Cell cell(ItemStack itemStack, int i) {
+      ItemIcons.Sheet var2 = sheet(i);
       if (var2 == null) {
          return null;
       } else {
          var2.lastUsed = frame;
-         if (!resolve(var0)) {
+         if (!resolve(itemStack)) {
             return BLANK;
          } else {
-            ItemIcons.Cell var3 = (ItemIcons.Cell)var2.cells.get(MODEL.identity);
+            ItemIcons.Cell var3 = var2.cells.get(MODEL.identity);
             if (var3 != null) {
                return var3;
             } else if (disabled) {
@@ -230,12 +225,12 @@ public final class ItemIcons {
                paintsLeft--;
                if (var2.full()) {
                   retire(var2);
-                  var2 = new ItemIcons.Sheet(var1);
+                  var2 = new ItemIcons.Sheet(i);
                   var2.lastUsed = frame;
-                  SHEETS.put(var1, var2);
+                  SHEETS.put(i, var2);
                }
 
-               var3 = paint(var2, seeThrough(var0.method_7909()));
+               var3 = paint(var2, seeThrough(itemStack.getItem()));
                var2.cells.put(Arrays.asList(MODEL.identity.toArray()), var3);
                return var3;
             }
@@ -243,8 +238,8 @@ public final class ItemIcons {
       }
    }
 
-   private static ItemIcons.Sheet sheet(int var0) {
-      ItemIcons.Sheet var1 = (ItemIcons.Sheet)SHEETS.get(var0);
+   private static ItemIcons.Sheet sheet(int i) {
+      ItemIcons.Sheet var1 = SHEETS.get(i);
       if (var1 != null) {
          return var1;
       } else {
@@ -257,18 +252,16 @@ public final class ItemIcons {
             retire(var2);
          }
 
-         var1 = new ItemIcons.Sheet(var0);
-         SHEETS.put(var0, var1);
+         var1 = new ItemIcons.Sheet(i);
+         SHEETS.put(i, var1);
          return var1;
       }
    }
 
    private static ItemIcons.Sheet stalest() {
       ItemIcons.Sheet var0 = null;
-      ObjectIterator var1 = SHEETS.values().iterator();
 
-      while (var1.hasNext()) {
-         ItemIcons.Sheet var2 = (ItemIcons.Sheet)var1.next();
+      for (ItemIcons.Sheet var2 : SHEETS.values()) {
          if (var0 == null || var2.lastUsed < var0.lastUsed) {
             var0 = var2;
          }
@@ -277,49 +270,49 @@ public final class ItemIcons {
       return var0;
    }
 
-   private static void retire(ItemIcons.Sheet var0) {
-      SHEETS.remove(var0.px);
-      RETIRED.add(var0);
+   private static void retire(ItemIcons.Sheet sheet) {
+      SHEETS.remove(sheet.px);
+      RETIRED.add(sheet);
       retiredFrame = frame;
    }
 
-   private static boolean resolve(ItemStack var0) {
-      if (BROKEN.contains(var0.method_7909())) {
+   private static boolean resolve(ItemStack itemStack) {
+      if (BROKEN.contains(itemStack.getItem())) {
          return false;
-      } else if (MODEL.resolve(var0)) {
+      } else if (MODEL.resolve(itemStack)) {
          return true;
       } else {
-         BROKEN.add(var0.method_7909());
+         BROKEN.add(itemStack.getItem());
          return false;
       }
    }
 
-   private static boolean seeThrough(Item var0) {
-      return !(var0 instanceof BlockItem var1) ? false : BlockRenderLayers.method_23679(var1.method_7711().method_9564()) == BlockRenderLayer.field_60926;
+   private static boolean seeThrough(Item item) {
+      return !(item instanceof BlockItem var1) ? false : BlockRenderLayers.getBlockLayer(var1.getBlock().getDefaultState()) == BlockRenderLayer.TRANSLUCENT;
    }
 
-   private static ItemIcons.Cell paint(ItemIcons.Sheet var0, boolean var1) {
-      if (MODEL.method_65606()) {
+   private static ItemIcons.Cell paint(ItemIcons.Sheet sheet, boolean bl) {
+      if (MODEL.isEmpty()) {
          return BLANK;
       } else {
          try {
-            if (var0.color == null) {
-               allocate(var0);
+            if (sheet.color == null) {
+               allocate(sheet);
             }
 
-            int var2 = var0.px;
+            int var2 = sheet.px;
             int var3 = 512 / var2;
-            int var4 = var0.filled++;
+            int var4 = sheet.filled++;
             int var5 = var4 % var3 * var2;
             int var6 = var4 / var3 * var2;
             int var7 = 512 - var6 - var2;
-            render(MODEL, var0.color, var0.colorView, depth, depthView, var5, var6, var2);
-            if (var1) {
-               straighten(var0.color, var5, var7, var2);
+            render(MODEL, sheet.color, sheet.colorView, depth, depthView, var5, var6, var2);
+            if (bl) {
+               straighten(sheet.color, var5, var7, var2);
             }
 
             ItemIcons.Cell var8 = new ItemIcons.Cell();
-            var8.texture = ((GlTexture)var0.color).method_68427();
+            var8.texture = ((GlTexture)sheet.color).getGlId();
             var8.u0 = var5 / 512.0F;
             var8.u1 = (var5 + var2) / 512.0F;
             var8.v0 = (512 - var6) / 512.0F;
@@ -327,34 +320,49 @@ public final class ItemIcons {
             return var8;
          } catch (RuntimeException var9) {
             disabled = true;
-            LOGGER.warn("HUD item icons could not be drawn; showing plain slots instead", var9);
+            LOGGER.warn("HUD item icons could not be drawn; showing plain slots instead", (Throwable)var9);
             return BLANK;
          }
       }
    }
 
-   private static void allocate(ItemIcons.Sheet var0) {
+   private static void allocate(ItemIcons.Sheet sheet) {
       GpuDevice var1 = RenderSystem.getDevice();
       if (depth == null) {
          depth = create("EFN HUD icon depth", 8, TextureFormat.DEPTH32, 512);
          depthView = var1.createTextureView(depth);
       }
 
-      var0.color = create("EFN HUD icons " + var0.px, 15, TextureFormat.RGBA8, 512);
-      var0.colorView = var1.createTextureView(var0.color);
-      var1.createCommandEncoder().clearColorAndDepthTextures(var0.color, 0, depth, 1.0);
+      sheet.color = create("EFN HUD icons " + sheet.px, 15, TextureFormat.RGBA8, 512);
+      sheet.colorView = var1.createTextureView(sheet.color);
+      var1.createCommandEncoder().clearColorAndDepthTextures(sheet.color, 0, depth, 1.0);
    }
 
-   public static void render(ItemRenderState var0, GpuTexture var1, GpuTextureView var2, GpuTexture var3, GpuTextureView var4, int var5, int var6, int var7) {
-      MinecraftClient var8 = MinecraftClient.method_1551();
-      int var9 = var1.getWidth(0);
-      int var10 = var9 - var6 - var7;
-      RenderSystem.getDevice().createCommandEncoder().clearColorAndDepthTextures(var1, 0, var3, 1.0, var5, var10, var7, var7);
+   public static void render(
+      ItemRenderState itemRenderState,
+      GpuTexture gpuTexture,
+      GpuTextureView gpuTextureView,
+      GpuTexture gpuTexture2,
+      GpuTextureView gpuTextureView2,
+      int i,
+      int j,
+      int k
+   ) {
+      MinecraftClient var8 = MinecraftClient.getInstance();
+      int var9 = gpuTexture.getWidth(0);
+      int var10 = var9 - j - k;
+      RenderSystem.getDevice().createCommandEncoder().clearColorAndDepthTextures(gpuTexture, 0, gpuTexture2, 1.0, i, var10, k, k);
       if (features == null) {
-         buffers = VertexConsumerProvider.method_22991(new BufferAllocator(262144));
+         buffers = VertexConsumerProvider.immediate(new BufferAllocator(262144));
          submits = new OrderedRenderCommandQueueImpl();
          features = new RenderDispatcher(
-            submits, var8.method_1541(), buffers, var8.method_72703(), var8.method_22940().method_23003(), var8.method_22940().method_23001(), var8.field_1772
+            submits,
+            var8.getBlockRenderManager(),
+            buffers,
+            var8.getAtlasManager(),
+            var8.getBufferBuilders().getOutlineVertexConsumers(),
+            var8.getBufferBuilders().getEffectVertexConsumers(),
+            var8.textRenderer
          );
       }
 
@@ -371,27 +379,27 @@ public final class ItemIcons {
       var17.identity();
 
       try {
-         RenderSystem.outputColorTextureOverride = var2;
-         RenderSystem.outputDepthTextureOverride = var4;
+         RenderSystem.outputColorTextureOverride = gpuTextureView;
+         RenderSystem.outputDepthTextureOverride = gpuTextureView2;
          if (projection == null) {
             projection = new ProjectionMatrix2("EFN icons", -1000.0F, 1000.0F, true);
          }
 
-         RenderSystem.setProjectionMatrix(projection.method_71092(var9, var9), ProjectionType.field_54954);
-         Type var18 = var0.method_65608() ? Type.field_60027 : Type.field_60026;
-         var8.field_1773.method_71114().method_71034(var18);
-         RenderSystem.setShaderFog(((AccessorGameRenderer)var8.field_1773).efn$getFogRenderer().method_71109(FogType.field_60101));
-         RenderSystem.enableScissorForRenderTypeDraws(var5, var10, var7, var7);
+         RenderSystem.setProjectionMatrix(projection.set(var9, var9), ProjectionType.ORTHOGRAPHIC);
+         Type var18 = itemRenderState.isSideLit() ? Type.ITEMS_3D : Type.ITEMS_FLAT;
+         var8.gameRenderer.getDiffuseLighting().setShaderLights(var18);
+         RenderSystem.setShaderFog(((AccessorGameRenderer)var8.gameRenderer).efn$getFogRenderer().getFogBuffer(FogType.NONE));
+         RenderSystem.enableScissorForRenderTypeDraws(i, var10, k, k);
          MatrixStack var19 = new MatrixStack();
-         var19.method_46416(var5 + var7 * 0.5F, var6 + var7 * 0.5F, 0.0F);
-         var19.method_22905(var7, -var7, var7);
+         var19.translate(i + k * 0.5F, j + k * 0.5F, 0.0F);
+         var19.scale(k, -k, k);
 
          try {
-            var0.method_65604(var19, submits, 15728880, OverlayTexture.field_21444, 0);
-            features.method_73002();
+            itemRenderState.render(var19, submits, 15728880, OverlayTexture.DEFAULT_UV, 0);
+            features.render();
          } finally {
-            submits.method_72953();
-            buffers.method_22993();
+            submits.clear();
+            buffers.draw();
          }
       } finally {
          RenderSystem.disableScissorForRenderTypeDraws();
@@ -405,10 +413,10 @@ public final class ItemIcons {
       }
    }
 
-   static void straighten(GpuTexture var0, int var1, int var2, int var3) {
+   static void straighten(GpuTexture gpuTexture, int i, int j, int k) {
       if (!straightenFailed) {
-         int var4 = var3 * var3 * 4;
-         long var5 = (long)var0.getWidth(0) * var0.getHeight(0) * 4L;
+         int var4 = k * k * 4;
+         long var5 = (long)gpuTexture.getWidth(0) * gpuTexture.getHeight(0) * 4L;
 
          try {
             GpuDevice var7 = RenderSystem.getDevice();
@@ -425,34 +433,18 @@ public final class ItemIcons {
             }
 
             CommandEncoder var8 = var7.createCommandEncoder();
-            var8.copyTextureToBuffer(var0, readback, 0L, () -> {}, 0, var1, var2, var3, var3);
-            GpuFence var9 = var8.createFence();
+            var8.copyTextureToBuffer(gpuTexture, readback, 0L, () -> {}, 0, i, j, k, k);
 
-            try {
+            try (GpuFence var9 = var8.createFence()) {
                GL11.glFlush();
                if (!var9.awaitCompletion(1000000000L)) {
                   throw new IllegalStateException("icon read-back timed out");
                }
-            } catch (Throwable var25) {
-               if (var9 != null) {
-                  try {
-                     var9.close();
-                  } catch (Throwable var23) {
-                     var25.addSuppressed(var23);
-                  }
-               }
-
-               throw var25;
-            }
-
-            if (var9 != null) {
-               var9.close();
             }
 
             straightened.clear().limit(var4);
-            MappedView var28 = var8.mapBuffer(readback.slice(0L, var4), true, false);
 
-            try {
+            try (MappedView var28 = var8.mapBuffer(readback.slice(0L, var4), true, false)) {
                ByteBuffer var10 = var28.data();
 
                for (byte var11 = 0; var11 < var4; var11 += 4) {
@@ -465,26 +457,12 @@ public final class ItemIcons {
 
                   straightened.put(var11 + 3, (byte)var12);
                }
-            } catch (Throwable var24) {
-               if (var28 != null) {
-                  try {
-                     var28.close();
-                  } catch (Throwable var22) {
-                     var24.addSuppressed(var22);
-                  }
-               }
-
-               throw var24;
             }
 
-            if (var28 != null) {
-               var28.close();
-            }
-
-            var8.writeToTexture(var0, straightened, Format.field_4997, 0, 0, var1, var2, var3, var3);
+            var8.writeToTexture(gpuTexture, straightened, Format.RGBA, 0, 0, i, j, k, k);
          } catch (RuntimeException var26) {
             straightenFailed = true;
-            LOGGER.warn("Couldn't read icons back; see-through ones stay darker", var26);
+            LOGGER.warn("Couldn't read icons back; see-through ones stay darker", (Throwable)var26);
          } finally {
             GlStateManager._pixelStore(3330, 0);
          }
@@ -504,7 +482,7 @@ public final class ItemIcons {
    }
 
    private static boolean check() {
-      MinecraftClient var0 = MinecraftClient.method_1551();
+      MinecraftClient var0 = MinecraftClient.getInstance();
       GpuDevice var1 = RenderSystem.getDevice();
       ItemRenderState var2 = new ItemRenderState();
       GpuTexture var3 = null;
@@ -513,52 +491,31 @@ public final class ItemIcons {
       GpuTextureView var6 = null;
       GpuBuffer var7 = null;
 
-      boolean var12;
       try {
-         var0.method_65386().method_65598(var2, new ItemStack(Items.field_20391), ItemDisplayContext.field_4317, var0.field_1687, null, 0);
-         if (var2.method_65606()) {
+         var0.getItemModelManager().clearAndUpdate(var2, new ItemStack(Items.STONE), ItemDisplayContext.GUI, var0.world, null, 0);
+         if (var2.isEmpty()) {
             return true;
-         }
+         } else {
+            var3 = create("EFN icon check", 10, TextureFormat.RGBA8, 32);
+            var4 = create("EFN icon check depth", 8, TextureFormat.DEPTH32, 32);
+            var5 = var1.createTextureView(var3);
+            var6 = var1.createTextureView(var4);
+            render(var2, var3, var5, var4, var6, 0, 0, 32);
+            var7 = var1.createBuffer(() -> "EFN icon check", 9, 4096L);
+            CommandEncoder var31 = var1.createCommandEncoder();
+            var31.copyTextureToBuffer(var3, var7, 0L, () -> {}, 0, 0, 0, 32, 32);
 
-         var3 = create("EFN icon check", 10, TextureFormat.RGBA8, 32);
-         var4 = create("EFN icon check depth", 8, TextureFormat.DEPTH32, 32);
-         var5 = var1.createTextureView(var3);
-         var6 = var1.createTextureView(var4);
-         render(var2, var3, var5, var4, var6, 0, 0, 32);
-         var7 = var1.createBuffer(() -> "EFN icon check", 9, 4096L);
-         CommandEncoder var31 = var1.createCommandEncoder();
-         var31.copyTextureToBuffer(var3, var7, 0L, () -> {}, 0, 0, 0, 32, 32);
-         GpuFence var33 = var31.createFence();
-
-         label328: {
-            try {
+            try (GpuFence var33 = var31.createFence()) {
                GL11.glFlush();
                if (!var33.awaitCompletion(1000000000L)) {
-                  boolean var36 = true;
-                  var12 = var36;
-                  break label328;
+                  return true;
                }
-            } catch (Throwable var28) {
-               if (var33 != null) {
-                  try {
-                     var33.close();
-                  } catch (Throwable var26) {
-                     var28.addSuppressed(var26);
-                  }
-               }
-
-               throw var28;
-            }
-
-            if (var33 != null) {
-               var33.close();
             }
 
             int var34 = 0;
             long var11 = 0L;
-            MappedView var13 = var31.mapBuffer(var7, true, false);
 
-            try {
+            try (MappedView var13 = var31.mapBuffer(var7, true, false)) {
                ByteBuffer var14 = var13.data();
 
                for (byte var15 = 0; var15 < 4096; var15 += 4) {
@@ -567,20 +524,6 @@ public final class ItemIcons {
                      var11 += (var14.get(var15) & 255) + (var14.get(var15 + 1) & 255) + (var14.get(var15 + 2) & 255);
                   }
                }
-            } catch (Throwable var27) {
-               if (var13 != null) {
-                  try {
-                     var13.close();
-                  } catch (Throwable var25) {
-                     var27.addSuppressed(var25);
-                  }
-               }
-
-               throw var27;
-            }
-
-            if (var13 != null) {
-               var13.close();
             }
 
             long var37 = var34 == 0 ? 0L : var11 / var34 / 3L;
@@ -591,15 +534,11 @@ public final class ItemIcons {
 
             return var8;
          }
-
-         if (var33 != null) {
-            var33.close();
-         }
       } catch (RuntimeException var29) {
-         LOGGER.warn("Couldn't check item icons", var29);
+         LOGGER.warn("Couldn't check item icons", (Throwable)var29);
          return true;
       } finally {
-         var2.method_65605();
+         var2.clear();
          GlStateManager._pixelStore(3330, 0);
          if (var7 != null) {
             var7.close();
@@ -621,39 +560,37 @@ public final class ItemIcons {
             var4.close();
          }
       }
-
-      return var12;
    }
 
-   static GpuTexture create(String var0, int var1, TextureFormat var2, int var3) {
+   static GpuTexture create(String string, int i, TextureFormat textureFormat, int j) {
       GlStateManager._activeTexture(GL11.glGetInteger(34016));
       GlStateManager._bindTexture(GL11.glGetInteger(32873));
-      GpuTexture var5 = RenderSystem.getDevice().createTexture(var0, var1, var2, var3, var3, 1, 1);
+      GpuTexture var5 = RenderSystem.getDevice().createTexture(string, i, textureFormat, j, j, 1, 1);
       GlTexture var4;
       if (var5 instanceof GlTexture && !prepare(var4 = (GlTexture)var5)) {
          var5.close();
-         throw new IllegalStateException(var0 + " got no storage");
+         throw new IllegalStateException(string + " got no storage");
       } else {
          return var5;
       }
    }
 
-   private static boolean prepare(GlTexture var0) {
+   private static boolean prepare(GlTexture glTexture) {
       int var1 = GL11.glGetInteger(32873);
-      GL11.glBindTexture(3553, var0.method_68427());
+      GL11.glBindTexture(3553, glTexture.getGlId());
 
       boolean var8;
       try {
-         if (!holds(var0)) {
+         if (!holds(glTexture)) {
             int var2 = GL11.glGetInteger(35055);
             GL15.glBindBuffer(35052, 0);
-            TextureFormat var3 = var0.getFormat();
+            TextureFormat var3 = glTexture.getFormat();
             GL11.glTexImage2D(
                3553,
                0,
                GlConst.toGlInternalId(var3),
-               var0.getWidth(0),
-               var0.getHeight(0),
+               glTexture.getWidth(0),
+               glTexture.getHeight(0),
                0,
                GlConst.toGlExternalId(var3),
                GlConst.toGlType(var3),
@@ -665,7 +602,7 @@ public final class ItemIcons {
          GL11.glTexParameteri(3553, 33085, 0);
          GL11.glTexParameteri(3553, 10241, 9728);
          GL11.glTexParameteri(3553, 10240, 9728);
-         boolean var7 = holds(var0);
+         boolean var7 = holds(glTexture);
          var8 = var7;
       } finally {
          GL11.glBindTexture(3553, var1);
@@ -674,17 +611,17 @@ public final class ItemIcons {
       return var8;
    }
 
-   static boolean alive(GpuTexture var0) {
-      if (var0.isClosed()) {
+   static boolean alive(GpuTexture gpuTexture) {
+      if (gpuTexture.isClosed()) {
          return false;
-      } else if (!(var0 instanceof GlTexture var1)) {
+      } else if (!(gpuTexture instanceof GlTexture var1)) {
          return true;
-      } else if (!GL11.glIsTexture(var1.method_68427())) {
+      } else if (!GL11.glIsTexture(var1.getGlId())) {
          return false;
       } else {
          int var2 = GL11.glGetInteger(32873);
-         GL11.glBindTexture(3553, var1.method_68427());
-         boolean var3 = GL11.glGetInteger(32873) == var1.method_68427() && holds(var1);
+         GL11.glBindTexture(3553, var1.getGlId());
+         boolean var3 = GL11.glGetInteger(32873) == var1.getGlId() && holds(var1);
          GL11.glBindTexture(3553, var2);
          if (!var3) {
             GlStateManager.clearGlErrors();
@@ -694,19 +631,19 @@ public final class ItemIcons {
       }
    }
 
-   private static boolean holds(GpuTexture var0) {
-      return GL11.glGetTexLevelParameteri(3553, 0, 4096) == var0.getWidth(0) && GL11.glGetTexLevelParameteri(3553, 0, 4097) == var0.getHeight(0);
+   private static boolean holds(GpuTexture gpuTexture) {
+      return GL11.glGetTexLevelParameteri(3553, 0, 4096) == gpuTexture.getWidth(0) && GL11.glGetTexLevelParameteri(3553, 0, 4097) == gpuTexture.getHeight(0);
    }
 
-   static void dispose(GpuTexture var0) {
-      if (var0 != null && alive(var0)) {
-         var0.close();
+   static void dispose(GpuTexture gpuTexture) {
+      if (gpuTexture != null && alive(gpuTexture)) {
+         gpuTexture.close();
       }
    }
 
-   static void crisp(GlTexture var0) {
+   static void crisp(GlTexture glTexture) {
       int var1 = GL11.glGetInteger(32873);
-      GL11.glBindTexture(3553, var0.method_68427());
+      GL11.glBindTexture(3553, glTexture.getGlId());
       GL11.glTexParameteri(3553, 10240, 9728);
       GL11.glBindTexture(3553, var1);
    }
@@ -726,14 +663,14 @@ public final class ItemIcons {
    @Environment(EnvType.CLIENT)
    private static final class Sheet {
       final int px;
-      final Object2ObjectOpenHashMap<Object, ItemIcons.Cell> cells = new Object2ObjectOpenHashMap();
+      final Object2ObjectOpenHashMap<Object, ItemIcons.Cell> cells = new Object2ObjectOpenHashMap<>();
       GpuTexture color;
       GpuTextureView colorView;
       int filled;
       int lastUsed;
 
-      Sheet(int var1) {
-         this.px = var1;
+      Sheet(int i) {
+         this.px = i;
       }
 
       boolean full() {

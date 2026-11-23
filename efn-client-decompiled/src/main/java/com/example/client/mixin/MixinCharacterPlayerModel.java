@@ -19,13 +19,13 @@ public abstract class MixinCharacterPlayerModel {
    }
 
    @Inject(
-      method = {"method_72859"},
+      method = {"setArmAngle"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$characterHand(PlayerEntityRenderState var1, Arm var2, MatrixStack var3, CallbackInfo var4) {
-      if (CharacterLayer.translateToHand((PlayerEntityModel)this, var1, var2, var3)) {
-         var4.cancel();
+   private void efn$characterHand(PlayerEntityRenderState playerEntityRenderState, Arm arm, MatrixStack matrixStack, CallbackInfo callbackInfo) {
+      if (CharacterLayer.translateToHand((PlayerEntityModel)this, playerEntityRenderState, arm, matrixStack)) {
+         callbackInfo.cancel();
       }
    }
 }

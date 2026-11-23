@@ -47,12 +47,12 @@ public abstract class EfnAddon {
       return this.authors;
    }
 
-   final void bind(ModMetadata var1) {
-      this.name = var1.getName();
-      this.version = var1.getVersion().getFriendlyString();
-      ArrayList var2 = new ArrayList(var1.getAuthors().size());
+   final void bind(ModMetadata modMetadata) {
+      this.name = modMetadata.getName();
+      this.version = modMetadata.getVersion().getFriendlyString();
+      ArrayList var2 = new ArrayList(modMetadata.getAuthors().size());
 
-      for (Person var4 : var1.getAuthors()) {
+      for (Person var4 : modMetadata.getAuthors()) {
          var2.add(var4.getName());
       }
 

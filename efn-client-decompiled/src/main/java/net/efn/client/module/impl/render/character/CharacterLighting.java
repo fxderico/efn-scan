@@ -20,33 +20,32 @@ public final class CharacterLighting {
    private static final Lights ITEMS_3D = transformed(
       new Matrix4f().scaling(1.0F, -1.0F, 1.0F).rotateYXZ(1.0821041F, 3.2375858F, 0.0F).rotateYXZ(-0.3926991F, 2.3561945F, 0.0F)
    );
-   private static Type entry = Type.field_60025;
+   private static Type entry = Type.LEVEL;
 
    private CharacterLighting() {
    }
 
-   public static void setup(Type var0) {
-      entry = var0;
+   public static void setup(Type type) {
+      entry = type;
    }
 
    static Lights current() {
       return switch (entry) {
-         case field_60025 -> nether() ? NETHER : Lights.WORLD;
-         case field_60026 -> ITEMS_FLAT;
-         case field_60027 -> ITEMS_3D;
-         case field_60028, field_60029 -> INVENTORY;
-         default -> throw new MatchException(null, null);
+         case LEVEL -> nether() ? NETHER : Lights.WORLD;
+         case ITEMS_FLAT -> ITEMS_FLAT;
+         case ITEMS_3D -> ITEMS_3D;
+         case ENTITY_IN_UI, PLAYER_SKIN -> INVENTORY;
       };
    }
 
    private static boolean nether() {
-      ClientWorld var0 = MinecraftClient.method_1551().field_1687;
-      return var0 != null && var0.method_8597().comp_5221() == CardinalLightType.field_64381;
+      ClientWorld var0 = MinecraftClient.getInstance().world;
+      return var0 != null && var0.getDimension().cardinalLightType() == CardinalLightType.NETHER;
    }
 
-   private static Lights transformed(Matrix4f var0) {
-      Vector3f var1 = var0.transformDirection(LIGHT_0, new Vector3f());
-      Vector3f var2 = var0.transformDirection(LIGHT_1, new Vector3f());
+   private static Lights transformed(Matrix4f matrix4f) {
+      Vector3f var1 = matrix4f.transformDirection(LIGHT_0, new Vector3f());
+      Vector3f var2 = matrix4f.transformDirection(LIGHT_1, new Vector3f());
       return new Lights(var1.x, var1.y, var1.z, var2.x, var2.y, var2.z);
    }
 }

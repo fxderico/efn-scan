@@ -9,6 +9,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Environment(EnvType.CLIENT)
 @Mixin({AbstractBlock.class})
 public interface AccessorElytraFlyBlockBehaviour {
-   @Accessor("field_23159")
+   @Accessor("collidable")
    boolean efn$elytraFlyHasCollision();
 }

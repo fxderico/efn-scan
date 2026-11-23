@@ -51,62 +51,56 @@ public final class ClickTpModule extends ClientModule {
       this.on(TickEvent.TYPE, Stage.POST, this::onPostTick);
    }
 
-   private void onPostTick(TickEvent var1) {
-      MinecraftClient var5 = MinecraftClient.method_1551();
-      ClientPlayerEntity var6 = var5.field_1724;
-      ClientWorld var7 = var5.field_1687;
+   private void onPostTick(TickEvent tickEvent) {
+      MinecraftClient var5 = MinecraftClient.getInstance();
+      ClientPlayerEntity var6 = var5.player;
+      ClientWorld var7 = var5.world;
       if (var6 != null && var7 != null) {
-         if (var6.method_31548().method_7391().method_7976() == UseAction.field_8952) {
-            if (var5.field_1690.field_1904.method_1434()) {
-               Camera var8 = var5.field_1773.method_19418();
-               Vec3d var9 = var8.method_71156();
-               Vec3d var10 = Vec3d.method_1030(var8.method_19329(), var8.method_19330());
+         if (var6.getInventory().getSelectedStack().getUseAction() == UseAction.NONE) {
+            if (var5.options.useKey.isPressed()) {
+               Camera var8 = var5.gameRenderer.getCamera();
+               Vec3d var9 = var8.getCameraPos();
+               Vec3d var10 = Vec3d.fromPolar(var8.getPitch(), var8.getYaw());
                FreecamModule var11 = ModuleRegistry.get(FreecamModule.class);
                boolean var12 = var11 != null && var11.isEnabled();
-               HitResult var4 = var12 ? pickFromCamera(var6, var7, var9, var10) : var5.field_1765;
+               HitResult var4 = var12 ? pickFromCamera(var6, var7, var9, var10) : var5.crosshairTarget;
                if (var4 != null) {
-                  if (var4.method_17783() == Type.field_1331
-                     && var6.method_7287(((EntityHitResult)var4).method_17782(), Hand.field_5808) != ActionResult.field_5811) {
+                  if (var4.getType() == Type.ENTITY && var6.interact(((EntityHitResult)var4).getEntity(), Hand.MAIN_HAND) != ActionResult.PASS) {
                      return;
                   }
 
-                  if (var4.method_17783() == Type.field_1332 && var6.method_6047().method_7909() instanceof BlockItem) {
+                  if (var4.getType() == Type.BLOCK && var6.getMainHandStack().getItem() instanceof BlockItem) {
                      return;
                   }
                }
 
                BlockHitResult var3;
-               if ((var3 = var7.method_17742(
-                        new RaycastContext(var9, var9.method_1019(var10.method_1021(210.0)), ShapeType.field_17559, FluidHandling.field_1348, var6)
-                     ))
-                     .method_17783()
-                  == Type.field_1332) {
+               if ((var3 = var7.raycast(new RaycastContext(var9, var9.add(var10.multiply(210.0)), ShapeType.OUTLINE, FluidHandling.NONE, var6))).getType()
+                  == Type.BLOCK) {
                   FreelookModule var2;
-                  if (!var3.method_17781() || var12 || (var2 = ModuleRegistry.get(FreelookModule.class)) == null || !var2.isEnabled()) {
-                     BlockPos var14 = var3.method_17777();
-                     Direction var15 = var3.method_17780();
-                     if (var7.method_8320(var14).method_55781(var7, var6, var3) == ActionResult.field_5811) {
-                        BlockState var16 = var7.method_8320(var14);
-                        VoxelShape var17 = var16.method_26220(var7, var14);
-                        if (var17.method_1110()) {
-                           var17 = var16.method_26218(var7, var14);
+                  if (!var3.isInsideBlock() || var12 || (var2 = ModuleRegistry.get(FreelookModule.class)) == null || !var2.isEnabled()) {
+                     BlockPos var14 = var3.getBlockPos();
+                     Direction var15 = var3.getSide();
+                     if (var7.getBlockState(var14).onUse(var7, var6, var3) == ActionResult.PASS) {
+                        BlockState var16 = var7.getBlockState(var14);
+                        VoxelShape var17 = var16.getCollisionShape(var7, var14);
+                        if (var17.isEmpty()) {
+                           var17 = var16.getOutlineShape(var7, var14);
                         }
 
-                        double var18 = var17.method_1110() ? 1.0 : var17.method_1105(Axis.field_11052);
-                        Vec3d var20 = new Vec3d(
-                           var14.method_10263() + 0.5 + var15.method_10148(), var14.method_10264() + var18, var14.method_10260() + 0.5 + var15.method_10165()
-                        );
-                        int var21 = (int)Math.ceil(var6.method_73189().method_1022(var20) / 10.0) - 1;
+                        double var18 = var17.isEmpty() ? 1.0 : var17.getMax(Axis.Y);
+                        Vec3d var20 = new Vec3d(var14.getX() + 0.5 + var15.getOffsetX(), var14.getY() + var18, var14.getZ() + 0.5 + var15.getOffsetZ());
+                        int var21 = (int)Math.ceil(var6.getEntityPos().distanceTo(var20) / 10.0) - 1;
                         if (var21 > 19) {
                            var21 = 0;
                         }
 
                         for (int var22 = 0; var22 < var21; var22++) {
-                           var6.field_3944.method_52787(new OnGroundOnly(true, true));
+                           var6.networkHandler.sendPacket(new OnGroundOnly(true, true));
                         }
 
-                        var6.field_3944.method_52787(new PositionAndOnGround(var20.field_1352, var20.field_1351, var20.field_1350, true, true));
-                        var6.method_33574(var20);
+                        var6.networkHandler.sendPacket(new PositionAndOnGround(var20.x, var20.y, var20.z, true, true));
+                        var6.setPosition(var20);
                      }
                   }
                }
@@ -115,16 +109,16 @@ public final class ClickTpModule extends ClientModule {
       }
    }
 
-   private static HitResult pickFromCamera(ClientPlayerEntity var0, ClientWorld var1, Vec3d var2, Vec3d var3) {
-      double var7 = var0.method_55754();
-      double var9 = var0.method_55755();
+   private static HitResult pickFromCamera(ClientPlayerEntity clientPlayerEntity, ClientWorld clientWorld, Vec3d vec3d, Vec3d vec3d2) {
+      double var7 = clientPlayerEntity.getBlockInteractionRange();
+      double var9 = clientPlayerEntity.getEntityInteractionRange();
       double var11 = Math.max(var7, var9);
       double var13 = var11 * var11;
-      BlockHitResult var15 = var1.method_17742(
-         new RaycastContext(var2, var2.method_1019(var3.method_1021(var11)), ShapeType.field_17559, FluidHandling.field_1348, var0)
+      BlockHitResult var15 = clientWorld.raycast(
+         new RaycastContext(vec3d, vec3d.add(vec3d2.multiply(var11)), ShapeType.OUTLINE, FluidHandling.NONE, clientPlayerEntity)
       );
-      double var16 = var15.method_17784().method_1025(var2);
-      if (var15.method_17783() != Type.field_1333) {
+      double var16 = var15.getPos().squaredDistanceTo(vec3d);
+      if (var15.getType() != Type.MISS) {
          var13 = var16;
          var11 = Math.sqrt(var16);
       }
@@ -132,15 +126,15 @@ public final class ClickTpModule extends ClientModule {
       Vec3d var5;
       EntityHitResult var6;
       if ((
-               var6 = ProjectileUtil.method_18075(
-                  var0, var2, var5 = var2.method_1019(var3.method_1021(var11)), new Box(var2, var5).method_1014(1.0), EntityPredicates.field_52443, var13
+               var6 = ProjectileUtil.raycast(
+                  clientPlayerEntity, vec3d, var5 = vec3d.add(vec3d2.multiply(var11)), new Box(vec3d, var5).expand(1.0), EntityPredicates.CAN_HIT, var13
                )
             )
             != null
-         && var6.method_17784().method_1025(var2) < var16) {
-         return var6.method_17784().method_24802(var2, var9) ? var6 : null;
+         && var6.getPos().squaredDistanceTo(vec3d) < var16) {
+         return var6.getPos().isInRange(vec3d, var9) ? var6 : null;
       } else {
-         return var15.method_17784().method_24802(var2, var7) ? var15 : null;
+         return var15.getPos().isInRange(vec3d, var7) ? var15 : null;
       }
    }
 }

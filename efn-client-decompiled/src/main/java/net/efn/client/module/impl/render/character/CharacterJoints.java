@@ -22,25 +22,25 @@ final class CharacterJoints {
    private CharacterJoints() {
    }
 
-   static float angle(PlayerEntityRenderState var0, Bone var1, float var2) {
-      float var3 = !var0.field_53411 && !var0.field_53459 ? 1.0F - var0.field_53403 * 0.8F : 0.0F;
+   static float angle(PlayerEntityRenderState playerEntityRenderState, Bone bone, float f) {
+      float var3 = !playerEntityRenderState.isGliding && !playerEntityRenderState.usingRiptide ? 1.0F - playerEntityRenderState.leaningPitch * 0.8F : 0.0F;
       if (var3 <= 0.0F) {
          return 0.0F;
-      } else if (var1.leg()) {
-         return knee(var0, var1) * var3;
+      } else if (bone.leg()) {
+         return knee(playerEntityRenderState, bone) * var3;
       } else {
-         return var1.arm() ? -elbow(var0, var1, var2) * var3 : 0.0F;
+         return bone.arm() ? -elbow(playerEntityRenderState, bone, f) * var3 : 0.0F;
       }
    }
 
-   private static float knee(PlayerEntityRenderState var0, Bone var1) {
-      if (var0.field_53413) {
-         return CharacterModule.seat(var0);
+   private static float knee(PlayerEntityRenderState playerEntityRenderState, Bone bone) {
+      if (playerEntityRenderState.hasVehicle) {
+         return CharacterModule.seat(playerEntityRenderState);
       } else {
-         float var2 = Math.min(1.0F, var0.field_53451 / var0.field_53405);
-         float var3 = var0.field_53450 * 0.6662F + (var1 == Bone.LEFT_LEG ? 3.1415927F : 0.0F);
-         float var4 = var2 * (0.1F + 0.85F * Math.max(0.0F, MathHelper.method_15374(var3)));
-         if (var0.field_53410) {
+         float var2 = Math.min(1.0F, playerEntityRenderState.limbSwingAmplitude / playerEntityRenderState.limbAmplitudeInverse);
+         float var3 = playerEntityRenderState.limbSwingAnimationProgress * 0.6662F + (bone == Bone.LEFT_LEG ? 3.1415927F : 0.0F);
+         float var4 = var2 * (0.1F + 0.85F * Math.max(0.0F, MathHelper.sin(var3)));
+         if (playerEntityRenderState.isInSneakingPose) {
             var4 += 0.62F;
          }
 
@@ -48,32 +48,34 @@ final class CharacterJoints {
       }
    }
 
-   private static float elbow(PlayerEntityRenderState var0, Bone var1, float var2) {
-      boolean var6 = var1 == Bone.RIGHT_ARM;
-      ArmPose var7 = var6 ? var0.field_55304 : var0.field_55306;
-      ArmPose var5 = var6 ? var0.field_55306 : var0.field_55304;
-      if (var5.method_30156()) {
+   private static float elbow(PlayerEntityRenderState playerEntityRenderState, Bone bone, float f) {
+      boolean var6 = bone == Bone.RIGHT_ARM;
+      ArmPose var7 = var6 ? playerEntityRenderState.rightArmPose : playerEntityRenderState.leftArmPose;
+      ArmPose var5 = var6 ? playerEntityRenderState.leftArmPose : playerEntityRenderState.rightArmPose;
+      if (var5.isTwoHanded()) {
          return 0.0F;
       } else {
-         float var9 = Math.min(1.0F, var0.field_53451 / var0.field_53405);
+         float var9 = Math.min(1.0F, playerEntityRenderState.limbSwingAmplitude / playerEntityRenderState.limbAmplitudeInverse);
 
          float var4 = switch (var7) {
-            case field_3409 -> 0.16F + 0.45F * Math.max(0.0F, -var2) + 0.3F * var9;
-            case field_3410 -> 0.3F + 0.2F * var9;
-            case field_3406 -> 0.55F;
-            case field_42877 -> 0.4F;
+            case EMPTY -> 0.16F + 0.45F * Math.max(0.0F, -f) + 0.3F * var9;
+            case ITEM -> 0.3F + 0.2F * var9;
+            case BLOCK -> 0.55F;
+            case BRUSH -> 0.4F;
             default -> 0.0F;
          };
          if (var4 <= 0.0F) {
             return 0.0F;
          } else {
-            if (var0.field_53410) {
+            if (playerEntityRenderState.isInSneakingPose) {
                var4 += 0.2F;
             }
 
-            Arm var3 = var6 ? Arm.field_6183 : Arm.field_6182;
-            if (var0.field_63604 > 0.0F && var0.field_53408 == var3 && var0.field_63603 == SwingAnimationType.field_63399) {
-               var4 += 0.6F * MathHelper.method_15374(var0.field_63604 * 3.1415927F);
+            Arm var3 = var6 ? Arm.RIGHT : Arm.LEFT;
+            if (playerEntityRenderState.handSwingProgress > 0.0F
+               && playerEntityRenderState.preferredArm == var3
+               && playerEntityRenderState.swingAnimationType == SwingAnimationType.WHACK) {
+               var4 += 0.6F * MathHelper.sin(playerEntityRenderState.handSwingProgress * 3.1415927F);
             }
 
             return Math.min(1.6F, var4);

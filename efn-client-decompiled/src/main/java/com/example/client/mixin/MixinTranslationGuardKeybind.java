@@ -16,16 +16,16 @@ import org.spongepowered.asm.mixin.injection.At;
 public abstract class MixinTranslationGuardKeybind {
    @Shadow
    @Final
-   private String field_11767;
+   private String key;
 
    public MixinTranslationGuardKeybind() {
    }
 
    @ModifyReturnValue(
-      method = {"method_27691"},
+      method = {"getTranslated"},
       at = {@At("RETURN")}
    )
-   private Text efn$guardKeybind(Text var1) {
-      return TranslationGuard.active() ? TranslationGuard.keybind(this.field_11767) : var1;
+   private Text efn$guardKeybind(Text text) {
+      return TranslationGuard.active() ? TranslationGuard.keybind(this.key) : text;
    }
 }

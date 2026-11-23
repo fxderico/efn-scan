@@ -11,19 +11,19 @@ public enum ProxyType {
 
    private final String label;
 
-   private ProxyType(String nullxx) {
-      this.label = nullxx;
+   private ProxyType(String string2) {
+      this.label = string2;
    }
 
    public String label() {
       return this.label;
    }
 
-   static ProxyType parse(String var0) {
-      if (var0 == null) {
+   static ProxyType parse(String string) {
+      if (string == null) {
          return null;
       } else {
-         String var1 = var0.trim().toLowerCase(Locale.ROOT);
+         String var1 = string.trim().toLowerCase(Locale.ROOT);
 
          return switch (var1) {
             case "socks4", "socks4a" -> SOCKS4;

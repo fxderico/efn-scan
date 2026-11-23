@@ -22,16 +22,16 @@ final class Gui {
    private static final int COMMAND_GAP_MS = 200;
    final MacroWorker worker;
 
-   Gui(MacroWorker var1) {
-      this.worker = var1;
+   Gui(MacroWorker macroWorker) {
+      this.worker = macroWorker;
    }
 
    static MinecraftClient mc() {
-      return MinecraftClient.method_1551();
+      return MinecraftClient.getInstance();
    }
 
    static ClientPlayerEntity player() {
-      ClientPlayerEntity var0 = mc().field_1724;
+      ClientPlayerEntity var0 = mc().player;
       if (var0 == null) {
          throw new IllegalStateException("Not in a world");
       } else {
@@ -40,24 +40,24 @@ final class Gui {
    }
 
    String title() {
-      return this.worker.call(() -> mc().field_1755 == null ? "" : ServerText.normalize(mc().field_1755.method_25440()));
+      return this.worker.call(() -> mc().currentScreen == null ? "" : ServerText.normalize(mc().currentScreen.getTitle()));
    }
 
    static boolean containerOpenNow() {
-      ClientPlayerEntity var0 = mc().field_1724;
-      return var0 != null && var0.field_7512 != var0.field_7498 && mc().field_1755 instanceof HandledScreen;
+      ClientPlayerEntity var0 = mc().player;
+      return var0 != null && var0.currentScreenHandler != var0.playerScreenHandler && mc().currentScreen instanceof HandledScreen;
    }
 
    static List<ItemStack> containerNow() {
       ArrayList var0 = new ArrayList();
-      ClientPlayerEntity var1 = mc().field_1724;
-      if (var1 != null && var1.field_7512 != var1.field_7498) {
-         for (Slot var3 : var1.field_7512.field_7761) {
-            if (var3.field_7871 instanceof PlayerInventory) {
+      ClientPlayerEntity var1 = mc().player;
+      if (var1 != null && var1.currentScreenHandler != var1.playerScreenHandler) {
+         for (Slot var3 : var1.currentScreenHandler.slots) {
+            if (var3.inventory instanceof PlayerInventory) {
                break;
             }
 
-            var0.add(var3.method_7677().method_7972());
+            var0.add(var3.getStack().copy());
          }
 
          return var0;
@@ -72,18 +72,13 @@ final class Gui {
 
    static String fingerprintNow() {
       StringBuilder var0 = new StringBuilder();
-      ClientPlayerEntity var1 = mc().field_1724;
+      ClientPlayerEntity var1 = mc().player;
       if (var1 != null) {
-         var0.append(var1.field_7512.field_7763).append('#');
+         var0.append(var1.currentScreenHandler.syncId).append('#');
       }
 
       for (ItemStack var3 : containerNow()) {
-         var0.append(Registries.field_41178.method_10221(var3.method_7909()))
-            .append(':')
-            .append(var3.method_7947())
-            .append(':')
-            .append(var3.method_7964().getString())
-            .append('|');
+         var0.append(Registries.ITEM.getId(var3.getItem())).append(':').append(var3.getCount()).append(':').append(var3.getName().getString()).append('|');
       }
 
       return var0.toString();
@@ -93,16 +88,16 @@ final class Gui {
       return this.worker.call(Gui::fingerprintNow);
    }
 
-   static ItemStack slotNow(int var0) {
+   static ItemStack slotNow(int i) {
       List var1 = containerNow();
-      return var0 >= 0 && var0 < var1.size() ? (ItemStack)var1.get(var0) : ItemStack.field_8037;
+      return i >= 0 && i < var1.size() ? (ItemStack)var1.get(i) : ItemStack.EMPTY;
    }
 
-   static int findNow(Predicate<ItemStack> var0, int var1) {
+   static int findNow(Predicate<ItemStack> predicate, int i) {
       List var2 = containerNow();
 
-      for (int var3 = 0; var3 < var2.size() && var3 < var1; var3++) {
-         if (!((ItemStack)var2.get(var3)).method_7960() && var0.test((ItemStack)var2.get(var3))) {
+      for (int var3 = 0; var3 < var2.size() && var3 < i; var3++) {
+         if (!((ItemStack)var2.get(var3)).isEmpty() && predicate.test((ItemStack)var2.get(var3))) {
             return var3;
          }
       }
@@ -110,50 +105,50 @@ final class Gui {
       return -1;
    }
 
-   static String nameOf(ItemStack var0) {
-      return ServerText.normalize(var0.method_7964());
+   static String nameOf(ItemStack itemStack) {
+      return ServerText.normalize(itemStack.getName());
    }
 
-   void click(int var1, int var2, SlotActionType var3) {
+   void click(int i, int j, SlotActionType slotActionType) {
       this.worker.run(() -> {
-         ClientPlayerEntity var3x = player();
-         ScreenHandler var4 = var3x.field_7512;
-         mc().field_1761.method_2906(var4.field_7763, var1, var2, var3, var3x);
+         ClientPlayerEntity var3 = player();
+         ScreenHandler var4 = var3.currentScreenHandler;
+         mc().interactionManager.clickSlot(var4.syncId, i, j, slotActionType, var3);
       });
    }
 
-   void clickInventory(int var1, int var2, SlotActionType var3) {
+   void clickInventory(int i, int j, SlotActionType slotActionType) {
       this.worker.run(() -> {
-         ClientPlayerEntity var3x = player();
-         mc().field_1761.method_2906(var3x.field_7498.field_7763, var1, var2, var3, var3x);
+         ClientPlayerEntity var3 = player();
+         mc().interactionManager.clickSlot(var3.playerScreenHandler.syncId, i, j, slotActionType, var3);
       });
    }
 
    void closeInventory() {
       this.worker.run(() -> {
          ClientPlayerEntity var0 = player();
-         if (var0.field_7512 == var0.field_7498) {
-            var0.field_3944.method_52787(new CloseHandledScreenC2SPacket(var0.field_7498.field_7763));
+         if (var0.currentScreenHandler == var0.playerScreenHandler) {
+            var0.networkHandler.sendPacket(new CloseHandledScreenC2SPacket(var0.playerScreenHandler.syncId));
          }
       });
    }
 
-   void command(String var1) {
-      this.worker.run(() -> player().field_3944.method_45730(var1));
+   void command(String string) {
+      this.worker.run(() -> player().networkHandler.sendChatCommand(string));
       this.worker.sleep(200L);
    }
 
    void closeAll() {
       for (int var1 = 0; var1 < 4; var1++) {
          boolean var2 = this.worker.call(() -> {
-            ClientPlayerEntity var0 = mc().field_1724;
+            ClientPlayerEntity var0 = mc().player;
             if (var0 == null) {
                return false;
-            } else if (var0.field_7512 != var0.field_7498) {
-               var0.method_7346();
+            } else if (var0.currentScreenHandler != var0.playerScreenHandler) {
+               var0.closeHandledScreen();
                return true;
-            } else if (mc().field_1755 != null && !(mc().field_1755 instanceof DeathScreen)) {
-               mc().field_1755.method_25419();
+            } else if (mc().currentScreen != null && !(mc().currentScreen instanceof DeathScreen)) {
+               mc().currentScreen.close();
                return true;
             } else {
                return false;
@@ -167,7 +162,7 @@ final class Gui {
       }
    }
 
-   boolean waitChange(String var1, long var2) {
-      return this.worker.waitFor(() -> !fingerprintNow().equals(var1), var2);
+   boolean waitChange(String string, long l) {
+      return this.worker.waitFor(() -> !fingerprintNow().equals(string), l);
    }
 }

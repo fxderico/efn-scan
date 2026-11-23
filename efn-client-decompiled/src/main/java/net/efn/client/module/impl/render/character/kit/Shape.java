@@ -18,39 +18,39 @@ public abstract class Shape {
    protected Shape() {
    }
 
-   public abstract float distance(float var1, float var2, float var3);
+   public abstract float distance(float f, float g, float h);
 
-   float distance(float var1, float var2, float var3, float var4) {
-      return this.distance(var1, var2, var3);
+   float distance(float f, float g, float h, float i) {
+      return this.distance(f, g, h);
    }
 
-   float shade(float var1, float var2, float var3, Sample var4) {
-      float var5 = this.distance(var1, var2, var3);
-      Paint.DEFAULT.apply(var1, var2, var3, var4);
+   float shade(float f, float g, float h, Sample sample) {
+      float var5 = this.distance(f, g, h);
+      Paint.DEFAULT.apply(f, g, h, sample);
       return var5;
    }
 
-   public final float sample(float var1, float var2, float var3, Sample var4) {
+   public final float sample(float f, float g, float h, Sample sample) {
       if (this.paint != null) {
-         float var5 = this.distance(var1, var2, var3);
-         this.paint.apply(var1, var2, var3, var4);
+         float var5 = this.distance(f, g, h);
+         this.paint.apply(f, g, h, sample);
          return var5;
       } else {
-         return this.shade(var1, var2, var3, var4);
+         return this.shade(f, g, h, sample);
       }
    }
 
-   protected final void bounds(float var1, float var2, float var3, float var4, float var5, float var6) {
-      this.minX = Math.min(var1, var4);
-      this.minY = Math.min(var2, var5);
-      this.minZ = Math.min(var3, var6);
-      this.maxX = Math.max(var1, var4);
-      this.maxY = Math.max(var2, var5);
-      this.maxZ = Math.max(var3, var6);
+   protected final void bounds(float f, float g, float h, float i, float j, float k) {
+      this.minX = Math.min(f, i);
+      this.minY = Math.min(g, j);
+      this.minZ = Math.min(h, k);
+      this.maxX = Math.max(f, i);
+      this.maxY = Math.max(g, j);
+      this.maxZ = Math.max(h, k);
    }
 
-   final void boundsOf(Shape var1, float var2) {
-      if (!var1.bounded()) {
+   final void boundsOf(Shape shape, float f) {
+      if (!shape.bounded()) {
          this.minZ = -100000.0F;
          this.minY = -100000.0F;
          this.minX = -100000.0F;
@@ -58,7 +58,7 @@ public abstract class Shape {
          this.maxY = 100000.0F;
          this.maxX = 100000.0F;
       } else {
-         this.bounds(var1.minX - var2, var1.minY - var2, var1.minZ - var2, var1.maxX + var2, var1.maxY + var2, var1.maxZ + var2);
+         this.bounds(shape.minX - f, shape.minY - f, shape.minZ - f, shape.maxX + f, shape.maxY + f, shape.maxZ + f);
       }
    }
 
@@ -90,61 +90,61 @@ public abstract class Shape {
       return this.maxZ;
    }
 
-   Shape prune(float var1, float var2, float var3, float var4, float var5, float var6) {
+   Shape prune(float f, float g, float h, float i, float j, float k) {
       return this;
    }
 
-   Shape map(UnaryOperator<Shape> var1) {
-      return var1.apply(this);
+   Shape map(UnaryOperator<Shape> unaryOperator) {
+      return unaryOperator.apply(this);
    }
 
-   final Shape inherit(Shape var1) {
-      if (var1.paint != null && this.paint == null) {
-         this.paint = var1.paint;
+   final Shape inherit(Shape shape) {
+      if (shape.paint != null && this.paint == null) {
+         this.paint = shape.paint;
       }
 
       return this;
    }
 
-   final float boxGap(float var1, float var2, float var3, float var4, float var5, float var6) {
-      float var7 = Math.max(0.0F, Math.max(this.minX - var4, var1 - this.maxX));
-      float var8 = Math.max(0.0F, Math.max(this.minY - var5, var2 - this.maxY));
-      float var9 = Math.max(0.0F, Math.max(this.minZ - var6, var3 - this.maxZ));
+   final float boxGap(float f, float g, float h, float i, float j, float k) {
+      float var7 = Math.max(0.0F, Math.max(this.minX - i, f - this.maxX));
+      float var8 = Math.max(0.0F, Math.max(this.minY - j, g - this.maxY));
+      float var9 = Math.max(0.0F, Math.max(this.minZ - k, h - this.maxZ));
       return (float)Math.sqrt(var7 * var7 + var8 * var8 + var9 * var9);
    }
 
-   public Shape color(int var1) {
-      this.paint = Paint.of(var1);
+   public Shape color(int i) {
+      this.paint = Paint.of(i);
       return this;
    }
 
-   public Shape paint(Paint var1) {
-      this.paint = var1;
+   public Shape paint(Paint paint) {
+      this.paint = paint;
       return this;
    }
 
-   public Shape move(float var1, float var2, float var3) {
-      return new Shapes.Translate(this, var1, var2, var3);
+   public Shape move(float f, float g, float h) {
+      return new Shapes.Translate(this, f, g, h);
    }
 
-   public Shape rotate(float var1, float var2, float var3) {
-      return this.rotate(var1, var2, var3, 0.0F, 0.0F, 0.0F);
+   public Shape rotate(float f, float g, float h) {
+      return this.rotate(f, g, h, 0.0F, 0.0F, 0.0F);
    }
 
-   public Shape rotate(float var1, float var2, float var3, float var4, float var5, float var6) {
-      return new Shapes.Rotate(this, Mat3.euler(var1, var2, var3), var4, var5, var6);
+   public Shape rotate(float f, float g, float h, float i, float j, float k) {
+      return new Shapes.Rotate(this, Mat3.euler(f, g, h), i, j, k);
    }
 
-   public Shape rotateAxis(float var1, float var2, float var3, float var4, float var5, float var6, float var7) {
-      return new Shapes.Rotate(this, Mat3.about(var1, var2, var3, var4), var5, var6, var7);
+   public Shape rotateAxis(float f, float g, float h, float i, float j, float k, float l) {
+      return new Shapes.Rotate(this, Mat3.about(f, g, h, i), j, k, l);
    }
 
-   public Shape scale(float var1) {
-      return this.scale(var1, 0.0F, 0.0F, 0.0F);
+   public Shape scale(float f) {
+      return this.scale(f, 0.0F, 0.0F, 0.0F);
    }
 
-   public Shape scale(float var1, float var2, float var3, float var4) {
-      return new Shapes.Scale(this, var1, var2, var3, var4);
+   public Shape scale(float f, float g, float h, float i) {
+      return new Shapes.Scale(this, f, g, h, i);
    }
 
    public Shape mirrorX() {
@@ -155,46 +155,46 @@ public abstract class Shape {
       return new Shapes.Mirror(this, false);
    }
 
-   public Shape inflate(float var1) {
-      return new Shapes.Round(this, var1);
+   public Shape inflate(float f) {
+      return new Shapes.Round(this, f);
    }
 
-   public Shape shell(float var1) {
-      return new Shapes.Shell(this, var1);
+   public Shape shell(float f) {
+      return new Shapes.Shell(this, f);
    }
 
-   public Shape roughen(float var1, float var2) {
-      return new Shapes.Roughen(this, var1, var2);
+   public Shape roughen(float f, float g) {
+      return new Shapes.Roughen(this, f, g);
    }
 
-   public Shape union(Shape... var1) {
-      return Shapes.union(this.prepend(var1));
+   public Shape union(Shape... shapes) {
+      return Shapes.union(this.prepend(shapes));
    }
 
-   public Shape blend(float var1, Shape... var2) {
-      return Shapes.blend(var1, this.prepend(var2));
+   public Shape blend(float f, Shape... shapes) {
+      return Shapes.blend(f, this.prepend(shapes));
    }
 
-   public Shape subtract(Shape var1) {
-      return Shapes.subtract(this, var1);
+   public Shape subtract(Shape shape) {
+      return Shapes.subtract(this, shape);
    }
 
-   public Shape subtract(float var1, Shape var2) {
-      return Shapes.subtract(var1, this, var2);
+   public Shape subtract(float f, Shape shape) {
+      return Shapes.subtract(f, this, shape);
    }
 
-   public Shape intersect(Shape var1) {
-      return Shapes.intersect(this, var1);
+   public Shape intersect(Shape shape) {
+      return Shapes.intersect(this, shape);
    }
 
-   public Shape intersect(float var1, Shape var2) {
-      return Shapes.intersect(var1, this, var2);
+   public Shape intersect(float f, Shape shape) {
+      return Shapes.intersect(f, this, shape);
    }
 
-   private Shape[] prepend(Shape[] var1) {
-      Shape[] var2 = new Shape[var1.length + 1];
+   private Shape[] prepend(Shape[] shapes) {
+      Shape[] var2 = new Shape[shapes.length + 1];
       var2[0] = this;
-      System.arraycopy(var1, 0, var2, 1, var1.length);
+      System.arraycopy(shapes, 0, var2, 1, shapes.length);
       return var2;
    }
 }

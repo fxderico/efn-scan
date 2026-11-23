@@ -132,8 +132,8 @@ public final class StaffListModule extends ClientModule {
    @Override
    protected void onEnable() {
       this.forget();
-      MinecraftClient var1 = MinecraftClient.method_1551();
-      this.connection = var1.method_1562();
+      MinecraftClient var1 = MinecraftClient.getInstance();
+      this.connection = var1.getNetworkHandler();
       this.shard.clear();
       this.settleTicks = 0;
       this.ticksToScan = 0;
@@ -205,8 +205,8 @@ public final class StaffListModule extends ClientModule {
       }
    }
 
-   public static String formatAge(long var0) {
-      long var2 = Math.max(0L, var0) / 1000L;
+   public static String formatAge(long l) {
+      long var2 = Math.max(0L, l) / 1000L;
       long var4 = var2 / 3600L;
       long var6 = var2 / 60L % 60L;
       long var8 = var2 % 60L;
@@ -218,40 +218,40 @@ public final class StaffListModule extends ClientModule {
       return var10.append(var6).append(var8 < 10L ? ":0" : ":").append(var8).toString();
    }
 
-   public static boolean isStaffName(String var0) {
-      return var0 != null && STAFF_KEYS.contains(var0.toLowerCase(Locale.ROOT));
+   public static boolean isStaffName(String string) {
+      return string != null && STAFF_KEYS.contains(string.toLowerCase(Locale.ROOT));
    }
 
-   public static boolean isInYourRegion(UUID var0) {
+   public static boolean isInYourRegion(UUID uUID) {
       StaffListModule var1 = instance();
-      if (var1 != null && var1.isEnabled() && var0 != null) {
-         StaffListModule.Sighting var2 = var1.sightings.get(var0);
+      if (var1 != null && var1.isEnabled() && uUID != null) {
+         StaffListModule.Sighting var2 = var1.sightings.get(uUID);
          return var2 != null && var2.marked(System.currentTimeMillis());
       } else {
          return false;
       }
    }
 
-   public static void provenHere(UUID var0, String var1) {
+   public static void provenHere(UUID uUID, String string) {
       StaffListModule var2 = instance();
-      if (var2 != null && var2.isEnabled() && var2.regionAlert.get() && var0 != null && var1 != null) {
+      if (var2 != null && var2.isEnabled() && var2.regionAlert.get() && uUID != null && string != null) {
          long var3 = System.currentTimeMillis();
-         StaffListModule.Sighting var5 = var2.sightings.computeIfAbsent(var0, var0x -> new StaffListModule.Sighting());
+         StaffListModule.Sighting var5 = var2.sightings.computeIfAbsent(uUID, uUIDx -> new StaffListModule.Sighting());
          if (!var5.marked(var3)) {
             var2.resort = true;
          }
 
          var5.prove(var3);
          if (!var5.coolingDown(var3)) {
-            var2.alert(var0, var5, var3, var1);
+            var2.alert(uUID, var5, var3, string);
          }
       }
    }
 
-   public static boolean alarmedRecently(UUID var0) {
+   public static boolean alarmedRecently(UUID uUID) {
       StaffListModule var1 = instance();
-      if (var1 != null && var1.isEnabled() && var0 != null) {
-         StaffListModule.Sighting var2 = var1.sightings.get(var0);
+      if (var1 != null && var1.isEnabled() && uUID != null) {
+         StaffListModule.Sighting var2 = var1.sightings.get(uUID);
          return var2 != null && var2.alertedAt != 0L && System.currentTimeMillis() - var2.alertedAt < 5000L;
       } else {
          return false;
@@ -272,12 +272,12 @@ public final class StaffListModule extends ClientModule {
       return ModuleRegistry.get(StaffListModule.class);
    }
 
-   private void onPacketNetty(PacketReceiveNettyEvent var1) {
+   private void onPacketNetty(PacketReceiveNettyEvent packetReceiveNettyEvent) {
       if (this.regionAlert.get()) {
-         if (var1.packet instanceof PlayerListS2CPacket var3) {
+         if (packetReceiveNettyEvent.packet instanceof PlayerListS2CPacket var3) {
             this.queueSwitches(var3);
-         } else if (var1.packet instanceof BundleS2CPacket var8) {
-            for (Packet var5 : var8.method_48324()) {
+         } else if (packetReceiveNettyEvent.packet instanceof BundleS2CPacket var8) {
+            for (Packet var5 : var8.getPackets()) {
                if (var5 instanceof PlayerListS2CPacket var6) {
                   this.queueSwitches(var6);
                }
@@ -286,22 +286,22 @@ public final class StaffListModule extends ClientModule {
       }
    }
 
-   private void queueSwitches(PlayerListS2CPacket var1) {
-      EnumSet var2 = var1.method_46327();
-      if (var2.contains(Action.field_29137) && !var2.contains(Action.field_29136)) {
-         for (Entry var4 : var1.method_46329()) {
-            if (var4 != null && var4.comp_1106() != null) {
-               this.switches.offer(new StaffListModule.GameModeSwitch(var4.comp_1106(), var4.comp_1110()));
+   private void queueSwitches(PlayerListS2CPacket playerListS2CPacket) {
+      EnumSet var2 = playerListS2CPacket.getActions();
+      if (var2.contains(Action.UPDATE_GAME_MODE) && !var2.contains(Action.ADD_PLAYER)) {
+         for (Entry var4 : playerListS2CPacket.getEntries()) {
+            if (var4 != null && var4.profileId() != null) {
+               this.switches.offer(new StaffListModule.GameModeSwitch(var4.profileId(), var4.gameMode()));
             }
          }
       }
    }
 
-   private void onTick(TickEvent var1) {
+   private void onTick(TickEvent tickEvent) {
       this.alarm.tick();
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientPlayNetworkHandler var3 = var2.method_1562();
-      if (var3 != null && var2.field_1724 != null && var2.field_1687 != null) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientPlayNetworkHandler var3 = var2.getNetworkHandler();
+      if (var3 != null && var2.player != null && var2.world != null) {
          boolean var4 = this.shard.moved(var2);
          if (var3 != this.connection) {
             this.connection = var3;
@@ -319,7 +319,7 @@ public final class StaffListModule extends ClientModule {
          this.tickCount++;
          long var5 = System.currentTimeMillis();
          if (this.regionAlert.get()) {
-            this.drainSwitches(var3, var2.field_1724.method_5667(), var5);
+            this.drainSwitches(var3, var2.player.getUuid(), var5);
             this.trackBodies(var2, var5);
          }
 
@@ -352,25 +352,25 @@ public final class StaffListModule extends ClientModule {
       }
    }
 
-   private StaffListModule.Changes scan(MinecraftClient var1, ClientPlayNetworkHandler var2, long var3) {
-      UUID var5 = var1.field_1724.method_5667();
+   private StaffListModule.Changes scan(MinecraftClient minecraftClient, ClientPlayNetworkHandler clientPlayNetworkHandler, long l) {
+      UUID var5 = minecraftClient.player.getUuid();
       HashSet var6 = new HashSet();
 
-      for (PlayerListEntry var8 : var2.method_45732()) {
-         var6.add(var8.method_2966().id());
+      for (PlayerListEntry var8 : clientPlayNetworkHandler.getListedPlayerListEntries()) {
+         var6.add(var8.getProfile().id());
       }
 
       StaffListModule.Changes var18 = new StaffListModule.Changes();
       HashSet var19 = new HashSet();
 
-      for (PlayerListEntry var10 : var2.method_2880()) {
-         GameProfile var11 = var10.method_2966();
+      for (PlayerListEntry var10 : clientPlayNetworkHandler.getPlayerList()) {
+         GameProfile var11 = var10.getProfile();
          UUID var12 = var11.id();
          String var13 = var11.name();
          if (var12 != null && !var12.equals(var5) && isStaffName(var13) && isAccount(var12, var13)) {
             var19.add(var12);
             StaffMatcher.Match var14 = this.rank(var10, var12, var13);
-            StaffListModule.Presence var15 = var10.method_2958() == GameMode.field_9219
+            StaffListModule.Presence var15 = var10.getGameMode() == GameMode.SPECTATOR
                ? StaffListModule.Presence.SPECTATOR
                : (var6.contains(var12) ? StaffListModule.Presence.ONLINE : StaffListModule.Presence.VANISHED);
             StaffListModule.Staff var16 = this.staff.get(var12);
@@ -396,7 +396,7 @@ public final class StaffListModule extends ClientModule {
       while (var20.hasNext()) {
          StaffListModule.Staff var21 = (StaffListModule.Staff)var20.next();
          if (!var19.contains(var21.id)) {
-            if (var1.field_1687.method_18470(var21.id) != null) {
+            if (minecraftClient.world.getPlayerByUuid(var21.id) != null) {
                if (++var21.offTabScans >= 2 && var21.presence != StaffListModule.Presence.VANISHED) {
                   var21.presence = StaffListModule.Presence.VANISHED;
                   var18.changed.add(var21);
@@ -408,105 +408,105 @@ public final class StaffListModule extends ClientModule {
          }
       }
 
-      this.pruneSightings(var3);
-      this.sortView(var3);
+      this.pruneSightings(l);
+      this.sortView(l);
       return var18;
    }
 
-   private void sortView(long var1) {
+   private void sortView(long l) {
       ArrayList var3 = new ArrayList<>(this.staff.values());
       var3.sort(
-         Comparator.<StaffListModule.Staff>comparingInt(var3x -> this.group(var3x, var1))
-            .thenComparingInt(var0 -> var0.seniority)
-            .thenComparing(var0 -> var0.name, String.CASE_INSENSITIVE_ORDER)
+         Comparator.<StaffListModule.Staff>comparingInt(staff -> this.group(staff, l))
+            .thenComparingInt(staff -> staff.seniority)
+            .thenComparing(staff -> staff.name, String.CASE_INSENSITIVE_ORDER)
       );
       this.sorted = List.copyOf(var3);
       this.resort = false;
    }
 
-   private int group(StaffListModule.Staff var1, long var2) {
-      StaffListModule.Sighting var4 = this.sightings.get(var1.id);
+   private int group(StaffListModule.Staff staff, long l) {
+      StaffListModule.Sighting var4 = this.sightings.get(staff.id);
       if (var4 != null && var4.nearby) {
          return 0;
-      } else if (var4 != null && var4.marked(var2)) {
+      } else if (var4 != null && var4.marked(l)) {
          return 1;
       } else {
-         return var1.presence != StaffListModule.Presence.ONLINE ? 2 : 3;
+         return staff.presence != StaffListModule.Presence.ONLINE ? 2 : 3;
       }
    }
 
-   private static boolean isAccount(UUID var0, String var1) {
-      return var1 != null && var0.version() != 2 && ACCOUNT_NAME.matcher(var1).matches();
+   private static boolean isAccount(UUID uUID, String string) {
+      return string != null && uUID.version() != 2 && ACCOUNT_NAME.matcher(string).matches();
    }
 
-   private StaffMatcher.Match rank(PlayerListEntry var1, UUID var2, String var3) {
-      Team var4 = var1.method_2955();
-      Text var5 = var1.method_2971();
-      Text var6 = var4 == null ? null : var4.method_1144();
-      Text var7 = var4 == null ? null : var4.method_1136();
-      StaffListModule.Classified var8 = this.classified.get(var2);
-      if (var8 != null && var8.isFor(var3, var5, var4, var6, var7)) {
+   private StaffMatcher.Match rank(PlayerListEntry playerListEntry, UUID uUID, String string) {
+      Team var4 = playerListEntry.getScoreboardTeam();
+      Text var5 = playerListEntry.getDisplayName();
+      Text var6 = var4 == null ? null : var4.getPrefix();
+      Text var7 = var4 == null ? null : var4.getSuffix();
+      StaffListModule.Classified var8 = this.classified.get(uUID);
+      if (var8 != null && var8.isFor(string, var5, var4, var6, var7)) {
          return var8.match();
       } else {
-         StaffMatcher.Match var9 = RANKS.match(var3, var4 == null ? null : var4.method_1197(), plain(var5), plain(var6), plain(var7));
-         this.classified.put(var2, new StaffListModule.Classified(var3, var5, var4, var6, var7, var9));
+         StaffMatcher.Match var9 = RANKS.match(string, var4 == null ? null : var4.getName(), plain(var5), plain(var6), plain(var7));
+         this.classified.put(uUID, new StaffListModule.Classified(string, var5, var4, var6, var7, var9));
          return var9;
       }
    }
 
-   private static String plain(Text var0) {
-      return var0 == null ? null : var0.getString();
+   private static String plain(Text text) {
+      return text == null ? null : text.getString();
    }
 
-   private void drainSwitches(ClientPlayNetworkHandler var1, UUID var2, long var3) {
+   private void drainSwitches(ClientPlayNetworkHandler clientPlayNetworkHandler, UUID uUID, long l) {
       StaffListModule.GameModeSwitch var5;
       while ((var5 = this.switches.poll()) != null) {
          UUID var7 = var5.id();
-         if (!var7.equals(var2)) {
+         if (!var7.equals(uUID)) {
             StaffListModule.Staff var8 = this.staff.get(var7);
             String var6;
             if (var8 != null) {
                var6 = var8.name;
             } else {
-               PlayerListEntry var9 = var1.method_2871(var7);
-               var6 = var9 == null ? null : var9.method_2966().name();
+               PlayerListEntry var9 = clientPlayNetworkHandler.getPlayerListEntry(var7);
+               var6 = var9 == null ? null : var9.getProfile().name();
                if (!isStaffName(var6) || !isAccount(var7, var6)) {
                   continue;
                }
             }
 
-            StaffListModule.Sighting var11 = this.sightings.computeIfAbsent(var7, var0 -> new StaffListModule.Sighting());
-            if (!var11.marked(var3)) {
+            StaffListModule.Sighting var11 = this.sightings.computeIfAbsent(var7, uUIDx -> new StaffListModule.Sighting());
+            if (!var11.marked(l)) {
                this.resort = true;
             }
 
-            var11.prove(var3);
-            if (!var11.coolingDown(var3)) {
+            var11.prove(l);
+            if (!var11.coolingDown(l)) {
                GameMode var10 = var5.mode();
                var11.switchAlertTick = this.tickCount;
-               var11.switchedToSpectator = var10 == GameMode.field_9219;
-               this.alert(var7, var11, var3, var6);
+               var11.switchedToSpectator = var10 == GameMode.SPECTATOR;
+               this.alert(var7, var11, l, var6);
             }
          }
       }
    }
 
-   private void trackBodies(MinecraftClient var1, long var2) {
-      ClientPlayerEntity var4 = var1.field_1724;
+   private void trackBodies(MinecraftClient minecraftClient, long l) {
+      ClientPlayerEntity var4 = minecraftClient.player;
 
-      for (AbstractClientPlayerEntity var6 : var1.field_1687.method_18456()) {
+      for (AbstractClientPlayerEntity var6 : minecraftClient.world.getPlayers()) {
          StaffListModule.Staff var7;
-         if (var6 != var4 && (var7 = this.staff.get(var6.method_5667())) != null) {
-            StaffListModule.Sighting var8 = this.sightings.computeIfAbsent(var7.id, var0 -> new StaffListModule.Sighting());
-            var8.prove(var2);
+         if (var6 != var4 && (var7 = this.staff.get(var6.getUuid())) != null) {
+            StaffListModule.Sighting var8 = this.sightings.computeIfAbsent(var7.id, uUID -> new StaffListModule.Sighting());
+            var8.prove(l);
             var8.bodyTick = this.tickCount;
-            var8.distance = var4.method_5739(var6);
+            var8.distance = var4.distanceTo(var6);
             if (!var8.nearby) {
                var8.nearby = true;
                this.resort = true;
-               boolean var9 = var8.bodyLostAt == 0L || var2 - var8.bodyLostAt > 10000L;
+               boolean var9 = var8.bodyLostAt == 0L || l - var8.bodyLostAt > 10000L;
                if (var9) {
-                  this.alert(var7.id, var8, var2, var7.name);
+                  this.alert(var7.id, var8, l, var7.name);
                }
             }
          }
@@ -515,13 +515,13 @@ public final class StaffListModule extends ClientModule {
       for (StaffListModule.Sighting var11 : this.sightings.values()) {
          if (var11.nearby && var11.bodyTick != this.tickCount) {
             var11.nearby = false;
-            var11.bodyLostAt = var2;
+            var11.bodyLostAt = l;
             this.resort = true;
          }
       }
    }
 
-   private void pruneSightings(long var1) {
+   private void pruneSightings(long l) {
       Iterator var3 = this.sightings.entrySet().iterator();
 
       while (var3.hasNext()) {
@@ -530,22 +530,22 @@ public final class StaffListModule extends ClientModule {
          if (this.staff.containsKey(var4.getKey())) {
             var5.untrackedSince = 0L;
          } else if (var5.untrackedSince == 0L) {
-            var5.untrackedSince = var1;
-         } else if (var1 - var5.untrackedSince > 10000L) {
+            var5.untrackedSince = l;
+         } else if (l - var5.untrackedSince > 10000L) {
             var3.remove();
             this.resort = true;
          }
       }
    }
 
-   private void alert(UUID var1, StaffListModule.Sighting var2, long var3, String var5) {
-      var2.alertedAt = var3;
-      var2.highlightUntil = var3 + 4000L;
+   private void alert(UUID uUID, StaffListModule.Sighting sighting, long l, String string) {
+      sighting.alertedAt = l;
+      sighting.highlightUntil = l + 4000L;
       if (this.pendingAlerts.isEmpty()) {
          this.alertGather = 5;
       }
 
-      this.pendingAlerts.put(var1, var5);
+      this.pendingAlerts.put(uUID, string);
    }
 
    private void raise() {
@@ -558,34 +558,34 @@ public final class StaffListModule extends ClientModule {
       StaffGhost.watching(var2, var3, var4);
    }
 
-   private void announce(MinecraftClient var1, StaffListModule.Changes var2) {
-      var2.changed.removeIf(this::echoesSwitchAlert);
-      if (!var2.isEmpty()) {
+   private void announce(MinecraftClient minecraftClient, StaffListModule.Changes changes) {
+      changes.changed.removeIf(this::echoesSwitchAlert);
+      if (!changes.isEmpty()) {
          ArrayList var4 = new ArrayList();
-         describe(var4, var2.joined, ModuleChat.body().warn("joined").build(), (var0, var1x) -> {
-            var0.warn("joined");
-            String var2x = note(var1x);
-            if (var2x != null) {
-               var0.text(" ").danger(var2x);
+         describe(var4, changes.joined, ModuleChat.body().warn("joined").build(), (body, staff) -> {
+            body.warn("joined");
+            String var2 = note(staff);
+            if (var2 != null) {
+               body.text(" ").danger(var2);
             }
          });
-         describe(var4, var2.changed, ModuleChat.body().warn("changed visibility").build(), (var0, var1x) -> {
-            switch (var1x.presence) {
+         describe(var4, changes.changed, ModuleChat.body().warn("changed visibility").build(), (body, staff) -> {
+            switch (staff.presence) {
                case ONLINE:
-                  var0.text("is ").good("visible again");
+                  body.text("is ").good("visible again");
                   break;
                case SPECTATOR:
-                  switchedTo(var0, GameMode.field_9219.method_8381());
+                  switchedTo(body, GameMode.SPECTATOR.getId());
                   break;
                case VANISHED:
-                  var0.danger("vanished").text(var1x.offTabScans > 0 ? " (off TAB, still nearby)" : " (hidden from TAB)");
+                  body.danger("vanished").text(staff.offTabScans > 0 ? " (off TAB, still nearby)" : " (hidden from TAB)");
             }
          });
-         describe(var4, var2.left, ModuleChat.body().good("left").build(), (var0, var1x) -> {
-            if (var1x.presence == StaffListModule.Presence.VANISHED) {
-               var0.text("is ").warn("out of sight");
+         describe(var4, changes.left, ModuleChat.body().good("left").build(), (body, staff) -> {
+            if (staff.presence == StaffListModule.Presence.VANISHED) {
+               body.text("is ").warn("out of sight");
             } else {
-               var0.good("left");
+               body.good("left");
             }
          });
 
@@ -593,83 +593,83 @@ public final class StaffListModule extends ClientModule {
             ModuleChat.send(this, var6);
          }
 
-         boolean var3 = !var2.joined.isEmpty() || var2.changed.stream().anyMatch(var0 -> var0.presence != StaffListModule.Presence.ONLINE);
-         if (var3 && var1.method_1483() != null) {
-            var1.method_1483().method_4873(PositionedSoundInstance.method_47978(SoundEvents.field_14725, 1.25F));
+         boolean var3 = !changes.joined.isEmpty() || changes.changed.stream().anyMatch(staff -> staff.presence != StaffListModule.Presence.ONLINE);
+         if (var3 && minecraftClient.getSoundManager() != null) {
+            minecraftClient.getSoundManager().play(PositionedSoundInstance.ui(SoundEvents.BLOCK_NOTE_BLOCK_CHIME, 1.25F));
          }
       }
    }
 
-   private boolean echoesSwitchAlert(StaffListModule.Staff var1) {
-      StaffListModule.Sighting var2 = this.sightings.get(var1.id);
+   private boolean echoesSwitchAlert(StaffListModule.Staff staff) {
+      StaffListModule.Sighting var2 = this.sightings.get(staff.id);
       if (var2 != null && var2.switchAlertTick >= 0 && this.tickCount - var2.switchAlertTick <= 20) {
-         return var1.presence == StaffListModule.Presence.SPECTATOR
+         return staff.presence == StaffListModule.Presence.SPECTATOR
             ? var2.switchedToSpectator
-            : var1.presence == StaffListModule.Presence.ONLINE && !var2.switchedToSpectator;
+            : staff.presence == StaffListModule.Presence.ONLINE && !var2.switchedToSpectator;
       } else {
          return false;
       }
    }
 
    private static void describe(
-      List<ModuleChat.Body> var0, List<StaffListModule.Staff> var1, Text var2, BiConsumer<ModuleChat.Body, StaffListModule.Staff> var3
+      List<ModuleChat.Body> list, List<StaffListModule.Staff> list2, Text text, BiConsumer<ModuleChat.Body, StaffListModule.Staff> biConsumer
    ) {
-      if (!var1.isEmpty()) {
-         if (var1.size() > 3) {
-            ArrayList var7 = new ArrayList(var1.size());
+      if (!list2.isEmpty()) {
+         if (list2.size() > 3) {
+            ArrayList var7 = new ArrayList(list2.size());
 
-            for (StaffListModule.Staff var9 : var1) {
+            for (StaffListModule.Staff var9 : list2) {
                var7.add(label(var9));
             }
 
-            var0.add(list(ModuleChat.body().value(var1.size()).text(" staff ").append(var2).text(": "), var7));
+            list.add(list(ModuleChat.body().value(list2.size()).text(" staff ").append(text).text(": "), var7));
          } else {
-            for (StaffListModule.Staff var5 : var1) {
+            for (StaffListModule.Staff var5 : list2) {
                ModuleChat.Body var6 = ModuleChat.body().append(label(var5)).text(" ");
-               var3.accept(var6, var5);
-               var0.add(var6);
+               biConsumer.accept(var6, var5);
+               list.add(var6);
             }
          }
       }
    }
 
-   private static Text label(StaffListModule.Staff var0) {
-      return label(var0.name, var0.rank);
+   private static Text label(StaffListModule.Staff staff) {
+      return label(staff.name, staff.rank);
    }
 
-   private static Text label(String var0, String var1) {
-      return ModuleChat.body().name(NameFilter.apply(var0)).text(" (" + var1 + ")").build();
+   private static Text label(String string, String string2) {
+      return ModuleChat.body().name(NameFilter.apply(string)).text(" (" + string2 + ")").build();
    }
 
-   private static String note(StaffListModule.Staff var0) {
-      return switch (var0.presence) {
+   private static String note(StaffListModule.Staff staff) {
+      return switch (staff.presence) {
          case ONLINE -> null;
          case SPECTATOR -> "spectating";
          case VANISHED -> "vanished";
       };
    }
 
-   private static ModuleChat.Body list(ModuleChat.Body var0, List<Text> var1) {
-      for (int var2 = 0; var2 < var1.size(); var2++) {
+   private static ModuleChat.Body list(ModuleChat.Body body, List<Text> list) {
+      for (int var2 = 0; var2 < list.size(); var2++) {
          if (var2 > 0) {
-            var0.text(", ");
+            body.text(", ");
          }
 
-         var0.append((Text)var1.get(var2));
+         body.append((Text)list.get(var2));
       }
 
-      return var0;
+      return body;
    }
 
-   static ModuleChat.Body switchedTo(ModuleChat.Body var0, String var1) {
-      if (var1 == null) {
-         return var0.text("switched game mode");
+   static ModuleChat.Body switchedTo(ModuleChat.Body body, String string) {
+      if (string == null) {
+         return body.text("switched game mode");
       } else {
-         var0.text("switched to ");
-         if (GameMode.field_9219.method_8381().equals(var1)) {
-            return var0.danger(var1);
+         body.text("switched to ");
+         if (GameMode.SPECTATOR.getId().equals(string)) {
+            return body.danger(string);
          } else {
-            return GameMode.field_9220.method_8381().equals(var1) ? var0.warn(var1) : var0.name(var1);
+            return GameMode.CREATIVE.getId().equals(string) ? body.warn(string) : body.name(string);
          }
       }
    }
@@ -690,8 +690,8 @@ public final class StaffListModule extends ClientModule {
 
    @Environment(EnvType.CLIENT)
    private record Classified(String name, Text display, Team team, Text prefix, Text suffix, StaffMatcher.Match match) {
-      boolean isFor(String var1, Text var2, Team var3, Text var4, Text var5) {
-         return this.display == var2 && this.team == var3 && this.prefix == var4 && this.suffix == var5 && this.name.equals(var1);
+      boolean isFor(String string, Text text, Team team, Text text2, Text text3) {
+         return this.display == text && this.team == team && this.prefix == text2 && this.suffix == text3 && this.name.equals(string);
       }
    }
 
@@ -752,24 +752,24 @@ public final class StaffListModule extends ClientModule {
       private Sighting() {
       }
 
-      boolean marked(long var1) {
-         return this.nearby || this.provenAt != 0L && var1 - this.provenAt < 600000L;
+      boolean marked(long l) {
+         return this.nearby || this.provenAt != 0L && l - this.provenAt < 600000L;
       }
 
-      void prove(long var1) {
-         if (!this.watching(var1)) {
-            this.watchingSince = var1;
+      void prove(long l) {
+         if (!this.watching(l)) {
+            this.watchingSince = l;
          }
 
-         this.provenAt = var1;
+         this.provenAt = l;
       }
 
-      boolean watching(long var1) {
-         return this.nearby || this.provenAt != 0L && var1 - this.provenAt < 10000L;
+      boolean watching(long l) {
+         return this.nearby || this.provenAt != 0L && l - this.provenAt < 10000L;
       }
 
-      boolean coolingDown(long var1) {
-         return this.alertedAt != 0L && var1 - this.alertedAt < 120000L;
+      boolean coolingDown(long l) {
+         return this.alertedAt != 0L && l - this.alertedAt < 120000L;
       }
    }
 
@@ -782,15 +782,15 @@ public final class StaffListModule extends ClientModule {
       StaffListModule.Presence presence = StaffListModule.Presence.ONLINE;
       int offTabScans;
 
-      Staff(UUID var1) {
-         this.id = var1;
+      Staff(UUID uUID) {
+         this.id = uUID;
       }
 
-      void update(String var1, StaffMatcher.Match var2, StaffListModule.Presence var3) {
-         this.name = var1;
-         this.rank = var2.rank();
-         this.seniority = var2.seniority();
-         this.presence = var3;
+      void update(String string, StaffMatcher.Match match, StaffListModule.Presence presence) {
+         this.name = string;
+         this.rank = match.rank();
+         this.seniority = match.seniority();
+         this.presence = presence;
       }
    }
 }

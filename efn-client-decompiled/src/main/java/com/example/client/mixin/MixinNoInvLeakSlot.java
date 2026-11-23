@@ -17,11 +17,11 @@ public abstract class MixinNoInvLeakSlot {
    }
 
    @ModifyReturnValue(
-      method = {"method_7679"},
+      method = {"getBackgroundSprite"},
       at = {@At("RETURN")}
    )
-   private Identifier efn$noInvLeakSilhouette(Identifier var1) {
+   private Identifier efn$noInvLeakSilhouette(Identifier identifier) {
       Slot var2 = (Slot)this;
-      return var1 != null && NoInvLeakModule.overlaying() && var2.field_7871 instanceof PlayerInventory && var2.method_7681() ? null : var1;
+      return identifier != null && NoInvLeakModule.overlaying() && var2.inventory instanceof PlayerInventory && var2.hasStack() ? null : identifier;
    }
 }

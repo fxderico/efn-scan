@@ -10,6 +10,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Environment(EnvType.CLIENT)
 @Mixin({ClientWorld.class})
 public interface AccessorClientLevel {
-   @Accessor("field_37951")
+   @Accessor("pendingUpdateManager")
    PendingUpdateManager easyplace$predictions();
 }

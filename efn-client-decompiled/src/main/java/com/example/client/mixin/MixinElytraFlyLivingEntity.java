@@ -17,17 +17,17 @@ public abstract class MixinElytraFlyLivingEntity {
    }
 
    @ModifyReturnValue(
-      method = {"method_6128"},
+      method = {"isGliding"},
       at = {@At("RETURN")}
    )
-   private boolean efn$elytraFlyIsFallFlying(boolean var1) {
+   private boolean efn$elytraFlyIsFallFlying(boolean bl) {
       ElytraFlyModule var2 = ElytraFlyModule.active;
       if (var2 == null) {
-         return var1;
+         return bl;
       } else {
-         MinecraftClient var3 = MinecraftClient.method_1551();
-         ClientPlayerEntity var4 = var3.field_1724;
-         return this == var4 && var3.method_18854() ? var2.modifyFallFlying(var4, var1) : var1;
+         MinecraftClient var3 = MinecraftClient.getInstance();
+         ClientPlayerEntity var4 = var3.player;
+         return this == var4 && var3.isOnThread() ? var2.modifyFallFlying(var4, bl) : bl;
       }
    }
 }

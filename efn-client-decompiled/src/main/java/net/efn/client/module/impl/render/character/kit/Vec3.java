@@ -10,40 +10,40 @@ public record Vec3(float x, float y, float z) {
    public static final Vec3 FORWARD = new Vec3(0.0F, 0.0F, 1.0F);
    public static final Vec3 LEFT = new Vec3(1.0F, 0.0F, 0.0F);
 
-   public static Vec3 of(float var0, float var1, float var2) {
-      return new Vec3(var0, var1, var2);
+   public static Vec3 of(float f, float g, float h) {
+      return new Vec3(f, g, h);
    }
 
-   public Vec3 add(Vec3 var1) {
-      return new Vec3(this.x + var1.x, this.y + var1.y, this.z + var1.z);
+   public Vec3 add(Vec3 vec3) {
+      return new Vec3(this.x + vec3.x, this.y + vec3.y, this.z + vec3.z);
    }
 
-   public Vec3 add(float var1, float var2, float var3) {
-      return new Vec3(this.x + var1, this.y + var2, this.z + var3);
+   public Vec3 add(float f, float g, float h) {
+      return new Vec3(this.x + f, this.y + g, this.z + h);
    }
 
-   public Vec3 sub(Vec3 var1) {
-      return new Vec3(this.x - var1.x, this.y - var1.y, this.z - var1.z);
+   public Vec3 sub(Vec3 vec3) {
+      return new Vec3(this.x - vec3.x, this.y - vec3.y, this.z - vec3.z);
    }
 
-   public Vec3 mul(float var1) {
-      return new Vec3(this.x * var1, this.y * var1, this.z * var1);
+   public Vec3 mul(float f) {
+      return new Vec3(this.x * f, this.y * f, this.z * f);
    }
 
-   public float dot(Vec3 var1) {
-      return this.x * var1.x + this.y * var1.y + this.z * var1.z;
+   public float dot(Vec3 vec3) {
+      return this.x * vec3.x + this.y * vec3.y + this.z * vec3.z;
    }
 
-   public Vec3 cross(Vec3 var1) {
-      return new Vec3(this.y * var1.z - this.z * var1.y, this.z * var1.x - this.x * var1.z, this.x * var1.y - this.y * var1.x);
+   public Vec3 cross(Vec3 vec3) {
+      return new Vec3(this.y * vec3.z - this.z * vec3.y, this.z * vec3.x - this.x * vec3.z, this.x * vec3.y - this.y * vec3.x);
    }
 
    public float length() {
       return (float)Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
    }
 
-   public float distance(Vec3 var1) {
-      return this.sub(var1).length();
+   public float distance(Vec3 vec3) {
+      return this.sub(vec3).length();
    }
 
    public Vec3 normalize() {
@@ -51,19 +51,19 @@ public record Vec3(float x, float y, float z) {
       return var1 < 1.0E-8F ? ZERO : this.mul(1.0F / var1);
    }
 
-   public Vec3 lerp(Vec3 var1, float var2) {
-      return new Vec3(this.x + (var1.x - this.x) * var2, this.y + (var1.y - this.y) * var2, this.z + (var1.z - this.z) * var2);
+   public Vec3 lerp(Vec3 vec3, float f) {
+      return new Vec3(this.x + (vec3.x - this.x) * f, this.y + (vec3.y - this.y) * f, this.z + (vec3.z - this.z) * f);
    }
 
    public Vec3 mirrorX() {
       return new Vec3(-this.x, this.y, this.z);
    }
 
-   public Vec3 rotate(float var1, float var2, float var3) {
-      return Mat3.euler(var1, var2, var3).apply(this);
+   public Vec3 rotate(float f, float g, float h) {
+      return Mat3.euler(f, g, h).apply(this);
    }
 
-   public Vec3 rotate(float var1, float var2, float var3, Vec3 var4) {
-      return Mat3.euler(var1, var2, var3).apply(this.sub(var4)).add(var4);
+   public Vec3 rotate(float f, float g, float h, Vec3 vec3) {
+      return Mat3.euler(f, g, h).apply(this.sub(vec3)).add(vec3);
    }
 }

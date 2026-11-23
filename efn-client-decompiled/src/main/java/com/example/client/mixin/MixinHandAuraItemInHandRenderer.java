@@ -18,25 +18,25 @@ public abstract class MixinHandAuraItemInHandRenderer {
    }
 
    @WrapOperation(
-      method = {"method_22976"},
+      method = {"renderItem"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_11684;method_73002()V"
+         target = "Lnet/minecraft/client/render/command/RenderDispatcher;render()V"
       )}
    )
-   private void efn$handAura(RenderDispatcher var1, Operation<Void> var2) {
+   private void efn$handAura(RenderDispatcher renderDispatcher, Operation<Void> operation) {
       if (HandAuraModule.active != null && HandAuraModule.beginCapture()) {
          boolean var3 = false;
 
          try {
-            var2.call(new Object[]{var1});
-            MinecraftClient.method_1551().method_22940().method_23000().method_22993();
+            operation.call(renderDispatcher);
+            MinecraftClient.getInstance().getBufferBuilders().getEntityVertexConsumers().draw();
             var3 = true;
          } finally {
             HandAuraModule.endCapture(var3);
          }
       } else {
-         var2.call(new Object[]{var1});
+         operation.call(renderDispatcher);
       }
    }
 }

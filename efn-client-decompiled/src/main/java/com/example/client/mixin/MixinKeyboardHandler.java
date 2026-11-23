@@ -20,12 +20,12 @@ public abstract class MixinKeyboardHandler {
    }
 
    @WrapMethod(
-      method = {"method_1466"}
+      method = {"onKey"}
    )
-   private void efn$openGuiFirst(long var1, int var3, KeyInput var4, Operation<Void> var5) {
-      boolean var6 = var3 != 0 && EfnClientMod.isGuiKey(var1, var4);
-      if (!var6 || var3 != 1 || !EfnClientMod.toggleGuiFromKey()) {
-         var5.call(new Object[]{var1, var3, var4});
+   private void efn$openGuiFirst(long l, int i, KeyInput keyInput, Operation<Void> operation) {
+      boolean var6 = i != 0 && EfnClientMod.isGuiKey(l, keyInput);
+      if (!var6 || i != 1 || !EfnClientMod.toggleGuiFromKey()) {
+         operation.call(l, i, keyInput);
          if (var6) {
             EfnClientMod.dropGuiClicks();
          }
@@ -33,13 +33,13 @@ public abstract class MixinKeyboardHandler {
    }
 
    @Inject(
-      method = {"method_1466"},
+      method = {"onKey"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$onKeyPress(long var1, int var3, KeyInput var4, CallbackInfo var5) {
-      if (KeyInputEvent.dispatch(var4.comp_4795(), var4.comp_4796(), var3, var4.comp_4797())) {
-         var5.cancel();
+   private void efn$onKeyPress(long l, int i, KeyInput keyInput, CallbackInfo callbackInfo) {
+      if (KeyInputEvent.dispatch(keyInput.key(), keyInput.scancode(), i, keyInput.modifiers())) {
+         callbackInfo.cancel();
       }
    }
 }

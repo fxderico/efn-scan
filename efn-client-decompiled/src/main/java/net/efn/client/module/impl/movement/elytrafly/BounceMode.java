@@ -20,42 +20,42 @@ public final class BounceMode extends ElytraFlightMode {
    private int tickDelay;
    private double prevFov;
 
-   public BounceMode(ElytraFlyModule var1) {
-      super(var1);
-      this.tickDelay = var1.restartDelay.getInt();
+   public BounceMode(ElytraFlyModule elytraFlyModule) {
+      super(elytraFlyModule);
+      this.tickDelay = elytraFlyModule.restartDelay.getInt();
    }
 
    @Override
    public void onTick() {
       super.onTick();
-      ClientPlayerEntity var1 = this.mc.field_1724;
+      ClientPlayerEntity var1 = this.mc.player;
       if (var1 != null) {
-         if (this.mc.field_1690.field_1903.method_1434() && !var1.method_6128() && !this.elytraFly.manualTakeoff.get()) {
+         if (this.mc.options.jumpKey.isPressed() && !var1.isGliding() && !this.elytraFly.manualTakeoff.get()) {
             sendStartFallFlying(var1);
          }
 
          if (checkConditions(var1)) {
             if (!this.rubberbanded) {
                if (this.prevFov != 0.0 && !this.elytraFly.sprint.get()) {
-                  this.mc.field_1690.method_42454().method_41748(0.0);
+                  this.mc.options.getFovEffectScale().setValue(0.0);
                }
 
                if (this.elytraFly.autoJump.get()) {
-                  this.mc.field_1690.field_1903.method_23481(true);
+                  this.mc.options.jumpKey.setPressed(true);
                }
 
-               this.mc.field_1690.field_1894.method_23481(true);
-               var1.method_36456(this.getYawDirection(var1));
+               this.mc.options.forwardKey.setPressed(true);
+               var1.setYaw(this.getYawDirection(var1));
                if (this.elytraFly.lockPitch.get()) {
-                  var1.method_36457(this.elytraFly.pitch.get());
+                  var1.setPitch(this.elytraFly.pitch.get());
                }
             }
 
             if (!this.elytraFly.sprint.get()) {
-               if (var1.method_6128()) {
-                  var1.method_5728(var1.method_24828());
+               if (var1.isGliding()) {
+                  var1.setSprinting(var1.isOnGround());
                } else {
-                  var1.method_5728(true);
+                  var1.setSprinting(true);
                }
             }
 
@@ -75,55 +75,61 @@ public final class BounceMode extends ElytraFlightMode {
    @Override
    public void onPreTick() {
       super.onPreTick();
-      ClientPlayerEntity var1 = this.mc.field_1724;
+      ClientPlayerEntity var1 = this.mc.player;
       if (var1 != null && checkConditions(var1) && this.elytraFly.sprint.get()) {
-         var1.method_5728(true);
+         var1.setSprinting(true);
       }
    }
 
    private void unpress() {
-      this.mc.field_1690.field_1894.method_23481(false);
+      this.mc.options.forwardKey.setPressed(false);
       if (this.elytraFly.autoJump.get()) {
-         this.mc.field_1690.field_1903.method_23481(false);
+         this.mc.options.jumpKey.setPressed(false);
       }
    }
 
    @Override
    public void onPositionPacket() {
       this.rubberbanded = true;
-      ClientPlayerEntity var1 = this.mc.field_1724;
+      ClientPlayerEntity var1 = this.mc.player;
       if (var1 != null) {
-         var1.method_66281();
+         var1.stopGliding();
       }
    }
 
    @Override
-   public void onPacketSend(Packet<?> var1) {
+   public void onPacketSend(Packet<?> packet) {
       ClientCommandC2SPacket var2;
-      if (var1 instanceof ClientCommandC2SPacket && (var2 = (ClientCommandC2SPacket)var1).method_12365() == Mode.field_12982 && !this.elytraFly.sprint.get()) {
-         this.mc.field_1724.method_5728(true);
+      if (packet instanceof ClientCommandC2SPacket
+         && (var2 = (ClientCommandC2SPacket)packet).getMode() == Mode.START_FALL_FLYING
+         && !this.elytraFly.sprint.get()) {
+         this.mc.player.setSprinting(true);
       }
    }
 
-   public static boolean recastElytra(ClientPlayerEntity var0) {
-      if (checkConditions(var0) && startGliding(var0)) {
-         sendStartFallFlying(var0);
+   public static boolean recastElytra(ClientPlayerEntity clientPlayerEntity) {
+      if (checkConditions(clientPlayerEntity) && startGliding(clientPlayerEntity)) {
+         sendStartFallFlying(clientPlayerEntity);
          return true;
       } else {
          return false;
       }
    }
 
-   public static boolean checkConditions(ClientPlayerEntity var0) {
-      BlockState var1 = var0.method_55667();
-      boolean var2 = var1.method_26164(BlockTags.field_22414) && !var1.method_26164(BlockTags.field_63247);
-      return !var0.method_31549().field_7479 && !var0.method_5765() && !var2 && !var0.method_5799() && !var0.method_6059(StatusEffects.field_5902);
+   public static boolean checkConditions(ClientPlayerEntity clientPlayerEntity) {
+      BlockState var1 = clientPlayerEntity.getBlockStateAtPos();
+      boolean var2 = var1.isIn(BlockTags.CLIMBABLE) && !var1.isIn(BlockTags.CAN_GLIDE_THROUGH);
+      return !clientPlayerEntity.getAbilities().flying
+         && !clientPlayerEntity.hasVehicle()
+         && !var2
+         && !clientPlayerEntity.isTouchingWater()
+         && !clientPlayerEntity.hasStatusEffect(StatusEffects.LEVITATION);
    }
 
-   private static boolean startGliding(ClientPlayerEntity var0) {
-      for (EquipmentSlot var2 : EquipmentSlot.field_54086) {
-         if (LivingEntity.method_63624(var0.method_6118(var2), var2)) {
-            MinecraftClient.method_1551().method_19537(() -> var0.method_23669());
+   private static boolean startGliding(ClientPlayerEntity clientPlayerEntity) {
+      for (EquipmentSlot var2 : EquipmentSlot.VALUES) {
+         if (LivingEntity.canGlideWith(clientPlayerEntity.getEquippedStack(var2), var2)) {
+            MinecraftClient.getInstance().submitAndJoin(() -> clientPlayerEntity.startGliding());
             return true;
          }
       }
@@ -131,23 +137,23 @@ public final class BounceMode extends ElytraFlightMode {
       return false;
    }
 
-   private static void sendStartFallFlying(ClientPlayerEntity var0) {
-      var0.field_3944.method_52787(new ClientCommandC2SPacket(var0, Mode.field_12982));
+   private static void sendStartFallFlying(ClientPlayerEntity clientPlayerEntity) {
+      clientPlayerEntity.networkHandler.sendPacket(new ClientCommandC2SPacket(clientPlayerEntity, Mode.START_FALL_FLYING));
    }
 
-   private float getYawDirection(ClientPlayerEntity var1) {
+   private float getYawDirection(ClientPlayerEntity clientPlayerEntity) {
       String var2 = this.elytraFly.yawLockMode.get();
 
       return switch (var2) {
-         case "Smart" -> Math.round((var1.method_36454() + 1.0F) / 45.0F) * 45.0F;
+         case "Smart" -> Math.round((clientPlayerEntity.getYaw() + 1.0F) / 45.0F) * 45.0F;
          case "Simple" -> this.elytraFly.yaw.get();
-         default -> var1.method_36454();
+         default -> clientPlayerEntity.getYaw();
       };
    }
 
    @Override
    public void onActivate() {
-      this.prevFov = (Double)this.mc.field_1690.method_42454().method_41753();
+      this.prevFov = this.mc.options.getFovEffectScale().getValue();
    }
 
    @Override
@@ -155,7 +161,7 @@ public final class BounceMode extends ElytraFlightMode {
       this.unpress();
       this.rubberbanded = false;
       if (this.prevFov != 0.0 && !this.elytraFly.sprint.get()) {
-         this.mc.field_1690.method_42454().method_41748(this.prevFov);
+         this.mc.options.getFovEffectScale().setValue(this.prevFov);
       }
    }
 }

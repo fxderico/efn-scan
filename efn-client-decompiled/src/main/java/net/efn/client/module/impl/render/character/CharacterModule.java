@@ -90,7 +90,7 @@ public final class CharacterModule extends ClientModule {
       }
 
       this.refreshCharacters();
-      Util.method_668().method_60932(var1);
+      Util.getOperatingSystem().open(var1);
    }
 
    private void prepare() {
@@ -115,7 +115,7 @@ public final class CharacterModule extends ClientModule {
       this.refreshCharacters();
       this.prepare();
       active = this;
-      this.on(TickEvent.TYPE, Stage.POST, var1x -> {
+      this.on(TickEvent.TYPE, Stage.POST, tickEvent -> {
          this.watchLevel();
          if (++this.scanTicks % 40 == 0) {
             this.refreshCharacters();
@@ -136,70 +136,71 @@ public final class CharacterModule extends ClientModule {
    private void reset() {
       this.friendCache.clear();
       CharacterMotion.clear();
-      this.level = new WeakReference<>(MinecraftClient.method_1551().field_1687);
+      this.level = new WeakReference<>(MinecraftClient.getInstance().world);
    }
 
    private void watchLevel() {
-      ClientWorld var1 = MinecraftClient.method_1551().field_1687;
+      ClientWorld var1 = MinecraftClient.getInstance().world;
       if (this.level.get() != var1) {
          this.reset();
          CharacterCache.releaseTextures();
       }
    }
 
-   public static void extract(Entity var0, PlayerEntityRenderState var1) {
+   public static void extract(Entity entity, PlayerEntityRenderState playerEntityRenderState) {
       CharacterModule var2 = active;
-      WornCharacter var3 = var2 == null ? null : var2.resolve(var1);
-      CharacterHolder var4 = (CharacterHolder)var1;
+      WornCharacter var3 = var2 == null ? null : var2.resolve(playerEntityRenderState);
+      CharacterHolder var4 = (CharacterHolder)playerEntityRenderState;
       var4.efn$setCharacter(var3);
       if (var3 != null) {
-         Entity var5 = var0.method_5854();
+         Entity var5 = entity.getVehicle();
          var4.efn$setSeat(var5 == null ? 0.0F : (var5 instanceof LivingEntity ? 1.35F : 0.3F));
-         if (var1.field_53338 != null) {
+         if (playerEntityRenderState.nameLabelPos != null) {
             CharacterModel var6 = var3.model;
             float var7 = var6.maxY * var6.scale - 32.0F;
             if (var7 > 0.0F) {
-               var1.field_53338 = var1.field_53338.method_1031(0.0, var7 * 0.05859375F * var1.field_53453, 0.0);
+               playerEntityRenderState.nameLabelPos = playerEntityRenderState.nameLabelPos
+                  .add(0.0, var7 * 0.05859375F * playerEntityRenderState.baseScale, 0.0);
             }
          }
       }
    }
 
-   static void baking(String var0) {
+   static void baking(String string) {
       CharacterModule var1 = active;
       if (var1 != null) {
-         ModuleChat.send(var1, ModuleChat.body().text("Preparing ").name(var0).text(", big models take a few seconds the first time"));
+         ModuleChat.send(var1, ModuleChat.body().text("Preparing ").name(string).text(", big models take a few seconds the first time"));
       }
    }
 
-   static void notice(String var0, List<String> var1) {
+   static void notice(String string, List<String> list) {
       CharacterModule var2 = active;
       if (var2 != null) {
-         ModuleChat.Body var3 = ModuleChat.body().name(var0);
-         if (var1.isEmpty()) {
+         ModuleChat.Body var3 = ModuleChat.body().name(string);
+         if (list.isEmpty()) {
             var3.text(" has no skeleton the client recognises, so it moves as one piece");
          } else {
-            var3.text(" only moves its ").value(String.join(" and ", var1)).text(", the rest of its skeleton wasn't recognised");
+            var3.text(" only moves its ").value(String.join(" and ", list)).text(", the rest of its skeleton wasn't recognised");
          }
 
          ModuleChat.send(var2, var3);
       }
    }
 
-   static void failed(CharacterDesign var0, Throwable var1) {
+   static void failed(CharacterDesign characterDesign, Throwable throwable) {
       CharacterModule var2 = active;
       if (var2 != null) {
-         Throwable var3 = var1 instanceof UncheckedIOException && var1.getCause() != null ? var1.getCause() : var1;
+         Throwable var3 = throwable instanceof UncheckedIOException && throwable.getCause() != null ? throwable.getCause() : throwable;
          String var4 = !(var3 instanceof IOException) && !(var3 instanceof IllegalStateException)
             ? "the file couldn't be read, see the log"
             : var3.getMessage();
-         ModuleChat.send(var2, ModuleChat.body().text("Couldn't load ").name(var0.name()).text(": ").danger(var4));
+         ModuleChat.send(var2, ModuleChat.body().text("Couldn't load ").name(characterDesign.name()).text(": ").danger(var4));
       }
    }
 
-   static WornCharacter worn(EntityRenderState var0) {
+   static WornCharacter worn(EntityRenderState entityRenderState) {
       WornCharacter var1;
-      if (var0 instanceof CharacterHolder var2) {
+      if (entityRenderState instanceof CharacterHolder var2) {
          var1 = var2.efn$character();
       } else {
          var1 = null;
@@ -208,9 +209,9 @@ public final class CharacterModule extends ClientModule {
       return var1;
    }
 
-   static float seat(EntityRenderState var0) {
+   static float seat(EntityRenderState entityRenderState) {
       float var1;
-      if (var0 instanceof CharacterHolder var2) {
+      if (entityRenderState instanceof CharacterHolder var2) {
          var1 = var2.efn$seat();
       } else {
          var1 = 0.0F;
@@ -219,22 +220,22 @@ public final class CharacterModule extends ClientModule {
       return var1;
    }
 
-   public static boolean hidesModel(EntityRenderState var0) {
-      return worn(var0) != null;
+   public static boolean hidesModel(EntityRenderState entityRenderState) {
+      return worn(entityRenderState) != null;
    }
 
-   public static boolean hidesLayer(FeatureRenderer<?, ?> var0, EntityRenderState var1) {
-      return worn(var1) == null
+   public static boolean hidesLayer(FeatureRenderer<?, ?> featureRenderer, EntityRenderState entityRenderState) {
+      return worn(entityRenderState) == null
          ? false
-         : var0 instanceof ArmorFeatureRenderer
-            || var0 instanceof CapeFeatureRenderer
-            || var0 instanceof ElytraFeatureRenderer
-            || var0 instanceof StuckObjectsFeatureRenderer
-            || var0 instanceof HeadFeatureRenderer
-            || var0 instanceof ShoulderParrotFeatureRenderer
-            || var0 instanceof Deadmau5FeatureRenderer
-            || var0 instanceof CrownLayer
-            || var0 instanceof HeldItemFeatureRenderer && !showsHeldItems();
+         : featureRenderer instanceof ArmorFeatureRenderer
+            || featureRenderer instanceof CapeFeatureRenderer
+            || featureRenderer instanceof ElytraFeatureRenderer
+            || featureRenderer instanceof StuckObjectsFeatureRenderer
+            || featureRenderer instanceof HeadFeatureRenderer
+            || featureRenderer instanceof ShoulderParrotFeatureRenderer
+            || featureRenderer instanceof Deadmau5FeatureRenderer
+            || featureRenderer instanceof CrownLayer
+            || featureRenderer instanceof HeldItemFeatureRenderer && !showsHeldItems();
    }
 
    private static boolean showsHeldItems() {
@@ -247,8 +248,8 @@ public final class CharacterModule extends ClientModule {
       if (var0 == null) {
          return null;
       } else {
-         ClientPlayerEntity var1 = MinecraftClient.method_1551().field_1724;
-         if (var1 != null && !var1.method_7325()) {
+         ClientPlayerEntity var1 = MinecraftClient.getInstance().player;
+         if (var1 != null && !var1.isSpectator()) {
             WornCharacter var2 = CharacterCache.ready(CharacterCatalog.byName(var0.character.get()), var0.effectiveDetail());
             return var2 != null && var2.model.firstPersonArms ? var2 : null;
          } else {
@@ -257,46 +258,48 @@ public final class CharacterModule extends ClientModule {
       }
    }
 
-   private WornCharacter resolve(PlayerEntityRenderState var1) {
-      if (var1.field_53542) {
+   private WornCharacter resolve(PlayerEntityRenderState playerEntityRenderState) {
+      if (playerEntityRenderState.spectator) {
          return null;
       } else {
-         MinecraftClient var2 = MinecraftClient.method_1551();
-         return !this.wears(var2, var1) ? null : CharacterCache.ready(CharacterCatalog.byName(this.character.get()), this.effectiveDetail());
+         MinecraftClient var2 = MinecraftClient.getInstance();
+         return !this.wears(var2, playerEntityRenderState) ? null : CharacterCache.ready(CharacterCatalog.byName(this.character.get()), this.effectiveDetail());
       }
    }
 
-   private boolean wears(MinecraftClient var1, PlayerEntityRenderState var2) {
-      ClientPlayerEntity var3 = var1.field_1724;
-      if (var3 != null && var1.field_1687 != null) {
-         if (var2.field_53528 != var3.method_5628()) {
-            return this.friends.get() && this.isFriend(var1, var2.field_53528);
+   private boolean wears(MinecraftClient minecraftClient, PlayerEntityRenderState playerEntityRenderState) {
+      ClientPlayerEntity var3 = minecraftClient.player;
+      if (var3 != null && minecraftClient.world != null) {
+         if (playerEntityRenderState.id != var3.getId()) {
+            return this.friends.get() && this.isFriend(minecraftClient, playerEntityRenderState.id);
          } else {
-            return FreecamModule.active == null && var1.field_1690.method_31044().method_31034() ? var1.field_1755 != null && !var3.method_6113() : true;
+            return FreecamModule.active == null && minecraftClient.options.getPerspective().isFirstPerson()
+               ? minecraftClient.currentScreen != null && !var3.isSleeping()
+               : true;
          }
       } else {
          return false;
       }
    }
 
-   private boolean isFriend(MinecraftClient var1, int var2) {
+   private boolean isFriend(MinecraftClient minecraftClient, int i) {
       long var3 = System.nanoTime();
       if (var3 - this.friendsCheckedAt > 1000000000L) {
          this.friendCache.clear();
          this.friendsCheckedAt = var3;
       }
 
-      if (this.friendCache.containsKey(var2)) {
-         return this.friendCache.get(var2);
+      if (this.friendCache.containsKey(i)) {
+         return this.friendCache.get(i);
       } else {
          boolean var6;
-         if (var1.field_1687.method_8469(var2) instanceof PlayerEntity var7) {
-            var6 = FriendStore.getInstance().isFriend(var7.method_7334().name());
+         if (minecraftClient.world.getEntityById(i) instanceof PlayerEntity var7) {
+            var6 = FriendStore.getInstance().isFriend(var7.getGameProfile().name());
          } else {
             var6 = false;
          }
 
-         this.friendCache.put(var2, var6);
+         this.friendCache.put(i, var6);
          return var6;
       }
    }

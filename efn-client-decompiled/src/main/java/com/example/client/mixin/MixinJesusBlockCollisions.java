@@ -24,12 +24,14 @@ public abstract class MixinJesusBlockCollisions {
       method = {"computeNext"},
       at = {@At(
          value = "INVOKE",
-         target = "Lnet/minecraft/class_3726;method_62878(Lnet/minecraft/class_2680;Lnet/minecraft/class_1941;Lnet/minecraft/class_2338;)Lnet/minecraft/class_265;"
+         target = "Lnet/minecraft/block/ShapeContext;getCollisionShape(Lnet/minecraft/block/BlockState;Lnet/minecraft/world/CollisionView;Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/util/shape/VoxelShape;"
       )}
    )
-   private VoxelShape efn$jesusCollisionShape(ShapeContext var1, BlockState var2, CollisionView var3, BlockPos var4, Operation<VoxelShape> var5) {
-      VoxelShape var6 = (VoxelShape)var5.call(new Object[]{var1, var2, var3, var4});
+   private VoxelShape efn$jesusCollisionShape(
+      ShapeContext shapeContext, BlockState blockState, CollisionView collisionView, BlockPos blockPos, Operation<VoxelShape> operation
+   ) {
+      VoxelShape var6 = (VoxelShape)operation.call(shapeContext, blockState, collisionView, blockPos);
       JesusModule var7 = JesusModule.active;
-      return var7 == null ? var6 : var7.collisionShape(var3, var2, var4, var6);
+      return var7 == null ? var6 : var7.collisionShape(collisionView, blockState, blockPos, var6);
    }
 }

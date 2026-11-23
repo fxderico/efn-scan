@@ -9,9 +9,9 @@ import net.fabricmc.api.Environment;
 public final class ActionSetting extends Setting {
    private final Runnable action;
 
-   public ActionSetting(String var1, Runnable var2) {
-      super(var1);
-      this.action = var2;
+   public ActionSetting(String string, Runnable runnable) {
+      super(string);
+      this.action = runnable;
    }
 
    public void run() {
@@ -24,6 +24,6 @@ public final class ActionSetting extends Setting {
    }
 
    @Override
-   protected void deserializeValue(JsonElement var1) {
+   protected void deserializeValue(JsonElement jsonElement) {
    }
 }

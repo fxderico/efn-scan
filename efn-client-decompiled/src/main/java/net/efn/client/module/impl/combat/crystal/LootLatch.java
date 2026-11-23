@@ -32,12 +32,12 @@ public final class LootLatch {
    private LootLatch() {
    }
 
-   public static void update(MinecraftClient var0, ClientPlayerEntity var1) {
-      if (var1 != self || var1.field_6012 != selfTick) {
-         self = var1;
-         selfTick = var1.field_6012;
-         KeyBinding var2 = var0.field_1690.field_1904;
-         evaluate(var0.field_1687, var1, Crystals.isPhysicallyDown(var0, var2), MeleeAttacks.clickPending(var2));
+   public static void update(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      if (clientPlayerEntity != self || clientPlayerEntity.age != selfTick) {
+         self = clientPlayerEntity;
+         selfTick = clientPlayerEntity.age;
+         KeyBinding var2 = minecraftClient.options.useKey;
+         evaluate(minecraftClient.world, clientPlayerEntity, Crystals.isPhysicallyDown(minecraftClient, var2), MeleeAttacks.clickPending(var2));
       }
    }
 
@@ -50,52 +50,52 @@ public final class LootLatch {
    }
 
    public static boolean active() {
-      return latched && Util.method_658() - updatedAt < 250L;
+      return latched && Util.getMeasuringTimeMs() - updatedAt < 250L;
    }
 
-   private static void evaluate(ClientWorld var0, ClientPlayerEntity var1, boolean var2, boolean var3) {
+   private static void evaluate(ClientWorld clientWorld, ClientPlayerEntity clientPlayerEntity, boolean bl, boolean bl2) {
       int var4 = ++clock;
-      updatedAt = Util.method_658();
+      updatedAt = Util.getMeasuringTimeMs();
       DEAD.int2IntEntrySet()
          .removeIf(
-            var2x -> {
-               PlayerEntity var3x;
+            entry -> {
+               PlayerEntity var3;
                Entity var4x;
-               return var4 - var2x.getIntValue() > 10
-                  && (!((var4x = var0.method_8469(var2x.getIntKey())) instanceof PlayerEntity) || !(var3x = (PlayerEntity)var4x).method_29504());
+               return var4 - entry.getIntValue() > 10
+                  && (!((var4x = clientWorld.getEntityById(entry.getIntKey())) instanceof PlayerEntity) || !(var3 = (PlayerEntity)var4x).isDead());
             }
          );
       boolean var5 = reported;
       reported = false;
 
-      for (PlayerEntity var7 : var0.method_18456()) {
-         if (var7 != var1 && var7.method_29504() && !DEAD.containsKey(var7.method_5628())) {
-            DEAD.put(var7.method_5628(), var4);
-            if (var7.method_5858(var1) <= 100.0) {
+      for (PlayerEntity var7 : clientWorld.getPlayers()) {
+         if (var7 != clientPlayerEntity && var7.isDead() && !DEAD.containsKey(var7.getId())) {
+            DEAD.put(var7.getId(), var4);
+            if (var7.squaredDistanceTo(clientPlayerEntity) <= 100.0) {
                var5 = true;
             }
          }
       }
 
       killed = var5;
-      if (var5 && var2) {
+      if (var5 && bl) {
          latched = true;
-      } else if (!var2 || latched && var3) {
+      } else if (!bl || latched && bl2) {
          latched = false;
       }
    }
 
-   private static void onPacket(PacketAppliedEvent var0) {
-      Packet var3 = var0.packet;
+   private static void onPacket(PacketAppliedEvent packetAppliedEvent) {
+      Packet var3 = packetAppliedEvent.packet;
       EntityStatusS2CPacket var2;
-      if (var3 instanceof EntityStatusS2CPacket && (var2 = (EntityStatusS2CPacket)var3).method_11470() == 3) {
-         MinecraftClient var4 = MinecraftClient.method_1551();
-         if (var4.field_1687 != null && var4.field_1724 != null) {
-            Entity var5 = var2.method_11469(var4.field_1687);
+      if (var3 instanceof EntityStatusS2CPacket && (var2 = (EntityStatusS2CPacket)var3).getStatus() == 3) {
+         MinecraftClient var4 = MinecraftClient.getInstance();
+         if (var4.world != null && var4.player != null) {
+            Entity var5 = var2.getEntity(var4.world);
             PlayerEntity var1;
-            if (var5 instanceof PlayerEntity && (var1 = (PlayerEntity)var5) != var4.field_1724 && !DEAD.containsKey(var1.method_5628())) {
-               DEAD.put(var1.method_5628(), clock);
-               if (var1.method_5858(var4.field_1724) <= 100.0) {
+            if (var5 instanceof PlayerEntity && (var1 = (PlayerEntity)var5) != var4.player && !DEAD.containsKey(var1.getId())) {
+               DEAD.put(var1.getId(), clock);
+               if (var1.squaredDistanceTo(var4.player) <= 100.0) {
                   reported = true;
                }
             }

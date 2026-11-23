@@ -49,8 +49,8 @@ public final class OrderDropperModule extends ClientModule {
 
    @Override
    protected void onEnable() {
-      MinecraftClient var1 = MinecraftClient.method_1551();
-      if (var1.field_1724 != null && var1.method_1562() != null) {
+      MinecraftClient var1 = MinecraftClient.getInstance();
+      if (var1.player != null && var1.getNetworkHandler() != null) {
          int var2 = this.orderSlot.getInt();
          int var3 = this.pages.getInt();
          long var4 = (long)(this.delay.get() * 1000.0F);
@@ -63,9 +63,9 @@ public final class OrderDropperModule extends ClientModule {
             } finally {
                this.finish(var1);
             }
-         }, var2x -> {
-            LOGGER.error("[EFN] Order Dropper stopped", var2x);
-            this.say(ModuleChat.body().danger("Stopped").text(": " + var2x));
+         }, throwable -> {
+            LOGGER.error("[EFN] Order Dropper stopped", throwable);
+            this.say(ModuleChat.body().danger("Stopped").text(": " + throwable));
             this.finish(var1);
          });
       } else {
@@ -74,8 +74,8 @@ public final class OrderDropperModule extends ClientModule {
       }
    }
 
-   private void finish(MinecraftClient var1) {
-      var1.execute(() -> {
+   private void finish(MinecraftClient minecraftClient) {
+      minecraftClient.execute(() -> {
          if (this.running && this.isEnabled()) {
             this.setEnabled(false);
          }
@@ -87,29 +87,29 @@ public final class OrderDropperModule extends ClientModule {
       boolean var1 = this.running;
       this.running = false;
       this.worker.stop();
-      ClientPlayerEntity var2 = MinecraftClient.method_1551().field_1724;
-      if (var1 && var2 != null && var2.field_7512 != var2.field_7498) {
-         var2.method_7346();
+      ClientPlayerEntity var2 = MinecraftClient.getInstance().player;
+      if (var1 && var2 != null && var2.currentScreenHandler != var2.playerScreenHandler) {
+         var2.closeHandledScreen();
       }
    }
 
-   private void drop(Gui var1, int var2, int var3, long var4) {
-      ItemStack[] var6 = new ItemStack[]{ItemStack.field_8037};
-      String var7 = this.openCollect(var1, var2, var6);
+   private void drop(Gui gui, int i, int j, long l) {
+      ItemStack[] var6 = new ItemStack[]{ItemStack.EMPTY};
+      String var7 = this.openCollect(gui, i, var6);
       int var8 = 0;
       int var9 = 0;
 
-      for (int var10 = 0; var10 < var3; var10++) {
+      for (int var10 = 0; var10 < j; var10++) {
          if (!this.worker.call(Gui::containerOpenNow)) {
-            var7 = this.openCollect(var1, var2, var6);
+            var7 = this.openCollect(gui, i, var6);
          }
 
          int[] var11 = this.worker.call(OrderDropperModule::pageState);
 
          for (int var12 = 0; var11[0] == 0 && var11[2] >= 0 && var12 < 2; var12++) {
-            String var13 = var1.fingerprint();
-            var1.click(var11[2], 0, SlotActionType.field_7790);
-            var1.waitChange(var13, 4000L);
+            String var13 = gui.fingerprint();
+            gui.click(var11[2], 0, SlotActionType.PICKUP);
+            gui.waitChange(var13, 4000L);
             this.worker.sleep(250L);
             var11 = this.worker.call(OrderDropperModule::pageState);
          }
@@ -123,59 +123,59 @@ public final class OrderDropperModule extends ClientModule {
             throw new AuctionHouse.Problem("No Drop button in the collect menu");
          }
 
-         String var14 = var1.fingerprint();
-         var1.click(var11[1], 0, SlotActionType.field_7790);
+         String var14 = gui.fingerprint();
+         gui.click(var11[1], 0, SlotActionType.PICKUP);
          var8++;
          var9 += var11[0];
-         if (var10 < var3 - 1) {
-            var1.waitChange(var14, 4000L);
-            this.worker.sleep(var4);
+         if (var10 < j - 1) {
+            gui.waitChange(var14, 4000L);
+            this.worker.sleep(l);
          }
       }
 
       this.worker.sleep(300L);
-      var1.closeAll();
+      gui.closeAll();
       this.say(ModuleChat.body().good("Dropped " + var8 + (var8 == 1 ? " page" : " pages")).text(" (").value(var9).text(" items) from ").name(var7).text("."));
    }
 
-   private String openCollect(Gui var1, int var2, ItemStack[] var3) {
-      if (!OrdersNav.openYourOrders(this.worker, var1, this::say)) {
+   private String openCollect(Gui gui, int i, ItemStack[] itemStacks) {
+      if (!OrdersNav.openYourOrders(this.worker, gui, this::say)) {
          throw new AuctionHouse.Problem("Could not open Your Orders");
       } else {
-         ItemStack var4 = this.worker.call(() -> Gui.slotNow(var2));
+         ItemStack var4 = this.worker.call(() -> Gui.slotNow(i));
          if (OrdersNav.isPane(var4)) {
-            throw new AuctionHouse.Problem("There is no order in slot " + var2);
+            throw new AuctionHouse.Problem("There is no order in slot " + i);
          } else {
-            String var5 = var4.method_7964().getString();
-            if (var3[0].method_7960()) {
-               var3[0] = var4.method_7972();
-            } else if (!var4.method_31574(var3[0].method_7909()) || !var5.equals(var3[0].method_7964().getString())) {
-               var1.closeAll();
-               throw new AuctionHouse.Problem("Slot " + var2 + " now holds a different order (" + var5 + "), stopped so nothing else is dropped");
+            String var5 = var4.getName().getString();
+            if (itemStacks[0].isEmpty()) {
+               itemStacks[0] = var4.copy();
+            } else if (!var4.isOf(itemStacks[0].getItem()) || !var5.equals(itemStacks[0].getName().getString())) {
+               gui.closeAll();
+               throw new AuctionHouse.Problem("Slot " + i + " now holds a different order (" + var5 + "), stopped so nothing else is dropped");
             }
 
-            String var6 = var1.fingerprint();
-            var1.click(var2, 0, SlotActionType.field_7790);
+            String var6 = gui.fingerprint();
+            gui.click(i, 0, SlotActionType.PICKUP);
             if (!this.worker.waitFor(() -> Gui.containerOpenNow() && !OrdersNav.isYourOrdersNow() && !Gui.fingerprintNow().equals(var6), 5000L)) {
-               throw new AuctionHouse.Problem("The order in slot " + var2 + " did not open");
+               throw new AuctionHouse.Problem("The order in slot " + i + " did not open");
             } else {
                this.worker.sleep(300L);
                int var7 = this.worker.call(() -> {
                   List var0 = Gui.containerNow();
 
-                  for (int var1x = 0; var1x < var0.size(); var1x++) {
-                     if (!((ItemStack)var0.get(var1x)).method_7960() && Gui.nameOf((ItemStack)var0.get(var1x)).contains("collect")) {
-                        return var1x;
+                  for (int var1 = 0; var1 < var0.size(); var1++) {
+                     if (!((ItemStack)var0.get(var1)).isEmpty() && Gui.nameOf((ItemStack)var0.get(var1)).contains("collect")) {
+                        return var1;
                      }
                   }
 
-                  return var0.size() > 13 && !((ItemStack)var0.get(13)).method_7960() ? 13 : -1;
+                  return var0.size() > 13 && !((ItemStack)var0.get(13)).isEmpty() ? 13 : -1;
                });
                if (var7 < 0) {
                   throw new AuctionHouse.Problem("No Collect button in the order");
                } else {
-                  String var8 = var1.fingerprint();
-                  var1.click(var7, 0, SlotActionType.field_7790);
+                  String var8 = gui.fingerprint();
+                  gui.click(var7, 0, SlotActionType.PICKUP);
                   if (!this.worker.waitFor(() -> Gui.containerOpenNow() && !Gui.fingerprintNow().equals(var8) && dropButton(Gui.containerNow()) >= 0, 5000L)) {
                      throw new AuctionHouse.Problem("The collect menu did not open");
                   } else {
@@ -193,35 +193,35 @@ public final class OrderDropperModule extends ClientModule {
       int var1 = 0;
 
       for (int var2 = 0; var2 < 45 && var2 < var0.size(); var2++) {
-         var1 += ((ItemStack)var0.get(var2)).method_7947();
+         var1 += ((ItemStack)var0.get(var2)).getCount();
       }
 
       return new int[]{var1, dropButton(var0), nextButton(var0)};
    }
 
-   private static int nextButton(List<ItemStack> var0) {
-      for (int var1 = 45; var1 < var0.size(); var1++) {
-         ItemStack var2 = (ItemStack)var0.get(var1);
-         if (!var2.method_7960() && Gui.nameOf(var2).contains("next")) {
+   private static int nextButton(List<ItemStack> list) {
+      for (int var1 = 45; var1 < list.size(); var1++) {
+         ItemStack var2 = (ItemStack)list.get(var1);
+         if (!var2.isEmpty() && Gui.nameOf(var2).contains("next")) {
             return var1;
          }
       }
 
-      return var0.size() > 53 && ((ItemStack)var0.get(53)).method_31574(Items.field_8107) ? 53 : -1;
+      return list.size() > 53 && ((ItemStack)list.get(53)).isOf(Items.ARROW) ? 53 : -1;
    }
 
-   private static int dropButton(List<ItemStack> var0) {
-      for (int var1 = 45; var1 < var0.size(); var1++) {
-         ItemStack var2 = (ItemStack)var0.get(var1);
-         if (!var2.method_7960() && (var2.method_31574(Items.field_8878) || Gui.nameOf(var2).equals("drop"))) {
+   private static int dropButton(List<ItemStack> list) {
+      for (int var1 = 45; var1 < list.size(); var1++) {
+         ItemStack var2 = (ItemStack)list.get(var1);
+         if (!var2.isEmpty() && (var2.isOf(Items.DROPPER) || Gui.nameOf(var2).equals("drop"))) {
             return var1;
          }
       }
 
-      return var0.size() > 52 && ((ItemStack)var0.get(52)).method_31574(Items.field_8878) ? 52 : -1;
+      return list.size() > 52 && ((ItemStack)list.get(52)).isOf(Items.DROPPER) ? 52 : -1;
    }
 
-   private void say(ModuleChat.Body var1) {
-      ModuleChat.send(this, var1);
+   private void say(ModuleChat.Body body) {
+      ModuleChat.send(this, body);
    }
 }

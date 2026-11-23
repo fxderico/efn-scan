@@ -15,26 +15,26 @@ public final class WebhookPayloadBuilder {
    public WebhookPayloadBuilder() {
    }
 
-   public WebhookPayloadBuilder content(String var1) {
-      this.content = var1;
+   public WebhookPayloadBuilder content(String string) {
+      this.content = string;
       return this;
    }
 
-   public WebhookPayloadBuilder addEmbed(WebhookEmbed var1) {
-      if (var1 != null) {
-         this.embeds.add(var1);
+   public WebhookPayloadBuilder addEmbed(WebhookEmbed webhookEmbed) {
+      if (webhookEmbed != null) {
+         this.embeds.add(webhookEmbed);
       }
 
       return this;
    }
 
-   public JsonObject build(WebhookConfig var1) {
+   public JsonObject build(WebhookConfig webhookConfig) {
       if ((this.content == null || this.content.isBlank()) && this.embeds.isEmpty()) {
          throw new IllegalStateException("Webhook payload must include content or at least one embed");
       } else {
          JsonObject var2 = new JsonObject();
-         var2.addProperty("username", var1.username());
-         var2.addProperty("avatar_url", var1.avatarUrl());
+         var2.addProperty("username", webhookConfig.username());
+         var2.addProperty("avatar_url", webhookConfig.avatarUrl());
          if (this.content != null && !this.content.isBlank()) {
             var2.addProperty("content", this.content);
          }

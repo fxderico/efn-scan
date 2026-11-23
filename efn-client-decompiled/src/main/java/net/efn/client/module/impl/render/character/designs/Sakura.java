@@ -96,34 +96,34 @@ public final class Sakura extends CharacterDesign {
    }
 
    @Override
-   protected void define(Rig var1) {
-      var1.scale(1.0F).outline(-11914176, 0.12F).occlusion(0.3F).flatLight(0.55F);
+   protected void define(Rig rig) {
+      rig.scale(1.0F).outline(-11914176, 0.12F).occlusion(0.3F).flatLight(0.55F);
       float[][] var2 = lockPaths();
       Paint var3 = hairPaint();
-      head(var1, var2);
-      hair(var1, var3);
-      fringe(var1, var2);
-      kanzashi(var1);
-      body(var1);
-      hakama(var1);
-      arms(var1);
-      legs(var1);
+      head(rig, var2);
+      hair(rig, var3);
+      fringe(rig, var2);
+      kanzashi(rig);
+      body(rig);
+      hakama(rig);
+      arms(rig);
+      legs(rig);
    }
 
-   private static Shape up(Shape var0) {
-      return var0.scale(1.12F, 0.0F, 24.6F, -0.2F).move(0.0F, -0.4F, 0.0F);
+   private static Shape up(Shape shape) {
+      return shape.scale(1.12F, 0.0F, 24.6F, -0.2F).move(0.0F, -0.4F, 0.0F);
    }
 
-   private static float tx(float var0) {
-      return var0 * 1.12F;
+   private static float tx(float f) {
+      return f * 1.12F;
    }
 
-   private static float ty(float var0) {
-      return 24.6F + (var0 - 24.6F) * 1.12F - 0.4F;
+   private static float ty(float f) {
+      return 24.6F + (f - 24.6F) * 1.12F - 0.4F;
    }
 
-   private static float tz(float var0) {
-      return -0.2F + (var0 + 0.2F) * 1.12F;
+   private static float tz(float f) {
+      return -0.2F + (f + 0.2F) * 1.12F;
    }
 
    private static Shape headBase() {
@@ -135,24 +135,24 @@ public final class Sakura extends CharacterDesign {
       );
    }
 
-   private static void head(Rig var0, float[][] var1) {
+   private static void head(Rig rig, float[][] fs) {
       Shape var2 = Shapes.capsule(0.0F, 23.3F, -0.45F, 0.0F, 25.9F, -0.3F, 0.6F);
       float var3 = ty(25.82F);
       float var4 = tz(1.2F);
-      Paint var5 = Paint.field((var2x, var3x, var4x) -> {
-         float var5x = var3 + Math.max(0.0F, var4 - var4x) * 0.62F;
-         float var6x = smooth(var5x + 0.05F, var5x - 0.2F, var3x) * (0.6F + 0.4F * smooth(23.4F, 24.8F, var3x));
+      Paint var5 = Paint.field((h, i, j) -> {
+         float var5x = var3 + Math.max(0.0F, var4 - j) * 0.62F;
+         float var6x = smooth(var5x + 0.05F, var5x - 0.2F, i) * (0.6F + 0.4F * smooth(23.4F, 24.8F, i));
          return Colors.mix(-9016, -1331558, var6x);
       });
       Shape var6 = up(headBase().intersect(Shapes.below(30.2F)));
-      var0.part(Bone.HEAD)
+      rig.part(Bone.HEAD)
          .pivot(0.0F, 24.6F, -0.2F)
          .shape(Shapes.blend(0.45F, var6, var2).paint(var5))
          .detail(2.0F)
          .flatLight(1.0F)
          .occlusion(0.22F)
          .outline(-5740452, 0.1F)
-         .decal(face(var1));
+         .decal(face(fs));
    }
 
    private static float[][] lockPaths() {
@@ -186,22 +186,22 @@ public final class Sakura extends CharacterDesign {
       return var1;
    }
 
-   private static float frontZ(Shape var0, float var1, float var2) {
+   private static float frontZ(Shape shape, float f, float g) {
       float var3 = 3.5F;
 
-      while (var3 > -1.0F && var0.distance(var1, var2, var3) > 0.0F) {
+      while (var3 > -1.0F && shape.distance(f, g, var3) > 0.0F) {
          var3 -= 0.02F;
       }
 
       return var3;
    }
 
-   private static void fringe(Rig var0, float[][] var1) {
-      Shape[] var2 = new Shape[var1.length];
-      Shape[] var3 = new Shape[var1.length];
+   private static void fringe(Rig rig, float[][] fs) {
+      Shape[] var2 = new Shape[fs.length];
+      Shape[] var3 = new Shape[fs.length];
 
-      for (int var4 = 0; var4 < var1.length; var4++) {
-         float[] var5 = var1[var4];
+      for (int var4 = 0; var4 < fs.length; var4++) {
+         float[] var5 = fs[var4];
          float var6 = var5[12];
          Strand var7 = Shapes.tube(
                var5[0],
@@ -228,12 +228,12 @@ public final class Sakura extends CharacterDesign {
 
       Shape var8 = Shapes.intersect(Shapes.blend(0.15F, var2), Shapes.union(var3));
       Shape var9 = headBase();
-      Paint var10 = Paint.field((var1x, var2x, var3x) -> {
-         int var4x = Colors.mix(Colors.mix(-2592100, -677434, 0.45F), -677434, smooth(30.9F, 29.7F, var2x));
-         var4x = Colors.mix(var4x, -12321, 0.5F * smooth(29.5F, 28.5F, var2x));
-         return Colors.mix(var4x, -3908470, 0.6F * (1.0F - smooth(0.12F, 0.42F, var9.distance(var1x, var2x, var3x))));
+      Paint var10 = Paint.field((f, g, h) -> {
+         int var4x = Colors.mix(Colors.mix(-2592100, -677434, 0.45F), -677434, smooth(30.9F, 29.7F, g));
+         var4x = Colors.mix(var4x, -12321, 0.5F * smooth(29.5F, 28.5F, g));
+         return Colors.mix(var4x, -3908470, 0.6F * (1.0F - smooth(0.12F, 0.42F, var9.distance(f, g, h))));
       });
-      var0.extra("fringe", Bone.HEAD)
+      rig.extra("fringe", Bone.HEAD)
          .shape(up(var8.paint(var10)))
          .resolution(0.45F)
          .detail(1.05F)
@@ -243,15 +243,15 @@ public final class Sakura extends CharacterDesign {
          .decal(shine());
    }
 
-   private static float[] blade(float[] var0) {
-      float var1 = var0[12];
-      boolean var2 = var0[9] < 0.0F;
-      float var3 = var0[3];
+   private static float[] blade(float[] fs) {
+      float var1 = fs[12];
+      boolean var2 = fs[9] < 0.0F;
+      float var3 = fs[3];
       float var4 = 31.6F;
-      float var5 = var0[6];
-      float var6 = var0[7];
-      float var7 = var0[9];
-      float var8 = var0[10];
+      float var5 = fs[6];
+      float var6 = fs[7];
+      float var7 = fs[9];
+      float var8 = fs[10];
       byte var9 = 12;
       float[] var10 = new float[(2 * var9 + 1) * 2];
 
@@ -304,12 +304,12 @@ public final class Sakura extends CharacterDesign {
       return Decal.wrap(var1, 0.0F, ty(30.16F), tz(-0.3F), 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 140.0F, 0.6272F).radius(1.2F, 3.8F).offset(0.03F);
    }
 
-   private static float ringY(float var0) {
-      float var1 = 30.4F - 0.36F * (1.0F - (float)Math.cos(Math.toRadians(var0)));
+   private static float ringY(float f) {
+      float var1 = 30.4F - 0.36F * (1.0F - (float)Math.cos(Math.toRadians(f)));
       return (30.44F - var1) * 40.0F;
    }
 
-   private static void hair(Rig var0, Paint var1) {
+   private static void hair(Rig rig, Paint paint) {
       ArrayList var2 = new ArrayList();
       var2.add(Shapes.ellipsoid(0.0F, 28.9F, -0.3F, 2.58F, 2.62F, 2.7F));
 
@@ -324,8 +324,10 @@ public final class Sakura extends CharacterDesign {
             Shapes.strand(0.68F, 0.44F, -2.25F, 29.5F, -0.95F, -2.46F, 27.9F, -1.05F, -2.45F, 26.3F, -1.12F).flatten(1.6F, 1.0F, 0.0F, 0.0F)
          )
          .mirrorX();
-      Shape var14 = Shapes.blend(0.25F, Shapes.subtract(Shapes.blend(0.3F, var2.toArray(new Shape[0])), var12).paint(var1), var13.paint(var1.occlusion(0.35F)));
-      var0.extra("hair", Bone.HEAD).shape(up(var14)).detail(1.1F).flatLight(0.55F).occlusion(0.22F).outline(-6864801, 0.09F).decal(shine());
+      Shape var14 = Shapes.blend(
+         0.25F, Shapes.subtract(Shapes.blend(0.3F, var2.toArray(new Shape[0])), var12).paint(paint), var13.paint(paint.occlusion(0.35F))
+      );
+      rig.extra("hair", Bone.HEAD).shape(up(var14)).detail(1.1F).flatLight(0.55F).occlusion(0.22F).outline(-6864801, 0.09F).decal(shine());
       Strand var15 = Shapes.tube(
             -1.95F,
             30.4F,
@@ -381,9 +383,9 @@ public final class Sakura extends CharacterDesign {
          )
          .flatten(1.8F, 1.0F, 0.0F, 0.15F);
       Shape var8 = Shapes.cylinder(-2.41F, 25.38F, 0.64F, -2.41F, 25.94F, 0.64F, 0.5F, 0.12F).color(-263689);
-      Shape var9 = Shapes.union(Shapes.blend(0.25F, var15, var7).paint(var1), var8);
+      Shape var9 = Shapes.union(Shapes.blend(0.25F, var15, var7).paint(paint), var8);
       Motion var10 = new Motion().idle(1.5F, 0.0F, 0.6F, 0.35F).walk(3.0F, 0.0F, 1.0F, 2.0F).drag(8.0F).hang(0.6F).spring(60.0F, 8.0F).bend(1.4F);
-      Part var11 = var0.extra("sidelock_r", Bone.HEAD)
+      Part var11 = rig.extra("sidelock_r", Bone.HEAD)
          .pivot(tx(-2.3F), ty(30.0F), tz(0.6F))
          .shape(up(var9))
          .motion(var10)
@@ -393,8 +395,8 @@ public final class Sakura extends CharacterDesign {
          .occlusion(0.35F)
          .outline(-6864801, 0.09F)
          .decal(tieCord());
-      var0.extra("sidelock_l", Bone.HEAD).mirrorOf(var11);
-      backHair(var0, var1);
+      rig.extra("sidelock_l", Bone.HEAD).mirrorOf(var11);
+      backHair(rig, paint);
    }
 
    private static Decal tieCord() {
@@ -404,7 +406,7 @@ public final class Sakura extends CharacterDesign {
       return Decal.wrap(var0, tx(-2.41F), ty(25.67F), tz(0.63F), 0.0F, 1.0F, 0.0F, -1.0F, 0.0F, 0.45F, 220.0F, 0.56F).radius(0.2F, 0.9F);
    }
 
-   private static void backHair(Rig var0, Paint var1) {
+   private static void backHair(Rig rig, Paint paint) {
       ArrayList var2 = new ArrayList();
       ArrayList var3 = new ArrayList();
 
@@ -443,7 +445,7 @@ public final class Sakura extends CharacterDesign {
       Shape var16 = Shapes.union(
             Shapes.blend(0.1F, var2.toArray(new Shape[0])), Shapes.blend(0.2F, var3.toArray(new Shape[0])), Shapes.blend(0.15F, var13.toArray(new Shape[0]))
          )
-         .paint(var1);
+         .paint(paint);
       Shape var18 = Shapes.box(0.0F, 21.9F, -2.82F, 1.42F, 0.45F, 0.62F, 0.32F).color(-263689);
       Shape var19 = Shapes.box(0.0F, 21.9F, -2.82F, 1.5F, 0.2F, 0.7F, 0.17F).color(-1816774);
       Shape var20 = Shapes.ellipsoid(-1.4F, 22.2F, -3.5F, 1.2F, 0.66F, 0.38F)
@@ -452,7 +454,7 @@ public final class Sakura extends CharacterDesign {
       Shape var21 = Shapes.ellipsoid(0.0F, 22.0F, -3.58F, 0.48F, 0.52F, 0.36F).color(-1816774);
       Shape var22 = Shapes.strand(0.44F, 0.38F, -0.3F, 21.6F, -3.5F, -0.8F, 20.5F, -3.45F, -1.2F, 19.4F, -3.4F).flatten(2.2F, 0.0F, 0.0F, 1.0F).color(-263689);
       Shape var23 = Shapes.union(var18, var19, var20, var20.mirrored(), var21, var22, var22.mirrored());
-      var0.extra("hair_back", Bone.HEAD)
+      rig.extra("hair_back", Bone.HEAD)
          .pivot(0.0F, ty(29.0F), tz(-1.6F))
          .shape(up(Shapes.union(var16, var23)))
          .motion(Motion.hair().hang(0.0F).follow(Bone.BODY, 0.85F).drag(12.0F))
@@ -494,11 +496,11 @@ public final class Sakura extends CharacterDesign {
       return Decal.back(var0, 0.0F, ty(var2 - 54.0F / var1), tz(-3.4F), 4.48F, 10.08F).depth(0.9F, 1.0F).maxAngle(70.0F);
    }
 
-   private static void kanzashi(Rig var0) {
+   private static void kanzashi(Rig rig) {
       Shape var1 = Shapes.union(
          blossom(1.6F).rotate(-22.0F, 42.0F, 0.0F).move(2.08F, 30.9F, 1.18F), blossom(0.95F).rotate(-12.0F, 70.0F, 0.0F).move(2.66F, 30.02F, 0.12F)
       );
-      var0.extra("kanzashi", Bone.HEAD).shape(up(var1)).resolution(0.42F).detail(0.5F).flatLight(0.4F).outline(-6669732, 0.08F);
+      rig.extra("kanzashi", Bone.HEAD).shape(up(var1)).resolution(0.42F).detail(0.5F).flatLight(0.4F).outline(-6669732, 0.08F);
       ArrayList var2 = new ArrayList();
       float[][] var3 = new float[][]{{2.86F, 29.84F, 1.06F, 2.0F}, {3.2F, 29.74F, 0.52F, 3.0F}};
 
@@ -516,7 +518,7 @@ public final class Sakura extends CharacterDesign {
          }
       }
 
-      var0.extra("bira", Bone.HEAD)
+      rig.extra("bira", Bone.HEAD)
          .pivot(tx(3.08F), ty(29.86F), tz(0.8F))
          .shape(up(Shapes.union(var2.toArray(new Shape[0]))))
          .motion(Motion.hair().hang(1.0F).spring(60.0F, 6.0F))
@@ -526,7 +528,7 @@ public final class Sakura extends CharacterDesign {
          .outline(-8767416, 0.05F);
    }
 
-   private static Shape blossom(float var0) {
+   private static Shape blossom(float f) {
       ArrayList var1 = new ArrayList();
 
       for (int var2 = 0; var2 < 5; var2++) {
@@ -534,30 +536,30 @@ public final class Sakura extends CharacterDesign {
          double var4 = Math.toRadians(var3);
          float var6 = (float)Math.cos(var4);
          float var7 = (float)Math.sin(var4);
-         float var8 = var6 * 0.47F * var0;
-         float var9 = var7 * 0.47F * var0;
-         Shape var10 = Shapes.ellipsoid(var8, var9, 0.0F, 0.3F * var0, 0.44F * var0, 0.2F).rotate(0.0F, 0.0F, var3 - 90.0F, var8, var9, 0.0F);
-         var1.add(Shapes.subtract(var10, Shapes.sphere(var6 * 0.93F * var0, var7 * 0.93F * var0, 0.0F, 0.12F * var0)));
+         float var8 = var6 * 0.47F * f;
+         float var9 = var7 * 0.47F * f;
+         Shape var10 = Shapes.ellipsoid(var8, var9, 0.0F, 0.3F * f, 0.44F * f, 0.2F).rotate(0.0F, 0.0F, var3 - 90.0F, var8, var9, 0.0F);
+         var1.add(Shapes.subtract(var10, Shapes.sphere(var6 * 0.93F * f, var7 * 0.93F * f, 0.0F, 0.12F * f)));
       }
 
-      Shape var11 = Shapes.union(var1.toArray(new Shape[0])).paint(Paint.radial(-2078596, 0.0F, 0.0F, 0.1F, 0.4F * var0, -8984));
-      return Shapes.union(var11, Shapes.sphere(0.0F, 0.0F, 0.16F, 0.15F * var0).color(-1459895));
+      Shape var11 = Shapes.union(var1.toArray(new Shape[0])).paint(Paint.radial(-2078596, 0.0F, 0.0F, 0.1F, 0.4F * f, -8984));
+      return Shapes.union(var11, Shapes.sphere(0.0F, 0.0F, 0.16F, 0.15F * f).color(-1459895));
    }
 
-   private static Shape capLock(float var0, float var1, float var2, float var3, float var4) {
+   private static Shape capLock(float f, float g, float h, float i, float j) {
       float[] var5 = new float[15];
 
       for (int var6 = 0; var6 < 5; var6++) {
-         float[] var7 = onHead(var1 + (var2 - var1) * var6 / 4.0F, var0, 0.02F);
+         float[] var7 = onHead(g + (h - g) * var6 / 4.0F, f, 0.02F);
          System.arraycopy(var7, 0, var5, var6 * 3, 3);
       }
 
-      return Shapes.strand(var3, var4, var5).flattenFrom(2.8F, 0.0F, 28.9F, -0.3F);
+      return Shapes.strand(i, j, var5).flattenFrom(2.8F, 0.0F, 28.9F, -0.3F);
    }
 
-   private static float[] onHead(float var0, float var1, float var2) {
-      double var3 = Math.toRadians(var0);
-      double var5 = Math.toRadians(var1);
+   private static float[] onHead(float f, float g, float h) {
+      double var3 = Math.toRadians(f);
+      double var5 = Math.toRadians(g);
       float var7 = (float)Math.cos(var3);
       float var8 = (float)Math.sin(var3);
       float var9 = (float)Math.cos(var5);
@@ -565,21 +567,21 @@ public final class Sakura extends CharacterDesign {
       float var11 = var10 * var8;
       float var12 = 0.97F * var7 + 0.24F * var9 * var8;
       float var13 = -0.24F * var7 + 0.97F * var9 * var8;
-      float var14 = 1.0F / (float)Math.sqrt(var11 * var11 / 7.3984003F + var12 * var12 / 7.3984003F + var13 * var13 / 8.065599F) + var2;
+      float var14 = 1.0F / (float)Math.sqrt(var11 * var11 / 7.3984003F + var12 * var12 / 7.3984003F + var13 * var13 / 8.065599F) + h;
       return new float[]{0.0F + var11 * var14, 28.9F + var12 * var14, -0.3F + var13 * var14};
    }
 
    private static Paint hairPaint() {
-      return Paint.field((var0, var1, var2) -> {
-         float var3 = var1 - 31.2F;
-         float var4 = var2 + 0.7F;
-         float var5 = (float)Math.sqrt(var0 * var0 + var3 * var3 + var4 * var4);
+      return Paint.field((f, g, h) -> {
+         float var3 = g - 31.2F;
+         float var4 = h + 0.7F;
+         float var5 = (float)Math.sqrt(f * f + var3 * var3 + var4 * var4);
          int var6 = Colors.mix(-2592100, -677434, smooth(0.8F, 2.9F, var5));
          return Colors.mix(var6, -12321, smooth(5.5F, 17.5F, var5) * 0.9F);
       });
    }
 
-   private static void body(Rig var0) {
+   private static void body(Rig rig) {
       Shape var1 = Shapes.union(
          Shapes.capsule(0.0F, 23.95F, -0.15F, -2.55F, 23.3F, -0.15F, 0.95F), Shapes.capsule(0.0F, 23.95F, -0.15F, 2.55F, 23.3F, -0.15F, 0.95F)
       );
@@ -594,11 +596,11 @@ public final class Sakura extends CharacterDesign {
             0.42F, 0.4F, 0.0F, 24.75F, -1.1F, 0.95F, 24.62F, -0.72F, 1.22F, 24.3F, 0.35F, 0.75F, 23.35F, 1.5F, -0.3F, 22.15F, 2.02F, -1.35F, 20.6F, 1.88F
          )
          .flattenFrom(2.2F, 0.0F, 22.5F, -1.2F);
-      Paint var9 = Paint.field((var0x, var1x, var2x) -> {
-         float var3x = smooth(0.5F, 1.3F, var2x) * smooth(19.9F, 20.5F, var1x) * (1.0F - smooth(20.6F, 21.1F, var1x));
+      Paint var9 = Paint.field((f, g, h) -> {
+         float var3x = smooth(0.5F, 1.3F, h) * smooth(19.9F, 20.5F, g) * (1.0F - smooth(20.6F, 21.1F, g));
          return Colors.mix(-263689, -2305053, var3x * 0.55F);
       });
-      var0.part(Bone.BODY).shape(Shapes.blend(0.14F, var6, var7, var8).paint(var9)).outline(-7568744, 0.1F).detail(0.85F).occlusion(0.2F).decal(collar());
+      rig.part(Bone.BODY).shape(Shapes.blend(0.14F, var6, var7, var8).paint(var9)).outline(-7568744, 0.1F).detail(0.85F).occlusion(0.2F).decal(collar());
       Shape var10 = Shapes.subtract(
          Shapes.ellipsoid(0.0F, 19.2F, 0.0F, 2.82F, 2.6F, 2.32F).intersect(Shapes.box(0.0F, 19.2F, 0.0F, 3.2F, 0.3F, 2.7F, 0.12F)),
          Shapes.ellipsoid(0.0F, 19.2F, 0.0F, 2.4F, 2.6F, 1.9F)
@@ -607,7 +609,7 @@ public final class Sakura extends CharacterDesign {
       Shape var12 = Shapes.ellipsoid(-1.0F, 19.4F, 2.28F, 1.0F, 0.44F, 0.2F).rotate(0.0F, -8.0F, -12.0F, -1.0F, 19.4F, 2.28F);
       Strand var13 = Shapes.strand(0.27F, 0.22F, -0.12F, 19.0F, 2.38F, -0.42F, 18.1F, 2.44F, -0.64F, 17.2F, 2.48F).flatten(2.2F, 0.0F, 0.0F, 1.0F);
       Shape var14 = Shapes.union(var11, var12, var12.mirrored(), var13, var13.mirrored());
-      var0.extra("himo", Bone.BODY).shape(Shapes.union(var10, var14).color(-263689)).resolution(0.6F).detail(0.36F).outline(-7568744, 0.09F);
+      rig.extra("himo", Bone.BODY).shape(Shapes.union(var10, var14).color(-263689)).resolution(0.6F).detail(0.36F).outline(-7568744, 0.09F);
    }
 
    private static Decal collar() {
@@ -628,33 +630,33 @@ public final class Sakura extends CharacterDesign {
       return Decal.front(var0, 0.0F, 23.8F, 2.0F, 3.8333333F, 3.25F).depth(1.6F, 1.2F).maxAngle(86.0F).flatLight(0.9F).occlusion(0.4F);
    }
 
-   private static float[] uv(float... var0) {
-      float[] var1 = new float[var0.length];
+   private static float[] uv(float... fs) {
+      float[] var1 = new float[fs.length];
 
-      for (byte var2 = 0; var2 < var0.length; var2 += 2) {
-         var1[var2] = (var0[var2] + 1.9166666F) * 24.0F;
-         var1[var2 + 1] = (25.425F - var0[var2 + 1]) * 24.0F;
+      for (byte var2 = 0; var2 < fs.length; var2 += 2) {
+         var1[var2] = (fs[var2] + 1.9166666F) * 24.0F;
+         var1[var2 + 1] = (25.425F - fs[var2 + 1]) * 24.0F;
       }
 
       return var1;
    }
 
-   private static void segments(Canvas var0, float var1, int var2, float... var3) {
-      float[] var4 = uv(var3);
+   private static void segments(Canvas canvas, float f, int i, float... fs) {
+      float[] var4 = uv(fs);
 
       for (byte var5 = 0; var5 + 3 < var4.length; var5 += 2) {
-         var0.fill(Shape2D.line(var4[var5], var4[var5 + 1], var4[var5 + 2], var4[var5 + 3], var1), var2);
+         canvas.fill(Shape2D.line(var4[var5], var4[var5 + 1], var4[var5 + 2], var4[var5 + 3], f), i);
       }
    }
 
-   private static void hakama(Rig var0) {
+   private static void hakama(Rig rig) {
       Shape var1 = Shapes.extrude(Shape2D.polygon(-0.3F, 20.4F, 0.3F, 20.4F, 0.0F, 16.3F), 0.7F, 0.04F)
          .rotate(0.0F, 90.0F, 0.0F)
          .move(-2.95F, 0.0F, 0.0F)
          .color(-263689);
       Shape var2 = Shapes.subtract(Shapes.field(Sakura::hakamaField, -5.1F, 2.25F, -3.9F, 2.1F, 20.25F, 3.9F).paint(Paint.field(Sakura::hakamaColor)), var1);
       Motion var3 = new Motion().follow(Bone.RIGHT_LEG, 0.62F, 13.0F).drag(3.0F).hang(0.5F).spring(80.0F, 11.0F).bend(1.6F).limit(24.0F);
-      Part var4 = var0.extra("hakama_r", Bone.BODY)
+      Part var4 = rig.extra("hakama_r", Bone.BODY)
          .pivot(-1.0F, 19.6F, 0.0F)
          .shape(var2)
          .motion(var3)
@@ -664,44 +666,44 @@ public final class Sakura extends CharacterDesign {
          .occlusion(0.2F)
          .outline(-8514270, 0.12F);
       var4.decal(pleatLine(PLEATS[0])).decal(pleatLine(PLEATS[1]));
-      var0.extra("hakama_l", Bone.BODY).mirrorOf(var4);
+      rig.extra("hakama_l", Bone.BODY).mirrorOf(var4);
    }
 
-   private static Decal pleatLine(float var0) {
+   private static Decal pleatLine(float f) {
       Canvas var1 = new Canvas(10, 96);
       var1.fill(Shape2D.taper(5.0F, 1.0F, 1.2F, 5.0F, 95.0F, 6.0F), Paint2D.linear(0.0F, 0.0F, 0.0F, 40.0F, 8262946, -1719790302));
-      float var2 = (float)Math.sin(var0);
-      float var3 = (float)Math.cos(var0);
+      float var2 = (float)Math.sin(f);
+      float var3 = (float)Math.cos(f);
       return Decal.wrap(var1, -1.14F, 8.0F, 0.0F, 1.15F, 17.5F, 0.0F, -var2, 0.0F, var3, 3.6F, 11.0F);
    }
 
-   private static float hakamaField(float var0, float var1, float var2) {
-      float var3 = clamp01((20.0F - var1) / 17.5F);
+   private static float hakamaField(float f, float g, float h) {
+      float var3 = clamp01((20.0F - g) / 17.5F);
       float var4 = (float)Math.pow(var3, 0.8);
       float var5 = -(0.35F + 1.15F * var3);
       float var6 = 2.05F + 1.15F * var4;
       float var7 = 1.9F + 1.5F * var4;
-      float var8 = var0 - var5;
-      float var9 = ellipse(var8, var2, var6, var7);
-      float var10 = (float)Math.atan2(-var8, var2);
+      float var8 = f - var5;
+      float var9 = ellipse(var8, h, var6, var7);
+      float var10 = (float)Math.atan2(-var8, h);
       float var11 = 0.05F + 0.17F * var3;
 
       for (float var15 : PLEATS) {
          var9 -= var11 * pleat(var10 - var15);
       }
 
-      float var16 = Math.max(var1 - 20.0F, 2.5F - var1);
+      float var16 = Math.max(g - 20.0F, 2.5F - g);
       return smax(var9, var16, 0.2F) * 0.9F;
    }
 
-   private static int hakamaColor(float var0, float var1, float var2) {
-      float var3 = clamp01((20.0F - var1) / 17.5F);
+   private static int hakamaColor(float f, float g, float h) {
+      float var3 = clamp01((20.0F - g) / 17.5F);
       float var4 = (float)Math.pow(var3, 0.8);
-      float var5 = var0 + 0.35F + 1.15F * var3;
-      if (var1 < 2.8F && ellipse(var5, var2, 2.05F + 1.15F * var4, 1.9F + 1.5F * var4) < -0.2F) {
+      float var5 = f + 0.35F + 1.15F * var3;
+      if (g < 2.8F && ellipse(var5, h, 2.05F + 1.15F * var4, 1.9F + 1.5F * var4) < -0.2F) {
          return -10087904;
       } else {
-         float var6 = (float)Math.atan2(-var5, var2);
+         float var6 = (float)Math.atan2(-var5, h);
          float var7 = 0.0F;
 
          for (float var11 : PLEATS) {
@@ -711,30 +713,30 @@ public final class Sakura extends CharacterDesign {
             }
          }
 
-         int var13 = Colors.mix(-2674372, -5955793, smooth(9.0F, 2.5F, var1) * 0.45F);
+         int var13 = Colors.mix(-2674372, -5955793, smooth(9.0F, 2.5F, g) * 0.45F);
          return Colors.mix(var13, -5955793, var7 * 0.35F * smooth(0.02F, 0.2F, var3));
       }
    }
 
-   private static float pleat(float var0) {
-      if (!(var0 < -0.4F) && !(var0 > 0.07F)) {
-         return var0 < 0.0F ? smooth(-0.4F, 0.0F, var0) : 1.0F - smooth(0.0F, 0.07F, var0);
+   private static float pleat(float f) {
+      if (!(f < -0.4F) && !(f > 0.07F)) {
+         return f < 0.0F ? smooth(-0.4F, 0.0F, f) : 1.0F - smooth(0.0F, 0.07F, f);
       } else {
          return 0.0F;
       }
    }
 
-   private static float ellipse(float var0, float var1, float var2, float var3) {
-      float var4 = var0 / var2;
-      float var5 = var1 / var3;
+   private static float ellipse(float f, float g, float h, float i) {
+      float var4 = f / h;
+      float var5 = g / i;
       float var6 = (float)Math.sqrt(var4 * var4 + var5 * var5);
-      float var7 = var0 / (var2 * var2);
-      float var8 = var1 / (var3 * var3);
+      float var7 = f / (h * h);
+      float var8 = g / (i * i);
       float var9 = (float)Math.sqrt(var7 * var7 + var8 * var8);
-      return var9 < 1.0E-6F ? -Math.min(var2, var3) : var6 * (var6 - 1.0F) / var9;
+      return var9 < 1.0E-6F ? -Math.min(h, i) : var6 * (var6 - 1.0F) / var9;
    }
 
-   private static void arms(Rig var0) {
+   private static void arms(Rig rig) {
       float var1 = -3.62F;
       float var2 = 23.0F;
       float var3 = -0.12F;
@@ -752,7 +754,7 @@ public final class Sakura extends CharacterDesign {
          0.35F, Shapes.cone(var1, var2, var3, 0.66F, var4, var5, var6, 0.58F), Shapes.cone(var4, var5, var6, 0.58F, var7, var8, var9, 0.66F)
       );
       Shape var15 = Shapes.sphere(var7 + 0.3F * var11, var8 + 0.3F * var12, var9 + 0.3F * var13, 0.46F).color(-2502430);
-      Part var16 = var0.part(Bone.RIGHT_ARM)
+      Part var16 = rig.part(Bone.RIGHT_ARM)
          .pivot(-3.5F, 23.25F, -0.1F)
          .grip(-4.32F, 15.05F, 0.72F)
          .shape(Shapes.subtract(0.08F, var14.color(-263689), var15))
@@ -761,16 +763,16 @@ public final class Sakura extends CharacterDesign {
          .outline(-7568744, 0.1F)
          .swing(0.55F)
          .joint(var4, var5, var6, 0.6F);
-      var0.part(Bone.LEFT_ARM).mirrorOf(var16);
+      rig.part(Bone.LEFT_ARM).mirrorOf(var16);
       Shape var17 = Shapes.field(
-            (var0x, var1x, var2x) -> {
-               float var3x = SLEEVE_SIDE.distance(var2x, var1x);
-               float var4x = -4.12F - 0.085F * (23.8F - var1x);
+            (f, g, h) -> {
+               float var3x = SLEEVE_SIDE.distance(h, g);
+               float var4x = -4.12F - 0.085F * (23.8F - g);
                float var5x = 0.3F
-                  + 0.16F * clamp01((22.0F - var1x) / 8.0F)
+                  + 0.16F * clamp01((22.0F - g) / 8.0F)
                   + 0.26F * smooth(0.0F, 1.3F, -var3x)
-                  + 0.07F * (float)Math.sin(var2x * 2.3F + 0.6F) * smooth(22.0F, 17.0F, var1x);
-               return smax(var3x, Math.abs(var0x - var4x) - var5x, 0.28F);
+                  + 0.07F * (float)Math.sin(h * 2.3F + 0.6F) * smooth(22.0F, 17.0F, g);
+               return smax(var3x, Math.abs(f - var4x) - var5x, 0.28F);
             },
             -6.1F,
             13.2F,
@@ -785,24 +787,24 @@ public final class Sakura extends CharacterDesign {
          Shapes.cone(-5.0F, 13.98F, -3.44F, 0.15F, -5.01F, 13.58F, -3.46F, 0.27F).paint(Paint.vertical(-4705748, 13.3F, -1816774, 13.9F))
       );
       Motion var19 = Motion.cloth().hang(0.7F).drag(8.0F).spring(40.0F, 5.0F).bend(1.3F).limit(35.0F);
-      Part var20 = var0.extra("sleeve_r", Bone.RIGHT_ARM)
+      Part var20 = rig.extra("sleeve_r", Bone.RIGHT_ARM)
          .shape(Shapes.union(var17, var18))
          .motion(var19)
          .resolution(1.0F)
          .detail(0.7F)
          .outline(-7568744, 0.1F)
          .decal(sleeveTrim());
-      var0.extra("sleeve_l", Bone.LEFT_ARM).mirrorOf(var20);
-      hands(var0, var7, var8, var9);
+      rig.extra("sleeve_l", Bone.LEFT_ARM).mirrorOf(var20);
+      hands(rig, var7, var8, var9);
    }
 
-   private static void hands(Rig var0, float var1, float var2, float var3) {
+   private static void hands(Rig rig, float f, float g, float h) {
       float var4 = 4.3F;
       float var5 = 15.25F;
       float var6 = 0.64F;
       ArrayList var7 = new ArrayList();
       var7.add(Shapes.ellipsoid(var4, var5, var6, 0.33F, 0.6F, 0.52F));
-      var7.add(Shapes.capsule(var4 - 0.02F, var5 + 0.45F, var6 - 0.12F, -var1, var2 + 0.1F, var3, 0.32F));
+      var7.add(Shapes.capsule(var4 - 0.02F, var5 + 0.45F, var6 - 0.12F, -f, g + 0.1F, h, 0.32F));
       var7.add(
          Shapes.strand(0.15F, 0.13F, var4 + 0.02F, var5 - 0.4F, var6 + 0.36F, var4 - 0.02F, var5 - 0.86F, var6 + 0.44F, var4 - 0.2F, var5 - 1.1F, var6 + 0.4F)
       );
@@ -816,14 +818,14 @@ public final class Sakura extends CharacterDesign {
       var7.add(
          Shapes.strand(0.17F, 0.14F, var4 - 0.18F, var5 + 0.1F, var6 + 0.42F, var4 - 0.3F, var5 - 0.3F, var6 + 0.58F, var4 - 0.32F, var5 - 0.54F, var6 + 0.5F)
       );
-      Part var8 = var0.extra("hand_l", Bone.LEFT_ARM)
+      Part var8 = rig.extra("hand_l", Bone.LEFT_ARM)
          .shape(Shapes.blend(0.12F, var7.toArray(new Shape[0])).color(-9016))
          .resolution(0.45F)
          .detail(0.35F)
          .flatLight(1.0F)
          .occlusion(0.25F)
          .outline(-5740452, 0.1F);
-      var0.extra("hand_r", Bone.RIGHT_ARM).mirrorOf(var8);
+      rig.extra("hand_r", Bone.RIGHT_ARM).mirrorOf(var8);
    }
 
    private static Decal sleeveTrim() {
@@ -841,7 +843,7 @@ public final class Sakura extends CharacterDesign {
       return Decal.right(var0, -6.1F, 15.3F - 12.0F / var1, -3.75F + 32.0F / var1, 64.0F / var1, 24.0F / var1).depth(1.3F, 1.2F).maxAngle(48.0F);
    }
 
-   private static void legs(Rig var0) {
+   private static void legs(Rig rig) {
       float var1 = -1.3F;
       Shape var2 = Shapes.blend(
          0.35F,
@@ -854,7 +856,7 @@ public final class Sakura extends CharacterDesign {
       Shape var3 = Shapes.box(var1 + 0.1F, 0.8F, 1.97F, 0.05F, 0.4F, 0.55F, 0.02F).color(-2305053);
       Shape var4 = Shapes.cone(var1, 1.7F, -0.1F, 0.5F, var1 + 0.02F, 3.3F, -0.08F, 0.54F);
       Shape var5 = Shapes.subtract(Shapes.blend(0.3F, var2, var4).color(-263689), var3);
-      Shape var6 = Shapes.box(var1, 0.22F, 0.52F, 0.74F, 0.22F, 1.64F, 0.2F).paint(Paint.field((var0x, var1x, var2x) -> var1x > 0.36F ? -1320012 : -10600144));
+      Shape var6 = Shapes.box(var1, 0.22F, 0.52F, 0.74F, 0.22F, 1.64F, 0.2F).paint(Paint.field((f, g, h) -> g > 0.36F ? -1320012 : -10600144));
       Shape var7 = Shapes.union(
             Shapes.strand(0.2F, 0.2F, var1 + 0.13F, 0.5F, 1.5F, var1 + 0.13F, 0.95F, 1.3F),
             Shapes.strand(0.2F, 0.2F, var1 + 0.13F, 0.95F, 1.3F, var1 - 0.35F, 1.08F, 0.85F, var1 - 0.62F, 0.55F, 0.35F),
@@ -862,7 +864,7 @@ public final class Sakura extends CharacterDesign {
          )
          .color(-1816774);
       Shape var8 = Shapes.union(var5, var6, var7).rotate(0.0F, -7.0F, 0.0F, var1, 0.0F, -0.1F);
-      Part var9 = var0.part(Bone.RIGHT_LEG)
+      Part var9 = rig.part(Bone.RIGHT_LEG)
          .pivot(var1, 14.2F, 0.0F)
          .shape(var8)
          .resolution(0.6F)
@@ -870,18 +872,18 @@ public final class Sakura extends CharacterDesign {
          .flatLight(0.4F)
          .outline(-10860992, 0.1F)
          .swing(0.38F, 18.0F);
-      var0.part(Bone.LEFT_LEG).mirrorOf(var9);
+      rig.part(Bone.LEFT_LEG).mirrorOf(var9);
    }
 
-   private static float px(float var0) {
-      return 128.0F + var0 * 56.88889F;
+   private static float px(float f) {
+      return 128.0F + f * 56.88889F;
    }
 
-   private static float py(float var0) {
-      return (29.95F - var0) * 56.88889F;
+   private static float py(float f) {
+      return (29.95F - f) * 56.88889F;
    }
 
-   private static Decal face(float[][] var0) {
+   private static Decal face(float[][] fs) {
       Canvas var1 = new Canvas(88, 136);
       float var2 = 40.0F;
       float var3 = 70.0F;
@@ -904,7 +906,7 @@ public final class Sakura extends CharacterDesign {
       int var8 = Math.round(py(28.0F)) - 70;
       ArrayList var9 = new ArrayList();
 
-      for (float[] var13 : var0) {
+      for (float[] var13 : fs) {
          float[] var14 = blade(var13);
 
          for (byte var15 = 0; var15 < var14.length; var15 += 2) {
@@ -932,17 +934,17 @@ public final class Sakura extends CharacterDesign {
       return Decal.front(var7, 0.0F, ty(28.016407F), tz(2.1F), 5.04F, 4.33125F).depth(2.0F, 1.8F).maxAngle(72.0F).flatLight(1.0F).occlusion(0.3F);
    }
 
-   private static float smax(float var0, float var1, float var2) {
-      float var3 = clamp01(0.5F - 0.5F * (var1 - var0) / var2);
-      return var1 + (var0 - var1) * var3 + var2 * var3 * (1.0F - var3);
+   private static float smax(float f, float g, float h) {
+      float var3 = clamp01(0.5F - 0.5F * (g - f) / h);
+      return g + (f - g) * var3 + h * var3 * (1.0F - var3);
    }
 
-   private static float smooth(float var0, float var1, float var2) {
-      float var3 = clamp01((var2 - var0) / (var1 - var0));
+   private static float smooth(float f, float g, float h) {
+      float var3 = clamp01((h - f) / (g - f));
       return var3 * var3 * (3.0F - 2.0F * var3);
    }
 
-   private static float clamp01(float var0) {
-      return var0 < 0.0F ? 0.0F : Math.min(var0, 1.0F);
+   private static float clamp01(float f) {
+      return f < 0.0F ? 0.0F : Math.min(f, 1.0F);
    }
 }

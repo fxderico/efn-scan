@@ -15,20 +15,20 @@ import net.minecraft.util.math.ChunkPos;
 public final class DecorationOrder {
    public static final int MIN_VOTES = 3;
    private final Map<DecorationOrder.Pair, int[]> votes = new HashMap<>();
-   private final Long2ObjectOpenHashMap<Map<DecorationOrder.Pair, int[]>> bySource = new Long2ObjectOpenHashMap();
+   private final Long2ObjectOpenHashMap<Map<DecorationOrder.Pair, int[]>> bySource = new Long2ObjectOpenHashMap<>();
 
    public DecorationOrder() {
    }
 
-   public int compare(long var1, long var3) {
-      if (var1 == var3) {
+   public int compare(long l, long m) {
+      if (l == m) {
          return 0;
       } else {
-         int[] var6 = this.votes.get(DecorationOrder.Pair.of(var1, var3));
+         int[] var6 = this.votes.get(DecorationOrder.Pair.of(l, m));
          if (var6 == null) {
             return 0;
          } else {
-            boolean var5 = var1 < var3;
+            boolean var5 = l < m;
             if (var6[0] >= 3 && var6[1] == 0) {
                return var5 ? 1 : -1;
             } else if (var6[1] >= 3 && var6[0] == 0) {
@@ -40,21 +40,23 @@ public final class DecorationOrder {
       }
    }
 
-   public boolean after(long var1, long var3) {
-      return this.compare(var1, var3) > 0;
+   public boolean after(long l, long m) {
+      return this.compare(l, m) > 0;
    }
 
-   public Set<long[]> collect(ChunkDecoration var1, Long2ObjectMap<ChunkDecoration> var2, DecorationOrder.TerrainLookup var3, DecorationOrder.Shown var4) {
-      long var5 = ChunkPos.method_8331(var1.chunkX, var1.chunkZ);
+   public Set<long[]> collect(
+      ChunkDecoration chunkDecoration, Long2ObjectMap<ChunkDecoration> long2ObjectMap, DecorationOrder.TerrainLookup terrainLookup, DecorationOrder.Shown shown
+   ) {
+      long var5 = ChunkPos.toLong(chunkDecoration.chunkX, chunkDecoration.chunkZ);
       HashMap var7 = new HashMap();
 
-      for (int var8 = 0; var8 < var1.size(); var8++) {
-         long var10 = var1.key(var8);
-         byte var12 = lastStone(var1, var8);
+      for (int var8 = 0; var8 < chunkDecoration.size(); var8++) {
+         long var10 = chunkDecoration.key(var8);
+         byte var12 = lastStone(chunkDecoration, var8);
          if (var12 >= 0) {
-            int var13 = BlockPos.method_10061(var10);
-            int var14 = BlockPos.method_10071(var10);
-            int var15 = BlockPos.method_10083(var10);
+            int var13 = BlockPos.unpackLongX(var10);
+            int var14 = BlockPos.unpackLongY(var10);
+            int var15 = BlockPos.unpackLongZ(var10);
             byte var16 = -1;
             long var17 = 0L;
             boolean var19 = true;
@@ -62,8 +64,8 @@ public final class DecorationOrder {
 
             for (int var21 = -1; var21 <= 1 && var19; var21++) {
                for (int var22 = -1; var22 <= 1 && var19; var22++) {
-                  long var24 = ChunkPos.method_8331((var13 >> 4) + var21, (var15 >> 4) + var22);
-                  ChunkDecoration var26 = (ChunkDecoration)var2.get(var24);
+                  long var24 = ChunkPos.toLong((var13 >> 4) + var21, (var15 >> 4) + var22);
+                  ChunkDecoration var26 = (ChunkDecoration)long2ObjectMap.get(var24);
                   if (var26 != null) {
                      for (ChunkDecoration.Fog var28 : var26.fogs()) {
                         if (var28.contains(var13, var14, var15)) {
@@ -93,10 +95,10 @@ public final class DecorationOrder {
                && var20
                && var16 != var12
                && var17 >= var5
-               && (var9 = var3.terrain(var13 >> 4, var15 >> 4)) != null
+               && (var9 = terrainLookup.terrain(var13 >> 4, var15 >> 4)) != null
                && VBlock.isBase(var9.kind(var13, var14, var15))) {
-               byte var37 = var4.kind(var13, var14, var15);
-               int[] var38 = var7.computeIfAbsent(DecorationOrder.Pair.of(var5, var17), var0 -> new int[2]);
+               byte var37 = shown.kind(var13, var14, var15);
+               int[] var38 = var7.computeIfAbsent(DecorationOrder.Pair.of(var5, var17), pair -> new int[2]);
                if (var37 == var12) {
                   var38[0]++;
                } else if (var37 == var16) {
@@ -107,7 +109,7 @@ public final class DecorationOrder {
       }
 
       HashSet var29 = new HashSet(var7.keySet());
-      Map var30 = (Map)this.bySource.put(var5, var7);
+      Map var30 = this.bySource.put(var5, var7);
       if (var30 != null) {
          var29.addAll(var30.keySet());
       }
@@ -116,7 +118,7 @@ public final class DecorationOrder {
 
       for (DecorationOrder.Pair var32 : var29) {
          int var33 = this.compare(var32.first(), var32.second());
-         int[] var34 = this.votes.computeIfAbsent(var32, var0 -> new int[2]);
+         int[] var34 = this.votes.computeIfAbsent(var32, pair -> new int[2]);
          int[] var35 = var30 == null ? null : (int[])var30.get(var32);
          int[] var36 = (int[])var7.get(var32);
          if (var35 != null) {
@@ -141,25 +143,25 @@ public final class DecorationOrder {
       return var31;
    }
 
-   static long evidenceSignature(ChunkDecoration var0) {
+   static long evidenceSignature(ChunkDecoration chunkDecoration) {
       long var1 = 1125899906842597L;
 
-      for (int var3 = 0; var3 < var0.size(); var3++) {
-         byte var4 = lastStone(var0, var3);
+      for (int var3 = 0; var3 < chunkDecoration.size(); var3++) {
+         byte var4 = lastStone(chunkDecoration, var3);
          if (var4 >= 0) {
-            var1 = 31L * var1 + var0.key(var3);
+            var1 = 31L * var1 + chunkDecoration.key(var3);
             var1 = 31L * var1 + var4;
          }
       }
 
-      return 31L * var1 + var0.fogs().hashCode();
+      return 31L * var1 + chunkDecoration.fogs().hashCode();
    }
 
-   private static byte lastStone(ChunkDecoration var0, int var1) {
+   private static byte lastStone(ChunkDecoration chunkDecoration, int i) {
       byte var2 = -1;
 
-      for (int var3 = 0; var3 < var0.writeCount(var1); var3++) {
-         short var4 = var0.write(var1, var3);
+      for (int var3 = 0; var3 < chunkDecoration.writeCount(i); var3++) {
+         short var4 = chunkDecoration.write(i, var3);
          byte var5 = ChunkDecoration.kind(var4);
          if (ChunkDecoration.possible(var4) || !VBlock.isBase(var5)) {
             return -1;
@@ -173,18 +175,18 @@ public final class DecorationOrder {
 
    @Environment(EnvType.CLIENT)
    private record Pair(long first, long second) {
-      static DecorationOrder.Pair of(long var0, long var2) {
-         return var0 < var2 ? new DecorationOrder.Pair(var0, var2) : new DecorationOrder.Pair(var2, var0);
+      static DecorationOrder.Pair of(long l, long m) {
+         return l < m ? new DecorationOrder.Pair(l, m) : new DecorationOrder.Pair(m, l);
       }
    }
 
    @Environment(EnvType.CLIENT)
    public interface Shown {
-      byte kind(int var1, int var2, int var3);
+      byte kind(int i, int j, int k);
    }
 
    @Environment(EnvType.CLIENT)
    public interface TerrainLookup {
-      TerrainChunk terrain(int var1, int var2);
+      TerrainChunk terrain(int i, int j);
    }
 }

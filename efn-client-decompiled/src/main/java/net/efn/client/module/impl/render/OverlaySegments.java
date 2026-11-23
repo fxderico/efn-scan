@@ -16,12 +16,12 @@ final class OverlaySegments {
    OverlaySegments() {
    }
 
-   void update(List<double[]> var1, boolean var2) {
-      if (this.source != var1 || this.varied != var2) {
+   void update(List<double[]> list, boolean bl) {
+      if (this.source != list || this.varied != bl) {
          this.count = 0;
 
-         for (double[] var4 : var1) {
-            this.count = this.count + subdivisions(var4, var2);
+         for (double[] var4 : list) {
+            this.count = this.count + subdivisions(var4, bl);
          }
 
          if (this.colors.length < this.count) {
@@ -32,8 +32,8 @@ final class OverlaySegments {
 
          byte var20 = 0;
 
-         for (double[] var5 : var1) {
-            int var6 = subdivisions(var5, var2);
+         for (double[] var5 : list) {
+            int var6 = subdivisions(var5, bl);
 
             for (int var7 = 0; var7 < var6; var7++) {
                double var8 = (double)var7 / var6;
@@ -52,18 +52,18 @@ final class OverlaySegments {
             }
          }
 
-         this.source = var1;
-         this.varied = var2;
+         this.source = list;
+         this.varied = bl;
       }
    }
 
-   private static int subdivisions(double[] var0, boolean var1) {
-      if (!var1) {
+   private static int subdivisions(double[] ds, boolean bl) {
+      if (!bl) {
          return 1;
       } else {
-         double var2 = var0[3] - var0[0];
-         double var4 = var0[4] - var0[1];
-         double var6 = var0[5] - var0[2];
+         double var2 = ds[3] - ds[0];
+         double var4 = ds[4] - ds[1];
+         double var6 = ds[5] - ds[2];
          double var8 = Math.sqrt(var2 * var2 + var4 * var4 + var6 * var6);
          return Math.max(1, Math.min(16, (int)Math.ceil(var8 / 0.125)));
       }

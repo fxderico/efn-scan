@@ -13,15 +13,15 @@ public enum Detail {
    public final int budget;
    public final float step;
 
-   private Detail(String nullxx, int nullxxx, float nullxxxx) {
-      this.label = nullxx;
-      this.budget = nullxxx;
-      this.step = nullxxxx;
+   private Detail(String string2, int j, float f) {
+      this.label = string2;
+      this.budget = j;
+      this.step = f;
    }
 
-   public static Detail byLabel(String var0) {
+   public static Detail byLabel(String string) {
       for (Detail var4 : values()) {
-         if (var4.label.equalsIgnoreCase(var0) || var4.name().equalsIgnoreCase(var0)) {
+         if (var4.label.equalsIgnoreCase(string) || var4.name().equalsIgnoreCase(string)) {
             return var4;
          }
       }

@@ -18,15 +18,15 @@ final class MacroWorker {
    private final String name;
    private volatile Thread thread;
 
-   MacroWorker(String var1) {
-      this.name = var1;
+   MacroWorker(String string) {
+      this.name = string;
    }
 
-   synchronized void start(Runnable var1, Consumer<Throwable> var2) {
+   synchronized void start(Runnable runnable, Consumer<Throwable> consumer) {
       this.stop();
       Thread var3 = new Thread(() -> {
          try {
-            var1.run();
+            runnable.run();
          } catch (MacroWorker.Cancelled var23) {
             synchronized (this) {
                if (this.thread == Thread.currentThread()) {
@@ -35,7 +35,7 @@ final class MacroWorker {
             }
          } catch (Throwable var24) {
             if (this.thread == Thread.currentThread()) {
-               var2.accept(var24);
+               consumer.accept(var24);
             }
          } finally {
             synchronized (this) {
@@ -68,11 +68,11 @@ final class MacroWorker {
       }
    }
 
-   void sleep(long var1) {
+   void sleep(long l) {
       this.check();
 
       try {
-         Thread.sleep(Math.max(0L, var1));
+         Thread.sleep(Math.max(0L, l));
       } catch (InterruptedException var4) {
          Thread.currentThread().interrupt();
          throw new MacroWorker.Cancelled();
@@ -81,18 +81,18 @@ final class MacroWorker {
       this.check();
    }
 
-   void ticks(int var1) {
-      this.sleep(var1 * 50L);
+   void ticks(int i) {
+      this.sleep(i * 50L);
    }
 
-   <T> T call(Supplier<T> var1) {
+   <T> T call(Supplier<T> supplier) {
       this.check();
       Thread var2 = Thread.currentThread();
-      CompletableFuture var3 = MinecraftClient.method_1551().method_5385(() -> {
+      CompletableFuture var3 = MinecraftClient.getInstance().submit(() -> {
          if (this.thread != var2) {
             throw new MacroWorker.Cancelled();
          } else {
-            return var1.get();
+            return supplier.get();
          }
       });
 
@@ -117,17 +117,17 @@ final class MacroWorker {
       }
    }
 
-   void run(Runnable var1) {
+   void run(Runnable runnable) {
       this.call(() -> {
-         var1.run();
+         runnable.run();
          return Boolean.TRUE;
       });
    }
 
-   boolean waitFor(BooleanSupplier var1, long var2) {
-      long var4 = System.currentTimeMillis() + var2;
+   boolean waitFor(BooleanSupplier booleanSupplier, long l) {
+      long var4 = System.currentTimeMillis() + l;
 
-      while (!this.call(var1::getAsBoolean)) {
+      while (!this.call(booleanSupplier::getAsBoolean)) {
          if (System.currentTimeMillis() >= var4) {
             return false;
          }

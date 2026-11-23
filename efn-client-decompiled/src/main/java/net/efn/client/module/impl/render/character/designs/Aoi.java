@@ -80,13 +80,13 @@ public final class Aoi extends CharacterDesign {
    }
 
    @Override
-   protected void define(Rig var1) {
-      var1.scale(1.0F).outline(-15065558, 0.13F).occlusion(0.35F);
+   protected void define(Rig rig) {
+      rig.scale(1.0F).outline(-15065558, 0.13F).occlusion(0.35F);
       Canvas var2 = stripe();
       Shape var3 = headShape();
       List var4 = fringeLocks(var3, MAIN_LOCKS, 0.2F, 0.17F);
       List var5 = fringeLocks(var3, ACCENT_LOCKS, 0.2F, 0.17F);
-      var1.part(Bone.HEAD)
+      rig.part(Bone.HEAD)
          .pivot(0.0F, 24.4F, 0.0F)
          .shape(grow(var3.color(-9274)))
          .detail(1.1F)
@@ -95,21 +95,21 @@ public final class Aoi extends CharacterDesign {
          .flatLight(1.0F)
          .occlusion(0.2F)
          .decal(face(var4));
-      hair(var1, var4, var5);
-      ponytail(var1);
-      Shape var6 = body(var1, var2);
-      skirt(var1, var2);
-      arms(var1, var2);
-      legs(var1);
-      gear(var1, var6);
+      hair(rig, var4, var5);
+      ponytail(rig);
+      Shape var6 = body(rig, var2);
+      skirt(rig, var2);
+      arms(rig, var2);
+      legs(rig);
+      gear(rig, var6);
    }
 
-   private static Shape grow(Shape var0) {
-      return var0.scale(1.16F, 0.0F, 24.4F, 0.0F).move(0.0F, -0.25F, 0.0F);
+   private static Shape grow(Shape shape) {
+      return shape.scale(1.16F, 0.0F, 24.4F, 0.0F).move(0.0F, -0.25F, 0.0F);
    }
 
-   private static float hy(float var0) {
-      return 24.4F + (var0 - 24.4F) * 1.16F + -0.25F;
+   private static float hy(float f) {
+      return 24.4F + (f - 24.4F) * 1.16F + -0.25F;
    }
 
    private static Shape headShape() {
@@ -166,16 +166,16 @@ public final class Aoi extends CharacterDesign {
       );
       Shape var4 = Shapes.blend(0.9F, var0, var1, var2);
       Shape var5 = var4.intersect(0.3F, var3);
-      return Shapes.field((var2x, var3x, var4x) -> {
-         float var5x = var3x > 28.8F ? var4.distance(var2x, var3x, var4x) : var5.distance(var2x, var3x, var4x);
-         return Math.max(var5x, Math.max(-1.0F - var4x, var3x - 30.1F));
+      return Shapes.field((f, g, h) -> {
+         float var5x = g > 28.8F ? var4.distance(f, g, h) : var5.distance(f, g, h);
+         return Math.max(var5x, Math.max(-1.0F - h, g - 30.1F));
       }, var4.minX(), var4.minY(), -1.1F, var4.maxX(), 30.2F, var4.maxZ());
    }
 
-   private static List<float[]> fringeLocks(Shape var0, float[][] var1, float var2, float var3) {
+   private static List<float[]> fringeLocks(Shape shape, float[][] fs, float f, float g) {
       ArrayList var4 = new ArrayList();
 
-      for (float[] var8 : var1) {
+      for (float[] var8 : fs) {
          int var9 = (var8.length - 1) / 2;
          float[] var10 = new float[var9 * 4];
 
@@ -183,12 +183,12 @@ public final class Aoi extends CharacterDesign {
             float var12 = var8[1 + var11 * 2];
             float var13 = var8[2 + var11 * 2];
             float var14 = 1.0F - var12 * var12 / 6.76F - (var13 - 28.62F) * (var13 - 28.62F) / 7.08F;
-            float var15 = Math.max(frontZ(var0, var12, var13, 5.0F), -0.5F + 2.64F * (float)Math.sqrt(Math.max(0.0F, var14)));
+            float var15 = Math.max(frontZ(shape, var12, var13, 5.0F), -0.5F + 2.64F * (float)Math.sqrt(Math.max(0.0F, var14)));
             float var17 = var13 - 28.3F;
             float var18 = var15 + 0.4F;
             float var19 = (float)Math.sqrt(var12 * var12 + var17 * var17 + var18 * var18);
             float var20 = var11 / (var9 - 1.0F);
-            float var21 = (var11 == 0 ? 0.1F : (var11 == var9 - 1 ? var3 : var2)) + 0.22F * smooth(1.3F, 2.2F, Math.abs(var12));
+            float var21 = (var11 == 0 ? 0.1F : (var11 == var9 - 1 ? g : f)) + 0.22F * smooth(1.3F, 2.2F, Math.abs(var12));
             var10[var11 * 4] = var12 + var12 / var19 * var21;
             var10[1 + var11 * 4] = var13 + var17 / var19 * var21;
             var10[2 + var11 * 4] = var15 + var18 / var19 * var21;
@@ -201,7 +201,7 @@ public final class Aoi extends CharacterDesign {
       return var4;
    }
 
-   private static void hair(Rig var0, List<float[]> var1, List<float[]> var2) {
+   private static void hair(Rig rig, List<float[]> list, List<float[]> list2) {
       ArrayList var3 = new ArrayList();
       var3.add(
          Shapes.subtract(0.35F, Shapes.ellipsoid(0.0F, 28.62F, -0.2F, 2.6F, 2.66F, 2.64F), Shapes.ellipsoid(0.0F, 26.75F, 2.75F, 2.45F, 2.85F, 2.72F))
@@ -212,21 +212,21 @@ public final class Aoi extends CharacterDesign {
          var3.add(flowLock(var7));
       }
 
-      var0.extra("hair", Bone.HEAD)
+      rig.extra("hair", Bone.HEAD)
          .shape(grow(Shapes.union(var3.toArray(new Shape[0])).paint(capPaint())))
          .detail(0.8F)
          .resolution(0.95F)
          .outline(-15327158, 0.1F)
          .flatLight(0.5F)
          .occlusion(0.4F);
-      Part var10 = var0.extra("fringe", Bone.HEAD)
-         .shape(grow(fringe(var1, var2)))
+      Part var10 = rig.extra("fringe", Bone.HEAD)
+         .shape(grow(fringe(list, list2)))
          .detail(0.4F)
          .resolution(0.55F)
          .outline(-15327158, 0.09F)
          .flatLight(0.5F)
          .occlusion(0.2F);
-      shine(var10, var1);
+      shine(var10, list);
       Motion var11 = Motion.hair()
          .idle(1.5F, 0.0F, 1.5F, 0.35F)
          .walk(3.0F, 0.0F, 3.0F, 2.0F)
@@ -235,10 +235,8 @@ public final class Aoi extends CharacterDesign {
          .turn(10.0F, 0.0F)
          .spring(60.0F, 7.0F)
          .bend(1.3F);
-      Paint var12 = Paint.field(
-         (var0x, var1x, var2x) -> Colors.mix(Colors.mix(-14140794, -12948262, smooth(28.2F, 25.8F, var1x)), -13246209, smooth(26.2F, 24.4F, var1x))
-      );
-      Paint var13 = Paint.field((var0x, var1x, var2x) -> Colors.mix(-13646610, -13246209, smooth(27.0F, 25.0F, var1x)));
+      Paint var12 = Paint.field((f, g, h) -> Colors.mix(Colors.mix(-14140794, -12948262, smooth(28.2F, 25.8F, g)), -13246209, smooth(26.2F, 24.4F, g)));
+      Paint var13 = Paint.field((f, g, h) -> Colors.mix(-13646610, -13246209, smooth(27.0F, 25.0F, g)));
       Shape var8 = Shapes.union(
          Shapes.tube(
                -1.55F,
@@ -274,7 +272,7 @@ public final class Aoi extends CharacterDesign {
             .flattenFrom(2.0F, 0.0F, 27.5F, -0.5F)
             .paint(var13)
       );
-      Part var9 = var0.extra("lock_r", Bone.HEAD)
+      Part var9 = rig.extra("lock_r", Bone.HEAD)
          .pivot(-2.32F, hy(29.2F), 1.16F)
          .shape(grow(var8))
          .motion(var11)
@@ -283,18 +281,18 @@ public final class Aoi extends CharacterDesign {
          .outline(-15327158, 0.1F)
          .flatLight(0.5F)
          .occlusion(0.35F);
-      var0.extra("lock_l", Bone.HEAD).mirrorOf(var9);
+      rig.extra("lock_l", Bone.HEAD).mirrorOf(var9);
    }
 
-   private static Shape flowLock(float var0) {
+   private static Shape flowLock(float f) {
       float var1 = 0.0F;
       float var2 = 28.62F;
       float var3 = -0.2F;
       float var4 = 2.6F;
       float var5 = 2.66F;
       float var6 = 2.64F;
-      float var7 = (float)Math.toRadians(var0);
-      float var8 = Math.abs(var0);
+      float var7 = (float)Math.toRadians(f);
+      float var8 = Math.abs(f);
       float var9 = 29.1F - 1.7F * smooth(20.0F, 90.0F, var8) - 1.2F * smooth(95.0F, 160.0F, var8);
       float var10 = (float)Math.asin(Math.max(-0.95F, Math.min(0.95F, (var9 - var2) / var5)));
       float var11 = (float)(Math.sin(var7) * Math.cos(var10));
@@ -336,17 +334,15 @@ public final class Aoi extends CharacterDesign {
    }
 
    private static Paint capPaint() {
-      return Paint.field(
-         (var0, var1, var2) -> Colors.mix(Colors.mix(-15063975, -14140794, smooth(26.2F, 28.4F, var1)), -12756032, smooth(29.4F, 31.2F, var1) * 0.8F)
-      );
+      return Paint.field((f, g, h) -> Colors.mix(Colors.mix(-15063975, -14140794, smooth(26.2F, 28.4F, g)), -12756032, smooth(29.4F, 31.2F, g) * 0.8F));
    }
 
-   private static Shape fringe(List<float[]> var0, List<float[]> var1) {
-      Shape[] var2 = new Shape[var0.size() + var1.size()];
+   private static Shape fringe(List<float[]> list, List<float[]> list2) {
+      Shape[] var2 = new Shape[list.size() + list2.size()];
 
       for (int var3 = 0; var3 < var2.length; var3++) {
-         boolean var4 = var3 >= var0.size();
-         float[] var5 = var4 ? (float[])var1.get(var3 - var0.size()) : (float[])var0.get(var3);
+         boolean var4 = var3 >= list.size();
+         float[] var5 = var4 ? (float[])list2.get(var3 - list.size()) : (float[])list.get(var3);
          int var6 = var5.length / 4;
          float[] var7 = new float[var6 * 2];
 
@@ -361,8 +357,8 @@ public final class Aoi extends CharacterDesign {
             .intersect(Shapes.extrude(Shape2D.path(var5[3] * 2.6F, 0.02F, var7), 4.0F, 0.0F))
             .paint(
                Paint.field(
-                  (var1x, var2x, var3x) -> Colors.shade(
-                     Colors.mix(Colors.mix(-14140794, -12756032, smooth(29.6F, 30.6F, var2x) * 0.5F), -12948262, smooth(28.9F, 27.4F, var2x) * 0.85F), var9
+                  (g, h, i) -> Colors.shade(
+                     Colors.mix(Colors.mix(-14140794, -12756032, smooth(29.6F, 30.6F, h) * 0.5F), -12948262, smooth(28.9F, 27.4F, h) * 0.85F), var9
                   )
                )
             );
@@ -371,9 +367,9 @@ public final class Aoi extends CharacterDesign {
       return Shapes.union(var2);
    }
 
-   private static void shine(Part var0, List<float[]> var1) {
-      for (int var2 = 0; var2 < var1.size(); var2++) {
-         float[] var3 = (float[])var1.get(var2);
+   private static void shine(Part part, List<float[]> list) {
+      for (int var2 = 0; var2 < list.size(); var2++) {
+         float[] var3 = (float[])list.get(var2);
          int var4 = var3.length / 4;
 
          for (int var5 = 1; var5 < var4; var5++) {
@@ -404,7 +400,7 @@ public final class Aoi extends CharacterDesign {
                   Canvas var21 = new Canvas(64, 26);
                   var21.fill(Shape2D.path(var14 * 0.2F, var14, var16).union(Shape2D.path(var14, var14 * 0.2F, var17)), Colors.withAlpha(-7363350, 0.5F), 5.0F);
                   float var22 = hy(29.1F) + 0.081F - 0.29F * (1.0F - (float)Math.cos(var12)) + ((var2 & 1) * 2 - 1) * 0.03F;
-                  var0.decal(
+                  part.decal(
                      Decal.wrap(
                            var21,
                            0.0F,
@@ -428,7 +424,7 @@ public final class Aoi extends CharacterDesign {
       }
    }
 
-   private static void ponytail(Rig var0) {
+   private static void ponytail(Rig rig) {
       float[][] var2 = new float[][]{
          {30.4F, -2.0F},
          {31.1F, -2.5F},
@@ -535,15 +531,15 @@ public final class Aoi extends CharacterDesign {
          );
       }
 
-      Paint var30 = Paint.field((var0x, var1, var2x) -> {
-         int var3x = Colors.mix(-14140794, -12948262, smooth(27.5F, 21.5F, var1));
-         var3x = Colors.mix(var3x, -13246209, smooth(21.5F, 16.0F, var1));
-         float var4x = smooth(30.9F, 31.5F, var1) * smooth(-2.4F, -3.2F, var2x);
+      Paint var30 = Paint.field((f, g, h) -> {
+         int var3x = Colors.mix(-14140794, -12948262, smooth(27.5F, 21.5F, g));
+         var3x = Colors.mix(var3x, -13246209, smooth(21.5F, 16.0F, g));
+         float var4x = smooth(30.9F, 31.5F, g) * smooth(-2.4F, -3.2F, h);
          return Colors.mix(var3x, -7363350, var4x * 0.5F);
       });
       Shape var33 = Shapes.union(var24.toArray(new Shape[0])).paint(var30);
       Shape var36 = ring(0.0F, 30.38F, -2.05F, 0.0F, 0.55F, -0.83F, 0.52F, 0.38F).roughen(0.05F, 0.3F).color(-13703425);
-      var0.extra("ponytail", Bone.HEAD)
+      rig.extra("ponytail", Bone.HEAD)
          .pivot(0.0F, hy(30.35F), -2.3779998F)
          .shape(grow(Shapes.union(var33, var36)))
          .detail(1.0F)
@@ -565,27 +561,27 @@ public final class Aoi extends CharacterDesign {
          );
    }
 
-   private static void split(List<Shape> var0, float[] var1, int var2, float var3, boolean var4) {
-      int var5 = var1.length / 4;
-      if (var5 < var2 + 3) {
-         var0.add(Shapes.tube(var1).flattenFrom(var3, 0.0F, 26.0F, 0.5F));
+   private static void split(List<Shape> list, float[] fs, int i, float f, boolean bl) {
+      int var5 = fs.length / 4;
+      if (var5 < i + 3) {
+         list.add(Shapes.tube(fs).flattenFrom(f, 0.0F, 26.0F, 0.5F));
       } else {
-         var0.add(Shapes.tube(Arrays.copyOfRange(var1, 0, (var2 + 2) * 4)).flattenFrom(var3, 0.0F, 26.0F, 0.5F));
-         Object var6 = Shapes.tube(Arrays.copyOfRange(var1, (var2 - 1) * 4, var5 * 4)).flattenFrom(var3, 0.0F, 26.0F, 0.5F);
-         if (var4) {
+         list.add(Shapes.tube(Arrays.copyOfRange(fs, 0, (i + 2) * 4)).flattenFrom(f, 0.0F, 26.0F, 0.5F));
+         Object var6 = Shapes.tube(Arrays.copyOfRange(fs, (i - 1) * 4, var5 * 4)).flattenFrom(f, 0.0F, 26.0F, 0.5F);
+         if (bl) {
             int var7 = (var5 - 3) * 4;
             int var8 = (var5 - 2) * 4;
             int var9 = (var5 - 1) * 4;
-            Shape2D var10 = Shape2D.path(2.4F, 0.02F, var1[var7], var1[var7 + 1], var1[var8], var1[var8 + 1], var1[var9], var1[var9 + 1]);
-            var6 = ((Shape)var6).intersect(Shapes.union(Shapes.above(var1[var8 + 1]), Shapes.extrude(var10, 8.0F, 0.0F)));
+            Shape2D var10 = Shape2D.path(2.4F, 0.02F, fs[var7], fs[var7 + 1], fs[var8], fs[var8 + 1], fs[var9], fs[var9 + 1]);
+            var6 = ((Shape)var6).intersect(Shapes.union(Shapes.above(fs[var8 + 1]), Shapes.extrude(var10, 8.0F, 0.0F)));
          }
 
-         var0.add(var6);
+         list.add(var6);
       }
    }
 
-   private static Shape body(Rig var0, Canvas var1) {
-      Paint var2 = Paint.field((var0x, var1x, var2x) -> Colors.mix(-9274, -1331558, smooth(24.9F, 25.5F, var1x))).flatLight(1.0F).occlusion(0.1F);
+   private static Shape body(Rig rig, Canvas canvas) {
+      Paint var2 = Paint.field((f, g, h) -> Colors.mix(-9274, -1331558, smooth(24.9F, 25.5F, g))).flatLight(1.0F).occlusion(0.1F);
       Shape var3 = Shapes.cone(0.0F, 23.2F, -0.22F, 0.66F, 0.0F, 26.3F, 0.0F, 0.58F).paint(var2);
       Shape var4 = Shapes.blend(
             1.0F,
@@ -606,7 +602,7 @@ public final class Aoi extends CharacterDesign {
             Shapes.capsule(0.0F, 22.6F, -0.22F, 2.62F, 22.25F, -0.22F, 1.04F),
             oval(-0.1F, 18.3F, 20.3F, 2.45F, 1.97F, 2.55F, 1.97F)
          )
-         .paint(Paint.field((var0x, var1x, var2x) -> Colors.mix(-12959662, -1446155, smooth(21.72F, 21.78F, var1x))).flatLight(0.3F).occlusion(0.18F));
+         .paint(Paint.field((f, g, h) -> Colors.mix(-12959662, -1446155, smooth(21.72F, 21.78F, g))).flatLight(0.3F).occlusion(0.18F));
       Shape var8 = oval(-0.1F, 17.42F, 18.45F, 2.45F, 2.03F, 2.47F, 2.02F).color(-14210250);
       Shape var9 = Shapes.torus(0.0F, 23.52F, -0.28F, 1.28F, 0.38F).rotate(16.0F, 0.0F, 0.0F, 0.0F, 23.52F, -0.28F).color(-14210250);
       Shape var10 = Shapes.union(var7, var8, var9);
@@ -619,7 +615,7 @@ public final class Aoi extends CharacterDesign {
       Shape var17 = ovalRing(-0.05F, var13, 0.42F, var15, var16, 0.26F).color(-15263457);
       float var18 = -0.05F + var16 * (float)Math.sqrt(1.0F - 0.3025F / (var15 * var15)) + 0.26F;
       Shape var19 = Shapes.box(0.55F, var13, var18 + 0.05F, 0.46F, 0.36F, 0.14F, 0.1F).color(-13749702);
-      Part var20 = var0.part(Bone.BODY)
+      Part var20 = rig.part(Bone.BODY)
          .pivot(0.0F, 24.4F, 0.0F)
          .shape(Shapes.union(var3, var5, var4, var6, var11, var17, var19))
          .detail(1.0F)
@@ -630,7 +626,7 @@ public final class Aoi extends CharacterDesign {
       var20.decal(topGraphic())
          .decal(Decal.back(var21, 2.02F, 19.6F, -2.0F, 0.6F, 4.0F).depth(1.4F, 1.4F))
          .decal(Decal.back(var21, -2.02F, 19.6F, -2.0F, 0.6F, 4.0F).depth(1.4F, 1.4F))
-         .decal(Decal.wrap(var1, 0.0F, 18.12F, -0.1F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 360.0F, 0.3F).radius(1.95F, 3.2F))
+         .decal(Decal.wrap(canvas, 0.0F, 18.12F, -0.1F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 360.0F, 0.3F).radius(1.95F, 3.2F))
          .decal(Decal.front(pocket(), -1.85F, 18.95F, var12, 0.95F, 0.36F).depth(0.5F, 0.5F).maxAngle(70.0F))
          .decal(Decal.front(pocket().mirrored(), 1.85F, 18.95F, var12, 0.95F, 0.36F).depth(0.5F, 0.5F).maxAngle(70.0F))
          .decal(Decal.front(var22, 0.0F, 17.62F, 1.9F, 2.0F, 0.28F).depth(1.2F, 0.4F).maxAngle(70.0F))
@@ -644,7 +640,7 @@ public final class Aoi extends CharacterDesign {
             .color(-15263457),
          Shapes.box(1.07F, 14.15F, var18 + 0.56F, 0.28F, 0.2F, 0.13F, 0.08F).color(-3550757)
       );
-      var0.extra("strap", Bone.BODY)
+      rig.extra("strap", Bone.BODY)
          .pivot(0.98F, 16.7F, var18)
          .shape(var23)
          .resolution(0.7F)
@@ -654,36 +650,35 @@ public final class Aoi extends CharacterDesign {
       return var10;
    }
 
-   private static float openingWidth(float var0) {
-      return 0.85F + 0.65F * (24.9F - var0) / 10.1F;
+   private static float openingWidth(float f) {
+      return 0.85F + 0.65F * (24.9F - f) / 10.1F;
    }
 
-   private static Shape opening(float var0) {
-      return Shapes.extrude(Shape2D.polygon(-0.85F - var0, 24.9F, 0.85F + var0, 24.9F, 1.5F + var0, 14.8F, -1.5F - var0, 14.8F), 2.6F, 0.0F)
-         .move(0.0F, 0.0F, 3.15F);
+   private static Shape opening(float f) {
+      return Shapes.extrude(Shape2D.polygon(-0.85F - f, 24.9F, 0.85F + f, 24.9F, 1.5F + f, 14.8F, -1.5F - f, 14.8F), 2.6F, 0.0F).move(0.0F, 0.0F, 3.15F);
    }
 
-   private static Shape piping(Shape var0, float var1, float var2, float var3) {
+   private static Shape piping(Shape shape, float f, float g, float h) {
       float[] var4 = new float[24];
 
       for (int var5 = 0; var5 < 8; var5++) {
-         float var6 = var2 + (var3 - var2) * var5 / 7.0F;
+         float var6 = g + (h - g) * var5 / 7.0F;
          float var7 = openingWidth(var6);
-         var4[var5 * 3] = var1 * (var7 + 0.09F);
+         var4[var5 * 3] = f * (var7 + 0.09F);
          var4[var5 * 3 + 1] = var6;
-         var4[var5 * 3 + 2] = frontZ(var0, var1 * (var7 + 0.1F), var6, 6.0F) - 0.06F;
+         var4[var5 * 3 + 2] = frontZ(shape, f * (var7 + 0.1F), var6, 6.0F) - 0.06F;
       }
 
       return Shapes.strand(0.13F, 0.13F, var4);
    }
 
-   private static void skirt(Rig var0, Canvas var1) {
-      Paint var2 = Paint.field((var0x, var1x, var2x) -> {
-         float var3x = (float)Math.atan2(var0x, var2x - -0.05F);
+   private static void skirt(Rig rig, Canvas canvas) {
+      Paint var2 = Paint.field((f, g, h) -> {
+         float var3x = (float)Math.atan2(f, h - -0.05F);
          float var4x = pleat(var3x * 18.0F / 6.2831855F);
          return Colors.mix(-14472632, -12892555, 0.4F + 0.6F * (0.5F + 0.5F * var4x));
       }).flatLight(0.15F);
-      Decal var3 = Decal.wrap(var1, 0.0F, 11.77F, -0.05F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 360.0F, 0.27F).radius(2.4F, 4.6F);
+      Decal var3 = Decal.wrap(canvas, 0.0F, 11.77F, -0.05F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 360.0F, 0.27F).radius(2.4F, 4.6F);
       float var4 = (float)Math.toRadians(30.0);
       float var5 = (float)Math.toRadians(14.0);
       String[] var6 = new String[]{"skirt_f", "skirt_s", "skirt_b"};
@@ -696,7 +691,7 @@ public final class Aoi extends CharacterDesign {
          float var12 = 1.8F * (float)Math.sin(var11);
          float var13 = -0.05F + 1.45F * (float)Math.cos(var11);
          Motion var14 = Motion.skirt(Bone.RIGHT_LEG).follow(Bone.RIGHT_LEG, var8[var10], var9[var10]).drag(var10 == 0 ? 0.0F : 3.0F);
-         Part var15 = var0.extra(var6[var10] + "_r", Bone.BODY)
+         Part var15 = rig.extra(var6[var10] + "_r", Bone.BODY)
             .pivot(var12, 16.9F, var13)
             .shape(skirtPanel(var11, var4, var5).paint(var2))
             .motion(var14)
@@ -705,36 +700,36 @@ public final class Aoi extends CharacterDesign {
             .occlusion(0.3F)
             .noOutline()
             .decal(var3);
-         var0.extra(var6[var10] + "_l", Bone.BODY).mirrorOf(var15);
+         rig.extra(var6[var10] + "_l", Bone.BODY).mirrorOf(var15);
       }
    }
 
-   private static float skirtT(float var0) {
-      return clamp01((17.3F - var0) / 6.049999F);
+   private static float skirtT(float f) {
+      return clamp01((17.3F - f) / 6.049999F);
    }
 
-   private static float flare(float var0) {
-      return var0 * (1.25F - 0.25F * var0);
+   private static float flare(float f) {
+      return f * (1.25F - 0.25F * f);
    }
 
-   private static float skirtRadius(float var0, float var1, float var2, float var3, float var4) {
-      float var6 = skirtT(var4);
+   private static float skirtRadius(float f, float g, float h, float i, float j) {
+      float var6 = skirtT(j);
       float var7 = flare(var6);
       float var8 = 1.5F + 1.4F * var7;
       float var5;
-      float var9 = (float)Math.sqrt(var8 * var8 * var0 * var0 + (var5 = 1.85F + 1.6F * var7) * var5 * var1 * var1);
-      float var10 = var9 < 1.0E-5F ? var5 : var5 * var8 * var2 / var9;
-      return var10 + (0.05F + 0.24F * var6) * pleat(var3 * 18.0F / 6.2831855F);
+      float var9 = (float)Math.sqrt(var8 * var8 * f * f + (var5 = 1.85F + 1.6F * var7) * var5 * g * g);
+      float var10 = var9 < 1.0E-5F ? var5 : var5 * var8 * h / var9;
+      return var10 + (0.05F + 0.24F * var6) * pleat(i * 18.0F / 6.2831855F);
    }
 
-   private static Shape skirtPanel(float var0, float var1, float var2) {
+   private static Shape skirtPanel(float f, float g, float h) {
       float var3 = 0.0F;
       float var4 = 0.0F;
       float var5 = -0.05F;
       float var6 = -0.05F;
 
       for (int var7 = 0; var7 <= 16; var7++) {
-         float var8 = var0 - var1 - var2 + (var1 + var2) * 2.0F * var7 / 16.0F;
+         float var8 = f - g - h + (g + h) * 2.0F * var7 / 16.0F;
 
          for (float var12 : new float[]{1.4F, 4.05F}) {
             var3 = Math.min(var3, var12 * (float)Math.sin(var8));
@@ -744,10 +739,10 @@ public final class Aoi extends CharacterDesign {
          }
       }
 
-      return Shapes.field((var3x, var4x, var5x) -> {
-         float var6x = var5x - -0.05F;
-         float var7x = (float)Math.atan2(var3x, var6x);
-         float var8x = var7x - var0;
+      return Shapes.field((i, j, k) -> {
+         float var6x = k - -0.05F;
+         float var7x = (float)Math.atan2(i, var6x);
+         float var8x = var7x - f;
          if (var8x > 3.141592653589793) {
             var8x -= 6.2831855F;
          }
@@ -756,18 +751,18 @@ public final class Aoi extends CharacterDesign {
             var8x += 6.2831855F;
          }
 
-         float var9 = Math.abs(var8x) - var1;
-         float var10 = (float)Math.sqrt(var3x * var3x + var6x * var6x);
-         float var11 = skirtRadius(var3x, var6x, var10, var7x, var4x) - 0.32F * smooth(0.0F, 0.05F, var9);
+         float var9 = Math.abs(var8x) - g;
+         float var10 = (float)Math.sqrt(i * i + var6x * var6x);
+         float var11 = skirtRadius(i, var6x, var10, var7x, j) - 0.32F * smooth(0.0F, 0.05F, var9);
          float var12x = Math.abs(var10 - var11) - 0.42F;
-         float var13 = Math.max(var4x - 17.3F, 11.25F - var4x);
-         float var14 = Math.max(-1.2F, Math.min(1.2F, var9 - var2));
+         float var13 = Math.max(j - 17.3F, 11.25F - j);
+         float var14 = Math.max(-1.2F, Math.min(1.2F, var9 - h));
          float var15 = var10 * var14 * (1.0F - var14 * var14 / 6.0F);
          return Math.max(var12x, Math.max(var13, var15)) * 0.8F;
       }, var3 - 0.2F, 11.05F, var5 - 0.2F, var4 + 0.2F, 17.5F, var6 + 0.2F);
    }
 
-   private static void arms(Rig var0, Canvas var1) {
+   private static void arms(Rig rig, Canvas canvas) {
       float var2 = -3.68F;
       float var3 = 18.4F;
       float var4 = -0.1F;
@@ -780,7 +775,7 @@ public final class Aoi extends CharacterDesign {
       float var32;
       float var33;
       Shape var10 = var9.intersect(Shapes.plane(var2, var3, var4, var31 = var5 / var8, var32 = var6 / var8, var33 = var7 / var8).color(-14210250))
-         .paint(Paint.field((var0x, var1x, var2x) -> Colors.mix(-1446155, -3945254, smooth(-3.2F, -2.6F, var0x) * 0.7F)).flatLight(0.3F));
+         .paint(Paint.field((f, g, h) -> Colors.mix(-1446155, -3945254, smooth(-3.2F, -2.6F, f) * 0.7F)).flatLight(0.3F));
       float var11 = var2 - var31 * 0.05F;
       float var12 = var3 - var32 * 0.05F;
       float var13 = var4 - var33 * 0.05F;
@@ -797,7 +792,7 @@ public final class Aoi extends CharacterDesign {
       float[] var24 = bent(-4.15F, 12.75F, 0.45F, var2, var3, var4);
       float var25 = -3.3F + (var24[0] + 3.3F) * var18 - (var24[1] - 22.4F) * var19;
       float var26 = 22.4F + (var24[0] + 3.3F) * var19 + (var24[1] - 22.4F) * var18;
-      Part var27 = var0.part(Bone.RIGHT_ARM)
+      Part var27 = rig.part(Bone.RIGHT_ARM)
          .pivot(-3.3F, 22.4F, -0.1F)
          .grip(var25, var26, var24[2])
          .shape(Shapes.union(var10, var14, var16).rotate(0.0F, 0.0F, var17, -3.3F, 22.4F, -0.1F))
@@ -805,20 +800,20 @@ public final class Aoi extends CharacterDesign {
          .occlusion(0.3F)
          .swing(0.8F)
          .joint(-3.78F, 18.41F, -0.1F, 0.55F);
-      Part var28 = var0.part(Bone.LEFT_ARM).mirrorOf(var27);
-      var27.decal(Decal.wrap(var1, var20, var21, var13, -var22, -var23, -var33, -1.0F, 0.0F, 0.3F, 250.0F, 0.4F).radius(0.95F, 1.6F));
-      var28.decal(Decal.wrap(var1, -var20, var21, var13, var22, -var23, -var33, 1.0F, 0.0F, 0.3F, 250.0F, 0.4F).radius(0.95F, 1.6F));
+      Part var28 = rig.part(Bone.LEFT_ARM).mirrorOf(var27);
+      var27.decal(Decal.wrap(canvas, var20, var21, var13, -var22, -var23, -var33, -1.0F, 0.0F, 0.3F, 250.0F, 0.4F).radius(0.95F, 1.6F));
+      var28.decal(Decal.wrap(canvas, -var20, var21, var13, var22, -var23, -var33, 1.0F, 0.0F, 0.3F, 250.0F, 0.4F).radius(0.95F, 1.6F));
       var28.decal(Decal.left(sleevePatch(), 4.45F, 20.3F, -0.1F, 1.05F, 1.05F).depth(0.8F, 0.8F).maxAngle(65.0F));
       var27.decal(Decal.right(sleeveText(), -4.5F, 20.2F, -0.1F, 0.62F, 1.75F).depth(0.8F, 0.8F).maxAngle(65.0F));
-      Part var29 = var0.extra("hand_r", Bone.RIGHT_ARM)
+      Part var29 = rig.extra("hand_r", Bone.RIGHT_ARM)
          .shape(hand().rotate(-13.0F, 0.0F, 0.0F, var2, var3, var4).rotate(0.0F, 0.0F, var17, -3.3F, 22.4F, -0.1F))
          .resolution(0.45F)
          .detail(0.5F)
          .outline(-6657438, 0.1F)
          .flatLight(1.0F)
          .occlusion(0.25F);
-      var0.extra("hand_l", Bone.LEFT_ARM).mirrorOf(var29);
-      Part var30 = var0.extra("wrist_r", Bone.RIGHT_ARM)
+      rig.extra("hand_l", Bone.LEFT_ARM).mirrorOf(var29);
+      Part var30 = rig.extra("wrist_r", Bone.RIGHT_ARM)
          .shape(
             Shapes.ellipsoid(-3.97F, 14.12F, 0.16F, 0.31F, 0.5F, 0.37F)
                .color(-9274)
@@ -830,16 +825,16 @@ public final class Aoi extends CharacterDesign {
          .outline(-6657438, 0.1F)
          .flatLight(1.0F)
          .occlusion(0.25F);
-      var0.extra("wrist_l", Bone.LEFT_ARM).mirrorOf(var30);
+      rig.extra("wrist_l", Bone.LEFT_ARM).mirrorOf(var30);
    }
 
-   private static float[] bent(float var0, float var1, float var2, float var3, float var4, float var5) {
+   private static float[] bent(float f, float g, float h, float i, float j, float k) {
       double var6 = Math.toRadians(-13.0);
       float var8 = (float)Math.cos(var6);
       float var9 = (float)Math.sin(var6);
-      float var10 = var1 - var4;
-      float var11 = var2 - var5;
-      return new float[]{var0, var4 + var10 * var8 - var11 * var9, var5 + var10 * var9 + var11 * var8};
+      float var10 = g - j;
+      float var11 = h - k;
+      return new float[]{f, j + var10 * var8 - var11 * var9, k + var10 * var9 + var11 * var8};
    }
 
    private static Shape hand() {
@@ -856,20 +851,18 @@ public final class Aoi extends CharacterDesign {
       );
    }
 
-   private static void legs(Rig var0) {
+   private static void legs(Rig rig) {
       Shape var1 = Shapes.cone(-1.24F, 14.1F, 0.0F, 1.3F, -1.1F, 8.3F, 0.1F, 0.84F);
       Shape var2 = Shapes.sphere(-1.07F, 7.68F, 0.18F, 0.75F);
       Shape var3 = Shapes.sphere(-1.06F, 7.8F, 0.5F, 0.52F);
       Shape var4 = Shapes.cone(-1.07F, 7.3F, 0.06F, 0.78F, -1.12F, 2.6F, -0.1F, 0.5F);
       Shape var5 = Shapes.ellipsoid(-1.12F, 5.8F, -0.2F, 0.72F, 1.5F, 0.74F);
       Shape var6 = Shapes.sphere(-1.1F, 14.4F, -0.05F, 1.32F);
-      Paint var7 = Paint.field(
-         (var0x, var1x, var2x) -> Colors.mix(Colors.mix(-14012606, -9274, smooth(6.7F, 6.95F, var1x)), -15263457, smooth(12.2F, 12.4F, var1x))
-      );
+      Paint var7 = Paint.field((f, g, h) -> Colors.mix(Colors.mix(-14012606, -9274, smooth(6.7F, 6.95F, g)), -15263457, smooth(12.2F, 12.4F, g)));
       Shape var8 = Shapes.union(Shapes.blend(0.5F, var1, var2, var4, var5).blend(0.3F, var3), var6).paint(var7);
       Shape var9 = Shapes.union(Shapes.blend(0.5F, var4, var5).inflate(0.1F).intersect(Shapes.below(6.95F)), Shapes.torus(-1.075F, 6.9F, 0.0F, 0.86F, 0.15F))
          .color(-14012606);
-      Part var10 = var0.part(Bone.RIGHT_LEG)
+      Part var10 = rig.part(Bone.RIGHT_LEG)
          .pivot(-1.2F, 14.3F, 0.0F)
          .shape(var8)
          .outline(-11914188, 0.12F)
@@ -877,20 +870,20 @@ public final class Aoi extends CharacterDesign {
          .occlusion(0.3F)
          .swing(0.55F, 30.0F)
          .joint(-1.07F, 7.68F, 0.18F, 0.75F);
-      var0.part(Bone.LEFT_LEG).mirrorOf(var10);
-      Part var11 = var0.extra("sock_r", Bone.RIGHT_LEG).shape(var9).resolution(0.7F).detail(0.45F).outline(-15460836, 0.12F);
-      Part var12 = var0.extra("sock_l", Bone.LEFT_LEG).mirrorOf(var11);
+      rig.part(Bone.LEFT_LEG).mirrorOf(var10);
+      Part var11 = rig.extra("sock_r", Bone.RIGHT_LEG).shape(var9).resolution(0.7F).detail(0.45F).outline(-15460836, 0.12F);
+      Part var12 = rig.extra("sock_l", Bone.LEFT_LEG).mirrorOf(var11);
       Canvas var13 = socks();
       var11.decal(Decal.wrap(var13, -1.1F, 6.42F, -0.05F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 360.0F, 0.3F).radius(0.3F, 1.4F));
       var12.decal(Decal.wrap(var13, 1.1F, 6.42F, -0.05F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 360.0F, 0.3F).radius(0.3F, 1.4F));
       float var14 = -1.14F;
       float var15 = -7.0F;
-      Part var16 = var0.extra("shoe_r", Bone.RIGHT_LEG)
+      Part var16 = rig.extra("shoe_r", Bone.RIGHT_LEG)
          .shape(shoe(var14).rotate(0.0F, var15, 0.0F, var14, 1.0F, 0.3F))
          .resolution(0.8F)
          .detail(0.55F)
          .outline(-12959664, 0.12F);
-      Part var17 = var0.extra("shoe_l", Bone.LEFT_LEG).mirrorOf(var16);
+      Part var17 = rig.extra("shoe_l", Bone.LEFT_LEG).mirrorOf(var16);
       Canvas var18 = laces();
       double var19 = Math.toRadians(var15);
       float var21 = (float)Math.cos(var19);
@@ -909,33 +902,31 @@ public final class Aoi extends CharacterDesign {
       );
    }
 
-   private static Shape shoe(float var0) {
+   private static Shape shoe(float f) {
       Shape var1 = Shapes.blend(
          0.35F,
-         Shapes.box(var0, 0.42F, 0.4F, 0.88F, 0.42F, 1.45F, 0.36F),
-         Shapes.ellipsoid(var0, 0.44F, 1.62F, 0.88F, 0.44F, 0.95F),
-         Shapes.ellipsoid(var0, 0.44F, -0.85F, 0.84F, 0.44F, 0.7F)
+         Shapes.box(f, 0.42F, 0.4F, 0.88F, 0.42F, 1.45F, 0.36F),
+         Shapes.ellipsoid(f, 0.44F, 1.62F, 0.88F, 0.44F, 0.95F),
+         Shapes.ellipsoid(f, 0.44F, -0.85F, 0.84F, 0.44F, 0.7F)
       );
-      Shape var2 = Shapes.ellipsoid(var0, 1.12F, 1.35F, 0.76F, 0.58F, 1.1F);
-      Shape var3 = Shapes.capsule(var0, 1.3F, 0.85F, var0, 2.05F, 0.1F, 0.7F);
-      Shape var4 = Shapes.ellipsoid(var0, 1.45F, -0.62F, 0.8F, 0.82F, 0.82F);
+      Shape var2 = Shapes.ellipsoid(f, 1.12F, 1.35F, 0.76F, 0.58F, 1.1F);
+      Shape var3 = Shapes.capsule(f, 1.3F, 0.85F, f, 2.05F, 0.1F, 0.7F);
+      Shape var4 = Shapes.ellipsoid(f, 1.45F, -0.62F, 0.8F, 0.82F, 0.82F);
       Shape var5 = Shapes.union(
-         Shapes.cone(var0, 1.8F, -0.3F, 0.84F, var0, 3.5F, -0.17F, 0.74F).intersect(Shapes.below(3.2F)), Shapes.torus(var0, 3.18F, -0.19F, 0.66F, 0.15F)
+         Shapes.cone(f, 1.8F, -0.3F, 0.84F, f, 3.5F, -0.17F, 0.74F).intersect(Shapes.below(3.2F)), Shapes.torus(f, 3.18F, -0.19F, 0.66F, 0.15F)
       );
-      Shape var6 = Shapes.ellipsoid(var0, 3.05F, 0.42F, 0.46F, 0.72F, 0.3F);
+      Shape var6 = Shapes.ellipsoid(f, 3.05F, 0.42F, 0.46F, 0.72F, 0.3F);
       Shape var7 = Shapes.blend(0.4F, var2, var3, var4, var5).blend(0.15F, var6);
       Paint var8 = Paint.field(
-         (var0x, var1x, var2x) -> var1x < 0.9F
-            ? Colors.mix(-14012872, -920586, smooth(0.05F, 0.24F, var1x))
-            : Colors.mix(-591621, -14210250, smooth(2.8F, 3.05F, var1x))
+         (fx, g, h) -> g < 0.9F ? Colors.mix(-14012872, -920586, smooth(0.05F, 0.24F, g)) : Colors.mix(-591621, -14210250, smooth(2.8F, 3.05F, g))
       );
       return Shapes.union(var1, var7).paint(var8);
    }
 
-   private static void gear(Rig var0, Shape var1) {
+   private static void gear(Rig rig, Shape shape) {
       ArrayList var2 = new ArrayList();
       Canvas var3 = phoneRing();
-      Part var4 = var0.extra("gear", Bone.BODY);
+      Part var4 = rig.extra("gear", Bone.BODY);
 
       for (byte var5 = -1; var5 <= 1; var5 += 2) {
          float var6 = var5 * 0.35F;
@@ -952,8 +943,8 @@ public final class Aoi extends CharacterDesign {
          Shape var19 = Shapes.cylinder(
                var10 - var6 * 0.1F, var11 - var7 * 0.1F, var12 - var8 * 0.1F, var10 + var6 * 0.16F, var11 + var7 * 0.16F, var12 + var8 * 0.16F, 0.86F, 0.12F
             )
-            .paint(Paint.field((var6x, var7x, var8x) -> {
-               float var9x = (var6x - var10) * var6 + (var7x - var11) * var14 + (var8x - var12) * var8;
+            .paint(Paint.field((l, m, n) -> {
+               float var9x = (l - var10) * var6 + (m - var11) * var14 + (n - var12) * var8;
                return Colors.mix(-14210250, -723206, smooth(0.03F, 0.1F, var9x));
             }));
          Shape var20 = Shapes.cylinder(
@@ -1005,7 +996,7 @@ public final class Aoi extends CharacterDesign {
             .flattenFrom(1.8F, 0.0F, 24.9F, -0.2F)
             .color(-14210250)
       );
-      var2.add(Shapes.union(piping(var1, 1.0F, 23.3F, 17.5F), piping(var1, -1.0F, 23.3F, 17.5F)).color(-13703425));
+      var2.add(Shapes.union(piping(shape, 1.0F, 23.3F, 17.5F), piping(shape, -1.0F, 23.3F, 17.5F)).color(-13703425));
       var4.shape(Shapes.union(var2.toArray(new Shape[0]))).resolution(0.7F).detail(0.7F).outline(-15065820, 0.1F).flatLight(0.7F).occlusion(0.15F);
       float[] var22 = new float[]{1.75F, 22.65F, 1.85F, 21.8F, 1.92F, 20.9F, 1.95F, 20.15F};
       float[] var24 = new float[12];
@@ -1013,7 +1004,7 @@ public final class Aoi extends CharacterDesign {
       for (int var26 = 0; var26 < 4; var26++) {
          var24[var26 * 3] = var22[var26 * 2];
          var24[var26 * 3 + 1] = var22[var26 * 2 + 1];
-         var24[var26 * 3 + 2] = var26 == 0 ? 1.3F : frontZ(var1, var22[var26 * 2], var22[var26 * 2 + 1], 6.0F) + 0.16F;
+         var24[var26 * 3 + 2] = var26 == 0 ? 1.3F : frontZ(shape, var22[var26 * 2], var22[var26 * 2 + 1], 6.0F) + 0.16F;
       }
 
       float var27 = var24[11];
@@ -1022,7 +1013,7 @@ public final class Aoi extends CharacterDesign {
          Shapes.capsule(1.95F, 20.2F, var27, 1.96F, 19.65F, var27 + 0.02F, 0.19F).color(-12959662),
          Shapes.capsule(1.96F, 19.6F, var27 + 0.02F, 1.96F, 19.3F, var27 + 0.03F, 0.12F).color(-3550757)
       );
-      var0.extra("cable", Bone.BODY)
+      rig.extra("cable", Bone.BODY)
          .pivot(1.75F, 22.65F, 1.3F)
          .shape(var29)
          .resolution(0.5F)
@@ -1031,18 +1022,18 @@ public final class Aoi extends CharacterDesign {
          .motion(Motion.cloth().idle(1.0F, 0.0F, 1.5F, 0.35F).walk(4.0F, 0.0F, 5.0F, 2.0F).drag(-2.0F).hang(0.4F).spring(45.0F, 5.0F).bend(1.1F));
    }
 
-   private static float fu(float var0) {
-      return (var0 + 2.25F) * 80.0F;
+   private static float fu(float f) {
+      return (f + 2.25F) * 80.0F;
    }
 
-   private static float fv(float var0) {
-      return (28.6F - var0) * 80.0F;
+   private static float fv(float f) {
+      return (28.6F - f) * 80.0F;
    }
 
-   private static Decal face(List<float[]> var0) {
+   private static Decal face(List<float[]> list) {
       Canvas var2 = new Canvas(Math.round(360.0F), Math.round(201.60004F));
 
-      for (float[] var4 : var0) {
+      for (float[] var4 : list) {
          Shape2D var5 = null;
 
          for (byte var6 = 0; var6 + 7 < var4.length; var6 += 4) {
@@ -1079,19 +1070,19 @@ public final class Aoi extends CharacterDesign {
       return Decal.front(var2, 0.0F, hy(var9), 3.132F, 5.22F, 2.9232004F).depth(3.0159998F, 0.8F).maxAngle(72.0F).flatLight(1.0F).occlusion(0.3F);
    }
 
-   private static void eye(Canvas var0, int var1) {
-      float var2 = fu(var1 * 0.98F);
+   private static void eye(Canvas canvas, int i) {
+      float var2 = fu(i * 0.98F);
       float var3 = fv(27.2F);
-      float var4 = var2 - var1 * 2.0F;
+      float var4 = var2 - i * 2.0F;
       float var5 = var3 + 4.0F;
-      float var6 = var2 - var1 * 46.0F;
-      float var7 = var2 + var1 * 47.0F;
+      float var6 = var2 - i * 46.0F;
+      float var7 = var2 + i * 47.0F;
       float var8 = var3 - 40.0F;
       float var9 = var3 - 50.0F;
-      float var10 = var2 - var1 * 2.0F;
+      float var10 = var2 - i * 2.0F;
       float var11 = var3 - 49.0F;
       Shape2D var12 = Shape2D.polygon(
-         var6 - var1 * 30.0F,
+         var6 - i * 30.0F,
          var8 + 2.0F,
          var6,
          var8,
@@ -1099,34 +1090,30 @@ public final class Aoi extends CharacterDesign {
          var11,
          var7,
          var9,
-         var7 + var1 * 30.0F,
+         var7 + i * 30.0F,
          var9,
-         var7 + var1 * 30.0F,
+         var7 + i * 30.0F,
          var3 + 90.0F,
-         var6 - var1 * 30.0F,
+         var6 - i * 30.0F,
          var3 + 90.0F
       );
       Shape2D var13 = Shape2D.ellipse(var2, var3 - 2.0F, 47.0F, 53.0F).intersect(var12);
-      var0.fill(var13, Paint2D.linear(var2, var3 - 50.0F, var2, var3 + 50.0F, -2498062, -1, -1));
+      canvas.fill(var13, Paint2D.linear(var2, var3 - 50.0F, var2, var3 + 50.0F, -2498062, -1, -1));
       Shape2D var14 = Shape2D.ellipse(var4, var5, 32.0F, 43.0F);
       Shape2D var15 = var14.intersect(var13);
-      var0.fill(var15, Paint2D.linear(var4, var5 - 43.0F, var4, var5 + 43.0F, -16050107, -15449954, -14711060, -10687489));
-      var0.fill(Shape2D.ellipse(var4, var5 + 25.0F, 22.0F, 14.0F).intersect(var15), -1871645953, 6.0F);
-      var0.fill(Shape2D.ellipse(var4, var5 + 3.0F, 12.0F, 19.0F), -16315098, 0.0F);
-      var0.fill(var14.outline(4.5F).intersect(var13), -536210893, 0.0F);
-      var0.fill(Shape2D.ellipse(var2, var3 - 44.0F, 62.0F, 20.0F).intersect(var13), 1714438256, 8.0F);
-      var0.fill(Shape2D.box(var4 - 12.0F, var5 - 15.0F, 6.5F, 10.5F, 3.5F).rotate(-14.0F, var4 - 12.0F, var5 - 15.0F), -1, 0.0F);
-      var0.fill(Shape2D.box(var4 - 2.0F, var5 - 20.0F, 2.2F, 5.0F, 1.5F).rotate(-14.0F, var4 - 2.0F, var5 - 20.0F), -855638017, 0.0F);
-      var0.fill(Shape2D.circle(var4 + 13.0F, var5 + 21.0F, 4.2F), -570425345, 0.0F);
+      canvas.fill(var15, Paint2D.linear(var4, var5 - 43.0F, var4, var5 + 43.0F, -16050107, -15449954, -14711060, -10687489));
+      canvas.fill(Shape2D.ellipse(var4, var5 + 25.0F, 22.0F, 14.0F).intersect(var15), -1871645953, 6.0F);
+      canvas.fill(Shape2D.ellipse(var4, var5 + 3.0F, 12.0F, 19.0F), -16315098, 0.0F);
+      canvas.fill(var14.outline(4.5F).intersect(var13), -536210893, 0.0F);
+      canvas.fill(Shape2D.ellipse(var2, var3 - 44.0F, 62.0F, 20.0F).intersect(var13), 1714438256, 8.0F);
+      canvas.fill(Shape2D.box(var4 - 12.0F, var5 - 15.0F, 6.5F, 10.5F, 3.5F).rotate(-14.0F, var4 - 12.0F, var5 - 15.0F), -1, 0.0F);
+      canvas.fill(Shape2D.box(var4 - 2.0F, var5 - 20.0F, 2.2F, 5.0F, 1.5F).rotate(-14.0F, var4 - 2.0F, var5 - 20.0F), -855638017, 0.0F);
+      canvas.fill(Shape2D.circle(var4 + 13.0F, var5 + 21.0F, 4.2F), -570425345, 0.0F);
       int var16 = -15724002;
-      var0.fill(Shape2D.path(5.0F, 9.0F, var6, var8 + 1.0F, var10, var11 - 1.0F, var7, var9), var16, 0.0F);
-      var0.fill(Shape2D.taper(var7 - var1 * 6.0F, var9 + 1.0F, 7.5F, var7 + var1 * 12.0F, var9 - 7.0F, 1.5F), var16, 0.0F);
-      var0.fill(
-         Shape2D.curve(var2 + var1 * 6.0F, var3 + 51.0F, var2 + var1 * 32.0F, var3 + 46.0F, var7 - var1 * 3.0F, var3 + 22.0F, 1.2F, 3.0F), -1072030672, 0.0F
-      );
-      var0.fill(
-         Shape2D.curve(var2 - var1 * 40.0F, var3 - 72.0F, var2 + var1 * 2.0F, var3 - 80.0F, var2 + var1 * 42.0F, var3 - 72.0F, 3.6F, 2.0F), -14011280, 0.0F
-      );
+      canvas.fill(Shape2D.path(5.0F, 9.0F, var6, var8 + 1.0F, var10, var11 - 1.0F, var7, var9), var16, 0.0F);
+      canvas.fill(Shape2D.taper(var7 - i * 6.0F, var9 + 1.0F, 7.5F, var7 + i * 12.0F, var9 - 7.0F, 1.5F), var16, 0.0F);
+      canvas.fill(Shape2D.curve(var2 + i * 6.0F, var3 + 51.0F, var2 + i * 32.0F, var3 + 46.0F, var7 - i * 3.0F, var3 + 22.0F, 1.2F, 3.0F), -1072030672, 0.0F);
+      canvas.fill(Shape2D.curve(var2 - i * 40.0F, var3 - 72.0F, var2 + i * 2.0F, var3 - 80.0F, var2 + i * 42.0F, var3 - 72.0F, 3.6F, 2.0F), -14011280, 0.0F);
    }
 
    private static Canvas stripe() {
@@ -1235,15 +1222,15 @@ public final class Aoi extends CharacterDesign {
       return var1;
    }
 
-   private static void ink(Canvas var0, float var1, Shape2D var2, int var3, float var4) {
-      var0.fill(var2.scale(var1, 0.0F, 0.0F), var3, var4 * var1);
+   private static void ink(Canvas canvas, float f, Shape2D shape2D, int i, float g) {
+      canvas.fill(shape2D.scale(f, 0.0F, 0.0F), i, g * f);
    }
 
-   private static float frontZ(Shape var0, float var1, float var2, float var3) {
-      float var5 = var3;
+   private static float frontZ(Shape shape, float f, float g, float h) {
+      float var5 = h;
 
       for (int var6 = 0; var6 < 400 && var5 > -8.0F; var6++) {
-         float var4 = var0.distance(var1, var2, var5);
+         float var4 = shape.distance(f, g, var5);
          if (var4 < 0.003F) {
             return var5;
          }
@@ -1254,63 +1241,63 @@ public final class Aoi extends CharacterDesign {
       return var5;
    }
 
-   private static Shape ring(float var0, float var1, float var2, float var3, float var4, float var5, float var6, float var7) {
-      float var8 = (float)Math.sqrt(var3 * var3 + var4 * var4 + var5 * var5);
-      float var9 = var3 / var8;
-      float var10 = var4 / var8;
-      float var11 = var5 / var8;
-      Shape var12 = Shapes.torus(var0, var1, var2, var6, var7);
+   private static Shape ring(float f, float g, float h, float i, float j, float k, float l, float m) {
+      float var8 = (float)Math.sqrt(i * i + j * j + k * k);
+      float var9 = i / var8;
+      float var10 = j / var8;
+      float var11 = k / var8;
+      Shape var12 = Shapes.torus(f, g, h, l, m);
       if (var9 * var9 + var11 * var11 < 1.0E-8F) {
          return var12;
       } else {
          float var13 = (float)Math.toDegrees(Math.acos(Math.max(-1.0F, Math.min(1.0F, var10))));
-         return var12.rotateAxis(var11, 0.0F, -var9, var13, var0, var1, var2);
+         return var12.rotateAxis(var11, 0.0F, -var9, var13, f, g, h);
       }
    }
 
-   private static Shape oval(float var0, float var1, float var2, float var3, float var4, float var5, float var6) {
-      float var7 = Math.max(var3, var5);
-      float var8 = Math.max(var4, var6);
-      return Shapes.field((var7x, var8x, var9) -> {
-         float var10 = clamp01((var8x - var1) / (var2 - var1));
-         float var11 = ellipse(var7x, var9 - var0, var3 + (var5 - var3) * var10, var4 + (var6 - var4) * var10);
-         return Math.max(var11 * 0.95F, Math.max(var1 - var8x, var8x - var2));
-      }, -var7, var1, var0 - var8, var7, var2, var0 + var8);
+   private static Shape oval(float f, float g, float h, float i, float j, float k, float l) {
+      float var7 = Math.max(i, k);
+      float var8 = Math.max(j, l);
+      return Shapes.field((m, n, o) -> {
+         float var10 = clamp01((n - g) / (h - g));
+         float var11 = ellipse(m, o - f, i + (k - i) * var10, j + (l - j) * var10);
+         return Math.max(var11 * 0.95F, Math.max(g - n, n - h));
+      }, -var7, g, f - var8, var7, h, f + var8);
    }
 
-   private static Shape ovalRing(float var0, float var1, float var2, float var3, float var4, float var5) {
-      float var6 = Math.min(var5, var2) * 0.5F;
-      return Shapes.field((var7, var8, var9) -> {
-         float var10 = Math.abs(ellipse(var7, var9 - var0, var3, var4)) - var5 + var6;
-         float var11 = Math.abs(var8 - var1) - var2 + var6;
+   private static Shape ovalRing(float f, float g, float h, float i, float j, float k) {
+      float var6 = Math.min(k, h) * 0.5F;
+      return Shapes.field((m, n, o) -> {
+         float var10 = Math.abs(ellipse(m, o - f, i, j)) - k + var6;
+         float var11 = Math.abs(n - g) - h + var6;
          float var12 = Math.max(var10, 0.0F);
          float var13 = Math.max(var11, 0.0F);
          return ((float)Math.sqrt(var12 * var12 + var13 * var13) + Math.min(Math.max(var10, var11), 0.0F) - var6) * 0.95F;
-      }, -var3 - var5, var1 - var2, var0 - var4 - var5, var3 + var5, var1 + var2, var0 + var4 + var5);
+      }, -i - k, g - h, f - j - k, i + k, g + h, f + j + k);
    }
 
-   private static float ellipse(float var0, float var1, float var2, float var3) {
-      float var4 = (float)Math.sqrt(var0 * var0 / (var2 * var2) + var1 * var1 / (var3 * var3));
-      float var5 = (float)Math.sqrt(var0 * var0 / (var2 * var2 * var2 * var2) + var1 * var1 / (var3 * var3 * var3 * var3));
-      return var5 < 1.0E-6F ? -Math.min(var2, var3) : var4 * (var4 - 1.0F) / var5;
+   private static float ellipse(float f, float g, float h, float i) {
+      float var4 = (float)Math.sqrt(f * f / (h * h) + g * g / (i * i));
+      float var5 = (float)Math.sqrt(f * f / (h * h * h * h) + g * g / (i * i * i * i));
+      return var5 < 1.0E-6F ? -Math.min(h, i) : var4 * (var4 - 1.0F) / var5;
    }
 
-   private static float pleat(float var0) {
-      float var1 = tri(var0);
+   private static float pleat(float f) {
+      float var1 = tri(f);
       return var1 * (1.5F - 0.5F * var1 * var1);
    }
 
-   private static float tri(float var0) {
-      float var1 = var0 - (float)Math.floor(var0);
+   private static float tri(float f) {
+      float var1 = f - (float)Math.floor(f);
       return 4.0F * Math.min(var1, 1.0F - var1) - 1.0F;
    }
 
-   private static float clamp01(float var0) {
-      return var0 < 0.0F ? 0.0F : Math.min(var0, 1.0F);
+   private static float clamp01(float f) {
+      return f < 0.0F ? 0.0F : Math.min(f, 1.0F);
    }
 
-   private static float smooth(float var0, float var1, float var2) {
-      float var3 = clamp01((var2 - var0) / (var1 - var0));
+   private static float smooth(float f, float g, float h) {
+      float var3 = clamp01((h - f) / (g - f));
       return var3 * var3 * (3.0F - 2.0F * var3);
    }
 }

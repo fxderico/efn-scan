@@ -28,17 +28,17 @@ public final class HoverTotemModule extends ClientModule {
    }
 
    @EventHandler
-   public void onTick(TickEvent var1) {
-      MinecraftClient var5 = MinecraftClient.method_1551();
-      ClientPlayerEntity var4 = var5.field_1724;
-      if (var4 != null && var5.field_1761 != null && !var4.method_56992()) {
-         if (var5.field_1755 instanceof HandledScreen var3 && AutoInvTotemModule.clickSafe(var4) && !AutoInvTotemModule.busy()) {
-            ScreenHandler var8 = var3.method_17577();
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var5 = MinecraftClient.getInstance();
+      ClientPlayerEntity var4 = var5.player;
+      if (var4 != null && var5.interactionManager != null && !var4.isInCreativeMode()) {
+         if (var5.currentScreen instanceof HandledScreen var3 && AutoInvTotemModule.clickSafe(var4) && !AutoInvTotemModule.busy()) {
+            ScreenHandler var8 = var3.getScreenHandler();
             Slot var7 = ((AccessorAbstractContainerScreen)var3).efn$getHoveredSlot();
-            if (var7 != null && var8.method_34255().method_7960() && var7.method_7677().method_31574(Items.field_8288)) {
-               if (var7.field_7871 != var4.method_31548() || var7.method_34266() != 40) {
+            if (var7 != null && var8.getCursorStack().isEmpty() && var7.getStack().isOf(Items.TOTEM_OF_UNDYING)) {
+               if (var7.inventory != var4.getInventory() || var7.getIndex() != 40) {
                   int var2;
-                  if (!var4.method_6079().method_31574(Items.field_8288)) {
+                  if (!var4.getOffHandStack().isOf(Items.TOTEM_OF_UNDYING)) {
                      var2 = 40;
                   } else {
                      if (!this.hotbarRefill.get()) {
@@ -46,12 +46,12 @@ public final class HoverTotemModule extends ClientModule {
                      }
 
                      var2 = this.hotbarSlot.getInt() - 1;
-                     if (var4.method_31548().method_5438(var2).method_31574(Items.field_8288)) {
+                     if (var4.getInventory().getStack(var2).isOf(Items.TOTEM_OF_UNDYING)) {
                         return;
                      }
                   }
 
-                  var5.field_1761.method_2906(var8.field_7763, var7.field_7874, var2, SlotActionType.field_7791, var4);
+                  var5.interactionManager.clickSlot(var8.syncId, var7.id, var2, SlotActionType.SWAP, var4);
                }
             }
          }

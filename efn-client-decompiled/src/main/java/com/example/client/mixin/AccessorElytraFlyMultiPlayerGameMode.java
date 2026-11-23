@@ -9,6 +9,6 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 @Environment(EnvType.CLIENT)
 @Mixin({ClientPlayerInteractionManager.class})
 public interface AccessorElytraFlyMultiPlayerGameMode {
-   @Invoker("method_2911")
+   @Invoker("syncSelectedSlot")
    void efn$elytraFlySyncSelected();
 }

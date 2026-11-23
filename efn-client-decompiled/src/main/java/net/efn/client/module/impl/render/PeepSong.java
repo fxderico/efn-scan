@@ -34,13 +34,13 @@ enum PeepSong {
    private static final Pattern NOT_NAME = Pattern.compile("[^a-z0-9]");
    private final String[] names;
 
-   private PeepSong(String... nullxx) {
-      this.names = nullxx;
+   private PeepSong(String... strings) {
+      this.names = strings;
    }
 
-   static PeepSong of(String var0) {
-      if (var0 != null && !var0.isBlank()) {
-         String var1 = Normalizer.normalize(var0, Form.NFKC).toLowerCase(Locale.ROOT);
+   static PeepSong of(String string) {
+      if (string != null && !string.isBlank()) {
+         String var1 = Normalizer.normalize(string, Form.NFKC).toLowerCase(Locale.ROOT);
          var1 = SPACES.matcher(var1).replaceAll(" ");
          var1 = BRACKETS.matcher(var1).replaceAll(" ");
          var1 = TAIL.matcher(var1.strip()).replaceAll("");

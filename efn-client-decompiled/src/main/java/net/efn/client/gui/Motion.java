@@ -13,12 +13,12 @@ final class Motion {
    private Motion() {
    }
 
-   static float step(float var0, float var1, float var2, float var3) {
-      if (var0 != var1 && !Float.isNaN(var0)) {
-         float var4 = ClickGuiRenderer.smooth(var0, var1, var2, var3);
-         return Math.abs(var4 - var1) < 0.001F ? var1 : var4;
+   static float step(float f, float g, float h, float i) {
+      if (f != g && !Float.isNaN(f)) {
+         float var4 = ClickGuiRenderer.smooth(f, g, h, i);
+         return Math.abs(var4 - g) < 0.001F ? g : var4;
       } else {
-         return var1;
+         return g;
       }
    }
 
@@ -31,26 +31,26 @@ final class Motion {
       Rows() {
       }
 
-      void bind(List<?> var1) {
-         if (var1 != this.rows) {
-            this.rows = var1;
-            this.hover = new float[var1.size()];
-            this.on = new float[var1.size()];
+      void bind(List<?> list) {
+         if (list != this.rows) {
+            this.rows = list;
+            this.hover = new float[list.size()];
+            this.on = new float[list.size()];
             Arrays.fill(this.hover, 0.0F / 0.0F);
             Arrays.fill(this.on, 0.0F / 0.0F);
          }
       }
 
-      float hover(int var1, boolean var2, float var3, float var4) {
-         float var5 = this.hover[var1];
-         float var6 = var2 ? 1.0F : 0.0F;
-         return var5 == var6 ? var6 : Motion.step(var5, var6, var3, var4);
+      float hover(int i, boolean bl, float f, float g) {
+         float var5 = this.hover[i];
+         float var6 = bl ? 1.0F : 0.0F;
+         return var5 == var6 ? var6 : Motion.step(var5, var6, f, g);
       }
 
-      float on(int var1, boolean var2, float var3, float var4) {
-         float var5 = this.on[var1];
-         float var6 = var2 ? 1.0F : 0.0F;
-         return var5 == var6 ? var6 : Motion.step(var5, var6, var3, var4);
+      float on(int i, boolean bl, float f, float g) {
+         float var5 = this.on[i];
+         float var6 = bl ? 1.0F : 0.0F;
+         return var5 == var6 ? var6 : Motion.step(var5, var6, f, g);
       }
    }
 
@@ -62,11 +62,11 @@ final class Motion {
          this.values.defaultReturnValue(0.0F / 0.0F);
       }
 
-      float ease(int var1, float var2, float var3, float var4) {
-         float var5 = this.values.get(var1);
-         float var6 = Motion.step(var5, var2, var3, var4);
+      float ease(int i, float f, float g, float h) {
+         float var5 = this.values.get(i);
+         float var6 = Motion.step(var5, f, g, h);
          if (var6 != var5) {
-            this.values.put(var1, var6);
+            this.values.put(i, var6);
          }
 
          return var6;

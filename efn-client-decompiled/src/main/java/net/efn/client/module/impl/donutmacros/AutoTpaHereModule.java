@@ -211,7 +211,7 @@ public final class AutoTpaHereModule extends ClientModule {
       this.neverSell.visibleWhen(this.autoSell::get);
       this.autoSell.onChange(() -> {
          if (!this.autoSell.get()) {
-            this.sell.abort(MinecraftClient.method_1551());
+            this.sell.abort(MinecraftClient.getInstance());
          }
       });
       this.neverRequest.privateValue();
@@ -247,8 +247,8 @@ public final class AutoTpaHereModule extends ClientModule {
 
    @Override
    protected void onDisable() {
-      this.sell.abort(MinecraftClient.method_1551());
-      this.stopEating(MinecraftClient.method_1551());
+      this.sell.abort(MinecraftClient.getInstance());
+      this.stopEating(MinecraftClient.getInstance());
       this.completions.clear();
       this.chatLines.clear();
       this.delivery = null;
@@ -293,8 +293,8 @@ public final class AutoTpaHereModule extends ClientModule {
       this.prefixCache.clear();
       this.joinQueue.clear();
       this.joinQueued.clear();
-      MinecraftClient var3 = MinecraftClient.method_1551();
-      this.selfName = var3.method_1548() == null ? "" : normalizeIgn(var3.method_1548().method_1676());
+      MinecraftClient var3 = MinecraftClient.getInstance();
+      this.selfName = var3.getSession() == null ? "" : normalizeIgn(var3.getSession().getUsername());
       this.onlineCheckOff = false;
       this.probeMisses = 0;
       this.lastSendAt = 0L;
@@ -326,20 +326,20 @@ public final class AutoTpaHereModule extends ClientModule {
    }
 
    @EventHandler
-   public void onPacket(PacketReceiveNettyEvent var1) {
-      Packet var3 = var1.packet;
+   public void onPacket(PacketReceiveNettyEvent packetReceiveNettyEvent) {
+      Packet var3 = packetReceiveNettyEvent.packet;
       GameMessageS2CPacket var2;
-      if (var3 instanceof GameMessageS2CPacket && (var2 = (GameMessageS2CPacket)var3).comp_763() != null && this.chatLines.size() < 256) {
-         this.chatLines.offer(var2.comp_763().getString());
+      if (var3 instanceof GameMessageS2CPacket && (var2 = (GameMessageS2CPacket)var3).content() != null && this.chatLines.size() < 256) {
+         this.chatLines.offer(var2.content().getString());
       }
    }
 
    @EventHandler
-   public void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientPlayerEntity var3 = var2.field_1724;
-      ClientPlayNetworkHandler var4 = var2.method_1562();
-      if (var3 != null && var2.field_1687 != null && var4 != null && var2.field_1761 != null) {
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientPlayerEntity var3 = var2.player;
+      ClientPlayNetworkHandler var4 = var2.getNetworkHandler();
+      if (var3 != null && var2.world != null && var4 != null && var2.interactionManager != null) {
          this.teleportConfirm.tick(var2);
          long var5 = System.currentTimeMillis();
          this.drainChat(var5);
@@ -384,34 +384,34 @@ public final class AutoTpaHereModule extends ClientModule {
       }
    }
 
-   private void step(ClientPlayNetworkHandler var1, long var2) {
+   private void step(ClientPlayNetworkHandler clientPlayNetworkHandler, long l) {
       switch (this.phase) {
          case DETECT:
-            this.stepDetect(var2);
+            this.stepDetect(l);
             break;
          case COLLECT:
-            this.stepCollect(var1, var2);
+            this.stepCollect(clientPlayNetworkHandler, l);
             break;
          case SEND:
-            this.stepSend(var1, var2);
+            this.stepSend(clientPlayNetworkHandler, l);
             break;
          case PICK:
-            this.stepPick(var1, var2);
+            this.stepPick(clientPlayNetworkHandler, l);
       }
    }
 
-   private void stepDetect(long var1) {
+   private void stepDetect(long l) {
       String var3 = this.order.is("Random") ? "a" : this.letter;
       if (this.detectSlash < 0 && this.detectBare < 0) {
          this.detectSlash = this.completions.fire(this.partialFor(var3), CompletionChannel.Form.SLASH);
          this.detectBare = this.completions.fire(this.partialFor(var3), CompletionChannel.Form.BARE);
-         this.detectUntil = var1 + 5000L;
+         this.detectUntil = l + 5000L;
       } else {
          if (this.completions.poll(this.detectSlash) != null) {
             this.completions.form(CompletionChannel.Form.SLASH);
          } else if (this.completions.poll(this.detectBare) != null) {
             this.completions.form(CompletionChannel.Form.BARE);
-         } else if (var1 < this.detectUntil) {
+         } else if (l < this.detectUntil) {
             return;
          }
 
@@ -435,14 +435,14 @@ public final class AutoTpaHereModule extends ClientModule {
       this.phase = AutoTpaHereModule.Phase.COLLECT;
    }
 
-   private void stepCollect(ClientPlayNetworkHandler var1, long var2) {
-      if (this.collector.step(var1, var2)) {
+   private void stepCollect(ClientPlayNetworkHandler clientPlayNetworkHandler, long l) {
+      if (this.collector.step(clientPlayNetworkHandler, l)) {
          AutoTpaHereModule.Collector var4 = this.collector;
          this.collector = null;
          if (this.order.is("Random")) {
             AutoTpaHereModule.Bucket var5 = this.bucket(var4.letter);
             var5.scanned = true;
-            var5.at = var2;
+            var5.at = l;
             var5.names = var4.names;
             var5.unused = this.unusedFromNames(var4.names);
             if (var4.names.isEmpty()) {
@@ -477,7 +477,7 @@ public final class AutoTpaHereModule extends ClientModule {
       }
    }
 
-   private void stepSend(ClientPlayNetworkHandler var1, long var2) {
+   private void stepSend(ClientPlayNetworkHandler clientPlayNetworkHandler, long l) {
       if (this.delivery == null) {
          this.delivery = this.nextPriority();
       }
@@ -485,9 +485,9 @@ public final class AutoTpaHereModule extends ClientModule {
       while (this.delivery == null && this.queueIndex < this.queue.size()) {
          String var4;
          String var5;
-         if (!this.sentThisLetter.contains(var5 = key(var4 = this.queue.get(this.queueIndex++)))
-            && !this.recentlyJoinMessaged(var5, var2)
-            && !this.excluded(var4)) {
+         if (!this.sentThisLetter.contains(var5 = key(var4 = this.queue.get(this.queueIndex++))) && !this.recentlyJoinMessaged(var5, l) && !this.excluded(var4)
+            )
+          {
             this.delivery = new AutoTpaHereModule.Delivery(var4, false);
          }
       }
@@ -495,13 +495,13 @@ public final class AutoTpaHereModule extends ClientModule {
       if (this.delivery == null) {
          this.advanceLetter();
       } else {
-         if (this.delivery.step(var1, var2) != AutoTpaHereModule.Result.WAIT) {
+         if (this.delivery.step(clientPlayNetworkHandler, l) != AutoTpaHereModule.Result.WAIT) {
             this.delivery = null;
          }
       }
    }
 
-   private void stepPick(ClientPlayNetworkHandler var1, long var2) {
+   private void stepPick(ClientPlayNetworkHandler clientPlayNetworkHandler, long l) {
       if (this.delivery == null) {
          this.delivery = this.nextPriority();
       }
@@ -510,7 +510,7 @@ public final class AutoTpaHereModule extends ClientModule {
          List var4 = this.letterList();
 
          for (int var5 = 0; var5 < var4.size() + 4 && this.delivery == null; var5++) {
-            String var6 = this.pickRandomLetter(var4, var2);
+            String var6 = this.pickRandomLetter(var4, l);
             if (var6 == null) {
                if (!this.repeat.get()) {
                   this.finish("Finished the random pass.");
@@ -518,7 +518,7 @@ public final class AutoTpaHereModule extends ClientModule {
                }
 
                this.reshuffle(var4);
-               var6 = this.pickRandomLetter(var4, var2);
+               var6 = this.pickRandomLetter(var4, l);
                if (var6 == null) {
                   this.finish("No names found for these letters.");
                   return;
@@ -528,7 +528,7 @@ public final class AutoTpaHereModule extends ClientModule {
             }
 
             AutoTpaHereModule.Bucket var7 = this.bucket(var6);
-            if (!var7.scanned || stale(var7, var2)) {
+            if (!var7.scanned || stale(var7, l)) {
                this.collector = new AutoTpaHereModule.Collector(var6);
                this.phase = AutoTpaHereModule.Phase.COLLECT;
                return;
@@ -552,17 +552,17 @@ public final class AutoTpaHereModule extends ClientModule {
          }
       }
 
-      if (this.delivery.step(var1, var2) != AutoTpaHereModule.Result.WAIT) {
+      if (this.delivery.step(clientPlayNetworkHandler, l) != AutoTpaHereModule.Result.WAIT) {
          this.delivery = null;
       }
    }
 
-   private String pickRandomLetter(List<String> var1, long var2) {
+   private String pickRandomLetter(List<String> list, long l) {
       ArrayList var4 = new ArrayList();
 
-      for (String var6 : var1) {
+      for (String var6 : list) {
          AutoTpaHereModule.Bucket var7 = this.buckets.get(var6);
-         if (var7 == null || !var7.scanned || !var7.unused.isEmpty() || this.repeat.get() && stale(var7, var2)) {
+         if (var7 == null || !var7.scanned || !var7.unused.isEmpty() || this.repeat.get() && stale(var7, l)) {
             var4.add(var6);
          }
       }
@@ -578,10 +578,10 @@ public final class AutoTpaHereModule extends ClientModule {
       return var4.isEmpty() ? null : (String)var4.get(ThreadLocalRandom.current().nextInt(var4.size()));
    }
 
-   private void reshuffle(List<String> var1) {
+   private void reshuffle(List<String> list) {
       this.sentThisLetter.clear();
 
-      for (String var3 : var1) {
+      for (String var3 : list) {
          AutoTpaHereModule.Bucket var4 = this.buckets.get(var3);
          if (var4 != null && var4.scanned) {
             var4.unused = this.unusedFromNames(var4.names);
@@ -589,12 +589,12 @@ public final class AutoTpaHereModule extends ClientModule {
       }
    }
 
-   private AutoTpaHereModule.Bucket bucket(String var1) {
-      return this.buckets.computeIfAbsent(var1, var0 -> new AutoTpaHereModule.Bucket());
+   private AutoTpaHereModule.Bucket bucket(String string) {
+      return this.buckets.computeIfAbsent(string, stringx -> new AutoTpaHereModule.Bucket());
    }
 
-   private static boolean stale(AutoTpaHereModule.Bucket var0, long var1) {
-      return var1 - var0.at > 180000L;
+   private static boolean stale(AutoTpaHereModule.Bucket bucket, long l) {
+      return l - bucket.at > 180000L;
    }
 
    private void advanceLetter() {
@@ -611,8 +611,8 @@ public final class AutoTpaHereModule extends ClientModule {
       }
    }
 
-   private void finish(String var1) {
-      this.info(ModuleChat.body().text(var1));
+   private void finish(String string) {
+      this.info(ModuleChat.body().text(string));
       this.requestDisable();
    }
 
@@ -641,33 +641,33 @@ public final class AutoTpaHereModule extends ClientModule {
       }
    }
 
-   private void send(ClientPlayNetworkHandler var1, String var2, boolean var3, long var4) {
-      this.lastTarget = var2;
-      this.lastTargetAt = var4;
+   private void send(ClientPlayNetworkHandler clientPlayNetworkHandler, String string, boolean bl, long l) {
+      this.lastTarget = string;
+      this.lastTargetAt = l;
       this.lastTargetCounted = false;
-      var1.method_45730(this.command.get() + " " + var2);
+      clientPlayNetworkHandler.sendChatCommand(this.command.get() + " " + string);
       this.teleportConfirm.sent();
-      this.lastSendAt = var4;
+      this.lastSendAt = l;
       this.totalSent++;
-      if (var3) {
+      if (bl) {
          this.totalJoiners++;
       }
 
-      String var6 = key(var2);
-      this.msgAt.put(var6, var4);
-      if (var3) {
-         this.joinMsgAt.put(var6, var4);
+      String var6 = key(string);
+      this.msgAt.put(var6, l);
+      if (bl) {
+         this.joinMsgAt.put(var6, l);
       }
 
       this.sentThisLetter.add(var6);
    }
 
-   private Boolean probeAnswer(List<String> var1, String var2) {
-      if (var1 == null) {
+   private Boolean probeAnswer(List<String> list, String string) {
+      if (list == null) {
          return null;
       } else {
-         for (String var4 : var1) {
-            if (sameIgn(this.stripCommand(var4), var2)) {
+         for (String var4 : list) {
+            if (sameIgn(this.stripCommand(var4), string)) {
                return Boolean.TRUE;
             }
          }
@@ -676,8 +676,8 @@ public final class AutoTpaHereModule extends ClientModule {
       }
    }
 
-   private void noteProbe(Boolean var1) {
-      if (!Boolean.FALSE.equals(var1)) {
+   private void noteProbe(Boolean boolean_) {
+      if (!Boolean.FALSE.equals(boolean_)) {
          this.probeMisses = 0;
       } else {
          if (++this.probeMisses >= 25 && !this.onlineCheckOff) {
@@ -687,12 +687,12 @@ public final class AutoTpaHereModule extends ClientModule {
       }
    }
 
-   private List<String> localNames(ClientPlayNetworkHandler var1, String var2) {
+   private List<String> localNames(ClientPlayNetworkHandler clientPlayNetworkHandler, String string) {
       ArrayList var3 = new ArrayList();
 
-      for (PlayerListEntry var5 : var1.method_2880()) {
-         String var6 = var5.method_2966() == null ? null : var5.method_2966().name();
-         if (var6 != null && validName(var6) && this.matchesLetter(var6, var2)) {
+      for (PlayerListEntry var5 : clientPlayNetworkHandler.getPlayerList()) {
+         String var6 = var5.getProfile() == null ? null : var5.getProfile().name();
+         if (var6 != null && validName(var6) && this.matchesLetter(var6, string)) {
             var3.add(var6);
          }
       }
@@ -709,22 +709,22 @@ public final class AutoTpaHereModule extends ClientModule {
       this.sweepOn = !this.sweepLetters.isEmpty();
    }
 
-   private void pumpSweep(long var1) {
+   private void pumpSweep(long l) {
       if (this.sweepOn) {
-         this.sweepInflight.removeIf(var3x -> {
-            List var4 = this.completions.poll(var3x.id());
+         this.sweepInflight.removeIf(inflight -> {
+            List var4 = this.completions.poll(inflight.id());
             if (var4 != null) {
-               this.sweepResult(var3x.prefix(), var4, var1);
-            } else if (var1 - var3x.at() <= 4000L) {
+               this.sweepResult(inflight.prefix(), var4, l);
+            } else if (l - inflight.at() <= 4000L) {
                return false;
             }
 
-            this.completions.forget(var3x.id());
+            this.completions.forget(inflight.id());
             return true;
          });
-         if (this.sweepInflight.size() < 4 && var1 - this.sweepLastFire >= 200L) {
+         if (this.sweepInflight.size() < 4 && l - this.sweepLastFire >= 200L) {
             if (this.sweepIndex >= this.sweepList.size()) {
-               if (this.sweepRounds > 0 && var1 - this.sweepRoundAt < 45000L) {
+               if (this.sweepRounds > 0 && l - this.sweepRoundAt < 45000L) {
                   return;
                }
 
@@ -741,40 +741,40 @@ public final class AutoTpaHereModule extends ClientModule {
                this.sweepList = var3;
                this.sweepIndex = 0;
                this.sweepRounds++;
-               this.sweepRoundAt = var1;
+               this.sweepRoundAt = l;
             }
 
             if (!this.sweepList.isEmpty()) {
                String var6 = this.sweepList.get(this.sweepIndex++);
                int var7 = this.completions.fire(this.partialFor(var6));
-               this.sweepLastFire = var1;
+               this.sweepLastFire = l;
                if (var7 >= 0) {
-                  this.sweepInflight.add(new AutoTpaHereModule.Inflight(var7, var6, var1));
+                  this.sweepInflight.add(new AutoTpaHereModule.Inflight(var7, var6, l));
                }
             }
          }
       }
    }
 
-   private void sweepResult(String var1, List<String> var2, long var3) {
-      String var5 = var1.substring(0, 1);
-      if (var2.size() >= 990) {
-         if (var1.length() == 1 && this.splitLetters.add(var5)) {
-            this.prefixCache.remove(var1);
+   private void sweepResult(String string, List<String> list, long l) {
+      String var5 = string.substring(0, 1);
+      if (list.size() >= 990) {
+         if (string.length() == 1 && this.splitLetters.add(var5)) {
+            this.prefixCache.remove(string);
          }
       } else {
          HashMap var6 = new HashMap();
 
-         for (String var8 : this.namesForPrefix(var2, var1)) {
+         for (String var8 : this.namesForPrefix(list, string)) {
             String var9 = cleanName(this.stripCommand(var8));
             if (validName(var9)) {
                var6.put(key(var9), var9);
             }
          }
 
-         Set var11 = this.prefixCache.get(var1);
+         Set var11 = this.prefixCache.get(string);
          if (var11 == null || var11.isEmpty() || !var6.isEmpty()) {
-            this.prefixCache.put(var1, new HashSet<>(var6.keySet()));
+            this.prefixCache.put(string, new HashSet<>(var6.keySet()));
             if (var11 != null) {
                ArrayList var12 = new ArrayList();
 
@@ -786,7 +786,7 @@ public final class AutoTpaHereModule extends ClientModule {
 
                if (var12.size() <= 15 || !(var12.size() > var11.size() * 0.3)) {
                   for (String var15 : var12) {
-                     this.queueJoiner(var15, var3);
+                     this.queueJoiner(var15, l);
                   }
                }
             }
@@ -794,38 +794,38 @@ public final class AutoTpaHereModule extends ClientModule {
       }
    }
 
-   private void queueJoiner(String var1, long var2) {
-      String var4 = key(var1);
-      if (!var4.isEmpty() && !this.joinQueued.contains(var4) && this.joinEligible(var1, var2)) {
+   private void queueJoiner(String string, long l) {
+      String var4 = key(string);
+      if (!var4.isEmpty() && !this.joinQueued.contains(var4) && this.joinEligible(string, l)) {
          if (this.joinQueue.size() >= 300) {
             this.joinQueued.remove(key(this.joinQueue.poll()));
          }
 
-         this.joinQueue.add(var1);
+         this.joinQueue.add(string);
          this.joinQueued.add(var4);
       }
    }
 
-   private boolean joinEligible(String var1, long var2) {
-      String var4 = key(var1);
-      if (!var4.isEmpty() && !this.excluded(var1) && !this.sentThisLetter.contains(var4)) {
+   private boolean joinEligible(String string, long l) {
+      String var4 = key(string);
+      if (!var4.isEmpty() && !this.excluded(string) && !this.sentThisLetter.contains(var4)) {
          Long var5 = this.msgAt.get(var4);
-         return var5 == null || var2 - var5 >= 3600000L;
+         return var5 == null || l - var5 >= 3600000L;
       } else {
          return false;
       }
    }
 
-   private boolean recentlyJoinMessaged(String var1, long var2) {
-      Long var4 = this.joinMsgAt.get(var1);
-      return var4 != null && var2 - var4 < 3600000L;
+   private boolean recentlyJoinMessaged(String string, long l) {
+      Long var4 = this.joinMsgAt.get(string);
+      return var4 != null && l - var4 < 3600000L;
    }
 
-   private List<String> unusedFromNames(List<String> var1) {
+   private List<String> unusedFromNames(List<String> list) {
       long var2 = System.currentTimeMillis();
       ArrayList var4 = new ArrayList();
 
-      for (String var6 : var1) {
+      for (String var6 : list) {
          String var7 = key(var6);
          if (!var7.isEmpty() && !this.excluded(var6) && !this.sentThisLetter.contains(var7) && !this.recentlyJoinMessaged(var7, var2)) {
             var4.add(var6);
@@ -835,29 +835,29 @@ public final class AutoTpaHereModule extends ClientModule {
       return var4;
    }
 
-   private void drainChat(long var1) {
+   private void drainChat(long l) {
       String var3;
       while ((var3 = this.chatLines.poll()) != null) {
          String var4 = FORMATTING.matcher(var3).replaceAll("").trim().toLowerCase(Locale.ROOT);
          if (!var4.isEmpty()) {
             if (var4.contains("disabled tpahere")) {
-               if (this.claimReply(var1)) {
+               if (this.claimReply(l)) {
                   this.totalDisabled++;
                }
             } else if (NOT_ONLINE.matcher(var4).find()) {
-               if (this.claimReply(var1)) {
+               if (this.claimReply(l)) {
                   this.totalOffline++;
                }
             } else {
                Matcher var5 = RATE_LIMIT.matcher(var4);
                if (var5.find()) {
                   try {
-                     this.rateHoldUntil = var1 + (long)Math.ceil(Math.min(30.0, Double.parseDouble(var5.group(1))) * 1000.0) + 80L;
+                     this.rateHoldUntil = l + (long)Math.ceil(Math.min(30.0, Double.parseDouble(var5.group(1))) * 1000.0) + 80L;
                   } catch (NumberFormatException var7) {
                   }
 
                   this.sell.commandRejected(this.rateHoldUntil);
-                  if (this.claimReply(var1)) {
+                  if (this.claimReply(l)) {
                      this.totalSent = Math.max(0, this.totalSent - 1);
                      if (!this.retryQueue.contains(this.lastTarget)) {
                         this.retryQueue.add(this.lastTarget);
@@ -874,8 +874,8 @@ public final class AutoTpaHereModule extends ClientModule {
       }
    }
 
-   private boolean claimReply(long var1) {
-      if (!this.lastTarget.isEmpty() && !this.lastTargetCounted && var1 - this.lastTargetAt <= 2500L) {
+   private boolean claimReply(long l) {
+      if (!this.lastTarget.isEmpty() && !this.lastTargetCounted && l - this.lastTargetAt <= 2500L) {
          this.lastTargetCounted = true;
          return true;
       } else {
@@ -883,27 +883,27 @@ public final class AutoTpaHereModule extends ClientModule {
       }
    }
 
-   private void prune(long var1) {
-      this.lastPruneAt = var1;
-      this.msgAt.values().removeIf(var2 -> var1 - var2 > 3600000L);
-      this.joinMsgAt.values().removeIf(var2 -> var1 - var2 > 3600000L);
-      this.completions.prune(var1);
+   private void prune(long l) {
+      this.lastPruneAt = l;
+      this.msgAt.values().removeIf(long_ -> l - long_ > 3600000L);
+      this.joinMsgAt.values().removeIf(long_ -> l - long_ > 3600000L);
+      this.completions.prune(l);
    }
 
-   private boolean handleDeath(MinecraftClient var1, ClientPlayerEntity var2, long var3) {
-      if (var2.method_29504()) {
+   private boolean handleDeath(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, long l) {
+      if (clientPlayerEntity.isDead()) {
          if (!this.wasDead) {
             this.wasDead = true;
-            this.deadSince = var3;
+            this.deadSince = l;
             this.respawnTriedAt = 0L;
             this.totalDeaths++;
-            this.stopEating(var1);
+            this.stopEating(minecraftClient);
             this.info(ModuleChat.body().danger("You died."));
          }
 
-         if (this.autoRespawn.get() && var3 - this.deadSince >= 700L && var3 - this.respawnTriedAt >= 600L) {
-            this.respawnTriedAt = var3;
-            var2.method_7331();
+         if (this.autoRespawn.get() && l - this.deadSince >= 700L && l - this.respawnTriedAt >= 600L) {
+            this.respawnTriedAt = l;
+            clientPlayerEntity.requestRespawn();
          }
 
          return true;
@@ -912,8 +912,8 @@ public final class AutoTpaHereModule extends ClientModule {
             this.wasDead = false;
             this.nearList.clear();
             this.lastNearAt = 0L;
-            if (var1.field_1755 instanceof DeathScreen) {
-               var1.method_1507(null);
+            if (minecraftClient.currentScreen instanceof DeathScreen) {
+               minecraftClient.setScreen(null);
             }
 
             this.info(ModuleChat.body().good("Respawned."));
@@ -926,7 +926,7 @@ public final class AutoTpaHereModule extends ClientModule {
       }
    }
 
-   private void tickRespawnCommand(ClientPlayNetworkHandler var1) {
+   private void tickRespawnCommand(ClientPlayNetworkHandler clientPlayNetworkHandler) {
       if (this.respawnCommandIn > 0 && --this.respawnCommandIn <= 0) {
          String var2 = this.respawnCommand.get().trim();
 
@@ -935,37 +935,37 @@ public final class AutoTpaHereModule extends ClientModule {
          }
 
          if (!var2.isEmpty()) {
-            var1.method_45730(var2);
+            clientPlayNetworkHandler.sendChatCommand(var2);
          }
       }
    }
 
-   private void scanNear(MinecraftClient var1, ClientPlayerEntity var2) {
+   private void scanNear(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
       this.nearList.clear();
       double var3 = this.pauseRadius.get();
 
-      for (AbstractClientPlayerEntity var6 : var1.field_1687.method_18456()) {
+      for (AbstractClientPlayerEntity var6 : minecraftClient.world.getPlayers()) {
          double var7;
          String var9;
-         if (var6 != var2
-            && !var6.method_5667().equals(var2.method_5667())
-            && (var9 = var6.method_7334().name()) != null
+         if (var6 != clientPlayerEntity
+            && !var6.getUuid().equals(clientPlayerEntity.getUuid())
+            && (var9 = var6.getGameProfile().name()) != null
             && !this.isSelf(var9)
             && !isFriend(var9)
-            && (var7 = var2.method_73189().method_1022(var6.method_73189())) <= var3) {
+            && (var7 = clientPlayerEntity.getEntityPos().distanceTo(var6.getEntityPos())) <= var3) {
             this.nearList.add(new AutoTpaHereModule.Near(var6, var9, var7));
          }
       }
 
-      this.nearList.sort((var0, var1x) -> Double.compare(var0.distance(), var1x.distance()));
+      this.nearList.sort((near, near2) -> Double.compare(near.distance(), near2.distance()));
    }
 
-   private boolean holding(long var1) {
+   private boolean holding(long l) {
       if (!this.nearList.isEmpty()) {
-         this.lastNearAt = var1;
+         this.lastNearAt = l;
       }
 
-      boolean var3 = !this.nearList.isEmpty() || this.lastNearAt > 0L && var1 - this.lastNearAt < (long)(this.resumeAfter.get() * 1000.0F);
+      boolean var3 = !this.nearList.isEmpty() || this.lastNearAt > 0L && l - this.lastNearAt < (long)(this.resumeAfter.get() * 1000.0F);
       if (var3 && !this.wasHolding && !this.nearList.isEmpty()) {
          AutoTpaHereModule.Near var5 = this.nearList.get(0);
          this.totalArrivals++;
@@ -984,10 +984,10 @@ public final class AutoTpaHereModule extends ClientModule {
       return var3;
    }
 
-   private boolean resting(long var1) {
+   private boolean resting(long l) {
       long var4 = (long)(this.sendMinutes.get() * 60000.0F);
       long var6 = (long)(this.restMinutes.get() * 60000.0F);
-      boolean var3 = var4 > 0L && var6 > 0L && (var1 - this.cycleStartedAt) % (var4 + var6) >= var4;
+      boolean var3 = var4 > 0L && var6 > 0L && (l - this.cycleStartedAt) % (var4 + var6) >= var4;
       if (var3 != this.wasResting) {
          this.wasResting = var3;
          this.info(
@@ -998,8 +998,8 @@ public final class AutoTpaHereModule extends ClientModule {
       return var3;
    }
 
-   private void fight(MinecraftClient var1, ClientPlayerEntity var2) {
-      if (this.attack.get() && !this.eating && canFight(var1, var2)) {
+   private void fight(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      if (this.attack.get() && !this.eating && canFight(minecraftClient, clientPlayerEntity)) {
          AbstractClientPlayerEntity var4 = null;
 
          for (AutoTpaHereModule.Near var6 : this.nearList) {
@@ -1007,33 +1007,33 @@ public final class AutoTpaHereModule extends ClientModule {
                break;
             }
 
-            if (MeleeAttacks.isEnemy(var2, var6.player())) {
+            if (MeleeAttacks.isEnemy(clientPlayerEntity, var6.player())) {
                var4 = var6.player();
                break;
             }
          }
 
          if (var4 != null) {
-            if (!this.equipSword(var2)) {
-               Vec3d var9 = var2.method_33571();
-               Box var10 = var4.method_5829();
-               Rotation var7 = RotationUtils.fromTo(var9, var10.method_1005());
-               if (MeleeAttacks.charge(var2) < 1.0F) {
-                  if (MeleeAttacks.ticksToFull(var2) <= 1) {
+            if (!this.equipSword(clientPlayerEntity)) {
+               Vec3d var9 = clientPlayerEntity.getEyePos();
+               Box var10 = var4.getBoundingBox();
+               Rotation var7 = RotationUtils.fromTo(var9, var10.getCenter());
+               if (MeleeAttacks.charge(clientPlayerEntity) < 1.0F) {
+                  if (MeleeAttacks.ticksToFull(clientPlayerEntity) <= 1) {
                      ServerRotation.request(var7);
                   }
                } else {
                   Rotation var8 = ServerRotation.sent();
                   if (var8 == null) {
-                     var8 = RotationUtils.entityRotation(var2);
+                     var8 = RotationUtils.entityRotation(clientPlayerEntity);
                   }
 
                   Vec3d var3;
-                  if ((var3 = hitPoint(var2, var9, var10, var8)) == null) {
+                  if ((var3 = hitPoint(clientPlayerEntity, var9, var10, var8)) == null) {
                      ServerRotation.request(var7);
                   } else {
-                     if (MeleeAttacks.attack(var1, new EntityHitResult(var4, var3))) {
-                        MeleeAttacks.claimTick(var1);
+                     if (MeleeAttacks.attack(minecraftClient, new EntityHitResult(var4, var3))) {
+                        MeleeAttacks.claimTick(minecraftClient);
                         this.totalHits++;
                      }
                   }
@@ -1043,19 +1043,23 @@ public final class AutoTpaHereModule extends ClientModule {
       }
    }
 
-   private static boolean canFight(MinecraftClient var0, ClientPlayerEntity var1) {
-      return var0.field_1687 != null && var0.field_1761 != null && !var1.method_7325() && var1.field_7512 == var1.field_7498 && !AutoEatModule.isEating();
+   private static boolean canFight(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      return minecraftClient.world != null
+         && minecraftClient.interactionManager != null
+         && !clientPlayerEntity.isSpectator()
+         && clientPlayerEntity.currentScreenHandler == clientPlayerEntity.playerScreenHandler
+         && !AutoEatModule.isEating();
    }
 
-   private static Vec3d hitPoint(ClientPlayerEntity var0, Vec3d var1, Box var2, Rotation var3) {
-      double var4 = var0.method_55755();
-      Vec3d var6 = Vec3d.method_1030(var3.pitch(), var3.yaw());
-      Vec3d var7 = var2.method_992(var1, var1.method_1019(var6.method_1021(var4))).orElse(var2.method_1006(var1) ? var1 : null);
-      return var7 != null && var1.method_1022(var7) <= var4 && MeleeAttacks.lineIsClear(var0, var1, var7) ? var7 : null;
+   private static Vec3d hitPoint(ClientPlayerEntity clientPlayerEntity, Vec3d vec3d, Box box, Rotation rotation) {
+      double var4 = clientPlayerEntity.getEntityInteractionRange();
+      Vec3d var6 = Vec3d.fromPolar(rotation.pitch(), rotation.yaw());
+      Vec3d var7 = box.raycast(vec3d, vec3d.add(var6.multiply(var4))).orElse(box.contains(vec3d) ? vec3d : null);
+      return var7 != null && vec3d.distanceTo(var7) <= var4 && MeleeAttacks.lineIsClear(clientPlayerEntity, vec3d, var7) ? var7 : null;
    }
 
-   private boolean equipSword(ClientPlayerEntity var1) {
-      PlayerInventory var2 = var1.method_31548();
+   private boolean equipSword(ClientPlayerEntity clientPlayerEntity) {
+      PlayerInventory var2 = clientPlayerEntity.getInventory();
       int var3 = this.findSword(var2);
       if (var3 < 0) {
          if (!this.warnedNoSword) {
@@ -1064,23 +1068,23 @@ public final class AutoTpaHereModule extends ClientModule {
          }
 
          return false;
-      } else if (var2.method_67532() == var3) {
+      } else if (var2.getSelectedSlot() == var3) {
          return false;
       } else {
-         var2.method_61496(var3);
+         var2.setSelectedSlot(var3);
          return true;
       }
    }
 
-   private int findSword(PlayerInventory var1) {
+   private int findSword(PlayerInventory playerInventory) {
       if (this.swordSlot.getInt() >= 1) {
          return this.swordSlot.getInt() - 1;
       } else {
          int var2 = -1;
          int var3 = 2147483647;
 
-         for (int var4 = 0; var4 < PlayerInventory.method_7368(); var4++) {
-            String var5 = itemPath(var1.method_5438(var4));
+         for (int var4 = 0; var4 < PlayerInventory.getHotbarSize(); var4++) {
+            String var5 = itemPath(playerInventory.getStack(var4));
             if (var5.endsWith("_sword")) {
                int var6 = SWORD_RANK.length;
 
@@ -1102,20 +1106,20 @@ public final class AutoTpaHereModule extends ClientModule {
       }
    }
 
-   private int findApple(PlayerInventory var1) {
+   private int findApple(PlayerInventory playerInventory) {
       int var3 = this.appleSlot.getInt() - 1;
       ItemStack var2;
       if (var3 < 0
-         || var3 >= PlayerInventory.method_7368()
-         || !(var2 = var1.method_5438(var3)).method_31574(Items.field_8463) && !var2.method_31574(Items.field_8367)) {
+         || var3 >= PlayerInventory.getHotbarSize()
+         || !(var2 = playerInventory.getStack(var3)).isOf(Items.GOLDEN_APPLE) && !var2.isOf(Items.ENCHANTED_GOLDEN_APPLE)) {
          int var4 = -1;
          int var5 = -1;
 
-         for (int var6 = 0; var6 < PlayerInventory.method_7368(); var6++) {
-            ItemStack var7 = var1.method_5438(var6);
-            if (var7.method_31574(Items.field_8367) && var5 < 0) {
+         for (int var6 = 0; var6 < PlayerInventory.getHotbarSize(); var6++) {
+            ItemStack var7 = playerInventory.getStack(var6);
+            if (var7.isOf(Items.ENCHANTED_GOLDEN_APPLE) && var5 < 0) {
                var5 = var6;
-            } else if (var7.method_31574(Items.field_8463) && var4 < 0) {
+            } else if (var7.isOf(Items.GOLDEN_APPLE) && var4 < 0) {
                var4 = var6;
             }
          }
@@ -1130,24 +1134,24 @@ public final class AutoTpaHereModule extends ClientModule {
       }
    }
 
-   private static String itemPath(ItemStack var0) {
-      return var0.method_7960() ? "" : Registries.field_41178.method_10221(var0.method_7909()).method_12832();
+   private static String itemPath(ItemStack itemStack) {
+      return itemStack.isEmpty() ? "" : Registries.ITEM.getId(itemStack.getItem()).getPath();
    }
 
-   private boolean wantsToEat(ClientPlayerEntity var1, long var2) {
-      float var4 = var1.method_6032();
+   private boolean wantsToEat(ClientPlayerEntity clientPlayerEntity, long l) {
+      float var4 = clientPlayerEntity.getHealth();
       return this.eatBelow.get() > 0.0F
          && var4 > 0.0F
          && var4 < this.eatBelow.get() * 2.0F
-         && var2 - this.lastEatAt >= (long)(this.eatCooldown.get() * 1000.0F)
-         && this.findApple(var1.method_31548()) >= 0;
+         && l - this.lastEatAt >= (long)(this.eatCooldown.get() * 1000.0F)
+         && this.findApple(clientPlayerEntity.getInventory()) >= 0;
    }
 
-   private boolean keepForBot(int var1, ItemStack var2) {
-      ClientPlayerEntity var3 = MinecraftClient.method_1551().field_1724;
-      return this.attack.get() && var3 != null && var1 == this.findSword(var3.method_31548())
+   private boolean keepForBot(int i, ItemStack itemStack) {
+      ClientPlayerEntity var3 = MinecraftClient.getInstance().player;
+      return this.attack.get() && var3 != null && i == this.findSword(var3.getInventory())
          ? true
-         : this.eatBelow.get() > 0.0F && (var2.method_31574(Items.field_8463) || var2.method_31574(Items.field_8367));
+         : this.eatBelow.get() > 0.0F && (itemStack.isOf(Items.GOLDEN_APPLE) || itemStack.isOf(Items.ENCHANTED_GOLDEN_APPLE));
    }
 
    private void onSellCommand() {
@@ -1155,12 +1159,12 @@ public final class AutoTpaHereModule extends ClientModule {
       this.lastTargetCounted = true;
    }
 
-   private boolean startEating(MinecraftClient var1, ClientPlayerEntity var2, long var3) {
-      if (!this.eating && !(this.eatBelow.get() <= 0.0F) && var1.field_1755 == null) {
-         float var5 = var2.method_6032();
-         if (!(var5 <= 0.0F) && !(var5 >= this.eatBelow.get() * 2.0F) && var3 - this.lastEatAt >= (long)(this.eatCooldown.get() * 1000.0F)) {
-            this.lastEatAt = var3;
-            int var6 = this.findApple(var2.method_31548());
+   private boolean startEating(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, long l) {
+      if (!this.eating && !(this.eatBelow.get() <= 0.0F) && minecraftClient.currentScreen == null) {
+         float var5 = clientPlayerEntity.getHealth();
+         if (!(var5 <= 0.0F) && !(var5 >= this.eatBelow.get() * 2.0F) && l - this.lastEatAt >= (long)(this.eatCooldown.get() * 1000.0F)) {
+            this.lastEatAt = l;
+            int var6 = this.findApple(clientPlayerEntity.getInventory());
             if (var6 < 0) {
                if (!this.warnedNoApple) {
                   this.warnedNoApple = true;
@@ -1169,12 +1173,12 @@ public final class AutoTpaHereModule extends ClientModule {
 
                return false;
             } else {
-               var2.method_31548().method_61496(var6);
+               clientPlayerEntity.getInventory().setSelectedSlot(var6);
                this.eating = true;
                this.eatTicks = 0;
                this.eatStarted = false;
                this.eatStartHealth = var5;
-               var1.field_1690.field_1904.method_23481(true);
+               minecraftClient.options.useKey.setPressed(true);
                return true;
             }
          } else {
@@ -1185,24 +1189,24 @@ public final class AutoTpaHereModule extends ClientModule {
       }
    }
 
-   private boolean tickEating(MinecraftClient var1, ClientPlayerEntity var2, long var3) {
+   private boolean tickEating(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity, long l) {
       if (!this.eating) {
          return false;
       } else {
          this.eatTicks++;
-         if (var2.method_6115()) {
+         if (clientPlayerEntity.isUsingItem()) {
             this.eatStarted = true;
             if (this.eatTicks < 40) {
-               var1.field_1690.field_1904.method_23481(true);
+               minecraftClient.options.useKey.setPressed(true);
                return true;
             }
          } else if (!this.eatStarted && this.eatTicks < 40) {
-            var1.field_1690.field_1904.method_23481(true);
+            minecraftClient.options.useKey.setPressed(true);
             return true;
          }
 
-         this.stopEating(var1);
-         this.lastEatAt = var3;
+         this.stopEating(minecraftClient);
+         this.lastEatAt = l;
          if (this.eatStarted) {
             this.totalEaten++;
             this.info(
@@ -1210,23 +1214,23 @@ public final class AutoTpaHereModule extends ClientModule {
                   .text("Ate a golden apple (")
                   .value(String.format(Locale.ROOT, "%.1f", this.eatStartHealth / 2.0F))
                   .text(" -> ")
-                  .value(String.format(Locale.ROOT, "%.1f", var2.method_6032() / 2.0F))
+                  .value(String.format(Locale.ROOT, "%.1f", clientPlayerEntity.getHealth() / 2.0F))
                   .text(" hearts).")
             );
          }
 
          if (this.attack.get()) {
-            this.equipSword(var2);
+            this.equipSword(clientPlayerEntity);
          }
 
          return false;
       }
    }
 
-   private void stopEating(MinecraftClient var1) {
+   private void stopEating(MinecraftClient minecraftClient) {
       if (this.eating) {
          this.eating = false;
-         var1.field_1690.field_1904.method_23481(Crystals.isPhysicallyDown(var1, var1.field_1690.field_1904));
+         minecraftClient.options.useKey.setPressed(Crystals.isPhysicallyDown(minecraftClient, minecraftClient.options.useKey));
       }
    }
 
@@ -1250,8 +1254,8 @@ public final class AutoTpaHereModule extends ClientModule {
       }
    }
 
-   static List<String> parseLetters(String var0) {
-      String var1 = var0 == null ? "" : var0.toLowerCase(Locale.ROOT).replaceAll("\\s+", "");
+   static List<String> parseLetters(String string) {
+      String var1 = string == null ? "" : string.toLowerCase(Locale.ROOT).replaceAll("\\s+", "");
       LinkedHashSet var2 = new LinkedHashSet();
 
       for (String var6 : var1.split(",")) {
@@ -1281,8 +1285,8 @@ public final class AutoTpaHereModule extends ClientModule {
       return new ArrayList<>(var2);
    }
 
-   private static boolean isAz(char var0) {
-      return var0 >= 'a' && var0 <= 'z';
+   private static boolean isAz(char c) {
+      return c >= 'a' && c <= 'z';
    }
 
    private String firstLetter() {
@@ -1292,25 +1296,25 @@ public final class AutoTpaHereModule extends ClientModule {
       return !var3.isEmpty() && var2.contains(var1 = var3.substring(0, 1)) ? var1 : (String)var2.get(0);
    }
 
-   private static List<String> subPrefixes(String var0) {
+   private static List<String> subPrefixes(String string) {
       ArrayList var1 = new ArrayList("abcdefghijklmnopqrstuvwxyz0123456789_".length());
 
       for (int var2 = 0; var2 < "abcdefghijklmnopqrstuvwxyz0123456789_".length(); var2++) {
-         var1.add(var0 + "abcdefghijklmnopqrstuvwxyz0123456789_".charAt(var2));
+         var1.add(string + "abcdefghijklmnopqrstuvwxyz0123456789_".charAt(var2));
       }
 
       return var1;
    }
 
-   private String partialFor(String var1) {
-      return this.command.get() + " " + (this.bedrock.get() ? "." : "") + var1;
+   private String partialFor(String string) {
+      return this.command.get() + " " + (this.bedrock.get() ? "." : "") + string;
    }
 
-   private List<String> namesForPrefix(List<String> var1, String var2) {
-      String var3 = stripDots(var2).toLowerCase(Locale.ROOT);
+   private List<String> namesForPrefix(List<String> list, String string) {
+      String var3 = stripDots(string).toLowerCase(Locale.ROOT);
       ArrayList var4 = new ArrayList();
 
-      for (String var6 : var1) {
+      for (String var6 : list) {
          String var7 = cleanName(this.stripCommand(var6));
          if (validName(var7) && stripDots(var7).toLowerCase(Locale.ROOT).startsWith(var3)) {
             var4.add(var7);
@@ -1320,15 +1324,15 @@ public final class AutoTpaHereModule extends ClientModule {
       return var4;
    }
 
-   private boolean matchesLetter(String var1, String var2) {
-      String var3 = this.bedrock.get() ? stripDots(var1) : var1;
-      return this.bedrock.get() && var3.length() == var1.length()
+   private boolean matchesLetter(String string, String string2) {
+      String var3 = this.bedrock.get() ? stripDots(string) : string;
+      return this.bedrock.get() && var3.length() == string.length()
          ? false
-         : !var3.isEmpty() && var3.toLowerCase(Locale.ROOT).startsWith(var2.toLowerCase(Locale.ROOT));
+         : !var3.isEmpty() && var3.toLowerCase(Locale.ROOT).startsWith(string2.toLowerCase(Locale.ROOT));
    }
 
-   private String stripCommand(String var1) {
-      String var3 = var1 == null ? "" : var1.trim();
+   private String stripCommand(String string) {
+      String var3 = string == null ? "" : string.trim();
       String var4 = var3.toLowerCase(Locale.ROOT);
       String var5 = this.command.get();
 
@@ -1347,52 +1351,52 @@ public final class AutoTpaHereModule extends ClientModule {
       return var3.replaceAll("^[\"']|[\"']$", "");
    }
 
-   private static String cleanName(String var0) {
-      return FORMATTING.matcher(var0 == null ? "" : var0).replaceAll("").trim();
+   private static String cleanName(String string) {
+      return FORMATTING.matcher(string == null ? "" : string).replaceAll("").trim();
    }
 
-   private static boolean validName(String var0) {
-      return var0 != null && VALID_NAME.matcher(var0).matches() && !stripDots(var0).isEmpty();
+   private static boolean validName(String string) {
+      return string != null && VALID_NAME.matcher(string).matches() && !stripDots(string).isEmpty();
    }
 
-   private static boolean isLetter(String var0) {
-      return !var0.isEmpty() && isAz(var0.charAt(0));
+   private static boolean isLetter(String string) {
+      return !string.isEmpty() && isAz(string.charAt(0));
    }
 
-   private static String stripDots(String var0) {
+   private static String stripDots(String string) {
       int var1 = 0;
 
-      while (var1 < var0.length() && var0.charAt(var1) == '.') {
+      while (var1 < string.length() && string.charAt(var1) == '.') {
          var1++;
       }
 
-      return var0.substring(var1);
+      return string.substring(var1);
    }
 
-   private static String normalizeIgn(String var0) {
-      return var0 == null ? "" : stripDots(cleanName(var0)).toLowerCase(Locale.ROOT);
+   private static String normalizeIgn(String string) {
+      return string == null ? "" : stripDots(cleanName(string)).toLowerCase(Locale.ROOT);
    }
 
-   private static String key(String var0) {
-      return var0 == null ? "" : var0.trim().toLowerCase(Locale.ROOT);
+   private static String key(String string) {
+      return string == null ? "" : string.trim().toLowerCase(Locale.ROOT);
    }
 
-   private static boolean sameIgn(String var0, String var1) {
-      String var2 = normalizeIgn(var0);
-      return !var2.isEmpty() && var2.equals(normalizeIgn(var1));
+   private static boolean sameIgn(String string, String string2) {
+      String var2 = normalizeIgn(string);
+      return !var2.isEmpty() && var2.equals(normalizeIgn(string2));
    }
 
-   private boolean isSelf(String var1) {
-      return !this.selfName.isEmpty() && this.selfName.equals(normalizeIgn(var1));
+   private boolean isSelf(String string) {
+      return !this.selfName.isEmpty() && this.selfName.equals(normalizeIgn(string));
    }
 
-   private static boolean isFriend(String var0) {
+   private static boolean isFriend(String string) {
       FriendStore var1 = FriendStore.getInstance();
-      return var1.isFriend(var0) || var1.isFriend(stripDots(var0)) || var1.isFriend("." + stripDots(var0));
+      return var1.isFriend(string) || var1.isFriend(stripDots(string)) || var1.isFriend("." + stripDots(string));
    }
 
-   private boolean blacklisted(String var1) {
-      String var2 = normalizeIgn(var1);
+   private boolean blacklisted(String string) {
+      String var2 = normalizeIgn(string);
       if (var2.isEmpty()) {
          return false;
       } else {
@@ -1406,8 +1410,8 @@ public final class AutoTpaHereModule extends ClientModule {
       }
    }
 
-   private boolean excluded(String var1) {
-      return var1 == null || this.isSelf(var1) || isFriend(var1) || this.blacklisted(var1);
+   private boolean excluded(String string) {
+      return string == null || this.isSelf(string) || isFriend(string) || this.blacklisted(string);
    }
 
    private long delayMs() {
@@ -1430,8 +1434,8 @@ public final class AutoTpaHereModule extends ClientModule {
       }
    }
 
-   private static String formatSeconds(long var0) {
-      return var0 % 1000L == 0L ? var0 / 1000L + "s" : String.format(Locale.ROOT, "%.2fs", var0 / 1000.0);
+   private static String formatSeconds(long l) {
+      return l % 1000L == 0L ? l / 1000L + "s" : String.format(Locale.ROOT, "%.2fs", l / 1000.0);
    }
 
    private String statsText() {
@@ -1464,8 +1468,8 @@ public final class AutoTpaHereModule extends ClientModule {
       return var1.append('.').toString();
    }
 
-   private void info(ModuleChat.Body var1) {
-      ModuleChat.send(this, var1);
+   private void info(ModuleChat.Body body) {
+      ModuleChat.send(this, body);
    }
 
    @Environment(EnvType.CLIENT)
@@ -1493,17 +1497,17 @@ public final class AutoTpaHereModule extends ClientModule {
       private int subIndex;
       private final List<AutoTpaHereModule.Inflight> inflight = new ArrayList<>();
 
-      Collector(String nullx) {
-         this.letter = nullx;
+      Collector(String string) {
+         this.letter = string;
       }
 
-      boolean step(ClientPlayNetworkHandler var1, long var2) {
+      boolean step(ClientPlayNetworkHandler clientPlayNetworkHandler, long l) {
          if (!this.started) {
             this.started = true;
             this.split = AutoTpaHereModule.this.splitLetters.contains(this.letter);
             if (!this.split) {
                this.mainId = AutoTpaHereModule.this.completions.fire(AutoTpaHereModule.this.partialFor(this.letter));
-               this.mainUntil = var2 + (AutoTpaHereModule.this.localNames(var1, this.letter).isEmpty() ? 5000L : 3000L);
+               this.mainUntil = l + (AutoTpaHereModule.this.localNames(clientPlayNetworkHandler, this.letter).isEmpty() ? 5000L : 3000L);
                if (this.mainId < 0) {
                   this.timedOut = true;
                }
@@ -1512,7 +1516,7 @@ public final class AutoTpaHereModule extends ClientModule {
 
          if (this.mainId >= 0) {
             List var4 = AutoTpaHereModule.this.completions.poll(this.mainId);
-            if (var4 == null && var2 < this.mainUntil) {
+            if (var4 == null && l < this.mainUntil) {
                return false;
             }
 
@@ -1534,14 +1538,14 @@ public final class AutoTpaHereModule extends ClientModule {
                this.subs = AutoTpaHereModule.subPrefixes(this.letter);
             }
 
-            if (!this.stepSplit(var2)) {
+            if (!this.stepSplit(l)) {
                return false;
             }
 
             this.timedOut = this.timedOut && this.raw.isEmpty();
          }
 
-         this.raw.addAll(AutoTpaHereModule.this.localNames(var1, this.letter));
+         this.raw.addAll(AutoTpaHereModule.this.localNames(clientPlayNetworkHandler, this.letter));
          HashSet var9 = new HashSet();
          ArrayList var5 = new ArrayList();
 
@@ -1556,24 +1560,24 @@ public final class AutoTpaHereModule extends ClientModule {
          return true;
       }
 
-      private boolean stepSplit(long var1) {
+      private boolean stepSplit(long l) {
          while (this.subIndex < this.subs.size() && this.inflight.size() < 6) {
             String var3;
             int var4;
             if ((var4 = AutoTpaHereModule.this.completions.fire(AutoTpaHereModule.this.partialFor(var3 = this.subs.get(this.subIndex++)))) >= 0) {
-               this.inflight.add(new AutoTpaHereModule.Inflight(var4, var3, var1));
+               this.inflight.add(new AutoTpaHereModule.Inflight(var4, var3, l));
             }
          }
 
-         this.inflight.removeIf(var3x -> {
-            List var4x = AutoTpaHereModule.this.completions.poll(var3x.id());
+         this.inflight.removeIf(inflight -> {
+            List var4x = AutoTpaHereModule.this.completions.poll(inflight.id());
             if (var4x != null) {
-               this.raw.addAll(AutoTpaHereModule.this.namesForPrefix(var4x, var3x.prefix()));
-            } else if (var1 - var3x.at() <= 4000L) {
+               this.raw.addAll(AutoTpaHereModule.this.namesForPrefix(var4x, inflight.prefix()));
+            } else if (l - inflight.at() <= 4000L) {
                return false;
             }
 
-            AutoTpaHereModule.this.completions.forget(var3x.id());
+            AutoTpaHereModule.this.completions.forget(inflight.id());
             return true;
          });
          return this.subIndex >= this.subs.size() && this.inflight.isEmpty();
@@ -1590,12 +1594,12 @@ public final class AutoTpaHereModule extends ClientModule {
       boolean finalWait;
       long finalUntil;
 
-      Delivery(String nullx, boolean nullxx) {
-         this.name = nullx;
-         this.joiner = nullxx;
+      Delivery(String string, boolean bl) {
+         this.name = string;
+         this.joiner = bl;
       }
 
-      AutoTpaHereModule.Result step(ClientPlayNetworkHandler var1, long var2) {
+      AutoTpaHereModule.Result step(ClientPlayNetworkHandler clientPlayNetworkHandler, long l) {
          if (this.stale) {
             this.stale = false;
             AutoTpaHereModule.this.completions.forget(this.probeId);
@@ -1608,10 +1612,10 @@ public final class AutoTpaHereModule extends ClientModule {
          } else {
             if (AutoTpaHereModule.this.skipOffline.get() && !AutoTpaHereModule.this.onlineCheckOff && this.probeId < 0 && !this.finalWait) {
                this.probeId = AutoTpaHereModule.this.completions.fire(AutoTpaHereModule.this.command.get() + " " + this.name);
-               this.probeAt = var2;
+               this.probeAt = l;
             }
 
-            if (var2 < AutoTpaHereModule.this.lastSendAt + AutoTpaHereModule.this.delayMs()) {
+            if (l < AutoTpaHereModule.this.lastSendAt + AutoTpaHereModule.this.delayMs()) {
                if (this.probeId >= 0
                   && Boolean.FALSE.equals(AutoTpaHereModule.this.probeAnswer(AutoTpaHereModule.this.completions.poll(this.probeId), this.name))) {
                   AutoTpaHereModule.this.completions.forget(this.probeId);
@@ -1625,18 +1629,18 @@ public final class AutoTpaHereModule extends ClientModule {
                if (this.probeId >= 0) {
                   if (!this.finalWait) {
                      this.finalWait = true;
-                     if (var2 - this.probeAt > 4000L) {
+                     if (l - this.probeAt > 4000L) {
                         AutoTpaHereModule.this.completions.forget(this.probeId);
                         this.probeId = AutoTpaHereModule.this.completions.fire(AutoTpaHereModule.this.command.get() + " " + this.name);
-                        this.probeAt = var2;
-                        this.finalUntil = var2 + 700L;
+                        this.probeAt = l;
+                        this.finalUntil = l + 700L;
                      } else {
-                        this.finalUntil = var2 + Math.max(100L, 700L - (var2 - this.probeAt));
+                        this.finalUntil = l + Math.max(100L, 700L - (l - this.probeAt));
                      }
                   }
 
                   List var4;
-                  if ((var4 = AutoTpaHereModule.this.completions.poll(this.probeId)) == null && var2 < this.finalUntil) {
+                  if ((var4 = AutoTpaHereModule.this.completions.poll(this.probeId)) == null && l < this.finalUntil) {
                      return AutoTpaHereModule.Result.WAIT;
                   }
 
@@ -1650,7 +1654,7 @@ public final class AutoTpaHereModule extends ClientModule {
                   }
                }
 
-               AutoTpaHereModule.this.send(var1, this.name, this.joiner, var2);
+               AutoTpaHereModule.this.send(clientPlayNetworkHandler, this.name, this.joiner, l);
                return AutoTpaHereModule.Result.SENT;
             }
          }

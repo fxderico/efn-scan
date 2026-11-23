@@ -58,8 +58,8 @@ public final class AimAssistModule extends ClientModule {
    }
 
    @Override
-   public void migrateSettings(int var1) {
-      if (var1 < 1) {
+   public void migrateSettings(int i) {
+      if (i < 1) {
          this.speed.set(60.0F);
       }
    }
@@ -70,41 +70,43 @@ public final class AimAssistModule extends ClientModule {
    }
 
    @EventHandler
-   public void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientPlayerEntity var3 = var2.field_1724;
-      if (var2.field_1761 != null && var2.field_1761.method_2923()) {
-         this.minedAt = Util.method_658();
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientPlayerEntity var3 = var2.player;
+      if (var2.interactionManager != null && var2.interactionManager.isBreakingBlock()) {
+         this.minedAt = Util.getMeasuringTimeMs();
       }
 
       if (MeleeAttacks.canAct(var2)
-         && !var3.method_6115()
-         && !var2.field_1690.field_1904.method_1434()
-         && (!this.weaponsOnly.get() || MeleeAttacks.isMeleeWeapon(var3.method_6047()))
+         && !var3.isUsingItem()
+         && !var2.options.useKey.isPressed()
+         && (!this.weaponsOnly.get() || MeleeAttacks.isMeleeWeapon(var3.getMainHandStack()))
          && !ServerRotation.pending()
          && !CombatMacroLock.heldByOther(this)
-         && Util.method_658() - this.minedAt >= 250L) {
+         && Util.getMeasuringTimeMs() - this.minedAt >= 250L) {
          this.follow(this.choose(var2, var3));
       } else {
          this.follow(null);
       }
    }
 
-   public double[] nudge(ClientPlayerEntity var1, double var2, double var4, double var6) {
-      long var10 = Util.method_658();
-      if (var2 != 0.0 || var4 != 0.0) {
+   public double[] nudge(ClientPlayerEntity clientPlayerEntity, double d, double e, double f) {
+      long var10 = Util.getMeasuringTimeMs();
+      if (d != 0.0 || e != 0.0) {
          this.movedAt = var10;
       }
 
-      if (var2 != 0.0) {
-         this.userYawSign = Math.signum(var2);
+      if (d != 0.0) {
+         this.userYawSign = Math.signum(d);
       }
 
-      if (var4 != 0.0) {
-         this.userPitchSign = Math.signum(var4);
+      if (e != 0.0) {
+         this.userPitchSign = Math.signum(e);
       }
 
-      Rotation var9 = this.target != null && var10 - this.movedAt <= 150L ? this.aim(var1, var1.method_33571(), core(this.target)) : null;
+      Rotation var9 = this.target != null && var10 - this.movedAt <= 150L
+         ? this.aim(clientPlayerEntity, clientPlayerEntity.getEyePos(), core(this.target))
+         : null;
       if (var9 == null) {
          this.pendingYaw = 0.0;
          this.pendingPitch = 0.0;
@@ -112,9 +114,9 @@ public final class AimAssistModule extends ClientModule {
          this.userPitchSign = 0.0;
          return STILL;
       } else {
-         double var13 = Math.min(var6, 0.05);
-         float var15 = MathHelper.method_15393(var9.yaw() - var1.method_36454());
-         float var8 = this.vertical.get() ? var9.pitch() - var1.method_36455() : 0.0F;
+         double var13 = Math.min(f, 0.05);
+         float var15 = MathHelper.wrapDegrees(var9.yaw() - clientPlayerEntity.getYaw());
+         float var8 = this.vertical.get() ? var9.pitch() - clientPlayerEntity.getPitch() : 0.0F;
          if (this.userYawSign * var15 < 0.0) {
             var15 = 0.0F;
          }
@@ -125,10 +127,10 @@ public final class AimAssistModule extends ClientModule {
 
          double var17 = this.speed.get() * this.pace * var13;
          double var19 = 1.0 - Math.exp(-12.0 * var13);
-         double var21 = RotationUtils.mouseScale(MinecraftClient.method_1551(), var1);
+         double var21 = RotationUtils.mouseScale(MinecraftClient.getInstance(), clientPlayerEntity);
          double var23 = (float)var21 * 0.15F;
-         this.pendingYaw = this.pendingYaw + MathHelper.method_15350(var15 * var19, -var17, var17) / var23;
-         this.pendingPitch = this.pendingPitch + MathHelper.method_15350(var8 * var19 * 0.6, -var17, var17) / var23;
+         this.pendingYaw = this.pendingYaw + MathHelper.clamp(var15 * var19, -var17, var17) / var23;
+         this.pendingPitch = this.pendingPitch + MathHelper.clamp(var8 * var19 * 0.6, -var17, var17) / var23;
          long var25 = (long)this.pendingYaw;
          long var27 = (long)this.pendingPitch;
          this.pendingYaw -= var25;
@@ -137,32 +139,32 @@ public final class AimAssistModule extends ClientModule {
       }
    }
 
-   private void follow(PlayerEntity var1) {
-      if (var1 != this.target) {
-         this.target = var1;
+   private void follow(PlayerEntity playerEntity) {
+      if (playerEntity != this.target) {
+         this.target = playerEntity;
          this.pace = ThreadLocalRandom.current().nextDouble(0.85, 1.15);
          this.pendingYaw = 0.0;
          this.pendingPitch = 0.0;
       }
    }
 
-   private PlayerEntity choose(MinecraftClient var1, ClientPlayerEntity var2) {
-      Vec3d var4 = var2.method_33571();
+   private PlayerEntity choose(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      Vec3d var4 = clientPlayerEntity.getEyePos();
       double var5 = this.fov.get() / 2.0;
       LivingEntity var7 = CombatTarget.lastHit(1500L);
       PlayerEntity var3;
-      if (var7 instanceof PlayerEntity && this.offAngle(var2, var4, var3 = (PlayerEntity)var7, this.range.get()) <= var5) {
+      if (var7 instanceof PlayerEntity && this.offAngle(clientPlayerEntity, var4, var3 = (PlayerEntity)var7, this.range.get()) <= var5) {
          return var3;
       } else if (this.target != null
-         && this.target.method_73183() == var2.method_73183()
-         && this.offAngle(var2, var4, this.target, this.range.get() + 0.5) <= var5 * 1.3) {
+         && this.target.getEntityWorld() == clientPlayerEntity.getEntityWorld()
+         && this.offAngle(clientPlayerEntity, var4, this.target, this.range.get() + 0.5) <= var5 * 1.3) {
          return this.target;
       } else {
          PlayerEntity var8 = null;
          double var9 = var5;
 
-         for (PlayerEntity var12 : var1.field_1687.method_18456()) {
-            double var13 = this.offAngle(var2, var4, var12, this.range.get());
+         for (PlayerEntity var12 : minecraftClient.world.getPlayers()) {
+            double var13 = this.offAngle(clientPlayerEntity, var4, var12, this.range.get());
             if (!(var13 > var9)) {
                var8 = var12;
                var9 = var13;
@@ -173,17 +175,17 @@ public final class AimAssistModule extends ClientModule {
       }
    }
 
-   private double offAngle(ClientPlayerEntity var1, Vec3d var2, PlayerEntity var3, double var4) {
-      if (MeleeAttacks.isEnemy(var1, var3) && (!var3.method_5767() || armourShows(var3))) {
-         if (var2.method_1022(TargetingUtils.closestPoint(var2, var3.method_5829())) > var4) {
+   private double offAngle(ClientPlayerEntity clientPlayerEntity, Vec3d vec3d, PlayerEntity playerEntity, double d) {
+      if (MeleeAttacks.isEnemy(clientPlayerEntity, playerEntity) && (!playerEntity.isInvisible() || armourShows(playerEntity))) {
+         if (vec3d.distanceTo(TargetingUtils.closestPoint(vec3d, playerEntity.getBoundingBox())) > d) {
             return 1.7976931348623157E308;
          } else {
-            Box var6 = core(var3);
-            if (!MeleeAttacks.lineIsClear(var1, var2, var6.method_1005())) {
+            Box var6 = core(playerEntity);
+            if (!MeleeAttacks.lineIsClear(clientPlayerEntity, vec3d, var6.getCenter())) {
                return 1.7976931348623157E308;
             } else {
-               Rotation var7 = this.aim(var1, var2, var6);
-               return var7 == null ? 0.0 : RotationUtils.angleTo(RotationUtils.entityRotation(var1), var7);
+               Rotation var7 = this.aim(clientPlayerEntity, vec3d, var6);
+               return var7 == null ? 0.0 : RotationUtils.angleTo(RotationUtils.entityRotation(clientPlayerEntity), var7);
             }
          }
       } else {
@@ -191,19 +193,19 @@ public final class AimAssistModule extends ClientModule {
       }
    }
 
-   private Rotation aim(ClientPlayerEntity var1, Vec3d var2, Box var3) {
-      Vec3d var4 = var1.method_5828(1.0F);
-      if (var3.method_992(var2, var2.method_1019(var4.method_1021(this.range.get() + 1.0))).isPresent()) {
+   private Rotation aim(ClientPlayerEntity clientPlayerEntity, Vec3d vec3d, Box box) {
+      Vec3d var4 = clientPlayerEntity.getRotationVec(1.0F);
+      if (box.raycast(vec3d, vec3d.add(var4.multiply(this.range.get() + 1.0))).isPresent()) {
          return null;
       } else {
-         Vec3d var5 = TargetingUtils.closestPoint(var2.method_1019(var4.method_1021(var2.method_1022(var3.method_1005()))), var3);
-         return RotationUtils.fromTo(var2, var5);
+         Vec3d var5 = TargetingUtils.closestPoint(vec3d.add(var4.multiply(vec3d.distanceTo(box.getCenter()))), box);
+         return RotationUtils.fromTo(vec3d, var5);
       }
    }
 
-   private static boolean armourShows(PlayerEntity var0) {
-      for (EquipmentSlot var2 : EquipmentSlot.field_54086) {
-         if (var2.method_46643() && !var0.method_6118(var2).method_7960()) {
+   private static boolean armourShows(PlayerEntity playerEntity) {
+      for (EquipmentSlot var2 : EquipmentSlot.VALUES) {
+         if (var2.isArmorSlot() && !playerEntity.getEquippedStack(var2).isEmpty()) {
             return true;
          }
       }
@@ -211,8 +213,8 @@ public final class AimAssistModule extends ClientModule {
       return false;
    }
 
-   private static Box core(PlayerEntity var0) {
-      Box var1 = var0.method_5829();
-      return var1.method_35580(var1.method_17939() * 0.25, var1.method_17940() * 0.1, var1.method_17939() * 0.25);
+   private static Box core(PlayerEntity playerEntity) {
+      Box var1 = playerEntity.getBoundingBox();
+      return var1.contract(var1.getLengthX() * 0.25, var1.getLengthY() * 0.1, var1.getLengthX() * 0.25);
    }
 }

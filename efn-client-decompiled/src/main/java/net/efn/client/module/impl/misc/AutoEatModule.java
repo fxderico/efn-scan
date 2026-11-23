@@ -27,7 +27,14 @@ import net.minecraft.util.Hand;
 @Environment(EnvType.CLIENT)
 public final class AutoEatModule extends ClientModule {
    private static final Set<Item> NEVER_EAT = Set.of(
-      Items.field_8511, Items.field_8680, Items.field_8635, Items.field_8323, Items.field_8726, Items.field_8233, Items.field_8766, Items.field_8367
+      Items.ROTTEN_FLESH,
+      Items.SPIDER_EYE,
+      Items.POISONOUS_POTATO,
+      Items.PUFFERFISH,
+      Items.CHICKEN,
+      Items.CHORUS_FRUIT,
+      Items.SUSPICIOUS_STEW,
+      Items.ENCHANTED_GOLDEN_APPLE
    );
    private static final int NOT_FOUND = -1;
    private static final int OFFHAND_SLOT = -2;
@@ -45,7 +52,7 @@ public final class AutoEatModule extends ClientModule {
 
    @Override
    protected void onDisable() {
-      MinecraftClient var1 = MinecraftClient.method_1551();
+      MinecraftClient var1 = MinecraftClient.getInstance();
       this.stop(var1);
       this.slots.drop(var1, true);
    }
@@ -58,65 +65,69 @@ public final class AutoEatModule extends ClientModule {
    @EventHandler(
       priority = EventPriority.HIGH
    )
-   public void onTick(TickEvent var1) {
-      MinecraftClient var2 = MinecraftClient.method_1551();
+   public void onTick(TickEvent tickEvent) {
+      MinecraftClient var2 = MinecraftClient.getInstance();
       this.eat(var2);
       if (!this.eating) {
          this.slots.tick(var2, true);
       }
    }
 
-   private void eat(MinecraftClient var1) {
-      ClientPlayerEntity var2 = var1.field_1724;
-      if (var2 != null && var1.field_1687 != null && var1.field_1761 != null && var1.field_1755 == null && !AutoInvTotemModule.wantsHotbar()) {
-         if (var2.method_6115() && var2.method_6030().method_57826(DataComponentTypes.field_50075)) {
+   private void eat(MinecraftClient minecraftClient) {
+      ClientPlayerEntity var2 = minecraftClient.player;
+      if (var2 != null
+         && minecraftClient.world != null
+         && minecraftClient.interactionManager != null
+         && minecraftClient.currentScreen == null
+         && !AutoInvTotemModule.wantsHotbar()) {
+         if (var2.isUsingItem() && var2.getActiveItem().contains(DataComponentTypes.FOOD)) {
             if (this.eating) {
-               var1.field_1690.field_1904.method_23481(true);
+               minecraftClient.options.useKey.setPressed(true);
             }
          } else if (!this.shouldEat(var2)) {
-            this.stop(var1);
+            this.stop(minecraftClient);
          } else {
             int var3 = this.findBestSlot(var2);
-            if (var3 == -1 || MeleeAttacks.actedThisTick(var2) || !MeleeAttacks.handsFree(var1, var2)) {
-               this.stop(var1);
+            if (var3 == -1 || MeleeAttacks.actedThisTick(var2) || !MeleeAttacks.handsFree(minecraftClient, var2)) {
+               this.stop(minecraftClient);
             } else if (CombatMacroLock.heldByOther(this)) {
                this.eating = true;
             } else {
                if (var3 == -2) {
-                  var1.field_1761.method_2919(var2, Hand.field_5810);
-                  MeleeAttacks.claimTick(var1);
+                  minecraftClient.interactionManager.interactItem(var2, Hand.OFF_HAND);
+                  MeleeAttacks.claimTick(minecraftClient);
                } else if (!this.slots.take(var2, var3)) {
-                  this.stop(var1);
+                  this.stop(minecraftClient);
                   return;
                }
 
                this.eating = true;
-               MeleeAttacks.takeAttackClicks(var1);
-               var1.field_1690.field_1904.method_23481(true);
+               MeleeAttacks.takeAttackClicks(minecraftClient);
+               minecraftClient.options.useKey.setPressed(true);
             }
          }
       } else {
-         this.stop(var1);
+         this.stop(minecraftClient);
       }
    }
 
-   private boolean hungry(ClientPlayerEntity var1) {
-      return var1.method_7344().method_7586() <= this.hunger.getInt();
+   private boolean hungry(ClientPlayerEntity clientPlayerEntity) {
+      return clientPlayerEntity.getHungerManager().getFoodLevel() <= this.hunger.getInt();
    }
 
-   private boolean shouldEat(ClientPlayerEntity var1) {
-      boolean var2 = this.health.getInt() > 0 && var1.method_6032() <= this.health.getInt();
-      return this.hungry(var1) || var2;
+   private boolean shouldEat(ClientPlayerEntity clientPlayerEntity) {
+      boolean var2 = this.health.getInt() > 0 && clientPlayerEntity.getHealth() <= this.health.getInt();
+      return this.hungry(clientPlayerEntity) || var2;
    }
 
-   private int findBestSlot(ClientPlayerEntity var1) {
-      boolean var2 = !this.hungry(var1);
-      PlayerInventory var3 = var1.method_31548();
+   private int findBestSlot(ClientPlayerEntity clientPlayerEntity) {
+      boolean var2 = !this.hungry(clientPlayerEntity);
+      PlayerInventory var3 = clientPlayerEntity.getInventory();
       int var4 = -1;
       float var5 = -1.0F;
 
       for (int var6 = 0; var6 < 9; var6++) {
-         FoodComponent var8 = foodOf(var1, var3.method_5438(var6));
+         FoodComponent var8 = foodOf(clientPlayerEntity, var3.getStack(var6));
          float var7;
          if (var8 != null && (var7 = score(var8, var2)) > var5) {
             var5 = var7;
@@ -124,7 +135,7 @@ public final class AutoEatModule extends ClientModule {
          }
       }
 
-      FoodComponent var9 = foodOf(var1, var1.method_6079());
+      FoodComponent var9 = foodOf(clientPlayerEntity, clientPlayerEntity.getOffHandStack());
       if (var9 != null && score(var9, var2) > var5) {
          var4 = -2;
       }
@@ -132,24 +143,24 @@ public final class AutoEatModule extends ClientModule {
       return var4;
    }
 
-   private static float score(FoodComponent var0, boolean var1) {
-      float var2 = var0.comp_2491() + var0.comp_2492();
-      return var1 && var0.comp_2493() ? var2 + 100.0F : var2;
+   private static float score(FoodComponent foodComponent, boolean bl) {
+      float var2 = foodComponent.nutrition() + foodComponent.saturation();
+      return bl && foodComponent.canAlwaysEat() ? var2 + 100.0F : var2;
    }
 
-   private static FoodComponent foodOf(ClientPlayerEntity var0, ItemStack var1) {
-      if (!var1.method_7960() && !NEVER_EAT.contains(var1.method_7909()) && !var0.method_7357().method_7904(var1)) {
-         FoodComponent var2 = (FoodComponent)var1.method_58694(DataComponentTypes.field_50075);
-         return var2 != null && var0.method_7332(var2.comp_2493()) ? var2 : null;
+   private static FoodComponent foodOf(ClientPlayerEntity clientPlayerEntity, ItemStack itemStack) {
+      if (!itemStack.isEmpty() && !NEVER_EAT.contains(itemStack.getItem()) && !clientPlayerEntity.getItemCooldownManager().isCoolingDown(itemStack)) {
+         FoodComponent var2 = itemStack.get(DataComponentTypes.FOOD);
+         return var2 != null && clientPlayerEntity.canConsume(var2.canAlwaysEat()) ? var2 : null;
       } else {
          return null;
       }
    }
 
-   private void stop(MinecraftClient var1) {
+   private void stop(MinecraftClient minecraftClient) {
       if (this.eating) {
          this.eating = false;
-         var1.field_1690.field_1904.method_23481(Crystals.isPhysicallyDown(var1, var1.field_1690.field_1904));
+         minecraftClient.options.useKey.setPressed(Crystals.isPhysicallyDown(minecraftClient, minecraftClient.options.useKey));
       }
    }
 }

@@ -38,17 +38,17 @@ public final class Surface {
    public final NumberSetting lineOpacity = new NumberSetting("Line opacity", 0.5F, 0.1F, 1.0F).step(0.05F);
    private final List<Setting> settings;
 
-   Surface(String var1, String var2, boolean var3, int var4, float var5, float var6) {
-      this(var1, var2, var3, var4, var5, var6, "None");
+   Surface(String string, String string2, boolean bl, int i, float f, float g) {
+      this(string, string2, bl, i, f, g, "None");
    }
 
-   Surface(String var1, String var2, boolean var3, int var4, float var5, float var6, String var7) {
-      this.label = var2;
-      this.card = var3;
-      this.color = new ColorSetting("Color", var4);
-      this.background = new ModeSetting("Background", var7, "None", "Image", "Flow", "Topographic", "Rings", "Grid");
-      this.opacity = new NumberSetting("Opacity", var5, 0.2F, 1.0F).step(0.01F);
-      this.imageOpacity = new NumberSetting("Image opacity", var6, 0.05F, 1.0F).step(0.05F);
+   Surface(String string, String string2, boolean bl, int i, float f, float g, String string3) {
+      this.label = string2;
+      this.card = bl;
+      this.color = new ColorSetting("Color", i);
+      this.background = new ModeSetting("Background", string3, "None", "Image", "Flow", "Topographic", "Rings", "Grid");
+      this.opacity = new NumberSetting("Opacity", f, 0.2F, 1.0F).step(0.01F);
+      this.imageOpacity = new NumberSetting("Image opacity", g, 0.05F, 1.0F).step(0.05F);
       this.settings = List.of(
          this.color,
          this.opacity,
@@ -66,14 +66,14 @@ public final class Surface {
 
       for (Setting var9 : this.settings) {
          String var10 = var9 == this.imageY ? "Image focus" : var9.name();
-         var9.bindId(var1 + "." + StableId.legacy(var10));
+         var9.bindId(string + "." + StableId.legacy(var10));
       }
 
       this.image.visibleWhen(() -> false);
       this.image.privateValue();
-      this.mapping.visibleWhen(() -> !var3 && !this.background.is("None"));
-      this.coverage.visibleWhen(() -> var3 && !this.background.is("None"));
-      this.headerHeight.visibleWhen(() -> var3 && !this.background.is("None") && this.coverage.is("Header"));
+      this.mapping.visibleWhen(() -> !bl && !this.background.is("None"));
+      this.coverage.visibleWhen(() -> bl && !this.background.is("None"));
+      this.headerHeight.visibleWhen(() -> bl && !this.background.is("None") && this.coverage.is("Header"));
       this.imageOpacity.visibleWhen(this::isImage);
       this.imageScale.visibleWhen(this::isImage);
       this.imageX.visibleWhen(this::isImage);

@@ -20,27 +20,27 @@ public abstract class MixinFriendGuardMultiPlayerGameMode {
    }
 
    @Inject(
-      method = {"method_2918"},
+      method = {"attackEntity"},
       at = {@At("HEAD")},
       cancellable = true,
       order = 900
    )
-   private void efn$friendGuard(PlayerEntity var1, Entity var2, CallbackInfo var3) {
-      if (FriendGuardModule.intercepts(var1, var2)) {
-         var1.method_7350();
-         var3.cancel();
+   private void efn$friendGuard(PlayerEntity playerEntity, Entity entity, CallbackInfo callbackInfo) {
+      if (FriendGuardModule.intercepts(playerEntity, entity)) {
+         playerEntity.resetTicksSince();
+         callbackInfo.cancel();
       }
    }
 
    @Inject(
-      method = {"method_75407"},
+      method = {"attackWithPiercingWeapon"},
       at = {@At("HEAD")},
       cancellable = true,
       order = 900
    )
-   private void efn$friendGuardStab(PiercingWeaponComponent var1, CallbackInfo var2) {
-      if (FriendGuardModule.interceptsStab(MinecraftClient.method_1551().field_1724)) {
-         var2.cancel();
+   private void efn$friendGuardStab(PiercingWeaponComponent piercingWeaponComponent, CallbackInfo callbackInfo) {
+      if (FriendGuardModule.interceptsStab(MinecraftClient.getInstance().player)) {
+         callbackInfo.cancel();
       }
    }
 }

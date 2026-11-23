@@ -22,21 +22,21 @@ public final class GrimRiptide {
    }
 
    public static boolean clientAccepts() {
-      MinecraftClient var0 = MinecraftClient.method_1551();
-      ClientPlayerEntity var1 = var0.field_1724;
-      if (var1 != null && var0.field_1687 != null && var0.method_18854()) {
-         if (!var1.method_5721() && !var0.field_1687.method_8419()) {
-            Box var2 = var1.method_5829().method_1014(0.1);
-            BlockPos var3 = BlockPos.method_49637(var2.field_1323, var2.field_1322, var2.field_1321);
-            BlockPos var4 = BlockPos.method_49637(var2.field_1320, var2.field_1325, var2.field_1324);
+      MinecraftClient var0 = MinecraftClient.getInstance();
+      ClientPlayerEntity var1 = var0.player;
+      if (var1 != null && var0.world != null && var0.isOnThread()) {
+         if (!var1.isTouchingWaterOrRain() && !var0.world.isRaining()) {
+            Box var2 = var1.getBoundingBox().expand(0.1);
+            BlockPos var3 = BlockPos.ofFloored(var2.minX, var2.minY, var2.minZ);
+            BlockPos var4 = BlockPos.ofFloored(var2.maxX, var2.maxY, var2.maxZ);
 
-            for (BlockPos var6 : BlockPos.method_10097(var3, var4)) {
-               BlockState var7 = var0.field_1687.method_8320(var6);
-               if (var7.method_26227().method_39360(Fluids.field_15910)) {
+            for (BlockPos var6 : BlockPos.iterate(var3, var4)) {
+               BlockState var7 = var0.world.getBlockState(var6);
+               if (var7.getFluidState().isOf(Fluids.WATER)) {
                   return true;
                }
 
-               if (var7.method_26227().method_39360(Fluids.field_15909)) {
+               if (var7.getFluidState().isOf(Fluids.FLOWING_WATER)) {
                   return true;
                }
             }
@@ -50,13 +50,13 @@ public final class GrimRiptide {
       }
    }
 
-   public static boolean isRiptide(ItemStack var0) {
-      if (!var0.method_31574(Items.field_8547)) {
+   public static boolean isRiptide(ItemStack itemStack) {
+      if (!itemStack.isOf(Items.TRIDENT)) {
          return false;
       } else {
-         for (Entry var2 : var0.method_58657().method_57539()) {
+         for (Entry var2 : itemStack.getEnchantments().getEnchantmentEntries()) {
             RegistryEntry var3 = (RegistryEntry)var2.getKey();
-            if (var3.method_40225(Enchantments.field_9104) && var2.getIntValue() > 0) {
+            if (var3.matchesKey(Enchantments.RIPTIDE) && var2.getIntValue() > 0) {
                return true;
             }
          }

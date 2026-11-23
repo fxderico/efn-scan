@@ -24,17 +24,17 @@ public final class ItemColorListSetting extends Setting {
    private final float[] defaultColor;
    private Map<String, Integer> enabledLookup;
 
-   public ItemColorListSetting(String var1, List<ItemColorListSetting.ItemEntry> var2, float[] var3) {
-      super(var1);
-      this.entries = new ArrayList<>(var2);
-      this.defaultColor = var3;
+   public ItemColorListSetting(String string, List<ItemColorListSetting.ItemEntry> list, float[] fs) {
+      super(string);
+      this.entries = new ArrayList<>(list);
+      this.defaultColor = fs;
       this.onChange(this::invalidateLookup);
    }
 
-   public ItemColorListSetting(String var1, Supplier<List<ItemColorListSetting.ItemEntry>> var2, float[] var3) {
-      super(var1);
-      this.entriesSupplier = var2;
-      this.defaultColor = var3;
+   public ItemColorListSetting(String string, Supplier<List<ItemColorListSetting.ItemEntry>> supplier, float[] fs) {
+      super(string);
+      this.entriesSupplier = supplier;
+      this.defaultColor = fs;
       this.onChange(this::invalidateLookup);
    }
 
@@ -79,13 +79,13 @@ public final class ItemColorListSetting extends Setting {
       this.enabledLookup = var1;
    }
 
-   public boolean isEnabled(Item var1) {
-      Identifier var2 = Registries.field_41178.method_10221(var1);
+   public boolean isEnabled(Item item) {
+      Identifier var2 = Registries.ITEM.getId(item);
       return var2 == null ? false : this.lookup().containsKey(var2.toString());
    }
 
-   public int colorArgb(Item var1) {
-      Identifier var2 = Registries.field_41178.method_10221(var1);
+   public int colorArgb(Item item) {
+      Identifier var2 = Registries.ITEM.getId(item);
       if (var2 == null) {
          return rgbaToArgb(this.defaultColor);
       } else {
@@ -129,10 +129,10 @@ public final class ItemColorListSetting extends Setting {
    }
 
    @Override
-   public JsonElement compact(JsonElement var1) {
+   public JsonElement compact(JsonElement jsonElement) {
       JsonElement var2 = this.defaultJson();
-      if (var1 != null && var1.isJsonObject() && var2 != null && var2.isJsonObject()) {
-         JsonObject var3 = var1.getAsJsonObject();
+      if (jsonElement != null && jsonElement.isJsonObject() && var2 != null && var2.isJsonObject()) {
+         JsonObject var3 = jsonElement.getAsJsonObject();
          JsonObject var4 = var2.getAsJsonObject();
          if (!var3.has("changes") && var3.has("items") && var4.has("items")) {
             try {
@@ -167,26 +167,26 @@ public final class ItemColorListSetting extends Setting {
                var17.add("changes", var15);
                return var17;
             } catch (RuntimeException var14) {
-               return var1;
+               return jsonElement;
             }
          } else {
-            return var1;
+            return jsonElement;
          }
       } else {
-         return var1;
+         return jsonElement;
       }
    }
 
-   private static String packItem(JsonObject var0) {
-      boolean var1 = var0.has("enabled") && var0.get("enabled").getAsBoolean();
-      return (var1 ? "1" : "0") + " " + BlockColorListSetting.hexColor(var0.get("color"));
+   private static String packItem(JsonObject jsonObject) {
+      boolean var1 = jsonObject.has("enabled") && jsonObject.get("enabled").getAsBoolean();
+      return (var1 ? "1" : "0") + " " + BlockColorListSetting.hexColor(jsonObject.get("color"));
    }
 
    @Override
-   protected void deserializeValue(JsonElement var1) {
-      if (var1 != null && var1.isJsonObject()) {
+   protected void deserializeValue(JsonElement jsonElement) {
+      if (jsonElement != null && jsonElement.isJsonObject()) {
          try {
-            JsonObject var2 = var1.getAsJsonObject();
+            JsonObject var2 = jsonElement.getAsJsonObject();
             if (var2.has("changes") && var2.get("changes").isJsonObject()) {
                this.applyChanges(var2);
             } else {
@@ -197,19 +197,19 @@ public final class ItemColorListSetting extends Setting {
       }
    }
 
-   private void applyFull(JsonObject var1) {
-      if (var1.has("defaultColor")) {
-         JsonArray var2 = var1.getAsJsonArray("defaultColor");
+   private void applyFull(JsonObject jsonObject) {
+      if (jsonObject.has("defaultColor")) {
+         JsonArray var2 = jsonObject.getAsJsonArray("defaultColor");
 
          for (int var3 = 0; var3 < Math.min(4, var2.size()); var3++) {
             this.defaultColor[var3] = clamp01(var2.get(var3).getAsFloat());
          }
       }
 
-      if (var1.has("items")) {
+      if (jsonObject.has("items")) {
          Map var10 = this.byId();
 
-         for (JsonElement var4 : var1.getAsJsonArray("items")) {
+         for (JsonElement var4 : jsonObject.getAsJsonArray("items")) {
             ItemColorListSetting.ItemEntry var5;
             JsonObject var6;
             if (var4.isJsonObject()
@@ -232,19 +232,19 @@ public final class ItemColorListSetting extends Setting {
       }
    }
 
-   private void applyChanges(JsonObject var1) {
+   private void applyChanges(JsonObject jsonObject) {
       JsonElement var2 = this.defaultJson();
       if (var2 != null && var2.isJsonObject()) {
          this.applyFull(var2.getAsJsonObject());
       }
 
-      if (var1.has("defaultColor")) {
-         BlockColorListSetting.readHex(var1.get("defaultColor").getAsString(), this.defaultColor);
+      if (jsonObject.has("defaultColor")) {
+         BlockColorListSetting.readHex(jsonObject.get("defaultColor").getAsString(), this.defaultColor);
       }
 
       Map var3 = this.byId();
 
-      for (Entry var5 : var1.getAsJsonObject("changes").entrySet()) {
+      for (Entry var5 : jsonObject.getAsJsonObject("changes").entrySet()) {
          ItemColorListSetting.ItemEntry var7 = (ItemColorListSetting.ItemEntry)var3.get(BlockColorListSetting.fullId((String)var5.getKey()));
          if (var7 != null && ((JsonElement)var5.getValue()).isJsonPrimitive()) {
             String[] var8 = ((JsonElement)var5.getValue()).getAsString().split(" ");
@@ -281,11 +281,11 @@ public final class ItemColorListSetting extends Setting {
    private static List<ItemColorListSetting.ItemEntry> buildDefaultEntries() {
       ArrayList var0 = new ArrayList();
 
-      for (Item var2 : Registries.field_41178) {
-         Identifier var3 = Registries.field_41178.method_10221(var2);
+      for (Item var2 : Registries.ITEM) {
+         Identifier var3 = Registries.ITEM.getId(var2);
          if (var3 != null) {
             String var4 = var3.toString();
-            String var5 = var3.method_12832();
+            String var5 = var3.getPath();
             String var6 = prettify(var5);
             float[] var7 = defaultColorFor(var5);
             boolean var8 = isPreEnabled(var5);
@@ -293,12 +293,12 @@ public final class ItemColorListSetting extends Setting {
          }
       }
 
-      var0.sort((var0x, var1) -> var0x.displayName().compareToIgnoreCase(var1.displayName()));
+      var0.sort((itemEntry, itemEntry2) -> itemEntry.displayName().compareToIgnoreCase(itemEntry2.displayName()));
       return var0;
    }
 
-   private static String prettify(String var0) {
-      String[] var1 = var0.split("_");
+   private static String prettify(String string) {
+      String[] var1 = string.split("_");
       StringBuilder var2 = new StringBuilder();
 
       for (int var3 = 0; var3 < var1.length; var3++) {
@@ -314,8 +314,8 @@ public final class ItemColorListSetting extends Setting {
       return var2.toString();
    }
 
-   private static boolean isPreEnabled(String var0) {
-      return switch (var0) {
+   private static boolean isPreEnabled(String string) {
+      return switch (string) {
          case "diamond", "emerald", "netherite_ingot", "ancient_debris", "elytra", "totem_of_undying", "trident", "enchanted_golden_apple", "golden_apple", "nether_star", "heart_of_the_sea", "end_crystal", "shulker_box" -> true;
          case "gold_ingot", "gold_block", "gold_nugget" -> true;
          case "iron_ingot" -> true;
@@ -323,8 +323,8 @@ public final class ItemColorListSetting extends Setting {
       };
    }
 
-   private static float[] defaultColorFor(String var0) {
-      return switch (var0) {
+   private static float[] defaultColorFor(String string) {
+      return switch (string) {
          case "diamond", "diamond_sword", "diamond_pickaxe", "diamond_axe", "diamond_shovel", "diamond_hoe", "diamond_helmet", "diamond_chestplate", "diamond_leggings", "diamond_boots" -> rgba(
             0, 255, 255
          );
@@ -347,24 +347,24 @@ public final class ItemColorListSetting extends Setting {
       };
    }
 
-   private static float[] rgba(int var0, int var1, int var2) {
-      return new float[]{var0 / 255.0F, var1 / 255.0F, var2 / 255.0F, 1.0F};
+   private static float[] rgba(int i, int j, int k) {
+      return new float[]{i / 255.0F, j / 255.0F, k / 255.0F, 1.0F};
    }
 
-   private static ItemColorListSetting.ItemEntry entry(String var0, String var1, boolean var2, float[] var3) {
-      return new ItemColorListSetting.ItemEntry(var0, var1, new ImBoolean(var2), var3);
+   private static ItemColorListSetting.ItemEntry entry(String string, String string2, boolean bl, float[] fs) {
+      return new ItemColorListSetting.ItemEntry(string, string2, new ImBoolean(bl), fs);
    }
 
-   public static int rgbaToArgb(float[] var0) {
-      int var1 = Math.round(clamp01(var0[0]) * 255.0F);
-      int var2 = Math.round(clamp01(var0[1]) * 255.0F);
-      int var3 = Math.round(clamp01(var0[2]) * 255.0F);
-      int var4 = Math.round(clamp01(var0[3]) * 255.0F);
+   public static int rgbaToArgb(float[] fs) {
+      int var1 = Math.round(clamp01(fs[0]) * 255.0F);
+      int var2 = Math.round(clamp01(fs[1]) * 255.0F);
+      int var3 = Math.round(clamp01(fs[2]) * 255.0F);
+      int var4 = Math.round(clamp01(fs[3]) * 255.0F);
       return var4 << 24 | var1 << 16 | var2 << 8 | var3;
    }
 
-   private static float clamp01(float var0) {
-      return !Float.isNaN(var0) && !Float.isInfinite(var0) ? Math.max(0.0F, Math.min(1.0F, var0)) : 1.0F;
+   private static float clamp01(float f) {
+      return !Float.isNaN(f) && !Float.isInfinite(f) ? Math.max(0.0F, Math.min(1.0F, f)) : 1.0F;
    }
 
    @Environment(EnvType.CLIENT)

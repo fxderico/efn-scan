@@ -24,45 +24,45 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin({ClientConnection.class})
 public abstract class MixinClientConnection {
    @Unique
-   private final BooleanSupplier efn$connectionActive = this::method_10758;
+   private final BooleanSupplier efn$connectionActive = this::isOpen;
 
    public MixinClientConnection() {
    }
 
    @Shadow
-   public abstract boolean method_10758();
+   public abstract boolean isOpen();
 
    @Shadow
-   public abstract NetworkSide method_36121();
+   public abstract NetworkSide getSide();
 
    @Inject(
-      method = {"method_10770"},
+      method = {"channelRead0"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$onPacketReceive(ChannelHandlerContext var1, Packet<?> var2, CallbackInfo var3) {
-      if (this.method_36121() == NetworkSide.field_11942) {
-         if (PacketReceiveNettyEvent.dispatchSync(var2)) {
-            var3.cancel();
+   private void efn$onPacketReceive(ChannelHandlerContext channelHandlerContext, Packet<?> packet, CallbackInfo callbackInfo) {
+      if (this.getSide() == NetworkSide.CLIENTBOUND) {
+         if (PacketReceiveNettyEvent.dispatchSync(packet)) {
+            callbackInfo.cancel();
          } else {
-            PacketReceiveEvent.dispatchAsync(var2, this.efn$connectionActive);
+            PacketReceiveEvent.dispatchAsync(packet, this.efn$connectionActive);
          }
       }
    }
 
    @Inject(
-      method = {"method_52906"},
+      method = {"send"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$onPacketSend(Packet<?> var1, ChannelFutureListener var2, boolean var3, CallbackInfo var4) {
-      if (this.method_36121() == NetworkSide.field_11942) {
-         if (PayGuard.blocks(var1)) {
-            var4.cancel();
-         } else if (PacketSendEvent.dispatchSync(var1)) {
-            var4.cancel();
+   private void efn$onPacketSend(Packet<?> packet, ChannelFutureListener channelFutureListener, boolean bl, CallbackInfo callbackInfo) {
+      if (this.getSide() == NetworkSide.CLIENTBOUND) {
+         if (PayGuard.blocks(packet)) {
+            callbackInfo.cancel();
+         } else if (PacketSendEvent.dispatchSync(packet)) {
+            callbackInfo.cancel();
          } else {
-            ServerRotation.noteSent(var1);
+            ServerRotation.noteSent(packet);
          }
       }
    }

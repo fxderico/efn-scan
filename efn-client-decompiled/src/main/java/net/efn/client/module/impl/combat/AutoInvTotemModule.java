@@ -93,14 +93,14 @@ public final class AutoInvTotemModule extends ClientModule {
    public static boolean busy() {
       AutoInvTotemModule var0 = instance;
       if (var0 != null && var0.isEnabled()) {
-         ClientPlayerEntity var1 = MinecraftClient.method_1551().field_1724;
-         if (var1 != null && !var1.method_7325() && !var1.method_56992()) {
-            PlayerInventory var2 = var1.method_31548();
+         ClientPlayerEntity var1 = MinecraftClient.getInstance().player;
+         if (var1 != null && !var1.isSpectator() && !var1.isInCreativeMode()) {
+            PlayerInventory var2 = var1.getInventory();
             return var0.step != AutoInvTotemModule.Step.IDLE
                || var0.totemHand.holding()
                || var0.awaitingServer(var1)
                || var0.clickedAt == var0.tick
-               || var1.method_6079().method_7960() && (findStoredTotem(var2) != -1 || var0.hotbarSource(var2) != -1);
+               || var1.getOffHandStack().isEmpty() && (findStoredTotem(var2) != -1 || var0.hotbarSource(var2) != -1);
          } else {
             return false;
          }
@@ -109,16 +109,10 @@ public final class AutoInvTotemModule extends ClientModule {
       }
    }
 
-   public static boolean clickSafe(ClientPlayerEntity var0) {
-      AccessorLocalPlayer var1 = (AccessorLocalPlayer)var0;
+   public static boolean clickSafe(ClientPlayerEntity clientPlayerEntity) {
+      AccessorLocalPlayer var1 = (AccessorLocalPlayer)clientPlayerEntity;
       PlayerInput var2 = var1.efn$lastSentInput();
-      return !var1.efn$wasSprinting()
-         && !var2.comp_3159()
-         && !var2.comp_3160()
-         && !var2.comp_3161()
-         && !var2.comp_3162()
-         && !var2.comp_3163()
-         && !var2.comp_3164();
+      return !var1.efn$wasSprinting() && !var2.forward() && !var2.backward() && !var2.left() && !var2.right() && !var2.jump() && !var2.sneak();
    }
 
    @Override
@@ -133,15 +127,15 @@ public final class AutoInvTotemModule extends ClientModule {
 
    @Override
    protected void onDisable() {
-      MinecraftClient var1 = MinecraftClient.method_1551();
-      ClientPlayerEntity var2 = var1.field_1724;
+      MinecraftClient var1 = MinecraftClient.getInstance();
+      ClientPlayerEntity var2 = var1.player;
       if (var2 != null) {
-         PlayerInventory var3 = var2.method_31548();
-         if (this.openedInventory && var1.field_1755 instanceof InventoryScreen) {
-            var2.method_7346();
+         PlayerInventory var3 = var2.getInventory();
+         if (this.openedInventory && var1.currentScreen instanceof InventoryScreen) {
+            var2.closeHandledScreen();
          }
 
-         if ((this.step == AutoInvTotemModule.Step.HOTBAR_SWAP || this.step == AutoInvTotemModule.Step.HOTBAR_RETURN) && var1.field_1755 == null) {
+         if ((this.step == AutoInvTotemModule.Step.HOTBAR_SWAP || this.step == AutoInvTotemModule.Step.HOTBAR_RETURN) && var1.currentScreen == null) {
             this.restoreSlot(var3);
          }
 
@@ -154,17 +148,17 @@ public final class AutoInvTotemModule extends ClientModule {
    @EventHandler(
       priority = EventPriority.HIGHEST
    )
-   public void onTick(TickEvent var1) {
+   public void onTick(TickEvent tickEvent) {
       this.tick++;
-      MinecraftClient var2 = MinecraftClient.method_1551();
-      ClientPlayerEntity var3 = var2.field_1724;
+      MinecraftClient var2 = MinecraftClient.getInstance();
+      ClientPlayerEntity var3 = var2.player;
       if (var3 != null
-         && var2.field_1687 != null
-         && var2.field_1761 != null
-         && var2.method_1562() != null
-         && !var3.method_29504()
-         && !var3.method_7325()
-         && !var3.method_56992()) {
+         && var2.world != null
+         && var2.interactionManager != null
+         && var2.getNetworkHandler() != null
+         && !var3.isDead()
+         && !var3.isSpectator()
+         && !var3.isInCreativeMode()) {
          if (this.step == AutoInvTotemModule.Step.IDLE) {
             this.tryStart(var2, var3);
          }
@@ -189,22 +183,24 @@ public final class AutoInvTotemModule extends ClientModule {
             }
          }
       } else {
-         if (var3 != null && this.openedInventory && var2.field_1755 instanceof InventoryScreen) {
-            var3.method_7346();
+         if (var3 != null && this.openedInventory && var2.currentScreen instanceof InventoryScreen) {
+            var3.closeHandledScreen();
          }
 
          this.reset();
       }
    }
 
-   private void tryStart(MinecraftClient var1, ClientPlayerEntity var2) {
-      PlayerInventory var4 = var2.method_31548();
-      if (!var2.method_6079().method_7960()) {
+   private void tryStart(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      PlayerInventory var4 = clientPlayerEntity.getInventory();
+      if (!clientPlayerEntity.getOffHandStack().isEmpty()) {
          this.confirmDeadline = -1;
       }
 
-      boolean var3 = var2.method_6079().method_7960() && !this.awaitingServer(var2) && (findStoredTotem(var4) != -1 || this.hotbarSource(var4) != -1);
-      if (!var3 && !this.refillDue(var1, var2)) {
+      boolean var3 = clientPlayerEntity.getOffHandStack().isEmpty()
+         && !this.awaitingServer(clientPlayerEntity)
+         && (findStoredTotem(var4) != -1 || this.hotbarSource(var4) != -1);
+      if (!var3 && !this.refillDue(minecraftClient, clientPlayerEntity)) {
          this.reactionAt = -1;
       } else {
          if (this.reactionAt < 0) {
@@ -212,13 +208,13 @@ public final class AutoInvTotemModule extends ClientModule {
          }
 
          if (this.tick >= this.reactionAt && this.tick >= this.idleUntil) {
-            if (var1.field_1755 instanceof HandledScreen) {
+            if (minecraftClient.currentScreen instanceof HandledScreen) {
                this.startPass(false);
-            } else if (var1.field_1755 == null) {
-               boolean var6 = !var1.field_1761.method_2895() && !sneakForced();
+            } else if (minecraftClient.currentScreen == null) {
+               boolean var6 = !minecraftClient.interactionManager.hasRidingInventory() && !sneakForced();
                if (!var3 || this.hotbarSource(var4) == -1 || !this.mode.is("Hotbar Swap") && var6) {
                   if (var6) {
-                     var1.method_1507(new InventoryScreen(var2));
+                     minecraftClient.setScreen(new InventoryScreen(clientPlayerEntity));
                      this.startPass(true);
                   } else {
                      this.idleUntil = this.tick + 10;
@@ -231,16 +227,16 @@ public final class AutoInvTotemModule extends ClientModule {
       }
    }
 
-   private boolean refillDue(MinecraftClient var1, ClientPlayerEntity var2) {
-      PlayerInventory var3 = var2.method_31548();
-      return !var2.method_6079().method_7960() && this.refillWanted(var3) && findStoredTotem(var3) != -1
-         ? var1.field_1755 instanceof HandledScreen
-            || var1.field_1755 == null && clickSafe(var2) && !this.totemHand.holding() && !CombatMacroLock.heldByOther(this)
+   private boolean refillDue(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      PlayerInventory var3 = clientPlayerEntity.getInventory();
+      return !clientPlayerEntity.getOffHandStack().isEmpty() && this.refillWanted(var3) && findStoredTotem(var3) != -1
+         ? minecraftClient.currentScreen instanceof HandledScreen
+            || minecraftClient.currentScreen == null && clickSafe(clientPlayerEntity) && !this.totemHand.holding() && !CombatMacroLock.heldByOther(this)
          : false;
    }
 
-   private boolean refillWanted(PlayerInventory var1) {
-      return this.hotbarRefill.get() && !var1.method_5438(this.hotbarSlot.getInt() - 1).method_31574(Items.field_8288);
+   private boolean refillWanted(PlayerInventory playerInventory) {
+      return this.hotbarRefill.get() && !playerInventory.getStack(this.hotbarSlot.getInt() - 1).isOf(Items.TOTEM_OF_UNDYING);
    }
 
    private static boolean sneakForced() {
@@ -248,25 +244,25 @@ public final class AutoInvTotemModule extends ClientModule {
       return var0 != null && (var0.doVanilla() || var0.doPacket());
    }
 
-   private void startPass(boolean var1) {
-      this.openedInventory = var1;
+   private void startPass(boolean bl) {
+      this.openedInventory = bl;
       this.passSwaps = 0;
       this.unsafeTicks = 0;
-      this.schedule(AutoInvTotemModule.Step.INVENTORY_SWAP, var1 ? Math.max(1, this.swapDelay.getInt()) : this.swapDelay.getInt());
+      this.schedule(AutoInvTotemModule.Step.INVENTORY_SWAP, bl ? Math.max(1, this.swapDelay.getInt()) : this.swapDelay.getInt());
    }
 
-   private void inventorySwap(MinecraftClient var1, ClientPlayerEntity var2) {
-      if (var1.field_1755 instanceof HandledScreen var3 && (!this.openedInventory || var1.field_1755 instanceof InventoryScreen)) {
-         ScreenHandler var7 = var3.method_17577();
-         if (clickSafe(var2) && var7.method_34255().method_7960()) {
-            int var5 = this.passSource(var2);
+   private void inventorySwap(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      if (minecraftClient.currentScreen instanceof HandledScreen var3 && (!this.openedInventory || minecraftClient.currentScreen instanceof InventoryScreen)) {
+         ScreenHandler var7 = var3.getScreenHandler();
+         if (clickSafe(clientPlayerEntity) && var7.getCursorStack().isEmpty()) {
+            int var5 = this.passSource(clientPlayerEntity);
             if (var5 != -1 && this.passSwaps < 2) {
-               int var6 = var2.method_6079().method_7960() ? 40 : this.hotbarSlot.getInt() - 1;
-               var7.method_37418(var2.method_31548(), var5)
-                  .ifPresent(var4 -> var1.field_1761.method_2906(var7.field_7763, var4, var6, SlotActionType.field_7791, var2));
+               int var6 = clientPlayerEntity.getOffHandStack().isEmpty() ? 40 : this.hotbarSlot.getInt() - 1;
+               var7.getSlotIndex(clientPlayerEntity.getInventory(), var5)
+                  .ifPresent(j -> minecraftClient.interactionManager.clickSlot(var7.syncId, j, var6, SlotActionType.SWAP, clientPlayerEntity));
                this.clickedAt = this.tick;
                this.passSwaps++;
-               if (this.passSource(var2) != -1 && this.passSwaps < 2) {
+               if (this.passSource(clientPlayerEntity) != -1 && this.passSwaps < 2) {
                   this.schedule(AutoInvTotemModule.Step.INVENTORY_SWAP, Math.max(1, this.swapDelay.getInt()));
                } else {
                   this.schedule(AutoInvTotemModule.Step.INVENTORY_CLOSE, this.closeDelay.getInt());
@@ -286,17 +282,17 @@ public final class AutoInvTotemModule extends ClientModule {
       }
    }
 
-   private void closeInventory(MinecraftClient var1, ClientPlayerEntity var2) {
-      if (this.passSource(var2) != -1 && this.passSwaps < 2 && this.unsafeTicks <= 10 && var1.field_1755 instanceof HandledScreen) {
+   private void closeInventory(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      if (this.passSource(clientPlayerEntity) != -1 && this.passSwaps < 2 && this.unsafeTicks <= 10 && minecraftClient.currentScreen instanceof HandledScreen) {
          this.schedule(AutoInvTotemModule.Step.INVENTORY_SWAP, Math.max(1, this.swapDelay.getInt()));
       } else {
-         if (this.openedInventory && var1.field_1755 instanceof InventoryScreen) {
-            if (!clickSafe(var2) && ++this.unsafeTicks <= 10) {
+         if (this.openedInventory && minecraftClient.currentScreen instanceof InventoryScreen) {
+            if (!clickSafe(clientPlayerEntity) && ++this.unsafeTicks <= 10) {
                this.readyAt = this.tick + 1;
                return;
             }
 
-            var2.method_7346();
+            clientPlayerEntity.closeHandledScreen();
          }
 
          this.finishPass();
@@ -308,47 +304,47 @@ public final class AutoInvTotemModule extends ClientModule {
       this.endSequence();
    }
 
-   private int passSource(ClientPlayerEntity var1) {
-      PlayerInventory var2 = var1.method_31548();
+   private int passSource(ClientPlayerEntity clientPlayerEntity) {
+      PlayerInventory var2 = clientPlayerEntity.getInventory();
       int var3 = findStoredTotem(var2);
-      if (var1.method_6079().method_7960()) {
+      if (clientPlayerEntity.getOffHandStack().isEmpty()) {
          return var3 != -1 ? var3 : this.hotbarSource(var2);
       } else {
          return this.refillWanted(var2) ? var3 : -1;
       }
    }
 
-   private void startHotbarSwap(PlayerInventory var1) {
-      this.totemSlot = this.hotbarSource(var1);
-      this.previousSlot = var1.method_67532();
+   private void startHotbarSwap(PlayerInventory playerInventory) {
+      this.totemSlot = this.hotbarSource(playerInventory);
+      this.previousSlot = playerInventory.getSelectedSlot();
       this.reselects = 0;
-      var1.method_61496(this.totemSlot);
+      playerInventory.setSelectedSlot(this.totemSlot);
       this.schedule(AutoInvTotemModule.Step.HOTBAR_SWAP, this.swapDelay.getInt());
    }
 
-   private void hotbarSwap(MinecraftClient var1, ClientPlayerEntity var2) {
-      if (var1.field_1755 != null) {
+   private void hotbarSwap(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      if (minecraftClient.currentScreen != null) {
          this.readyAt = this.tick + 1;
-      } else if (!var2.method_6079().method_7960()) {
+      } else if (!clientPlayerEntity.getOffHandStack().isEmpty()) {
          this.schedule(AutoInvTotemModule.Step.HOTBAR_RETURN, 0);
       } else {
-         PlayerInventory var3 = var2.method_31548();
-         if (var3.method_67532() == this.totemSlot && var2.method_6047().method_31574(Items.field_8288)) {
-            ClientPlayNetworkHandler var5 = var1.method_1562();
-            ((AccessorElytraFlyMultiPlayerGameMode)var1.field_1761).efn$elytraFlySyncSelected();
+         PlayerInventory var3 = clientPlayerEntity.getInventory();
+         if (var3.getSelectedSlot() == this.totemSlot && clientPlayerEntity.getMainHandStack().isOf(Items.TOTEM_OF_UNDYING)) {
+            ClientPlayNetworkHandler var5 = minecraftClient.getNetworkHandler();
+            ((AccessorElytraFlyMultiPlayerGameMode)minecraftClient.interactionManager).efn$elytraFlySyncSelected();
 
-            while (var1.field_1690.field_1831.method_1436()) {
+            while (minecraftClient.options.swapHandsKey.wasPressed()) {
             }
 
-            var5.method_52787(new PlayerActionC2SPacket(Action.field_12969, BlockPos.field_10980, Direction.field_11033));
-            this.confirmDeadline = this.tick + confirmWindow(var5, var2);
+            var5.sendPacket(new PlayerActionC2SPacket(Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ORIGIN, Direction.DOWN));
+            this.confirmDeadline = this.tick + confirmWindow(var5, clientPlayerEntity);
             this.swappedAt = this.tick;
             this.schedule(AutoInvTotemModule.Step.HOTBAR_RETURN, this.switchBackDelay.getInt());
          } else {
             int var4 = this.hotbarSource(var3);
             if (var4 != -1 && this.reselects++ < 2) {
                this.totemSlot = var4;
-               var3.method_61496(var4);
+               var3.setSelectedSlot(var4);
                this.schedule(AutoInvTotemModule.Step.HOTBAR_SWAP, this.swapDelay.getInt());
             } else {
                this.idleUntil = this.tick + 10;
@@ -358,28 +354,29 @@ public final class AutoInvTotemModule extends ClientModule {
       }
    }
 
-   private void hotbarReturn(MinecraftClient var1, ClientPlayerEntity var2) {
-      if (var1.field_1755 == null && (this.swappedAt != this.tick || !var2.method_6115() || var2.method_6058() != Hand.field_5808)) {
-         this.restoreSlot(var2.method_31548());
+   private void hotbarReturn(MinecraftClient minecraftClient, ClientPlayerEntity clientPlayerEntity) {
+      if (minecraftClient.currentScreen == null
+         && (this.swappedAt != this.tick || !clientPlayerEntity.isUsingItem() || clientPlayerEntity.getActiveHand() != Hand.MAIN_HAND)) {
+         this.restoreSlot(clientPlayerEntity.getInventory());
          this.endSequence();
       } else {
          this.readyAt = this.tick + 1;
       }
    }
 
-   private void restoreSlot(PlayerInventory var1) {
-      if (PlayerInventory.method_7380(this.previousSlot) && this.previousSlot != this.totemSlot && var1.method_67532() == this.totemSlot) {
-         var1.method_61496(this.previousSlot);
+   private void restoreSlot(PlayerInventory playerInventory) {
+      if (PlayerInventory.isValidHotbarIndex(this.previousSlot) && this.previousSlot != this.totemSlot && playerInventory.getSelectedSlot() == this.totemSlot) {
+         playerInventory.setSelectedSlot(this.previousSlot);
       }
    }
 
-   private int hotbarSource(PlayerInventory var1) {
-      int var2 = var1.method_67532();
+   private int hotbarSource(PlayerInventory playerInventory) {
+      int var2 = playerInventory.getSelectedSlot();
       int var3 = this.hotbarRefill.get() ? this.hotbarSlot.getInt() - 1 : -1;
       int var4 = -1;
 
       for (int var5 = 0; var5 < 9; var5++) {
-         if (var5 != var2 && var1.method_5438(var5).method_31574(Items.field_8288)) {
+         if (var5 != var2 && playerInventory.getStack(var5).isOf(Items.TOTEM_OF_UNDYING)) {
             if (var5 != var3) {
                return var5;
             }
@@ -391,13 +388,13 @@ public final class AutoInvTotemModule extends ClientModule {
       if (var4 != -1) {
          return var4;
       } else {
-         return !this.totemHand.holding() && var1.method_5438(var2).method_31574(Items.field_8288) ? var2 : -1;
+         return !this.totemHand.holding() && playerInventory.getStack(var2).isOf(Items.TOTEM_OF_UNDYING) ? var2 : -1;
       }
    }
 
-   private static int findStoredTotem(PlayerInventory var0) {
+   private static int findStoredTotem(PlayerInventory playerInventory) {
       for (int var1 = 9; var1 < 36; var1++) {
-         if (var0.method_5438(var1).method_31574(Items.field_8288)) {
+         if (playerInventory.getStack(var1).isOf(Items.TOTEM_OF_UNDYING)) {
             return var1;
          }
       }
@@ -405,19 +402,19 @@ public final class AutoInvTotemModule extends ClientModule {
       return -1;
    }
 
-   private static int confirmWindow(ClientPlayNetworkHandler var0, ClientPlayerEntity var1) {
-      PlayerListEntry var2 = var0.method_2871(var1.method_5667());
-      int var3 = var2 != null ? var2.method_2959() : 0;
-      return MathHelper.method_15340(var3 / 25 + 4, 10, 40);
+   private static int confirmWindow(ClientPlayNetworkHandler clientPlayNetworkHandler, ClientPlayerEntity clientPlayerEntity) {
+      PlayerListEntry var2 = clientPlayNetworkHandler.getPlayerListEntry(clientPlayerEntity.getUuid());
+      int var3 = var2 != null ? var2.getLatency() : 0;
+      return MathHelper.clamp(var3 / 25 + 4, 10, 40);
    }
 
-   private boolean awaitingServer(ClientPlayerEntity var1) {
-      return this.confirmDeadline >= 0 && this.tick < this.confirmDeadline && !var1.method_6079().method_31574(Items.field_8288);
+   private boolean awaitingServer(ClientPlayerEntity clientPlayerEntity) {
+      return this.confirmDeadline >= 0 && this.tick < this.confirmDeadline && !clientPlayerEntity.getOffHandStack().isOf(Items.TOTEM_OF_UNDYING);
    }
 
-   private void schedule(AutoInvTotemModule.Step var1, int var2) {
-      this.step = var1;
-      this.readyAt = this.tick + var2;
+   private void schedule(AutoInvTotemModule.Step step, int i) {
+      this.step = step;
+      this.readyAt = this.tick + i;
    }
 
    private void endSequence() {

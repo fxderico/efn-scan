@@ -6,7 +6,7 @@ import net.minecraft.item.Item;
 
 @Environment(EnvType.CLIENT)
 public interface InventoryPickSource {
-   InventoryPickResult prepare(Item var1, long var2);
+   InventoryPickResult prepare(Item item, long l);
 
    void reset();
 }

@@ -16,51 +16,51 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin({ClientPlayerInteractionManager.class})
 public abstract class MixinAntiGhostBlockMultiPlayerGameMode {
    @Shadow
-   private int field_3716;
+   private int blockBreakingCooldown;
 
    public MixinAntiGhostBlockMultiPlayerGameMode() {
    }
 
    @Shadow
-   public abstract void method_2925();
+   public abstract void cancelBlockBreaking();
 
    @Inject(
-      method = {"method_2899"},
+      method = {"breakBlock"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$holdBreak(BlockPos var1, CallbackInfoReturnable<Boolean> var2) {
-      if (AntiGhostBlockModule.holdBreak(var1)) {
-         var2.setReturnValue(false);
+   private void efn$holdBreak(BlockPos blockPos, CallbackInfoReturnable<Boolean> callbackInfoReturnable) {
+      if (AntiGhostBlockModule.holdBreak(blockPos)) {
+         callbackInfoReturnable.setReturnValue(false);
       }
    }
 
    @Inject(
-      method = {"method_2910"},
+      method = {"attackBlock"},
       at = {@At("HEAD")},
       cancellable = true
    )
-   private void efn$waitBeforeStart(BlockPos var1, Direction var2, CallbackInfoReturnable<Boolean> var3) {
-      if (AntiGhostBlockModule.waiting(var1)) {
-         this.method_2925();
-         var3.setReturnValue(false);
+   private void efn$waitBeforeStart(BlockPos blockPos, Direction direction, CallbackInfoReturnable<Boolean> callbackInfoReturnable) {
+      if (AntiGhostBlockModule.waiting(blockPos)) {
+         this.cancelBlockBreaking();
+         callbackInfoReturnable.setReturnValue(false);
       }
    }
 
    @Inject(
-      method = {"method_2902"},
+      method = {"updateBlockBreakingProgress"},
       at = {@At("HEAD")},
       cancellable = true,
       order = 1100
    )
-   private void efn$waitBeforeContinue(BlockPos var1, Direction var2, CallbackInfoReturnable<Boolean> var3) {
-      if (AntiGhostBlockModule.waiting(var1)) {
-         if (this.field_3716 > 0) {
-            this.field_3716--;
+   private void efn$waitBeforeContinue(BlockPos blockPos, Direction direction, CallbackInfoReturnable<Boolean> callbackInfoReturnable) {
+      if (AntiGhostBlockModule.waiting(blockPos)) {
+         if (this.blockBreakingCooldown > 0) {
+            this.blockBreakingCooldown--;
          }
 
-         this.method_2925();
-         var3.setReturnValue(false);
+         this.cancelBlockBreaking();
+         callbackInfoReturnable.setReturnValue(false);
       }
    }
 }

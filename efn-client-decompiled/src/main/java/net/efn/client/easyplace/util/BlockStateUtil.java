@@ -17,32 +17,34 @@ public final class BlockStateUtil {
    private BlockStateUtil() {
    }
 
-   public static boolean statesMatch(BlockState var0, BlockState var1) {
-      return StateRules.placed(var1, var0) || StateRules.slabHalf(var1, var0);
+   public static boolean statesMatch(BlockState blockState, BlockState blockState2) {
+      return StateRules.placed(blockState2, blockState) || StateRules.slabHalf(blockState2, blockState);
    }
 
-   public static TargetStatus classify(BlockState var0, BlockState var1) {
-      if (StateRules.done(var1, var0)) {
+   public static TargetStatus classify(BlockState blockState, BlockState blockState2) {
+      if (StateRules.done(blockState2, blockState)) {
          return TargetStatus.CORRECT;
-      } else if (StateRules.placed(var1, var0)) {
+      } else if (StateRules.placed(blockState2, blockState)) {
          return TargetStatus.ADJUST;
       } else {
-         return !var1.method_26215() && !var1.method_45474() && !StateRules.slabHalf(var1, var0) ? TargetStatus.WRONG : TargetStatus.MISSING;
+         return !blockState2.isAir() && !blockState2.isReplaceable() && !StateRules.slabHalf(blockState2, blockState)
+            ? TargetStatus.WRONG
+            : TargetStatus.MISSING;
       }
    }
 
-   public static Item requiredItem(BlockState var0) {
-      Item var1 = StateRules.plant(var0.method_26204()).method_8389();
-      return var1 == Items.field_8162 ? null : var1;
+   public static Item requiredItem(BlockState blockState) {
+      Item var1 = StateRules.plant(blockState.getBlock()).asItem();
+      return var1 == Items.AIR ? null : var1;
    }
 
-   public static boolean isPrimaryPlacementState(BlockState var0) {
-      return var0.method_28498(Properties.field_12533) && var0.method_11654(Properties.field_12533) == DoubleBlockHalf.field_12609
+   public static boolean isPrimaryPlacementState(BlockState blockState) {
+      return blockState.contains(Properties.DOUBLE_BLOCK_HALF) && blockState.get(Properties.DOUBLE_BLOCK_HALF) == DoubleBlockHalf.UPPER
          ? false
-         : !var0.method_28498(Properties.field_12483) || var0.method_11654(Properties.field_12483) != BedPart.field_12560;
+         : !blockState.contains(Properties.BED_PART) || blockState.get(Properties.BED_PART) != BedPart.HEAD;
    }
 
-   public static boolean isSimpleFullBlock(BlockState var0, World var1, BlockPos var2) {
-      return var0.method_26234(var1, var2) && var0.method_26204().method_8389() != Items.field_8162;
+   public static boolean isSimpleFullBlock(BlockState blockState, World world, BlockPos blockPos) {
+      return blockState.isFullCube(world, blockPos) && blockState.getBlock().asItem() != Items.AIR;
    }
 }

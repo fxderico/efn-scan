@@ -11,6 +11,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Environment(EnvType.CLIENT)
 @Mixin({HandledScreen.class})
 public interface AccessorAbstractContainerScreen<T extends ScreenHandler> {
-   @Accessor("field_2787")
+   @Accessor("focusedSlot")
    Slot efn$getHoveredSlot();
 }

@@ -3,7 +3,6 @@ package net.efn.client.util.playerbypass;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap.Entry;
-import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import java.util.function.LongPredicate;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -20,38 +19,37 @@ public final class VisibleChunkCache {
    private int centerX;
    private int centerZ;
 
-   public VisibleChunkCache(int var1) {
-      if (var1 >= 0 && var1 <= 512) {
-         this.radius = var1;
+   public VisibleChunkCache(int i) {
+      if (i >= 0 && i <= 512) {
+         this.radius = i;
       } else {
          throw new IllegalArgumentException("Invalid chunk radius");
       }
    }
 
-   public boolean update(long var1, int var3, int var4, Long2ObjectMap<ChunkLightSnapshot> var5, VisibleChunkCache.Flagged var6, LongPredicate var7) {
-      if (this.valid && this.revision == var1 && this.centerX == var3 && this.centerZ == var4) {
+   public boolean update(
+      long l, int i, int j, Long2ObjectMap<ChunkLightSnapshot> long2ObjectMap, VisibleChunkCache.Flagged flagged, LongPredicate longPredicate
+   ) {
+      if (this.valid && this.revision == l && this.centerX == i && this.centerZ == j) {
          return false;
       } else {
          this.nextBases.clear();
          this.nextSuspects.clear();
          int var9 = this.radius * 2 + 1;
-         if (var5.size() <= var9 * var9) {
-            ObjectIterator var10 = var5.long2ObjectEntrySet().iterator();
-
-            while (var10.hasNext()) {
-               Entry var11 = (Entry)var10.next();
+         if (long2ObjectMap.size() <= var9 * var9) {
+            for (Entry var11 : long2ObjectMap.long2ObjectEntrySet()) {
                long var12 = var11.getLongKey();
-               if (Math.abs((long)((int)var12) - var3) <= this.radius && Math.abs((long)((int)(var12 >>> 32)) - var4) <= this.radius) {
-                  this.accept(var12, (ChunkLightSnapshot)var11.getValue(), var6, var7);
+               if (Math.abs((long)((int)var12) - i) <= this.radius && Math.abs((long)((int)(var12 >>> 32)) - j) <= this.radius) {
+                  this.accept(var12, (ChunkLightSnapshot)var11.getValue(), flagged, longPredicate);
                }
             }
          } else {
             for (int var15 = -this.radius; var15 <= this.radius; var15++) {
                for (int var16 = -this.radius; var16 <= this.radius; var16++) {
-                  long var17 = var3 + var15 & 4294967295L | (long)(var4 + var16) << 32;
-                  ChunkLightSnapshot var14 = (ChunkLightSnapshot)var5.get(var17);
+                  long var17 = i + var15 & 4294967295L | (long)(j + var16) << 32;
+                  ChunkLightSnapshot var14 = (ChunkLightSnapshot)long2ObjectMap.get(var17);
                   if (var14 != null) {
-                     this.accept(var17, var14, var6, var7);
+                     this.accept(var17, var14, flagged, longPredicate);
                   }
                }
             }
@@ -65,17 +63,17 @@ public final class VisibleChunkCache {
             this.suspects.addAll(this.nextSuspects);
          }
 
-         this.revision = var1;
-         this.centerX = var3;
-         this.centerZ = var4;
+         this.revision = l;
+         this.centerX = i;
+         this.centerZ = j;
          this.valid = true;
          return var8;
       }
    }
 
-   private void accept(long var1, ChunkLightSnapshot var3, VisibleChunkCache.Flagged var4, LongPredicate var5) {
-      if (var4.test(var1, var3)) {
-         (var5.test(var1) ? this.nextSuspects : this.nextBases).add(var1);
+   private void accept(long l, ChunkLightSnapshot chunkLightSnapshot, VisibleChunkCache.Flagged flagged, LongPredicate longPredicate) {
+      if (flagged.test(l, chunkLightSnapshot)) {
+         (longPredicate.test(l) ? this.nextSuspects : this.nextBases).add(l);
       }
    }
 
@@ -94,6 +92,6 @@ public final class VisibleChunkCache {
    @FunctionalInterface
    @Environment(EnvType.CLIENT)
    public interface Flagged {
-      boolean test(long var1, ChunkLightSnapshot var3);
+      boolean test(long l, ChunkLightSnapshot chunkLightSnapshot);
    }
 }

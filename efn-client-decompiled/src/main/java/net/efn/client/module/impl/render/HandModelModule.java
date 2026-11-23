@@ -39,43 +39,49 @@ public final class HandModelModule extends ClientModule {
       active = null;
    }
 
-   static boolean wants(boolean var0) {
+   static boolean wants(boolean bl) {
       HandModelModule var1 = active;
-      return var1 != null && (var0 ? var1.mainHand.get() : var1.offHand.get());
+      return var1 != null && (bl ? var1.mainHand.get() : var1.offHand.get());
    }
 
-   static boolean covers(ItemStack var0, boolean var1) {
+   static boolean covers(ItemStack itemStack, boolean bl) {
       HandModelModule var2 = active;
-      return wants(var1) && var2 != null && (var2.items.is("All Items") || weaponOrTool(var0));
+      return wants(bl) && var2 != null && (var2.items.is("All Items") || weaponOrTool(itemStack));
    }
 
-   private static boolean weaponOrTool(ItemStack var0) {
-      return var0.method_31573(ItemTags.field_42611)
-         || var0.method_31573(ItemTags.field_42612)
-         || var0.method_31573(ItemTags.field_42614)
-         || var0.method_31573(ItemTags.field_42615)
-         || var0.method_31573(ItemTags.field_42613)
-         || var0.method_31573(ItemTags.field_63257)
-         || var0.method_31574(Items.field_49814)
-         || var0.method_31574(Items.field_8378)
-         || var0.method_31574(Items.field_8868)
-         || var0.method_31574(Items.field_8884)
-         || var0.method_31574(Items.field_42716)
-         || var0.method_31574(Items.field_8184)
-         || var0.method_31574(Items.field_23254);
+   private static boolean weaponOrTool(ItemStack itemStack) {
+      return itemStack.isIn(ItemTags.SWORDS)
+         || itemStack.isIn(ItemTags.AXES)
+         || itemStack.isIn(ItemTags.PICKAXES)
+         || itemStack.isIn(ItemTags.SHOVELS)
+         || itemStack.isIn(ItemTags.HOES)
+         || itemStack.isIn(ItemTags.SPEARS)
+         || itemStack.isOf(Items.MACE)
+         || itemStack.isOf(Items.FISHING_ROD)
+         || itemStack.isOf(Items.SHEARS)
+         || itemStack.isOf(Items.FLINT_AND_STEEL)
+         || itemStack.isOf(Items.BRUSH)
+         || itemStack.isOf(Items.CARROT_ON_A_STICK)
+         || itemStack.isOf(Items.WARPED_FUNGUS_ON_A_STICK);
    }
 
-   public static void shoulder(MatrixStack var0, boolean var1, PlayerEntityRenderer<?> var2) {
-      FirstPersonArm.shoulder(var0, var1, ((AccessorHandPlayerModel)var2.method_4038()).efn$handSlim());
+   public static void shoulder(MatrixStack matrixStack, boolean bl, PlayerEntityRenderer<?> playerEntityRenderer) {
+      FirstPersonArm.shoulder(matrixStack, bl, ((AccessorHandPlayerModel)playerEntityRenderer.getModel()).efn$handSlim());
    }
 
    public static void renderArm(
-      MatrixStack var0, LivingEntity var1, ItemStack var2, ItemDisplayContext var3, OrderedRenderCommandQueue var4, int var5, boolean var6
+      MatrixStack matrixStack,
+      LivingEntity livingEntity,
+      ItemStack itemStack,
+      ItemDisplayContext itemDisplayContext,
+      OrderedRenderCommandQueue orderedRenderCommandQueue,
+      int i,
+      boolean bl
    ) {
-      if (covers(var2, var6)) {
+      if (covers(itemStack, bl)) {
          FirstPersonArm.Arm var7 = FirstPersonArm.arm();
          if (var7 != null) {
-            FirstPersonArm.hold(var0, var7, var2, var3, var1, var4, var5, 0.0F, 0.0F, 0.0F);
+            FirstPersonArm.hold(matrixStack, var7, itemStack, itemDisplayContext, livingEntity, orderedRenderCommandQueue, i, 0.0F, 0.0F, 0.0F);
          }
       }
    }

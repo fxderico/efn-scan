@@ -17,15 +17,15 @@ public final class Surface {
    public float[] weight;
    public float[] joint;
 
-   Surface(float[] var1, float[] var2, float[] var3, int[] var4, byte[] var5, float[] var6, int[] var7, int var8) {
-      this.pos = var1;
-      this.nrm = var2;
-      this.uv = var3;
-      this.color = var4;
-      this.glow = var5;
-      this.flat = var6;
-      this.quads = var7;
-      this.triangles = var8;
+   Surface(float[] fs, float[] gs, float[] hs, int[] is, byte[] bs, float[] js, int[] ks, int i) {
+      this.pos = fs;
+      this.nrm = gs;
+      this.uv = hs;
+      this.color = is;
+      this.glow = bs;
+      this.flat = js;
+      this.quads = ks;
+      this.triangles = i;
    }
 
    public int vertexCount() {
@@ -58,11 +58,11 @@ public final class Surface {
       Builder() {
       }
 
-      int vertex(float var1, float var2, float var3, float var4, float var5, float var6, float var7, float var8, int var9, boolean var10) {
-         return this.vertex(var1, var2, var3, var4, var5, var6, var7, var8, var9, var10, 0.0F);
+      int vertex(float f, float g, float h, float i, float j, float k, float l, float m, int n, boolean bl) {
+         return this.vertex(f, g, h, i, j, k, l, m, n, bl, 0.0F);
       }
 
-      int vertex(float var1, float var2, float var3, float var4, float var5, float var6, float var7, float var8, int var9, boolean var10, float var11) {
+      int vertex(float f, float g, float h, float i, float j, float k, float l, float m, int n, boolean bl, float o) {
          if (this.verts == this.color.length) {
             int var12 = this.verts * 2;
             this.pos = Arrays.copyOf(this.pos, var12 * 3);
@@ -74,33 +74,33 @@ public final class Surface {
          }
 
          int var13 = this.verts++;
-         this.pos[var13 * 3] = var1;
-         this.pos[var13 * 3 + 1] = var2;
-         this.pos[var13 * 3 + 2] = var3;
-         this.nrm[var13 * 3] = var4;
-         this.nrm[var13 * 3 + 1] = var5;
-         this.nrm[var13 * 3 + 2] = var6;
-         this.uv[var13 * 2] = var7;
-         this.uv[var13 * 2 + 1] = var8;
-         this.color[var13] = var9;
-         this.glow[var13] = (byte)(var10 ? 1 : 0);
-         this.flat[var13] = var11;
-         this.anyGlow |= var10;
-         this.anyFlat |= var11 > 0.0F;
+         this.pos[var13 * 3] = f;
+         this.pos[var13 * 3 + 1] = g;
+         this.pos[var13 * 3 + 2] = h;
+         this.nrm[var13 * 3] = i;
+         this.nrm[var13 * 3 + 1] = j;
+         this.nrm[var13 * 3 + 2] = k;
+         this.uv[var13 * 2] = l;
+         this.uv[var13 * 2 + 1] = m;
+         this.color[var13] = n;
+         this.glow[var13] = (byte)(bl ? 1 : 0);
+         this.flat[var13] = o;
+         this.anyGlow |= bl;
+         this.anyFlat |= o > 0.0F;
          return var13;
       }
 
-      void quad(int var1, int var2, int var3, int var4, int var5) {
+      void quad(int i, int j, int k, int l, int m) {
          if (this.quadCount * 4 + 4 > this.quads.length) {
             this.quads = Arrays.copyOf(this.quads, this.quads.length * 2);
          }
 
-         this.quads[this.quadCount * 4] = var1;
-         this.quads[this.quadCount * 4 + 1] = var2;
-         this.quads[this.quadCount * 4 + 2] = var3;
-         this.quads[this.quadCount * 4 + 3] = var4;
+         this.quads[this.quadCount * 4] = i;
+         this.quads[this.quadCount * 4 + 1] = j;
+         this.quads[this.quadCount * 4 + 2] = k;
+         this.quads[this.quadCount * 4 + 3] = l;
          this.quadCount++;
-         this.triangles += var5;
+         this.triangles += m;
       }
 
       Surface build() {

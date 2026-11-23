@@ -9,94 +9,94 @@ public final class MenuIcons {
    private MenuIcons() {
    }
 
-   public static void draw(ImDrawList var0, MenuAction var1, float var2, float var3, float var4, int var5, float var6) {
-      switch (var1) {
+   public static void draw(ImDrawList imDrawList, MenuAction menuAction, float f, float g, float h, int i, float j) {
+      switch (menuAction) {
          case LANGUAGE:
-            globe(var0, var2, var3, var4, var5, var6);
+            globe(imDrawList, f, g, h, i, j);
             break;
          case ACCESSIBILITY:
-            figure(var0, var2, var3, var4, var5, var6);
+            figure(imDrawList, f, g, h, i, j);
             break;
          case EFN:
-            bolt(var0, var2, var3, var4, var5, var6);
+            bolt(imDrawList, f, g, h, i, j);
             break;
          case MODS:
-            folder(var0, var2, var3, var4, var5, var6);
+            folder(imDrawList, f, g, h, i, j);
             break;
          case ACCOUNTS:
-            person(var0, var2, var3, var4, var5, var6);
+            person(imDrawList, f, g, h, i, j);
             break;
          case CREDITS:
-            scroll(var0, var2, var3, var4, var5, var6);
+            scroll(imDrawList, f, g, h, i, j);
             break;
          default:
-            var0.addCircleFilled(var2, var3, var4 * 0.25F, var5, 12);
+            imDrawList.addCircleFilled(f, g, h * 0.25F, i, 12);
       }
    }
 
-   public static void person(ImDrawList var0, float var1, float var2, float var3, int var4, float var5) {
-      var0.addCircle(var1, var2 - var3 * 0.38F, var3 * 0.42F, var4, 24, var5);
-      var0.pathClear();
-      var0.pathArcTo(var1, var2 + var3 * 0.95F, var3 * 0.82F, 3.1415927F, 6.2831855F, 20);
-      var0.pathStroke(var4, 0, var5);
+   public static void person(ImDrawList imDrawList, float f, float g, float h, int i, float j) {
+      imDrawList.addCircle(f, g - h * 0.38F, h * 0.42F, i, 24, j);
+      imDrawList.pathClear();
+      imDrawList.pathArcTo(f, g + h * 0.95F, h * 0.82F, 3.1415927F, 6.2831855F, 20);
+      imDrawList.pathStroke(i, 0, j);
    }
 
-   public static void bolt(ImDrawList var0, float var1, float var2, float var3, int var4, float var5) {
-      ellipse(var0, var1, var2 - var3 * 0.55F, var3 * 0.36F, var3 * 0.45F, var4, var5);
-      var0.addLine(var1 - var3 * 0.72F, var2 - var3 * 0.05F, var1 + var3 * 0.72F, var2 - var3 * 0.05F, var4, var5 * 1.2F);
-      var0.addLine(var1, var2 - var3 * 0.1F, var1, var2 + var3 * 1.05F, var4, var5 * 1.2F);
+   public static void bolt(ImDrawList imDrawList, float f, float g, float h, int i, float j) {
+      ellipse(imDrawList, f, g - h * 0.55F, h * 0.36F, h * 0.45F, i, j);
+      imDrawList.addLine(f - h * 0.72F, g - h * 0.05F, f + h * 0.72F, g - h * 0.05F, i, j * 1.2F);
+      imDrawList.addLine(f, g - h * 0.1F, f, g + h * 1.05F, i, j * 1.2F);
    }
 
-   public static void globe(ImDrawList var0, float var1, float var2, float var3, int var4, float var5) {
-      var0.addCircle(var1, var2, var3, var4, 32, var5);
-      ellipse(var0, var1, var2, var3 * 0.45F, var3, var4, var5);
-      var0.addLine(var1 - var3, var2, var1 + var3, var2, var4, var5);
+   public static void globe(ImDrawList imDrawList, float f, float g, float h, int i, float j) {
+      imDrawList.addCircle(f, g, h, i, 32, j);
+      ellipse(imDrawList, f, g, h * 0.45F, h, i, j);
+      imDrawList.addLine(f - h, g, f + h, g, i, j);
    }
 
-   public static void figure(ImDrawList var0, float var1, float var2, float var3, int var4, float var5) {
-      var0.addCircleFilled(var1, var2 - var3 * 0.8F, var3 * 0.22F, var4, 16);
-      var0.addLine(var1 - var3 * 0.85F, var2 - var3 * 0.35F, var1 + var3 * 0.85F, var2 - var3 * 0.35F, var4, var5);
-      var0.addLine(var1, var2 - var3 * 0.35F, var1, var2 + var3 * 0.3F, var4, var5);
-      var0.addLine(var1, var2 + var3 * 0.3F, var1 - var3 * 0.5F, var2 + var3, var4, var5);
-      var0.addLine(var1, var2 + var3 * 0.3F, var1 + var3 * 0.5F, var2 + var3, var4, var5);
+   public static void figure(ImDrawList imDrawList, float f, float g, float h, int i, float j) {
+      imDrawList.addCircleFilled(f, g - h * 0.8F, h * 0.22F, i, 16);
+      imDrawList.addLine(f - h * 0.85F, g - h * 0.35F, f + h * 0.85F, g - h * 0.35F, i, j);
+      imDrawList.addLine(f, g - h * 0.35F, f, g + h * 0.3F, i, j);
+      imDrawList.addLine(f, g + h * 0.3F, f - h * 0.5F, g + h, i, j);
+      imDrawList.addLine(f, g + h * 0.3F, f + h * 0.5F, g + h, i, j);
    }
 
-   public static void folder(ImDrawList var0, float var1, float var2, float var3, int var4, float var5) {
-      float var6 = var1 - var3;
-      float var7 = var1 + var3;
-      float var8 = var2 - var3 * 0.7F;
-      float var9 = var2 + var3 * 0.75F;
-      var0.pathClear();
-      var0.pathLineTo(var6, var9);
-      var0.pathLineTo(var6, var8);
-      var0.pathLineTo(var1 - var3 * 0.2F, var8);
-      var0.pathLineTo(var1, var8 + var3 * 0.3F);
-      var0.pathLineTo(var7, var8 + var3 * 0.3F);
-      var0.pathLineTo(var7, var9);
-      var0.pathStroke(var4, 1, var5);
+   public static void folder(ImDrawList imDrawList, float f, float g, float h, int i, float j) {
+      float var6 = f - h;
+      float var7 = f + h;
+      float var8 = g - h * 0.7F;
+      float var9 = g + h * 0.75F;
+      imDrawList.pathClear();
+      imDrawList.pathLineTo(var6, var9);
+      imDrawList.pathLineTo(var6, var8);
+      imDrawList.pathLineTo(f - h * 0.2F, var8);
+      imDrawList.pathLineTo(f, var8 + h * 0.3F);
+      imDrawList.pathLineTo(var7, var8 + h * 0.3F);
+      imDrawList.pathLineTo(var7, var9);
+      imDrawList.pathStroke(i, 1, j);
    }
 
-   public static void scroll(ImDrawList var0, float var1, float var2, float var3, int var4, float var5) {
-      float var6 = var1 - var3 * 0.62F;
-      float var7 = var1 + var3 * 0.62F;
-      float var8 = var2 - var3 * 0.78F;
-      float var9 = var2 + var3 * 0.78F;
-      var0.addRect(var6, var8, var7, var9, var4, 0.0F, 0, var5);
-      var0.addLine(var6 - var3 * 0.28F, var8, var7 + var3 * 0.28F, var8, var4, var5 * 1.3F);
-      var0.addLine(var6 - var3 * 0.28F, var9, var7 + var3 * 0.28F, var9, var4, var5 * 1.3F);
-      var0.addLine(var6 + var3 * 0.3F, var2 - var3 * 0.22F, var7 - var3 * 0.3F, var2 - var3 * 0.22F, var4, var5);
-      var0.addLine(var6 + var3 * 0.3F, var2 + var3 * 0.22F, var7 - var3 * 0.3F, var2 + var3 * 0.22F, var4, var5);
+   public static void scroll(ImDrawList imDrawList, float f, float g, float h, int i, float j) {
+      float var6 = f - h * 0.62F;
+      float var7 = f + h * 0.62F;
+      float var8 = g - h * 0.78F;
+      float var9 = g + h * 0.78F;
+      imDrawList.addRect(var6, var8, var7, var9, i, 0.0F, 0, j);
+      imDrawList.addLine(var6 - h * 0.28F, var8, var7 + h * 0.28F, var8, i, j * 1.3F);
+      imDrawList.addLine(var6 - h * 0.28F, var9, var7 + h * 0.28F, var9, i, j * 1.3F);
+      imDrawList.addLine(var6 + h * 0.3F, g - h * 0.22F, var7 - h * 0.3F, g - h * 0.22F, i, j);
+      imDrawList.addLine(var6 + h * 0.3F, g + h * 0.22F, var7 - h * 0.3F, g + h * 0.22F, i, j);
    }
 
-   public static void ellipse(ImDrawList var0, float var1, float var2, float var3, float var4, int var5, float var6) {
-      var0.pathClear();
+   public static void ellipse(ImDrawList imDrawList, float f, float g, float h, float i, int j, float k) {
+      imDrawList.pathClear();
       byte var7 = 28;
 
       for (int var8 = 0; var8 < var7; var8++) {
          float var9 = (float)(var8 * 3.141592653589793 * 2.0 / var7);
-         var0.pathLineTo(var1 + (float)Math.cos(var9) * var3, var2 + (float)Math.sin(var9) * var4);
+         imDrawList.pathLineTo(f + (float)Math.cos(var9) * h, g + (float)Math.sin(var9) * i);
       }
 
-      var0.pathStroke(var5, 1, var6);
+      imDrawList.pathStroke(j, 1, k);
    }
 }

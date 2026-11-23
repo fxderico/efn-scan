@@ -7,6 +7,7 @@ public final class EfnNativeBootstrap implements PreLaunchEntrypoint {
    public EfnNativeBootstrap() {
    }
 
+   @Override
    public void onPreLaunch() {
       EfnAndroidNative.prepare();
    }

@@ -13,12 +13,12 @@ public final class LightDataClassifier {
    private LightDataClassifier() {
    }
 
-   public static LightSectionStatus classifyPayload(byte[] var0) {
-      if (var0 != null && var0.length == 2048) {
+   public static LightSectionStatus classifyPayload(byte[] bs) {
+      if (bs != null && bs.length == 2048) {
          boolean var1 = true;
          boolean var2 = true;
 
-         for (byte var6 : var0) {
+         for (byte var6 : bs) {
             if (var6 != 0) {
                var1 = false;
             }
@@ -42,25 +42,25 @@ public final class LightDataClassifier {
       }
    }
 
-   public static void apply(LightData var0, ChunkLightSnapshot var1) {
-      applyTrack(var0.method_38601(), var0.method_38604(), var0.method_38606(), var1.sky);
+   public static void apply(LightData lightData, ChunkLightSnapshot chunkLightSnapshot) {
+      applyTrack(lightData.getInitedSky(), lightData.getUninitedSky(), lightData.getSkyNibbles(), chunkLightSnapshot.sky);
    }
 
-   static int sentNotDark(LightData var0, int var1, int var2) {
-      BitSet var3 = var0.method_38601();
-      BitSet var4 = var0.method_38604();
-      List var5 = var0.method_38606();
+   static int sentNotDark(LightData lightData, int i, int j) {
+      BitSet var3 = lightData.getInitedSky();
+      BitSet var4 = lightData.getUninitedSky();
+      List var5 = lightData.getSkyNibbles();
       int var6 = 0;
       int var7 = 0;
 
-      for (int var8 = 0; var8 < var1 + 2; var8++) {
+      for (int var8 = 0; var8 < i + 2; var8++) {
          boolean var10 = var3.get(var8);
          byte[] var9 = var10 && var7 < var5.size() ? (byte[])var5.get(var7) : null;
          if (var10) {
             var7++;
          }
 
-         if (var8 >= 1 && var8 <= var1 && var8 < 32 && ChunkLightSnapshot.candidate(var8, var2)) {
+         if (var8 >= 1 && var8 <= i && var8 < 32 && ChunkLightSnapshot.candidate(var8, j)) {
             if (var10) {
                LightSectionStatus var12 = classifyPayload(var9);
                if (var12 == LightSectionStatus.NORMAL || var12 == LightSectionStatus.UNIFORM_MAX) {
@@ -75,16 +75,16 @@ public final class LightDataClassifier {
       return var6;
    }
 
-   static void applyTrack(BitSet var0, BitSet var1, List<byte[]> var2, LightSectionStatus[] var3) {
+   static void applyTrack(BitSet bitSet, BitSet bitSet2, List<byte[]> list, LightSectionStatus[] lightSectionStatuss) {
       int var4 = 0;
 
-      for (int var5 = 0; var5 < var3.length; var5++) {
-         if (var0.get(var5)) {
-            byte[] var6 = var4 < var2.size() ? (byte[])var2.get(var4) : null;
+      for (int var5 = 0; var5 < lightSectionStatuss.length; var5++) {
+         if (bitSet.get(var5)) {
+            byte[] var6 = var4 < list.size() ? (byte[])list.get(var4) : null;
             var4++;
-            var3[var5] = classifyPayload(var6);
-         } else if (var1.get(var5)) {
-            var3[var5] = LightSectionStatus.EMPTY_MASK;
+            lightSectionStatuss[var5] = classifyPayload(var6);
+         } else if (bitSet2.get(var5)) {
+            lightSectionStatuss[var5] = LightSectionStatus.EMPTY_MASK;
          }
       }
    }

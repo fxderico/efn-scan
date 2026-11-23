@@ -15,10 +15,10 @@ public abstract class MixinTranslationGuardLanguage {
    }
 
    @ModifyReturnValue(
-      method = {"method_10517"},
+      method = {"getInstance"},
       at = {@At("RETURN")}
    )
-   private static Language efn$guardLanguage(Language var0) {
-      return TranslationGuard.active() ? TranslationGuard.language(var0) : var0;
+   private static Language efn$guardLanguage(Language language) {
+      return TranslationGuard.active() ? TranslationGuard.language(language) : language;
    }
 }

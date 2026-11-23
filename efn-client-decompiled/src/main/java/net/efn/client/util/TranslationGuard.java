@@ -55,12 +55,12 @@ public final class TranslationGuard {
       return activeCount > 0 && DEPTH.get()[0] > 0;
    }
 
-   public static String plain(Text var0) {
+   public static String plain(Text text) {
       enter();
 
       String var2;
       try {
-         String var1 = var0.getString();
+         String var1 = text.getString();
          var2 = var1;
       } finally {
          exit();
@@ -69,52 +69,52 @@ public final class TranslationGuard {
       return var2;
    }
 
-   public static void run(Runnable var0) {
+   public static void run(Runnable runnable) {
       enter();
 
       try {
-         var0.run();
+         runnable.run();
       } finally {
          exit();
       }
    }
 
-   public static synchronized Language language(Language var0) {
-      if (var0 == null) {
+   public static synchronized Language language(Language language) {
+      if (language == null) {
          return null;
       } else {
          Set var1 = hidden();
-         if (var0 != wrapped || var1 != guardedKeys) {
-            wrapped = var0;
+         if (language != wrapped || var1 != guardedKeys) {
+            wrapped = language;
             guardedKeys = var1;
-            guarded = new TranslationGuard.GuardedLanguage(var0, var1);
+            guarded = new TranslationGuard.GuardedLanguage(language, var1);
          }
 
          return guarded;
       }
    }
 
-   public static Text keybind(String var0) {
-      KeyBinding var1 = KeyBinding.method_65807(var0);
-      return (Text)(var1 != null && !hidden().contains(var0) ? var1.method_16007() : Text.method_43471(var0));
+   public static Text keybind(String string) {
+      KeyBinding var1 = KeyBinding.byId(string);
+      return (Text)(var1 != null && !hidden().contains(string) ? var1.getBoundKeyLocalizedText() : Text.translatable(string));
    }
 
    public static void beginLoad() {
       LOAD.set(new TranslationGuard.Load());
    }
 
-   public static BiConsumer<String, String> tap(Resource var0, BiConsumer<String, String> var1) {
+   public static BiConsumer<String, String> tap(Resource resource, BiConsumer<String, String> biConsumer) {
       TranslationGuard.Load var2 = LOAD.get();
       if (var2 == null) {
-         return var1;
+         return biConsumer;
       } else {
          var2.seen = true;
-         return ours(var0) ? (var2x, var3) -> {
-            var1.accept(var2x, var3);
-            var2.provided.add(var2x);
-         } : (var2x, var3) -> {
-            var1.accept(var2x, var3);
-            var2.clean.put(var2x, var3);
+         return ours(resource) ? (string, string2) -> {
+            biConsumer.accept(string, string2);
+            var2.provided.add(string);
+         } : (string, string2) -> {
+            biConsumer.accept(string, string2);
+            var2.clean.put(string, string2);
          };
       }
    }
@@ -149,8 +149,8 @@ public final class TranslationGuard {
       }
    }
 
-   private static boolean ours(Resource var0) {
-      return var0.method_45304() instanceof ModPackResources var2 ? ours(var2.getFabricModMetadata()) : ourMods().contains(var0.method_14480());
+   private static boolean ours(Resource resource) {
+      return resource.getPack() instanceof ModPackResources var2 ? ours(var2.getFabricModMetadata()) : ourMods().contains(resource.getPackId());
    }
 
    private static Set<String> ourMods() {
@@ -191,13 +191,13 @@ public final class TranslationGuard {
                   }
                }
 
-               GameOptions var13 = MinecraftClient.method_1551().field_1690;
+               GameOptions var13 = MinecraftClient.getInstance().options;
                if (var13 != null) {
-                  for (KeyBinding var9 : var13.field_1839) {
-                     Identifier var10 = var9.method_1423().comp_4879();
-                     if (var4.contains(var10.method_12836())) {
-                        var3.add(var9.method_1431());
-                        var3.add("key.category." + var10.method_12836() + "." + var10.method_12832());
+                  for (KeyBinding var9 : var13.allKeys) {
+                     Identifier var10 = var9.getCategory().id();
+                     if (var4.contains(var10.getNamespace())) {
+                        var3.add(var9.getId());
+                        var3.add("key.category." + var10.getNamespace() + "." + var10.getPath());
                      }
                   }
                }
@@ -213,11 +213,11 @@ public final class TranslationGuard {
       }
    }
 
-   private static boolean ours(ModMetadata var0) {
-      if ("efn".equals(var0.getId())) {
+   private static boolean ours(ModMetadata modMetadata) {
+      if ("efn".equals(modMetadata.getId())) {
          return true;
       } else {
-         for (ModDependency var2 : var0.getDependencies()) {
+         for (ModDependency var2 : modMetadata.getDependencies()) {
             if (var2.getKind() == Kind.DEPENDS && "efn".equals(var2.getModId())) {
                return true;
             }
@@ -227,13 +227,13 @@ public final class TranslationGuard {
       }
    }
 
-   private static void collect(ModContainer var0, Set<String> var1, Set<String> var2) {
-      for (Path var4 : var0.getRootPaths()) {
+   private static void collect(ModContainer modContainer, Set<String> set, Set<String> set2) {
+      for (Path var4 : modContainer.getRootPaths()) {
          Path var5 = var4.resolve("assets");
          if (Files.isDirectory(var5)) {
             for (Path var7 : list(var5)) {
                if (Files.isDirectory(var7)) {
-                  var2.add(var7.getFileName().toString().replace("/", ""));
+                  set2.add(var7.getFileName().toString().replace("/", ""));
                   Path var8 = var7.resolve("lang");
                   if (Files.isDirectory(var8)) {
                      for (Path var10 : list(var8)) {
@@ -244,7 +244,7 @@ public final class TranslationGuard {
                               try {
                                  JsonElement var12 = JsonParser.parseReader(var11);
                                  if (var12.isJsonObject()) {
-                                    var1.addAll(var12.getAsJsonObject().keySet());
+                                    set.addAll(var12.getAsJsonObject().keySet());
                                  }
                               } finally {
                                  if (var11 != null) {
@@ -264,16 +264,16 @@ public final class TranslationGuard {
       }
    }
 
-   private static List<Path> list(Path var0) {
+   private static List<Path> list(Path path) {
       try {
          List var2;
-         try (Stream var1 = Files.list(var0)) {
+         try (Stream var1 = Files.list(path)) {
             var2 = var1.toList();
          }
 
          return var2;
       } catch (IOException var6) {
-         LOGGER.warn("Could not list {}", var0, var6);
+         LOGGER.warn("Could not list {}", path, var6);
          return List.of();
       }
    }
@@ -283,35 +283,39 @@ public final class TranslationGuard {
       private final Language real;
       private final Set<String> hidden;
 
-      GuardedLanguage(Language var1, Set<String> var2) {
-         this.real = var1;
-         this.hidden = var2;
+      GuardedLanguage(Language language, Set<String> set) {
+         this.real = language;
+         this.hidden = set;
       }
 
-      public String method_4679(String var1, String var2) {
+      @Override
+      public String get(String key, String fallback) {
          TranslationGuard.Snapshot var3 = TranslationGuard.snapshot;
          if (var3 != null) {
-            return var3.provided().contains(var1) ? var3.clean().getOrDefault(var1, var2) : this.real.method_4679(var1, var2);
+            return var3.provided().contains(key) ? var3.clean().getOrDefault(key, fallback) : this.real.get(key, fallback);
          } else {
-            return this.hidden.contains(var1) ? var2 : this.real.method_4679(var1, var2);
+            return this.hidden.contains(key) ? fallback : this.real.get(key, fallback);
          }
       }
 
-      public boolean method_4678(String var1) {
+      @Override
+      public boolean hasTranslation(String key) {
          TranslationGuard.Snapshot var2 = TranslationGuard.snapshot;
          if (var2 != null) {
-            return var2.provided().contains(var1) ? var2.clean().containsKey(var1) : this.real.method_4678(var1);
+            return var2.provided().contains(key) ? var2.clean().containsKey(key) : this.real.hasTranslation(key);
          } else {
-            return !this.hidden.contains(var1) && this.real.method_4678(var1);
+            return !this.hidden.contains(key) && this.real.hasTranslation(key);
          }
       }
 
-      public boolean method_29428() {
-         return this.real.method_29428();
+      @Override
+      public boolean isRightToLeft() {
+         return this.real.isRightToLeft();
       }
 
-      public OrderedText method_30934(StringVisitable var1) {
-         return this.real.method_30934(var1);
+      @Override
+      public OrderedText reorder(StringVisitable text) {
+         return this.real.reorder(text);
       }
    }
 
