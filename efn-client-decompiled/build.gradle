@@ -1,0 +1,52 @@
+plugins {
+    id 'java'
+    id 'fabric-loom' version '1.14.10'
+}
+
+group = 'net.efn'
+version = '1.2.0'
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://maven.fabricmc.net/' }
+}
+
+dependencies {
+    minecraft 'com.mojang:minecraft:1.21.11'
+    mappings 'net.fabricmc:yarn:1.21.11+build.6:v2'
+
+    modImplementation 'net.fabricmc:fabric-loader:0.19.5'
+    // The original jar nests individual fabric-* modules; the full API is a superset.
+    modImplementation 'net.fabricmc.fabric-api:fabric-api:0.141.6+1.21.11'
+
+    // Libraries that were bundled inside the original jar (META-INF/jars)
+    implementation fileTree(dir: 'libs', include: ['imgui-*.jar', 'netty-*.jar'])
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 21
+    // Decompiler output is not guaranteed to compile cleanly; don't drown in lint.
+    options.compilerArgs += ['-Xlint:none', '-proc:none']
+}
+
+// ---------------------------------------------------------------------------
+// SAFETY: this is decompiled MALWARE (see README.md). Never launch it.
+// Loom would otherwise generate runClient/runServer + IDE run configs, and
+// starting the game with this mod loaded executes the dropper.
+// ---------------------------------------------------------------------------
+loom {
+    runConfigs.configureEach {
+        ideConfigGenerated = false
+    }
+}
+tasks.matching { it.name in ['runClient', 'runServer', 'runDatagen', 'runGametest', 'runClientGametest'] }.configureEach {
+    doFirst {
+        throw new GradleException('Refusing to run: this project is decompiled malware, for static analysis only. See README.md.')
+    }
+}

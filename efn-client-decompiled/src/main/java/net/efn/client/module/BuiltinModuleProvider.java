@@ -1,0 +1,319 @@
+package net.efn.client.module;
+
+import java.util.ArrayList;
+import java.util.List;
+import net.efn.client.easyplace.EasyPlaceModules;
+import net.efn.client.easyplace.builder.AreaMinerModule;
+import net.efn.client.easyplace.builder.ElytraAutopilotModule;
+import net.efn.client.easyplace.builder.TunnelMinerModule;
+import net.efn.client.module.impl.client.HotkeysModule;
+import net.efn.client.module.impl.client.HudModule;
+import net.efn.client.module.impl.client.PerformanceModule;
+import net.efn.client.module.impl.client.RadarModule;
+import net.efn.client.module.impl.client.RegionMapModule;
+import net.efn.client.module.impl.client.SpotifyHudModule;
+import net.efn.client.module.impl.combat.AimAssistModule;
+import net.efn.client.module.impl.combat.AnchorAuraModule;
+import net.efn.client.module.impl.combat.AutoCityModule;
+import net.efn.client.module.impl.combat.AutoInvTotemModule;
+import net.efn.client.module.impl.combat.AutoTotemModule;
+import net.efn.client.module.impl.combat.AutoTrapModule;
+import net.efn.client.module.impl.combat.CrystalAuraModule;
+import net.efn.client.module.impl.combat.CrystalMacroModule;
+import net.efn.client.module.impl.combat.CrystalOptimizerModule;
+import net.efn.client.module.impl.combat.FakeLagModule;
+import net.efn.client.module.impl.combat.FastXpModule;
+import net.efn.client.module.impl.combat.FriendGuardModule;
+import net.efn.client.module.impl.combat.HoverTotemModule;
+import net.efn.client.module.impl.combat.JumpResetModule;
+import net.efn.client.module.impl.combat.KeyThrowModule;
+import net.efn.client.module.impl.combat.KillAuraModule;
+import net.efn.client.module.impl.combat.KnockbackDelayModule;
+import net.efn.client.module.impl.combat.MaceModule;
+import net.efn.client.module.impl.combat.ShieldBreakerModule;
+import net.efn.client.module.impl.combat.SingleAnchorMacroModule;
+import net.efn.client.module.impl.combat.SpearLungeModule;
+import net.efn.client.module.impl.combat.TriggerbotModule;
+import net.efn.client.module.impl.combat.WTapRecodeModule;
+import net.efn.client.module.impl.combat.bot.CrystalBotModule;
+import net.efn.client.module.impl.combat.bot.SwordBotModule;
+import net.efn.client.module.impl.donutmacros.AhSellModule;
+import net.efn.client.module.impl.donutmacros.AhSniperModule;
+import net.efn.client.module.impl.donutmacros.AutoSellModule;
+import net.efn.client.module.impl.donutmacros.AutoTpaHereModule;
+import net.efn.client.module.impl.donutmacros.OrderAhSellerModule;
+import net.efn.client.module.impl.donutmacros.OrderDropperModule;
+import net.efn.client.module.impl.donutmacros.PanicPayModule;
+import net.efn.client.module.impl.donutmacros.TpMacroModule;
+import net.efn.client.module.impl.misc.AirStuckModule;
+import net.efn.client.module.impl.misc.AmethystBypassModule;
+import net.efn.client.module.impl.misc.AntiGhostBlockModule;
+import net.efn.client.module.impl.misc.AntiTrapModule;
+import net.efn.client.module.impl.misc.AntiVanishModule;
+import net.efn.client.module.impl.misc.AutoClickerModule;
+import net.efn.client.module.impl.misc.AutoEatModule;
+import net.efn.client.module.impl.misc.AutoReconnectModule;
+import net.efn.client.module.impl.misc.AutoRelogModule;
+import net.efn.client.module.impl.misc.AutoReplenishModule;
+import net.efn.client.module.impl.misc.BlockNotifierModule;
+import net.efn.client.module.impl.misc.ChatMacroModule;
+import net.efn.client.module.impl.misc.CoordSnapperModule;
+import net.efn.client.module.impl.misc.DiscordPresenceModule;
+import net.efn.client.module.impl.misc.DonutNoFallModule;
+import net.efn.client.module.impl.misc.FakeStats;
+import net.efn.client.module.impl.misc.FastUseModule;
+import net.efn.client.module.impl.misc.FreecamModule;
+import net.efn.client.module.impl.misc.GoliathRtpModule;
+import net.efn.client.module.impl.misc.HomeMetaModule;
+import net.efn.client.module.impl.misc.LegitAutoToolModule;
+import net.efn.client.module.impl.misc.MediaBaseFinderModule;
+import net.efn.client.module.impl.misc.NameProtectModule;
+import net.efn.client.module.impl.misc.NetheriteFinderModule;
+import net.efn.client.module.impl.misc.NoInvLeakModule;
+import net.efn.client.module.impl.misc.PlayerBypass2Module;
+import net.efn.client.module.impl.misc.PlayerBypassModule;
+import net.efn.client.module.impl.misc.PlayerDetectionModule;
+import net.efn.client.module.impl.misc.QuantumModule;
+import net.efn.client.module.impl.misc.RenderDistanceToggleModule;
+import net.efn.client.module.impl.misc.SkinChangeModule;
+import net.efn.client.module.impl.misc.SlowSwingModule;
+import net.efn.client.module.impl.misc.SpamModule;
+import net.efn.client.module.impl.misc.SpawnerProtectModule;
+import net.efn.client.module.impl.misc.SpeedMineModule;
+import net.efn.client.module.impl.misc.StaffListModule;
+import net.efn.client.module.impl.misc.StaffLiveModule;
+import net.efn.client.module.impl.misc.TridentUtilModule;
+import net.efn.client.module.impl.misc.WeatherNotifierModule;
+import net.efn.client.module.impl.movement.AutoJumpModule;
+import net.efn.client.module.impl.movement.AutoWalkModule;
+import net.efn.client.module.impl.movement.BoatFlyModule;
+import net.efn.client.module.impl.movement.BoatNoclipModule;
+import net.efn.client.module.impl.movement.ClickTpModule;
+import net.efn.client.module.impl.movement.ElytraFlyModule;
+import net.efn.client.module.impl.movement.ElytraSwapModule;
+import net.efn.client.module.impl.movement.EntityControlModule;
+import net.efn.client.module.impl.movement.EntitySpeedModule;
+import net.efn.client.module.impl.movement.FlyModule;
+import net.efn.client.module.impl.movement.JesusModule;
+import net.efn.client.module.impl.movement.NoJumpDelayModule;
+import net.efn.client.module.impl.movement.SneakModule;
+import net.efn.client.module.impl.movement.SpeedModule;
+import net.efn.client.module.impl.movement.SpiderModule;
+import net.efn.client.module.impl.movement.SprintModule;
+import net.efn.client.module.impl.movement.TridentBoostModule;
+import net.efn.client.module.impl.render.AtmosphereModule;
+import net.efn.client.module.impl.render.BetterSusChunkModule;
+import net.efn.client.module.impl.render.BlockEntityDebugModule;
+import net.efn.client.module.impl.render.BlockEspModule;
+import net.efn.client.module.impl.render.BlockOverlayModule;
+import net.efn.client.module.impl.render.ChunkScannerModule;
+import net.efn.client.module.impl.render.ColorGradingModule;
+import net.efn.client.module.impl.render.CrownModule;
+import net.efn.client.module.impl.render.CustomCrosshairModule;
+import net.efn.client.module.impl.render.CustomFovModule;
+import net.efn.client.module.impl.render.CustomGlintModule;
+import net.efn.client.module.impl.render.EspModule;
+import net.efn.client.module.impl.render.FloatingIconsModule;
+import net.efn.client.module.impl.render.FreelookModule;
+import net.efn.client.module.impl.render.FullbrightModule;
+import net.efn.client.module.impl.render.HandAuraModule;
+import net.efn.client.module.impl.render.HandModelModule;
+import net.efn.client.module.impl.render.HandsModule;
+import net.efn.client.module.impl.render.HitParticlesModule;
+import net.efn.client.module.impl.render.HoleEspModule;
+import net.efn.client.module.impl.render.IconParticlesModule;
+import net.efn.client.module.impl.render.ItemEspModule;
+import net.efn.client.module.impl.render.JumpCirclesModule;
+import net.efn.client.module.impl.render.LightEspModule;
+import net.efn.client.module.impl.render.LowHealthWarningModule;
+import net.efn.client.module.impl.render.MotionBlurModule;
+import net.efn.client.module.impl.render.NametagsModule;
+import net.efn.client.module.impl.render.NoRenderModule;
+import net.efn.client.module.impl.render.PearlTrajectoryModule;
+import net.efn.client.module.impl.render.PrimeChunkFinderModule;
+import net.efn.client.module.impl.render.ShaderEspModule;
+import net.efn.client.module.impl.render.SpawnerNametagsModule;
+import net.efn.client.module.impl.render.SpawnerNotifierModule;
+import net.efn.client.module.impl.render.StorageEspModule;
+import net.efn.client.module.impl.render.SusChunkFinderModule;
+import net.efn.client.module.impl.render.SwingAnimationModule;
+import net.efn.client.module.impl.render.TargetEspModule;
+import net.efn.client.module.impl.render.TimeChangerModule;
+import net.efn.client.module.impl.render.TotemSpiritModule;
+import net.efn.client.module.impl.render.TracersModule;
+import net.efn.client.module.impl.render.TrajectoriesModule;
+import net.efn.client.module.impl.render.WaypointsModule;
+import net.efn.client.module.impl.render.WeaponInspectModule;
+import net.efn.client.module.impl.render.XrayModule;
+import net.efn.client.module.impl.render.ZoomModule;
+import net.efn.client.module.impl.render.character.CharacterModule;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+
+@Environment(EnvType.CLIENT)
+public final class BuiltinModuleProvider implements ModuleProvider {
+   public BuiltinModuleProvider() {
+   }
+
+   @Override
+   public String id() {
+      return "builtin";
+   }
+
+   @Override
+   public List<ClientModule> createModules() {
+      ArrayList var1 = new ArrayList<>(
+         List.of(
+            new AimAssistModule(),
+            new SingleAnchorMacroModule(),
+            new AnchorAuraModule(),
+            new CrystalMacroModule(),
+            new CrystalAuraModule(),
+            new AutoCityModule(),
+            new TriggerbotModule(),
+            new KillAuraModule(),
+            new ShieldBreakerModule(),
+            new MaceModule(),
+            new HoverTotemModule(),
+            new FastXpModule(),
+            new AutoTotemModule(),
+            new AutoInvTotemModule(),
+            new WTapRecodeModule(),
+            new CrystalOptimizerModule(),
+            new FriendGuardModule(),
+            new SpearLungeModule(),
+            new JumpResetModule(),
+            new KeyThrowModule(),
+            new LegitAutoToolModule(),
+            new AutoClickerModule(),
+            new FastUseModule(),
+            new AutoEatModule(),
+            new AutoReplenishModule(),
+            new AutoReconnectModule(),
+            new AntiVanishModule(),
+            new PlayerDetectionModule(),
+            new AutoRelogModule(),
+            new AntiTrapModule(),
+            new AirStuckModule(),
+            new SpawnerProtectModule(),
+            new StaffListModule(),
+            new PlayerBypassModule(),
+            new PlayerBypass2Module(),
+            new NetheriteFinderModule(),
+            new RenderDistanceToggleModule(),
+            new HomeMetaModule(),
+            new TridentUtilModule(),
+            new QuantumModule(),
+            new DonutNoFallModule(),
+            new SpeedMineModule(),
+            new AmethystBypassModule(),
+            new FreecamModule(),
+            new SpamModule(),
+            new CoordSnapperModule(),
+            new ChatMacroModule(),
+            new NameProtectModule(),
+            new NoInvLeakModule(),
+            new FakeStats(),
+            new WeatherNotifierModule(),
+            new BlockNotifierModule(),
+            new FlyModule(),
+            new AutoWalkModule(),
+            new AutoJumpModule(),
+            new ClickTpModule(),
+            new BoatFlyModule(),
+            new BoatNoclipModule(),
+            new ElytraFlyModule(),
+            new ElytraSwapModule(),
+            new EntityControlModule(),
+            new EntitySpeedModule(),
+            new JesusModule(),
+            new SneakModule(),
+            new SpeedModule(),
+            new SpiderModule(),
+            new SprintModule(),
+            new NoJumpDelayModule(),
+            new TridentBoostModule(),
+            new SlowSwingModule(),
+            new SwingAnimationModule(),
+            new WeaponInspectModule(),
+            new HandModelModule(),
+            new HandsModule(),
+            new HandAuraModule(),
+            new SkinChangeModule(),
+            new SpawnerNotifierModule(),
+            new SusChunkFinderModule(),
+            new ChunkScannerModule(),
+            new PrimeChunkFinderModule(),
+            new BlockEntityDebugModule(),
+            new LightEspModule(),
+            new FullbrightModule(),
+            new EspModule(),
+            new ShaderEspModule(),
+            new NametagsModule(),
+            new SpawnerNametagsModule(),
+            new BlockEspModule(),
+            new BlockOverlayModule(),
+            new StorageEspModule(),
+            new FreelookModule(),
+            new HoleEspModule(),
+            new PearlTrajectoryModule(),
+            new TrajectoriesModule(),
+            new ItemEspModule(),
+            new XrayModule(),
+            new NoRenderModule(),
+            new CustomFovModule(),
+            new ZoomModule(),
+            new CustomCrosshairModule(),
+            new CustomGlintModule(),
+            new HitParticlesModule(),
+            new TargetEspModule(),
+            new TotemSpiritModule(),
+            new IconParticlesModule(),
+            new MotionBlurModule(),
+            new AtmosphereModule(),
+            new ColorGradingModule(),
+            new JumpCirclesModule(),
+            new CrownModule(),
+            new CharacterModule(),
+            new FloatingIconsModule(),
+            new TimeChangerModule(),
+            new LowHealthWarningModule(),
+            new HudModule(),
+            new SpotifyHudModule(),
+            new RegionMapModule(),
+            new RadarModule(),
+            new HotkeysModule(),
+            new TracersModule(),
+            new PerformanceModule(),
+            new DiscordPresenceModule(),
+            new AutoTpaHereModule(),
+            new OrderAhSellerModule(),
+            new AhSellModule(),
+            new AutoSellModule(),
+            new TpMacroModule(),
+            new OrderDropperModule(),
+            new PanicPayModule(),
+            new AhSniperModule(),
+            new AntiGhostBlockModule(),
+            new AreaMinerModule(),
+            new AutoTrapModule(),
+            new BetterSusChunkModule(),
+            new CrystalBotModule(),
+            new ElytraAutopilotModule(),
+            new FakeLagModule(),
+            new GoliathRtpModule(),
+            new KnockbackDelayModule(),
+            new MediaBaseFinderModule(),
+            new StaffLiveModule(),
+            new SwordBotModule(),
+            new TunnelMinerModule(),
+            new WaypointsModule()
+         )
+      );
+      if (EasyPlaceModules.available()) {
+         var1.addAll(EasyPlaceModules.create());
+      }
+
+      return var1;
+   }
+}

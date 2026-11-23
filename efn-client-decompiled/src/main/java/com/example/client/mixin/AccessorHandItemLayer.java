@@ -1,0 +1,20 @@
+package com.example.client.mixin;
+
+import java.util.function.Supplier;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.minecraft.client.render.item.ItemRenderState.LayerRenderState;
+import net.minecraft.client.render.model.json.Transformation;
+import org.joml.Vector3fc;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
+
+@Environment(EnvType.CLIENT)
+@Mixin({LayerRenderState.class})
+public interface AccessorHandItemLayer {
+   @Accessor("field_56967")
+   Transformation efn$handTransform();
+
+   @Accessor("field_56968")
+   Supplier<Vector3fc[]> efn$handExtents();
+}

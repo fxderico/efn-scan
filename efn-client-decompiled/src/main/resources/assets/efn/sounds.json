@@ -1,0 +1,7 @@
+{
+  "spawner_notify": {
+    "sounds": [
+      "efn:spawner_notify"
+    ]
+  }
+}

@@ -1,0 +1,27 @@
+plugins {
+    id 'java'
+}
+
+// Decompiled second-stage payload. Analysis only - do not run.
+repositories {
+    mavenCentral()
+    maven { url = 'https://maven.fabricmc.net/' }
+}
+
+dependencies {
+    compileOnly 'net.fabricmc:fabric-loader:0.19.5'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs += ['-Xlint:none']
+}
+
+// The obfuscated decompile does not round-trip (e.g. `this` aliased to `fvXo`), and this
+// code must never be built into something runnable. Sources are here to be READ.
+tasks.named('compileJava') { enabled = false }
