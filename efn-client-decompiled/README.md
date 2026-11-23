@@ -31,6 +31,21 @@ Open the folder as a Gradle project (Loom 1.17.21, Gradle 9.7.1 wrapper, Java 21
   invalid method refs). They don't affect reading or IDE navigation, and fixing them means hand-editing
   each file.
 
+## Evidence the jar was trojanized after being built
+
+- Zip entry times: every class is 2026-11-14 17:08, `fabric.mod.json` 17:37, `MANIFEST.MF` 17:47, and
+  **`net/efn/agent/AgentInit.class` + `assets/efn/data/runtime.dat` 18:11**, an hour after the build.
+- `net.efn.bootstrap.EfnNativeBootstrap` is a `PreLaunchEntrypoint` that nothing registers, and
+  `net.efn.launcher.InstallNotice` is a complete double-click notice that nothing points at. That's
+  consistent with the original `preLaunch` entry and `Main-Class` being repointed at the dropper.
+- All 12 nested jars match their official Maven artifacts byte-for-byte (aside from Loom's generated
+  `fabric.mod.json`). The payload was not hidden in a library.
+- Whether the efn.lol developers did this or someone repacked their release isn't provable from the
+  jar alone.
+
+A cleaned, buildable version with the dropper removed, verified against the original bytecode, is at
+[fxderico/efn-clean](https://github.com/fxderico/efn-clean).
+
 ## Infection chain
 
 All names below are from `stage2/src/main/java` (renamed; originals are in `analysis/rename-map.txt`).
