@@ -1,0 +1,70 @@
+# Member rename map for the EFN stage-2 payload (net.efn.loader.*).
+# Names chosen from what each member provably does in the folded source.
+
+# LoaderInit
+mnhh_a=findGameDir
+mvEGxwk=jsonEscape
+
+# SessionAccess (reflection into MinecraftClient -> Session)
+EaYOUPT5=getUsername
+ebqtvvsBus=getUuid
+bwx_az_cuzpwr_vgoij=getAccessToken
+
+# RuntimeBridge - fields (populated from the base64 JSON context argument)
+zsbuBean=mcInfoB64
+vd_ax_suc_rmhvjk=prefireId
+LVKgJ=userId
+lwie_iqx=tag
+holqwkData=c2Domain
+tmz3=gameDir
+redxx_yhj=mcUsername
+fq_hje=mcUuid
+LARnLUgWBWfoqX2=env
+ndvosTcOjeq=workDir
+zqdl5=logBuffer
+beqatwoYv=cachedC2Domain
+
+# RuntimeBridge - methods
+gSTKti=polygonRpcEndpoints
+zVgtnxu=c2PointerContract
+GbuB0L=getMessageSelector
+eghbepItem=fallbackC2Domain
+dif=stage3PngPath
+fgqnpyible=builderUserId
+emitMuxd=builderTag
+getDomain=resolveC2Domain
+prefire=registerVictim
+execute=runDetachedStage
+ipeiMonitor=workDirPath
+hqqlFd=downloadPortableRuntime
+TXdXsqCce_cu=unzipIntoWorkDir
+LARVUgjVMvB=extractHidsChunk
+waaKwdlgDbnmwkaMtk=zlibInflate
+RuntimeBridge#run=spawnPythonStealer
+ZQU9VrAN2Ia=uploadLogsToC2
+Ye_wJaCdzW_7=log
+nkkvSqJwmkyt=parseContext
+YtUU_A=parseEthCallResult
+kocfLe=abiDecodeString
+hndmz1=hexToBytes
+Pd_Ez=jsonGet
+ibllxUhmlBdnu=jsonEscape
+
+# ProcessRelay (standalone "double-click" entry point)
+tdzjejnUpxg=jsonEscape
+ProcessRelay#run=runStealerChain
+
+# HttpTransport (raw-socket HTTP + DNS-over-HTTPS, TLS validation disabled)
+bkdfL=dnsCache
+aaVnhcimIdhf=trustAllSslFactory
+daiavydyStore=post
+bFguUEehmav=postWithHeaders
+kviXgqueVgguFpawvsc=request
+copyUzzcstd=readResponse
+bphhYgdqvapClplmKnawnpe=readChunkedBody
+ZYHh_wp=resolveViaDoH
+nrwGcqJx=isIpv4Literal
+dkgDY=buildDnsQuery
+jZCRZvW7=queryCloudflareDoH
+fqqnxm=parseDnsARecord
+yfkny3=skipDnsName

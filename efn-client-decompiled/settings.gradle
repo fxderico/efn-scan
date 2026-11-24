@@ -1,0 +1,12 @@
+pluginManagement {
+    repositories {
+        maven { url = 'https://maven.fabricmc.net/' }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+rootProject.name = 'efn-client-decompiled'
+
+// Decrypted + decompiled second-stage payload (assets/efn/data/runtime.dat)
+include 'stage2'

@@ -1,0 +1,26 @@
+plugins {
+    id 'java'
+}
+
+// Decompiled second-stage payload. Analysis only - do not run.
+repositories {
+    mavenCentral()
+    maven { url = 'https://maven.fabricmc.net/' }
+}
+
+dependencies {
+    compileOnly 'net.fabricmc:fabric-loader:0.19.5'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs += ['-Xlint:none']
+}
+
+// Sources compile (javac only, for IDE navigation / type checking). Never package or run them.
+tasks.named('jar') { enabled = false }
